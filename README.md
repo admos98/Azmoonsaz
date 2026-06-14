@@ -35,3 +35,29 @@ Important rules:
 - Do not expose SUPABASE_SERVICE_ROLE_KEY, STUDENT_ID_PEPPER, or GEMINI_API_KEY to browser code.
 - Student exam access should go through server-side API endpoints.
 - Student-facing payloads must never include answer keys.
+
+
+## Backend foundation patch 003
+
+This project now includes a secure backend foundation for Vercel API functions and Supabase.
+
+New frontend helpers:
+
+- src/config/env.ts
+- src/lib/supabasePublic.ts
+- src/lib/apiClient.ts
+
+New server helpers:
+
+- api/_lib/supabaseAdmin.js
+- api/_lib/studentSession.js
+- api/_lib/rateLimit.js
+
+Test endpoints:
+
+- /api/health
+- /api/security-check
+- /api/student-id-demo
+- /api/student/exam-entry
+
+Do not use real exams until the full database schema, RLS policies, teacher auth, student sessions, answer stripping, autosave, and submission locking are complete.
