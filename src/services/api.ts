@@ -427,85 +427,69 @@ export const examService = {
 };
 
 export const gradingService = {
-  /**
-   * Fetches submission answered sheets.
-   */
   async getSubmissions(examId?: string): Promise<Submission[]> {
+    if (isSecureTeacherModeAvailable()) {
+      try {
+        const suffix = examId ? '?examId=' + encodeURIComponent(examId) : '';
+        const response = await teacherGet<{ submissions: Submission[] }>('/api/teacher/submissions' + suffix);
+        return response.submissions;
+      } catch (err) {
+        console.warn('Secure submissions fetch failed; falling back to mock data.', err);
+      }
+    }
     await delay(300);
     const subs = getItem<Submission[]>(KEYS.SUBMISSIONS, []);
-    if (examId) {
-      return subs.filter(s => s.examId === examId);
-    }
-    return subs;
+    return examId ? subs.filter(s => s.examId === examId) : subs;
   },
 
-  /**
-   * Forces manual auto grade.
-   */
   async autoGradeSubmission(submissionId: string): Promise<Submission> {
     return examService.submitExam(submissionId);
   },
 
-  /**
-   * Updates scoring of a single manual question from teacher interface.
-   */
   async updateManualGrade(submissionId: string, questionId: string, scoreGained: number, comment = ''): Promise<Submission> {
+    if (isSecureTeacherModeAvailable()) {
+      await teacherPost('/api/teacher/grade-answer', { submissionId, questionId, scoreGained, comment });
+      const submissions = await this.getSubmissions();
+      const updated = submissions.find(s => s.id === submissionId);
+      if (!updated) throw new Error('Submission not found after grading');
+      return updated;
+    }
+
     const subs = getItem<Submission[]>(KEYS.SUBMISSIONS, []);
     let updatedSub: Submission | null = null;
-    
     const updated = subs.map(sub => {
       if (sub.id === submissionId) {
-        const updatedAns = sub.answers.map(ans => {
-          if (ans.questionId === questionId) {
-            return {
-              ...ans,
-              scoreGained,
-              teacherComment: comment,
-              isCorrect: scoreGained > 0
-            };
-          }
-          return ans;
-        });
-
-        // Recalculate full scorecard
+        const updatedAns = sub.answers.map(ans => ans.questionId === questionId ? { ...ans, scoreGained, teacherComment: comment, isCorrect: scoreGained > 0 } : ans);
         const newScore = updatedAns.reduce((sum, item) => sum + (item.scoreGained || 0), 0);
-        
-        updatedSub = {
-          ...sub,
-          answers: updatedAns,
-          score: Number(newScore.toFixed(2))
-        };
+        updatedSub = { ...sub, answers: updatedAns, score: Number(newScore.toFixed(2)) };
         return updatedSub;
       }
       return sub;
     });
-
     if (!updatedSub) throw new Error('Submission id out of scope');
     setItem(KEYS.SUBMISSIONS, updated);
     return updatedSub;
   },
 
-  /**
-   * Finalizes the submission grading and updates status to graded.
-   */
   async finalizeGrade(submissionId: string): Promise<Submission> {
+    if (isSecureTeacherModeAvailable()) {
+      await teacherPost('/api/teacher/finalize-submission', { submissionId });
+      const submissions = await this.getSubmissions();
+      const updated = submissions.find(s => s.id === submissionId);
+      if (!updated) throw new Error('Submission not found after finalize');
+      return updated;
+    }
+
     await delay(500);
     const subs = getItem<Submission[]>(KEYS.SUBMISSIONS, []);
     let updatedSub: Submission | null = null;
-
     const updated = subs.map(sub => {
       if (sub.id === submissionId) {
-        updatedSub = {
-          ...sub,
-          status: 'graded',
-          gradedBy: 'حمیدرضا علیزاده',
-          gradedAt: new Date().toISOString()
-        };
+        updatedSub = { ...sub, status: 'graded', gradedBy: 'حمیدرضا علیزاده', gradedAt: new Date().toISOString() };
         return updatedSub;
       }
       return sub;
     });
-
     if (!updatedSub) throw new Error('Submission not found for final grade updates');
     setItem(KEYS.SUBMISSIONS, updated);
     return updatedSub;

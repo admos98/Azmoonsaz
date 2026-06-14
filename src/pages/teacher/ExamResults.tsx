@@ -116,7 +116,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   }, [selectedSubmissionId, submissions]);
 
   // Construct complete row data pairing cohort with submissions
-  const studentRows = effectiveCohort.map(student => {
+  let studentRows = effectiveCohort.map(student => {
     const sub = submissions.find(s => s.studentId === student.id);
     const classGroup = mockClassGroups.find(c => c.id === student.classGroupId);
     
@@ -178,6 +178,29 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
       };
     }
   });
+
+  const realOnlyRows = submissions
+    .filter(sub => !studentRows.some(row => row.rawSubmission?.id === sub.id))
+    .map(sub => ({
+      id: sub.id,
+      isRealSubmission: true,
+      studentId: sub.studentId,
+      studentName: sub.studentName,
+      nationalId: sub.nationalId || '',
+      maskedNationalId: (sub as any).maskedNationalId || '***',
+      classGroupId: 'backend',
+      className: 'ثبت‌شده در بک‌اند',
+      status: sub.status as 'ongoing' | 'submitted' | 'graded' | 'absent',
+      startedAt: sub.startedAt,
+      submittedAt: sub.submittedAt,
+      score: sub.score,
+      autoScore: sub.score,
+      maxScore: sub.maxScore || exam.questions.reduce((sum, q) => sum + q.points, 0),
+      hasDescriptive: exam.questions.some(q => q.type === 'long_answer' || q.type === 'short_answer'),
+      rawSubmission: sub
+    }));
+
+  studentRows = [...realOnlyRows, ...studentRows];
 
   // Calculate OVERVIEW stats analytics
   const totalCohortsCount = studentRows.length;
