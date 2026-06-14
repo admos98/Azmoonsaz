@@ -1,0 +1,7 @@
+﻿{
+  "name": "آزمون‌ساز",
+  "description": "سامانه مدرن و پیشرفته آزمون‌های آنلاین و مدیریت دانش‌آموزان",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

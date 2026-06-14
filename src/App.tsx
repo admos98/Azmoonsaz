@@ -1,0 +1,254 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import Sidebar from './components/Sidebar';
+import Topbar from './components/Topbar';
+import Login from './pages/teacher/Login';
+import Dashboard from './pages/teacher/Dashboard';
+import Students from './pages/teacher/Students';
+import Questions from './pages/teacher/Questions';
+import Exams from './pages/teacher/Exams';
+import NewExam from './pages/teacher/NewExam';
+import ExamPortal from './pages/student/ExamPortal';
+import { Exam } from './types';
+import { mockExams } from './mockData';
+
+export default function App() {
+  const [userRole, setUserRole] = useState<'teacher' | 'student'>('teacher');
+  const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
+  const [currentTab, setCurrentTab] = useState<string>('dashboard');
+
+  // URL state management
+  const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToLocalPath = (path: string) => {
+    window.history.pushState(null, '', path);
+    setCurrentPath(path);
+  };
+
+  useEffect(() => {
+    const resultsMatch = currentPath.match(/^\/teacher\/exams\/([^/]+)\/results$/);
+    if (resultsMatch) {
+      const examId = resultsMatch[1];
+      setUserRole('teacher');
+      setIsTeacherLoggedIn(true);
+      setCurrentTab('exams');
+      setSelectedExamId(examId);
+      setExamSubView('results');
+    }
+  }, [currentPath]);
+
+  // Exam sub-routing state
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+  const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>('list');
+
+  // Handle addition of designed exam
+  const [customExams, setCustomExams] = useState<Exam[]>(mockExams);
+
+  const handleAddNewExam = (newExam: Exam) => {
+    mockExams.push(newExam); // Appends to static list for student portal lookup
+    setCustomExams([newExam, ...customExams]);
+    setCurrentTab('exams');
+    setExamSubView('list');
+    alert(`آزمون « ${newExam.title} » با موفقیت طراحی شد و کد ورود ${newExam.examCode} به دانش‌آموزان اختصاص یافت.`);
+  };
+
+  const handleSelectExamForResults = (examId: string) => {
+    setCurrentTab('exams');
+    setSelectedExamId(examId);
+    setExamSubView('results');
+  };
+
+  // Switch Role
+  const handleSwitchUserRole = () => {
+    if (userRole === 'teacher') {
+      setUserRole('student');
+      navigateToLocalPath('/exam/8AF39');
+    } else {
+      setUserRole('teacher');
+      navigateToLocalPath('/');
+    }
+  };
+
+  // Main layout router
+  const renderTeacherContent = () => {
+    switch (currentTab) {
+      case 'dashboard':
+        return (
+          <Dashboard
+            onNavigate={(tab) => {
+              setCurrentTab(tab);
+              setExamSubView('list');
+            }}
+            onSelectExamForResults={handleSelectExamForResults}
+          />
+        );
+      case 'students':
+        return <Students />;
+      case 'questions':
+        return <Questions />;
+      case 'exams/new':
+        return (
+          <NewExam
+            onBack={() => setCurrentTab('exams')}
+            onAddExam={handleAddNewExam}
+          />
+        );
+      case 'exams':
+        return (
+          <Exams
+            onNavigate={(tab) => {
+              setCurrentTab(tab);
+              setExamSubView('list');
+              navigateToLocalPath('/');
+            }}
+            selectedExamId={selectedExamId}
+            subView={examSubView}
+            onSubViewChange={(view, id) => {
+              setExamSubView(view);
+              setSelectedExamId(id);
+              if (view === 'results' && id) {
+                navigateToLocalPath(`/teacher/exams/${id}/results`);
+              } else if (view === 'list') {
+                navigateToLocalPath('/');
+              }
+            }}
+          />
+        );
+      case 'results':
+        // Drill down to the first active exam results for demonstration if no specific id chosen
+        const firstExam = customExams[0];
+        return (
+          <Exams
+            onNavigate={(tab) => {
+              setCurrentTab(tab);
+              setExamSubView('list');
+              navigateToLocalPath('/');
+            }}
+            selectedExamId={selectedExamId || firstExam?.id}
+            subView="results"
+            onSubViewChange={(view, id) => {
+              setExamSubView(view);
+              setSelectedExamId(id);
+              if (view === 'results' && id) {
+                navigateToLocalPath(`/teacher/exams/${id}/results`);
+              } else if (view === 'list') {
+                navigateToLocalPath('/');
+              }
+            }}
+          />
+        );
+      case 'settings':
+        return (
+          <div className="bg-white p-8 rounded-3xl border border-slate-100 text-right space-y-4 shadow-sm" id="settings-mock-page">
+            <h3 className="text-md font-bold text-slate-800 border-b border-slate-100 pb-3">تنظیمات اصلی پنل آزمون‌ساز</h3>
+            <div className="space-y-3 text-xs text-slate-600">
+              <p>📌 <strong>مدیر سامانه:</strong> جناب آقای حمیدرضا علیزاده</p>
+              <p>🏫 <strong>مدرسه همکار:</strong> دبیرستان استعدادهای درخشان شهید بهشتی</p>
+              <p>🌐 <strong>دامنه اتصال پشتیبان:</strong> https://azmoonsaz.ir</p>
+              <p>🔧 <strong>پایگاه داده اصلی (Supabase config):</strong> آماده برای اتصال (Schema Models منطبق است)</p>
+            </div>
+            <div className="bg-indigo-50/65 border border-indigo-100 p-5 rounded-2xl text-xs text-indigo-800 leading-relaxed">
+              این اولین نسخه آزمایشی با ساختار داده واقع‌گرایانه (Realistic Mock Data) است. ساختار کلیه مدل‌های دیتابیس بگونه‌ای مهندسی گردیده است که با فیلدهای Supabase و REST APIها تطابق ۱۰۰٪ دارد.
+            </div>
+          </div>
+        );
+      default:
+        return <Dashboard onNavigate={setCurrentTab} />;
+    }
+  };
+
+  // ROUTE INTERCEPTION:
+  // Check if current URL matches public student exam subroutes:
+  // /exam/:examCode
+  // /exam/:examCode/start | take | submitted
+  const examRouteMatch = currentPath.match(/^\/exam\/([^/]+)(?:\/(start|take|submitted))?$/);
+
+  if (examRouteMatch) {
+    const code = examRouteMatch[1];
+    const subRoute = examRouteMatch[2] || 'login';
+    return (
+      <ExamPortal
+        onBackToTeacher={() => {
+          navigateToLocalPath('/');
+          setUserRole('teacher');
+        }}
+        presetExamCode={code}
+        subRoute={subRoute as 'login' | 'start' | 'take' | 'submitted'}
+        onNavigate={navigateToLocalPath}
+      />
+    );
+  }
+
+  // 1. If we are in STUDENT mode, render the Student exam portal instantly to standard code
+  if (userRole === 'student') {
+    return (
+      <ExamPortal
+        onBackToTeacher={() => {
+          navigateToLocalPath('/');
+          setUserRole('teacher');
+        }}
+        presetExamCode="8AF39"
+        subRoute="login"
+        onNavigate={navigateToLocalPath}
+      />
+    );
+  }
+
+  // 2. If we are in TEACHER mode but not logged in, show the Login Page
+  if (userRole === 'teacher' && !isTeacherLoggedIn) {
+    return (
+      <Login
+        onLoginSuccess={() => setIsTeacherLoggedIn(true)}
+        onSwitchToStudent={() => {
+          setUserRole('student');
+          navigateToLocalPath('/exam/8AF39');
+        }}
+      />
+    );
+  }
+
+  // 3. Otherwise, render the complete gorgeous Teacher Dashboard Shell
+  return (
+    <div className="min-h-screen bg-slate-50 flex" dir="rtl" id="app-teacher-shell">
+      {/* Sidebar - fixed on the right */}
+      <Sidebar
+        currentTab={currentTab}
+        onTabChange={(tab) => {
+          setCurrentTab(tab);
+          // Reset subrouting when shifting tabs
+          setExamSubView('list');
+          setSelectedExamId(undefined);
+        }}
+        onLogout={() => setIsTeacherLoggedIn(false)}
+        onSwitchRole={handleSwitchUserRole}
+      />
+
+      {/* Main Container - offset by sidebar width (256px / w-64) */}
+      <div className="flex-1 mr-64 flex flex-col min-h-screen" id="main-content-layout">
+        {/* Topbar */}
+        <Topbar
+          currentTab={currentTab}
+          onSwitchRole={handleSwitchUserRole}
+          onLogout={() => setIsTeacherLoggedIn(false)}
+        />
+
+        {/* Dynamic Page Router */}
+        <div className="p-6 md:p-8 flex-1 bg-slate-50/50" id="router-view-box">
+          {renderTeacherContent()}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Vazirmatn", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  direction: rtl;
+  text-align: right;
+  @apply bg-slate-50 text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900;
+}
+
+/* Custom modern scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  @apply bg-white/85 backdrop-blur-md border border-slate-200/50 shadow-sm;
+}
+
+.glass-panel-dark {
+  @apply bg-slate-900/90 backdrop-blur-md border border-slate-800/50 shadow-xl;
+}
+
+/* Accent gloss effect */
+.shiny-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.shiny-btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 45%,
+    rgba(255, 255, 255, 0.1) 48%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.1) 52%,
+    transparent 55%
+  );
+  transform: rotate(45deg);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.shiny-btn:hover::after {
+  transform: translate(50%, 50%) rotate(45deg);
+}
