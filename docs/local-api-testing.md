@@ -28,3 +28,10 @@ Then open:
 - http://localhost:3000/api/security-check
 
 Never paste SUPABASE_SERVICE_ROLE_KEY, STUDENT_ID_PEPPER, or GEMINI_API_KEY into chat or frontend code.
+
+
+## Patch 006 note
+
+Vercel dev may not always expose local environment variables to API functions in the same way as Vite. The API now explicitly loads .env.local from the project root for local development. Production still uses Vercel environment variables.
+
+If /api/security-check shows all values as false, stop and restart npm run dev:vercel after editing .env.local.

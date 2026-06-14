@@ -1,4 +1,5 @@
-﻿import crypto from 'node:crypto';
+import './env.js';
+import crypto from 'node:crypto';
 
 export function normalizeNationalId(input) {
   return String(input || '')
