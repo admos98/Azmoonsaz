@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:env": "node tools/check-env.mjs",
+    "hash:national-id": "node tools/hash-national-id.mjs",
+    "dev:vercel": "npx vercel dev"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

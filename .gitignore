@@ -18,3 +18,5 @@ apply-*.ps1
 # generated build/runtime artifacts
 .vite/
 *.tsbuildinfo
+apply-*.mjs
+azmoonsaz-*.patch

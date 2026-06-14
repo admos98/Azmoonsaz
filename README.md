@@ -61,3 +61,13 @@ Test endpoints:
 - /api/student/exam-entry
 
 Do not use real exams until the full database schema, RLS policies, teacher auth, student sessions, answer stripping, autosave, and submission locking are complete.
+
+## Small fixes patch 004
+
+Added safe local tooling:
+
+- `npm run check:env`
+- `npm run hash:national-id -- 0012345678`
+- `npm run dev:vercel`
+
+Read `docs/local-api-testing.md` and `docs/supabase-first-run.md` before connecting real data.
