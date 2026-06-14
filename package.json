@@ -16,7 +16,10 @@
     "supabase:smoke": "node tools/supabase-smoke-test.mjs",
     "seed:demo-sql": "node tools/generate-demo-seed-sql.mjs",
     "dev:api": "npx vercel dev --listen 3001",
-    "verify:prod": "node tools/verify-production-safety.mjs"
+    "verify:prod": "node tools/verify-production-safety.mjs",
+    "deploy:check": "node tools/deploy-readiness.mjs",
+    "cleanup:generated": "node tools/cleanup-generated.mjs",
+    "predeploy": "npm run lint && npm run build && npm run verify:prod && npm run deploy:check"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
