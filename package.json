@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit",
     "check:env": "node tools/check-env.mjs",
     "hash:national-id": "node tools/hash-national-id.mjs",
-    "dev:vercel": "npx vercel dev"
+    "dev:vercel": "npx vercel dev",
+    "supabase:smoke": "node tools/supabase-smoke-test.mjs",
+    "seed:demo-sql": "node tools/generate-demo-seed-sql.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
