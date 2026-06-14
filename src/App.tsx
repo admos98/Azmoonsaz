@@ -13,6 +13,7 @@ import Questions from './pages/teacher/Questions';
 import Exams from './pages/teacher/Exams';
 import NewExam from './pages/teacher/NewExam';
 import ExamPortal from './pages/student/ExamPortal';
+import SecureExamPortal from './pages/student/SecureExamPortal';
 import { Exam } from './types';
 import { mockExams } from './mockData';
 
@@ -168,6 +169,20 @@ export default function App() {
         return <Dashboard onNavigate={setCurrentTab} />;
     }
   };
+
+  const secureExamRouteMatch = currentPath.match(/^\/secure-exam\/([^/]+)$/);
+
+  if (secureExamRouteMatch) {
+    return (
+      <SecureExamPortal
+        presetExamCode={secureExamRouteMatch[1]}
+        onBackToTeacher={() => {
+          navigateToLocalPath('/');
+          setUserRole('teacher');
+        }}
+      />
+    );
+  }
 
   // ROUTE INTERCEPTION:
   // Check if current URL matches public student exam subroutes:

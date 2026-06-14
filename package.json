@@ -14,7 +14,8 @@
     "hash:national-id": "node tools/hash-national-id.mjs",
     "dev:vercel": "npx vercel dev",
     "supabase:smoke": "node tools/supabase-smoke-test.mjs",
-    "seed:demo-sql": "node tools/generate-demo-seed-sql.mjs"
+    "seed:demo-sql": "node tools/generate-demo-seed-sql.mjs",
+    "dev:api": "npx vercel dev --listen 3001"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
