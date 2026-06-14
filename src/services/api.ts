@@ -12,7 +12,7 @@ import { mockSubmissions as initialSubmissions } from '../mock/submissions';
 import { maskNationalId } from './persianHelpers';
 import { publicEnv } from '../config/env';
 import { getSupabasePublicClient } from '../lib/supabasePublic';
-import { teacherGet, teacherPost, isSecureTeacherModeAvailable } from './teacherApi';
+import { teacherGet, teacherPost, isSecureTeacherModeAvailable, getTeacherAccessToken } from './teacherApi';
 
 // Helper to delay simulation (make mock actions asynchronous and premium)
 const delay = (ms = 400) => new Promise(resolve => setTimeout(resolve, ms));
@@ -97,7 +97,7 @@ export const authService = {
 
   async getCurrentTeacher(): Promise<Teacher | null> {
     if (publicEnv.isSupabaseConfigured) {
-      const token = await import('./teacherApi').then(m => m.getTeacherAccessToken());
+      const token = await getTeacherAccessToken();
       if (!token) return null;
       const me = await teacherGet<{ teacher: { id: string; email: string; name: string; schoolName: string } }>('/api/teacher/me');
       return {

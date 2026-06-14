@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Bell, Sun, ArrowLeftRight } from 'lucide-react';
 import { mockTeacher } from '../mockData';
+import BackendModeBadge from './BackendModeBadge';
 import { Teacher } from '../types';
 import { authService } from '../services/api';
 
@@ -76,6 +77,7 @@ export default function Topbar({ currentTab, onSwitchRole, onLogout, activeExamN
 
       {/* Notifications, Settings & Actions */}
       <div className="flex items-center space-x-4 space-x-reverse" id="topbar-actions-right">
+        <div className="max-lg:hidden"><BackendModeBadge /></div>
         {/* Switch Role Trigger Quick */}
         <button
           id="quick-role-switch"

@@ -31,16 +31,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       setLoading(true);
       try {
         const data = await examService.getExams();
-        const enriched = data.map(e => {
-          // Make sure we have the questions fully populated
-          if (!e.questions || e.questions.length === 0) {
-            e.questions = mockQuestions.filter(q => {
-              return e.sections.some(sec => sec.questionIds.includes(q.id));
-            });
-          }
-          return e;
-        });
-        setExams(enriched);
+        setExams(data);
       } catch (err) {
         console.error('Error fetching exams:', err);
       } finally {

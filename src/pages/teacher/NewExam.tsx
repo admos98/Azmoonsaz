@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, ArrowLeft, CheckCircle2, Award, Clock, FileText, Check, CheckSquare, Plus, Layers, ShieldAlert } from 'lucide-react';
-import { mockClassGroups, mockQuestions } from '../../mockData';
+import { mockClassGroups } from '../../mockData';
 import { Exam, ExamSection, Question } from '../../types';
-import { examService } from '../../services/api';
+import { examService, questionService } from '../../services/api';
 
 interface NewExamProps {
   onBack: () => void;
@@ -26,7 +26,9 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   const [selectedClasses, setSelectedClasses] = useState<string[]>(['c-1']);
 
   // Step 2 states (Question IDs from bank)
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>(['q-1', 'q-2']);
+  const [questionBank, setQuestionBank] = useState<Question[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
 
   // Step 3 states
   const [duration, setDuration] = useState(60);
@@ -36,10 +38,36 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   const [allowBacktrack, setAllowBacktrack] = useState(true);
   const [showImmediateResults, setShowImmediateResults] = useState(false);
   const [browserLockdown, setBrowserLockdown] = useState(true);
+  useEffect(() => {
+    let active = true;
+    setQuestionsLoading(true);
+    questionService.getQuestions()
+      .then((questions) => {
+        if (!active) return;
+        setQuestionBank(questions);
+        setSelectedQuestionIds((current) => current.filter((id) => questions.some((q) => q.id === id)));
+      })
+      .catch((err) => {
+        console.error('Failed to load question bank for exam builder:', err);
+        if (active) setQuestionBank([]);
+      })
+      .finally(() => { if (active) setQuestionsLoading(false); });
+    return () => { active = false; };
+  }, []);
 
-  const totalPoints = mockQuestions
-    .filter(q => selectedQuestionIds.includes(q.id))
-    .reduce((sum, q) => sum + q.points, 0);
+  const filteredQuestionBank = useMemo(() => {
+    return questionBank.filter((q) => {
+      const gradeOk = !grade || q.grade === grade || String(q.grade).includes(String(grade));
+      const subjectOk = !subject || q.category === subject || String(q.category || '').includes(subject) || subject.includes(String(q.category || ''));
+      return gradeOk || subjectOk;
+    });
+  }, [questionBank, grade, subject]);
+
+  const selectedQuestions = useMemo(() => {
+    return questionBank.filter(q => selectedQuestionIds.includes(q.id));
+  }, [questionBank, selectedQuestionIds]);
+
+  const totalPoints = selectedQuestions.reduce((sum, q) => sum + q.points, 0);
 
   const handleClassToggle = (classId: string) => {
     if (selectedClasses.includes(classId)) {
@@ -100,7 +128,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
             questionIds: selectedQuestionIds,
           },
         ],
-        questions: mockQuestions.filter(q => selectedQuestionIds.includes(q.id)),
+        questions: selectedQuestions,
       };
 
       const createdExam = await examService.createExam(payload);
@@ -259,7 +287,17 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
           {/* Quick select database */}
           <div className="space-y-3">
-            {mockQuestions.map((q) => {
+            {questionsLoading && (
+              <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50 text-center text-xs font-bold text-slate-500">در حال دریافت سوالات از بانک سوالات...</div>
+            )}
+
+            {!questionsLoading && filteredQuestionBank.length === 0 && (
+              <div className="p-6 rounded-2xl border border-amber-200 bg-amber-50 text-center text-xs font-bold text-amber-700">
+                سوالی برای پایه یا درس انتخاب‌شده پیدا نشد. ابتدا در بانک سوالات، سوال واقعی ثبت کنید.
+              </div>
+            )}
+
+            {!questionsLoading && filteredQuestionBank.map((q) => {
               const checked = selectedQuestionIds.includes(q.id);
               return (
                 <div
@@ -391,7 +429,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               <div>
                 <span className="text-slate-400 block mb-1">کلاس‌ها:</span>
                 <p className="font-bold text-slate-800">
-                  {selectedClasses.map(id => mockClassGroups.find(c => c.id === id)?.name).join(' و ')}
+                  {selectedClasses.map(id => mockClassGroups.find(c => c.id === id)?.name || id).join(' و ')}
                 </p>
               </div>
             </div>
