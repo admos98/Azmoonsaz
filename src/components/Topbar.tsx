@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Bell, Sun, ArrowLeftRight } from 'lucide-react';
 import { mockTeacher } from '../mockData';
+import { Teacher } from '../types';
+import { authService } from '../services/api';
 
 interface TopbarProps {
   currentTab: string;
@@ -15,6 +17,18 @@ interface TopbarProps {
 }
 
 export default function Topbar({ currentTab, onSwitchRole, onLogout, activeExamNotifications = 2 }: TopbarProps) {
+  const [teacher, setTeacher] = useState<Teacher>(mockTeacher);
+
+  useEffect(() => {
+    let active = true;
+    authService.getCurrentTeacher()
+      .then((current) => {
+        if (active && current) setTeacher({ ...mockTeacher, ...current });
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -127,13 +141,13 @@ export default function Topbar({ currentTab, onSwitchRole, onLogout, activeExamN
         {/* Teacher Micro Avatar info */}
         <div className="flex items-center gap-3 cursor-pointer pl-2">
           <div className="text-right max-md:hidden">
-            <p className="text-sm font-bold text-slate-800 leading-tight">{mockTeacher.name}</p>
-            <p className="text-[10px] text-slate-500 text-right mt-0.5">{mockTeacher.schoolName}</p>
+            <p className="text-sm font-bold text-slate-800 leading-tight">{teacher.name}</p>
+            <p className="text-[10px] text-slate-500 text-right mt-0.5">{teacher.schoolName}</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-indigo-100 border-2 border-indigo-200 flex items-center justify-center text-indigo-700 font-bold overflow-hidden shadow-xs">
             <img
-              src={mockTeacher.avatarUrl}
-              alt={mockTeacher.name}
+              src={teacher.avatarUrl}
+              alt={teacher.name}
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover"
             />

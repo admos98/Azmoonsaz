@@ -4,8 +4,11 @@
  */
 
 import { LayoutDashboard, Users, HelpCircle, FileText, CheckSquare, Settings, LogOut, GraduationCap, ArrowLeftRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { mockTeacher } from '../mockData';
+import { Teacher } from '../types';
+import { authService } from '../services/api';
 
 interface SidebarProps {
   currentTab: string;
@@ -15,6 +18,18 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRole }: SidebarProps) {
+  const [teacher, setTeacher] = useState<Teacher>(mockTeacher);
+
+  useEffect(() => {
+    let active = true;
+    authService.getCurrentTeacher()
+      .then((current) => {
+        if (active && current) setTeacher({ ...mockTeacher, ...current });
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
   const menuItems = [
     { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard },
     { id: 'students', label: 'دانش‌آموزان', icon: Users },
@@ -41,14 +56,14 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
         {/* Teacher Mini Profile */}
         <div className="p-4 mx-3 my-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center space-x-3 space-x-reverse shadow-2xs" id="sidebar-profile">
           <img
-            src={mockTeacher.avatarUrl}
-            alt={mockTeacher.name}
+            src={teacher.avatarUrl}
+            alt={teacher.name}
             referrerPolicy="no-referrer"
             className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
           />
           <div className="flex-1 overflow-hidden">
-            <h4 className="text-xs font-bold text-slate-800 truncate">{mockTeacher.name}</h4>
-            <p className="text-[10px] text-slate-500 truncate mt-0.5">{mockTeacher.schoolName}</p>
+            <h4 className="text-xs font-bold text-slate-800 truncate">{teacher.name}</h4>
+            <p className="text-[10px] text-slate-500 truncate mt-0.5">{teacher.schoolName}</p>
           </div>
         </div>
 

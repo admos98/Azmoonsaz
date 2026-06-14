@@ -230,70 +230,56 @@ export const studentService = {
 };
 
 export const questionService = {
-  /**
-   * Fetches all questions from the question bank.
-   */
   async getQuestions(): Promise<Question[]> {
+    if (isSecureTeacherModeAvailable()) {
+      try {
+        const response = await teacherGet<{ questions: Question[] }>('/api/teacher/questions');
+        return response.questions;
+      } catch (err) {
+        console.warn('Secure question fetch failed; falling back to mock data.', err);
+      }
+    }
     await delay(300);
     return getItem<Question[]>(KEYS.QUESTIONS, []);
   },
 
-  /**
-   * Creates a new question in the system.
-   */
   async createQuestion(question: Omit<Question, 'id' | 'createdAt'>): Promise<Question> {
+    if (isSecureTeacherModeAvailable()) {
+      const response = await teacherPost<{ question: Question }>('/api/teacher/questions', { action: 'create', question });
+      return response.question;
+    }
     await delay(400);
     const current = getItem<Question[]>(KEYS.QUESTIONS, []);
-    
-    const created: Question = {
-      ...question,
-      id: `q-${Date.now()}`,
-      createdAt: new Date().toISOString()
-    };
-
+    const created: Question = { ...question, id: `q-${Date.now()}`, createdAt: new Date().toISOString() } as Question;
     setItem(KEYS.QUESTIONS, [created, ...current]);
     return created;
   },
 
-  /**
-   * Updates a question.
-   */
   async updateQuestion(id: string, updates: Partial<Question>): Promise<Question> {
+    if (isSecureTeacherModeAvailable()) {
+      const response = await teacherPost<{ question: Question }>('/api/teacher/questions', { action: 'update', question: { id, ...updates } });
+      return response.question;
+    }
     await delay(400);
     const current = getItem<Question[]>(KEYS.QUESTIONS, []);
-    
     let updatedObj: Question | null = null;
-    const updated = current.map(item => {
-      if (item.id === id) {
-        updatedObj = { ...item, ...updates } as Question;
-        return updatedObj;
-      }
-      return item;
-    });
-
-    if (!updatedObj) {
-      throw new Error('Question not found for update');
-    }
-
+    const updated = current.map(item => item.id === id ? (updatedObj = { ...item, ...updates } as Question) : item);
+    if (!updatedObj) throw new Error('Question not found for update');
     setItem(KEYS.QUESTIONS, updated);
     return updatedObj;
   },
 
-  /**
-   * Deletes a question from the question bank.
-   */
   async deleteQuestion(id: string): Promise<boolean> {
+    if (isSecureTeacherModeAvailable()) {
+      await teacherPost('/api/teacher/questions', { action: 'delete', id });
+      return true;
+    }
     await delay(300);
     const current = getItem<Question[]>(KEYS.QUESTIONS, []);
-    const filtered = current.filter(item => item.id !== id);
-    setItem(KEYS.QUESTIONS, filtered);
+    setItem(KEYS.QUESTIONS, current.filter(item => item.id !== id));
     return true;
   },
 
-  /**
-   * Simulates image uploaded to Cloud Storage with descriptive questions.
-   * Integration point: Replace with Supabase storage upload, e.g. `supabase.storage.from('questions').upload(...)`
-   */
   async uploadQuestionImage(questionId: string, base64OrFile: any): Promise<string> {
     await delay(800);
     return 'https://images.unsplash.com/photo-1543128639-4cb7e6eeef1b?q=80&w=400&auto=format&fit=crop';
@@ -301,87 +287,65 @@ export const questionService = {
 };
 
 export const examService = {
-  /**
-   * Fetches all registered exams.
-   */
   async getExams(): Promise<Exam[]> {
+    if (isSecureTeacherModeAvailable()) {
+      try {
+        const response = await teacherGet<{ exams: Exam[] }>('/api/teacher/exams');
+        return response.exams;
+      } catch (err) {
+        console.warn('Secure exam fetch failed; falling back to mock data.', err);
+      }
+    }
     await delay(300);
     return getItem<Exam[]>(KEYS.EXAMS, []);
   },
 
-  /**
-   * Creates a new exam sheet.
-   */
   async createExam(exam: Omit<Exam, 'id' | 'createdAt' | 'examCode'>): Promise<Exam> {
+    if (isSecureTeacherModeAvailable()) {
+      const response = await teacherPost<{ exam: Exam }>('/api/teacher/exams', { action: 'create', exam });
+      return response.exam;
+    }
     await delay(500);
     const current = getItem<Exam[]>(KEYS.EXAMS, []);
-    
-    // Generate a random 5 digit short alpha-numeric code
     const alphNum = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
-    for (let i = 0; i < 5; i++) {
-      code += alphNum.charAt(Math.floor(Math.random() * alphNum.length));
-    }
-
-    const created: Exam = {
-      ...exam,
-      id: `e-${Date.now()}`,
-      examCode: code,
-      createdAt: new Date().toISOString()
-    };
-
+    for (let i = 0; i < 5; i++) code += alphNum.charAt(Math.floor(Math.random() * alphNum.length));
+    const created: Exam = { ...exam, id: `e-${Date.now()}`, examCode: code, createdAt: new Date().toISOString() } as Exam;
     setItem(KEYS.EXAMS, [created, ...current]);
     return created;
   },
 
-  /**
-   * Updates an existing exam properties.
-   */
   async updateExam(id: string, updates: Partial<Exam>): Promise<Exam> {
+    if (isSecureTeacherModeAvailable()) {
+      const response = await teacherPost<{ exam: Exam }>('/api/teacher/exams', { action: 'update', id, exam: { id, ...updates } });
+      return response.exam;
+    }
     await delay(400);
     const current = getItem<Exam[]>(KEYS.EXAMS, []);
-    
     let updatedObj: Exam | null = null;
-    const updated = current.map(item => {
-      if (item.id === id) {
-        updatedObj = { ...item, ...updates } as Exam;
-        return updatedObj;
-      }
-      return item;
-    });
-
-    if (!updatedObj) {
-      throw new Error('Exam not found for update');
-    }
-
+    const updated = current.map(item => item.id === id ? (updatedObj = { ...item, ...updates } as Exam) : item);
+    if (!updatedObj) throw new Error('Exam not found for update');
     setItem(KEYS.EXAMS, updated);
     return updatedObj;
   },
 
-  /**
-   * Deletes an exam.
-   */
   async deleteExam(id: string): Promise<boolean> {
+    if (isSecureTeacherModeAvailable()) {
+      await teacherPost('/api/teacher/exams', { action: 'delete', id });
+      return true;
+    }
     await delay(300);
     const current = getItem<Exam[]>(KEYS.EXAMS, []);
-    const filtered = current.filter(item => item.id !== id);
-    setItem(KEYS.EXAMS, filtered);
+    setItem(KEYS.EXAMS, current.filter(item => item.id !== id));
     return true;
   },
 
-  /**
-   * Simulates generator drafting of AI or template driven exams based on grade and subject.
-   */
   async generateExamDraft(subject: string, grade: string, settings: any): Promise<Exam> {
-    await delay(1200); // Simulate processing rules and questions filtering
-    
-    // Retrieve registered questions matching class parameters
-    const allQuestions = getItem<Question[]>(KEYS.QUESTIONS, []);
+    const allQuestions = await questionService.getQuestions();
     const matchQuestions = allQuestions.filter(q => q.grade === grade).slice(0, 4);
-    
     const draft: Omit<Exam, 'id' | 'createdAt' | 'examCode'> = {
       title: `پیش‌نویس آزمون خودکار ${subject} پایه ${grade}`,
-      description: 'آزمون تولید شده به صورت الگوریتمی بر مبنای بودجه‌بندی سالانه دروس مپ شده صادر گردید.',
+      description: 'آزمون تولید شده بر اساس سوالات موجود در بانک سوالات.',
       grade,
       subject,
       duration: settings.durationMinutes || 45,
@@ -397,39 +361,22 @@ export const examService = {
         showImmediateResults: false,
         maxAttempts: 1
       },
-      sections: [
-        {
-          id: 'draft-sec-1',
-          title: 'سوالات طراحی شده بر خط',
-          questionIds: matchQuestions.map(q => q.id)
-        }
-      ],
+      sections: [{ id: 'draft-sec-1', title: 'سوالات طراحی شده', questionIds: matchQuestions.map(q => q.id) }],
       questions: matchQuestions
     };
-
     return this.createExam(draft);
   },
 
-  /**
-   * Publishes a draft exam.
-   */
   async publishExam(id: string): Promise<Exam> {
     return this.updateExam(id, { status: 'active' });
   },
 
-  /**
-   * Fetches an exam by its unique entrance code (for student portals).
-   */
   async getExamByCode(code: string): Promise<Exam | null> {
     await delay(500);
     const exams = getItem<Exam[]>(KEYS.EXAMS, []);
-    const match = exams.find(e => e.examCode.toUpperCase() === code.toUpperCase().trim());
-    return match || null;
+    return exams.find(e => e.examCode.toUpperCase() === code.toUpperCase().trim()) || null;
   },
 
-  /**
-   * Resolves exams for students.
-   */
   async getExamForStudent(examId: string): Promise<Exam> {
     await delay(300);
     const exams = getItem<Exam[]>(KEYS.EXAMS, []);
@@ -438,159 +385,43 @@ export const examService = {
     return match;
   },
 
-  /**
-   * Simulates entrance of a student in a target exam, creating a submission.
-   */
   async startStudentExam(examCode: string, studentName: string, nationalId: string): Promise<Submission> {
     await delay(600);
     const exams = getItem<Exam[]>(KEYS.EXAMS, []);
     const exam = exams.find(e => e.examCode.toUpperCase() === examCode.toUpperCase().trim());
-    if (!exam) {
-      throw new Error('آزمونی با این کد رهگیری پیدا نشد.');
-    }
-
-    // Check if student submission already exists
+    if (!exam) throw new Error('آزمونی با این کد رهگیری پیدا نشد.');
     const submissions = getItem<Submission[]>(KEYS.SUBMISSIONS, []);
     const existing = submissions.find(s => s.examId === exam.id && s.nationalId === nationalId);
-    
-    if (existing) {
-      if (existing.status !== 'ongoing') {
-        throw new Error('شما قبلاً در این آزمون شرکت کرده و پاسخ‌برگ خود را نهایی ساخته‌اید.');
-      }
-      return existing;
-    }
-
-    // Determine total maximum score
+    if (existing) return existing;
     const maxScore = exam.questions.reduce((sum, q) => sum + q.points, 0);
-
-    const newSubmission: Submission = {
-      id: `sub-${Date.now()}`,
-      examId: exam.id,
-      examCode: exam.examCode,
-      studentId: `s-stu-${Date.now()}`,
-      studentName,
-      nationalId,
-      startedAt: new Date().toISOString(),
-      status: 'ongoing',
-      score: 0,
-      maxScore,
-      answers: []
-    };
-
+    const newSubmission: Submission = { id: `sub-${Date.now()}`, examId: exam.id, examCode: exam.examCode, studentId: `s-stu-${Date.now()}`, studentName, nationalId, startedAt: new Date().toISOString(), status: 'ongoing', score: 0, maxScore, answers: [] };
     setItem(KEYS.SUBMISSIONS, [newSubmission, ...submissions]);
     return newSubmission;
   },
 
-  /**
-   * Saves student's partial answer.
-   */
   async saveStudentAnswer(submissionId: string, questionId: string, answer: any): Promise<Submission> {
     const submissions = getItem<Submission[]>(KEYS.SUBMISSIONS, []);
-    
     let updatedSubmission: Submission | null = null;
     const updated = submissions.map(sub => {
       if (sub.id === submissionId) {
-        // Exclude and append new answer
         const answersFiltered = sub.answers.filter(a => a.questionId !== questionId);
-        const newAnswer: StudentAnswer = { questionId, answer };
-        
-        updatedSubmission = {
-          ...sub,
-          answers: [...answersFiltered, newAnswer]
-        };
+        updatedSubmission = { ...sub, answers: [...answersFiltered, { questionId, answer }] };
         return updatedSubmission;
       }
       return sub;
     });
-
-    if (!updatedSubmission) {
-      throw new Error('Submission state index out of bounds');
-    }
-
+    if (!updatedSubmission) throw new Error('Submission state index out of bounds');
     setItem(KEYS.SUBMISSIONS, updated);
     return updatedSubmission;
   },
 
-  /**
-   * Submits the student answer sheet for grading. Includes immediate auto-grading of objective parts!
-   */
   async submitExam(submissionId: string): Promise<Submission> {
     await delay(800);
     const submissions = getItem<Submission[]>(KEYS.SUBMISSIONS, []);
-    let submission = submissions.find(s => s.id === submissionId);
+    const submission = submissions.find(s => s.id === submissionId);
     if (!submission) throw new Error('Submission not found');
-
-    const exams = getItem<Exam[]>(KEYS.EXAMS, []);
-    const exam = exams.find(e => e.id === submission.examId);
-    if (!exam) throw new Error('Exam specifications not found');
-
-    // Run Auto Grading logic instantly
-    const gradedAnswers = submission.answers.map(ans => {
-      const q = exam.questions.find(item => item.id === ans.questionId);
-      if (!q) return ans;
-
-      const isDescriptive = q.type === 'long_answer' || q.type === 'short_answer';
-      if (isDescriptive) {
-        // Keep descriptive score in pending teacher states
-        return ans;
-      }
-
-      // Exact matching rules for objective elements
-      let scoreGained = 0;
-      let isCorrect = false;
-
-      if (q.type === 'single_choice' || q.type === 'true_false' || q.type === 'cloze' || q.type === 'image_based') {
-        isCorrect = String(ans.answer) === String(q.correctAnswer);
-        scoreGained = isCorrect ? q.points : 0;
-      } else if (q.type === 'multiple_choice') {
-        const stdAnsArr = Array.isArray(ans.answer) ? ans.answer.map(String).sort() : [];
-        const correctAnswersArr = Array.isArray(q.correctAnswer) ? q.correctAnswer.map(String).sort() : [];
-        
-        isCorrect = stdAnsArr.length === correctAnswersArr.length && 
-                    stdAnsArr.every((v, i) => v === correctAnswersArr[i]);
-        
-        // Handle partial scores if requested, but default to binary correct or half correct
-        scoreGained = isCorrect ? q.points : 0;
-      } else if (q.type === 'fill_blank') {
-        const stdText = String(ans.answer).trim();
-        const correctBlanks = q.correctFillBlanks || [];
-        isCorrect = correctBlanks.some(item => item.trim() === stdText);
-        scoreGained = isCorrect ? q.points : 0;
-      } else if (q.type === 'ordering') {
-        const jsonStd = JSON.stringify(ans.answer);
-        const jsonCorrect = JSON.stringify(q.correctAnswer || q.orderingItems);
-        isCorrect = jsonStd === jsonCorrect;
-        scoreGained = isCorrect ? q.points : 0;
-      } else if (q.type === 'matching') {
-        // ans.answer: Record<string, string> connecting left to right
-        const stdMap = ans.answer || {};
-        const isMatchedCorrectly = (q.matchingPairs || []).every(pair => stdMap[pair.left] === pair.right);
-        isCorrect = isMatchedCorrectly;
-        scoreGained = isCorrect ? q.points : 0;
-      }
-
-      return {
-        ...ans,
-        isCorrect,
-        scoreGained
-      };
-    });
-
-    // Determine current cumulative auto score
-    const totalAutoScore = gradedAnswers.reduce((sum, item) => sum + (item.scoreGained || 0), 0);
-
-    const hasDescriptive = exam.questions.some(q => q.type === 'long_answer' || q.type === 'short_answer');
-
-    const updatedSubValue: Submission = {
-      ...submission,
-      status: hasDescriptive ? 'submitted' : 'graded', // auto completed if no descriptive items!
-      answers: gradedAnswers,
-      score: totalAutoScore,
-      submittedAt: new Date().toISOString()
-    };
-
-    const updatedCol = submissions.map(item => item.id === submissionId ? updatedSubValue : item);
-    setItem(KEYS.SUBMISSIONS, updatedCol);
+    const updatedSubValue: Submission = { ...submission, status: 'submitted', submittedAt: new Date().toISOString() };
+    setItem(KEYS.SUBMISSIONS, submissions.map(item => item.id === submissionId ? updatedSubValue : item));
     return updatedSubValue;
   }
 };
