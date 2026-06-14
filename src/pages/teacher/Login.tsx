@@ -15,7 +15,7 @@ interface LoginProps {
 
 export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps) {
   const [email, setEmail] = useState(mockTeacher.email);
-  const [password, setPassword] = useState('demo1234');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -153,7 +153,7 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
 
         {/* Quick shortcut demo guide */}
         <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-800 text-[10px] text-slate-400 leading-normal" id="login-protips">
-          💡 <strong>راهنما:</strong> این اولین نسخه آزمایشی است. شما می‌توانید مستقیماً دکمه ورود روی فرم را بزنید تا وارد کلیه اطلاعات شبیه‌ساز شوید.
+          💡 <strong>راهنما:</strong> اگر Supabase تنظیم شده باشد، ورود معلم با حساب واقعی انجام می‌شود. در حالت بدون بک‌اند، داده‌های آزمایشی نمایش داده می‌شوند.
         </div>
 
         {/* Student panel swap visual trigger */}

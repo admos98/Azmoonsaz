@@ -10,6 +10,9 @@ import { mockQuestions as initialQuestions } from '../mock/questions';
 import { mockExams as initialExams } from '../mock/exams';
 import { mockSubmissions as initialSubmissions } from '../mock/submissions';
 import { maskNationalId } from './persianHelpers';
+import { publicEnv } from '../config/env';
+import { getSupabasePublicClient } from '../lib/supabasePublic';
+import { teacherGet, teacherPost, isSecureTeacherModeAvailable } from './teacherApi';
 
 // Helper to delay simulation (make mock actions asynchronous and premium)
 const delay = (ms = 400) => new Promise(resolve => setTimeout(resolve, ms));
@@ -61,31 +64,49 @@ function setItem<T>(key: string, val: T): void {
 }
 
 export const authService = {
-  /**
-   * Logs in a teacher based on email and password.
-   * Integration point: Replace with Supabase `supabase.auth.signInWithPassword` or Firebase `signInWithEmailAndPassword`.
-   */
   async loginTeacher(email: string, password = ''): Promise<Teacher> {
+    if (publicEnv.isSupabaseConfigured) {
+      const supabase = getSupabasePublicClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error('ایمیل یا رمز عبور معتبر نیست.');
+      const me = await teacherGet<{ teacher: { id: string; email: string; name: string; schoolName: string } }>('/api/teacher/me');
+      const teacher: Teacher = {
+        id: me.teacher.id,
+        email: me.teacher.email,
+        name: me.teacher.name,
+        schoolName: me.teacher.schoolName || '',
+      };
+      setItem(KEYS.TEACHER, teacher);
+      return teacher;
+    }
+
     await delay(600);
     const target = mockTeachers.find(t => t.email === email) || mockTeacher;
     setItem(KEYS.TEACHER, target);
     return target;
   },
 
-  /**
-   * Logs out the current session.
-   * Integration point: Replace with your Auth SDK's signOut method.
-   */
   async logoutTeacher(): Promise<void> {
-    await delay(300);
+    if (publicEnv.isSupabaseConfigured) {
+      const supabase = getSupabasePublicClient();
+      await supabase.auth.signOut();
+    }
+    await delay(100);
     localStorage.removeItem(KEYS.TEACHER);
   },
 
-  /**
-   * Gets currently logged in teacher details from session/cookie.
-   * Integration point: Look up live session credentials.
-   */
   async getCurrentTeacher(): Promise<Teacher | null> {
+    if (publicEnv.isSupabaseConfigured) {
+      const token = await import('./teacherApi').then(m => m.getTeacherAccessToken());
+      if (!token) return null;
+      const me = await teacherGet<{ teacher: { id: string; email: string; name: string; schoolName: string } }>('/api/teacher/me');
+      return {
+        id: me.teacher.id,
+        email: me.teacher.email,
+        name: me.teacher.name,
+        schoolName: me.teacher.schoolName || '',
+      };
+    }
     await delay(200);
     return getItem<Teacher | null>(KEYS.TEACHER, null);
   }
@@ -97,6 +118,14 @@ export const studentService = {
    * Integration point: DB select query, e.g. `const { data } = await supabase.from('students').select('*')`
    */
   async getStudents(): Promise<Student[]> {
+    if (isSecureTeacherModeAvailable()) {
+      try {
+        const response = await teacherGet<{ students: Student[] }>('/api/teacher/students');
+        return response.students;
+      } catch (err) {
+        console.warn('Secure student fetch failed; falling back to mock data.', err);
+      }
+    }
     await delay(300);
     return getItem<Student[]>(KEYS.STUDENTS, []);
   },
@@ -105,15 +134,25 @@ export const studentService = {
    * Bulk imports multiple student rows.
    */
   async importStudents(studentsToImport: Omit<Student, 'id' | 'maskedNationalId'>[]): Promise<Student[]> {
-    await delay(1000); // Simulate network overhead of a batch write
+    if (isSecureTeacherModeAvailable()) {
+      const created: Student[] = [];
+      for (const student of studentsToImport) {
+        const response = await teacherPost<{ student: Student }>('/api/teacher/students', {
+          action: 'create',
+          student,
+        });
+        created.push(response.student);
+      }
+      return created;
+    }
+
+    await delay(1000);
     const current = getItem<Student[]>(KEYS.STUDENTS, []);
-    
     const imported: Student[] = studentsToImport.map((s, idx) => ({
       ...s,
       id: `std-imported-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
       maskedNationalId: maskNationalId(s.nationalId)
     }));
-
     const combined = [...current, ...imported];
     setItem(KEYS.STUDENTS, combined);
     return imported;
@@ -123,15 +162,21 @@ export const studentService = {
    * Inserts single student profile.
    */
   async createStudent(student: Omit<Student, 'id' | 'maskedNationalId'>): Promise<Student> {
+    if (isSecureTeacherModeAvailable()) {
+      const response = await teacherPost<{ student: Student }>('/api/teacher/students', {
+        action: 'create',
+        student,
+      });
+      return response.student;
+    }
+
     await delay(400);
     const current = getItem<Student[]>(KEYS.STUDENTS, []);
-    
     const created: Student = {
       ...student,
       id: `std-${Date.now()}`,
       maskedNationalId: maskNationalId(student.nationalId)
     };
-
     setItem(KEYS.STUDENTS, [created, ...current]);
     return created;
   },
@@ -140,9 +185,16 @@ export const studentService = {
    * Updates an existing student's data.
    */
   async updateStudent(id: string, updates: Partial<Student>): Promise<Student> {
+    if (isSecureTeacherModeAvailable()) {
+      const response = await teacherPost<{ student: Student }>('/api/teacher/students', {
+        action: 'update',
+        student: { id, ...updates },
+      });
+      return response.student;
+    }
+
     await delay(400);
     const current = getItem<Student[]>(KEYS.STUDENTS, []);
-    
     let updatedObj: Student | null = null;
     const updated = current.map(item => {
       if (item.id === id) {
@@ -155,11 +207,7 @@ export const studentService = {
       }
       return item;
     });
-
-    if (!updatedObj) {
-      throw new Error('Student not found for update');
-    }
-
+    if (!updatedObj) throw new Error('Student not found for update');
     setItem(KEYS.STUDENTS, updated);
     return updatedObj;
   },
@@ -168,6 +216,11 @@ export const studentService = {
    * Deletes a student profile.
    */
   async deleteStudent(id: string): Promise<boolean> {
+    if (isSecureTeacherModeAvailable()) {
+      await teacherPost('/api/teacher/students', { action: 'delete', id });
+      return true;
+    }
+
     await delay(300);
     const current = getItem<Student[]>(KEYS.STUDENTS, []);
     const filtered = current.filter(item => item.id !== id);
