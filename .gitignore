@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 build/
 dist/
 coverage/
@@ -6,3 +6,15 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# local/generated files
+.vercel/
+.env.local
+.env.*.local
+project-dump.txt
+project-tree.txt
+collect-project.ps1
+apply-*.ps1
+# generated build/runtime artifacts
+.vite/
+*.tsbuildinfo
