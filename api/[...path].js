@@ -8,9 +8,21 @@ import { safeExamForStudent, safeQuestionForStudent, getExamAvailability, stripT
 import { requireTeacher } from './_lib/teacherAuth.js';
 
 function routePath(req) {
-  const value = req.query.path;
-  if (Array.isArray(value)) return value.join('/');
-  return String(value || '').replace(/^\/+/, '');
+  // Vercel usually provides req.query.path for api/[...path].js,
+  // but depending on dev/prod routing it can be missing. Fall back to req.url.
+  const value = req.query?.path;
+  if (Array.isArray(value) && value.length > 0) return value.join('/').replace(/^\/+|\/+$/g, '');
+  if (typeof value === 'string' && value.length > 0) return value.replace(/^\/+|\/+$/g, '');
+
+  try {
+    const url = new URL(req.url || '/', 'http://localhost');
+    let pathname = decodeURIComponent(url.pathname || '');
+    pathname = pathname.replace(/^\/api\/?/, '');
+    pathname = pathname.replace(/^\/+|\/+$/g, '');
+    return pathname;
+  } catch {
+    return '';
+  }
 }
 
 function safeError(error, fallback) {
@@ -724,6 +736,14 @@ const routes = {
 
 export default async function handler(req, res) {
   const path = routePath(req);
+  if (!path) {
+    return json(res, 200, {
+      ok: true,
+      service: 'azmoonsaz-api',
+      message: 'API root. Try /api/health or /api/security-check.',
+      routes: Object.keys(routes).sort(),
+    });
+  }
   const route = routes[path];
   if (!route) return json(res, 404, { error: 'api_route_not_found', path });
   return route(req, res);
