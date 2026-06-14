@@ -20,3 +20,6 @@ apply-*.ps1
 *.tsbuildinfo
 apply-*.mjs
 azmoonsaz-*.patch
+
+.vercel
+supabase/seed-demo.generated.sql
