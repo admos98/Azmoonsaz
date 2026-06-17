@@ -40,6 +40,7 @@ import { mockQuestions as initialQuestions } from '../../mockData';
 import { Question, QuestionType, QuestionOption, QuestionPart, RubricCriterion } from '../../types';
 import QuestionRenderer from '../../components/QuestionRenderer';
 import { questionService } from '../../services/api';
+import { uploadQuestionImage } from '../../services/storageService';
 
 // Local enhanced interface to handle optional tags, chapters, difficulty, and completeness statuses
 interface RichQuestion extends Question {
@@ -207,7 +208,7 @@ export default function Questions() {
   };
 
   // Image Upload handler (Simulation)
-  const handleMockImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'main' | { optIndex: number } | { partIndex: number }) => {
+  const handleMockImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'main' | { optIndex: number } | { partIndex: number }) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();

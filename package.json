@@ -19,7 +19,8 @@
     "verify:prod": "node tools/verify-production-safety.mjs",
     "deploy:check": "node tools/deploy-readiness.mjs",
     "cleanup:generated": "node tools/cleanup-generated.mjs",
-    "predeploy": "npm run lint && npm run build && npm run verify:prod && npm run deploy:check"
+    "predeploy": "npm run lint && npm run build && npm run verify:prod && npm run deploy:check",
+    "test:e2e": "npx playwright test"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -39,6 +40,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3",
-    "@types/express": "^4.17.21"
+    "@types/express": "^4.17.21",
+    "@playwright/test": "^1.50.1"
   }
 }
