@@ -469,12 +469,43 @@ async function handleTeacherMe(req, res) {
 }
 
 async function handleTeacherClasses(req, res) {
-  if (!requireMethod(req, res, ['GET'])) return;
+  if (!requireMethod(req, res, ['GET', 'POST'])) return;
   const teacher = await requireTeacher(req, res);
   if (!teacher) return;
-  const { data, error } = await teacher.admin.from('class_groups').select('id, name, grade').eq('teacher_id', teacher.id).order('created_at', { ascending: false });
-  if (error) return json(res, 500, { error: 'classes_fetch_failed' });
-  json(res, 200, { ok: true, classes: (data || []).map((row) => ({ id: row.id, name: row.name, grade: row.grade, studentCount: 0 })) });
+  if (req.method === 'GET') {
+    const { data, error } = await teacher.admin.from('class_groups').select('id, name, grade').eq('teacher_id', teacher.id).order('created_at', { ascending: false });
+    if (error) return json(res, 500, { error: 'classes_fetch_failed' });
+    return json(res, 200, { ok: true, classes: (data || []).map((row) => ({ id: row.id, name: row.name, grade: row.grade, studentCount: 0 })) });
+  }
+  const body = req.body || {};
+  const action = body.action || 'create';
+  if (action === 'create') {
+    const name = String(body.name || '').trim();
+    const grade = String(body.grade || '').trim();
+    if (!name) return json(res, 400, { error: 'missing_class_name' });
+    if (!grade) return json(res, 400, { error: 'missing_class_grade' });
+    const { data, error } = await teacher.admin.from('class_groups').insert({ teacher_id: teacher.id, name, grade }).select('id, name, grade').single();
+    if (error) return json(res, 400, safeError(error, 'class_create_failed'));
+    return json(res, 200, { ok: true, classGroup: { id: data.id, name: data.name, grade: data.grade, studentCount: 0 } });
+  }
+  if (action === 'update') {
+    const id = String(body.id || '').trim();
+    if (!id) return json(res, 400, { error: 'missing_class_id' });
+    const updates = {};
+    if (body.name !== undefined) updates.name = String(body.name || '').trim();
+    if (body.grade !== undefined) updates.grade = String(body.grade || '').trim();
+    const { data, error } = await teacher.admin.from('class_groups').update(updates).eq('id', id).eq('teacher_id', teacher.id).select('id, name, grade').maybeSingle();
+    if (error || !data) return json(res, 400, safeError(error, 'class_update_failed'));
+    return json(res, 200, { ok: true, classGroup: { id: data.id, name: data.name, grade: data.grade, studentCount: 0 } });
+  }
+  if (action === 'delete') {
+    const id = String(body.id || '').trim();
+    if (!id) return json(res, 400, { error: 'missing_class_id' });
+    const { error } = await teacher.admin.from('class_groups').delete().eq('id', id).eq('teacher_id', teacher.id);
+    if (error) return json(res, 400, safeError(error, 'class_delete_failed'));
+    return json(res, 200, { ok: true });
+  }
+  json(res, 400, { error: 'unknown_action' });
 }
 
 async function handleTeacherStudents(req, res) {

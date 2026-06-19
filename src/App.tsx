@@ -12,6 +12,7 @@ import Students from './pages/teacher/Students';
 import Questions from './pages/teacher/Questions';
 import Exams from './pages/teacher/Exams';
 import NewExam from './pages/teacher/NewExam';
+import Settings from './pages/teacher/Settings';
 import ExamPortal from './pages/student/ExamPortal';
 import SecureExamPortal from './pages/student/SecureExamPortal';
 import { Exam } from './types';
@@ -152,20 +153,7 @@ export default function App() {
           />
         );
       case 'settings':
-        return (
-          <div className="bg-white p-8 rounded-3xl border border-slate-100 text-right space-y-4 shadow-sm" id="settings-mock-page">
-            <h3 className="text-md font-bold text-slate-800 border-b border-slate-100 pb-3">تنظیمات اصلی پنل آزمون‌ساز</h3>
-            <div className="space-y-3 text-xs text-slate-600">
-              <p>📌 <strong>مدیر سامانه:</strong> جناب آقای حمیدرضا علیزاده</p>
-              <p>🏫 <strong>مدرسه همکار:</strong> دبیرستان استعدادهای درخشان شهید بهشتی</p>
-              <p>🌐 <strong>دامنه اتصال پشتیبان:</strong> https://azmoonsaz.ir</p>
-              <p>🔧 <strong>پایگاه داده اصلی (Supabase config):</strong> آماده برای اتصال (Schema Models منطبق است)</p>
-            </div>
-            <div className="bg-indigo-50/65 border border-indigo-100 p-5 rounded-2xl text-xs text-indigo-800 leading-relaxed">
-              این اولین نسخه آزمایشی با ساختار داده واقع‌گرایانه (Realistic Mock Data) است. ساختار کلیه مدل‌های دیتابیس بگونه‌ای مهندسی گردیده است که با فیلدهای Supabase و REST APIها تطابق ۱۰۰٪ دارد.
-            </div>
-          </div>
-        );
+        return <Settings />;
       default:
         return <Dashboard onNavigate={setCurrentTab} />;
     }

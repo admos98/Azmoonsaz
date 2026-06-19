@@ -34,14 +34,9 @@ import { mockStudents as initialStudents, mockClassGroups, mockSubmissions, mock
 import { Student, Submission } from '../../types';
 import { studentService } from '../../services/api';
 
-// Extend local Student with an optional status field
-interface StudentWithStatus extends Student {
-  status?: 'active' | 'suspended' | 'examining';
-}
-
 export default function Students() {
   // State management
-  const [students, setStudents] = useState<StudentWithStatus[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,7 +46,7 @@ export default function Students() {
         const data = await studentService.getStudents();
         setStudents(data.map((s, idx) => ({
           ...s,
-          status: (s as any).status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active')
+          status: s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active')
         })));
       } catch (err) {
         console.error('Error fetching students:', err);
@@ -74,7 +69,7 @@ export default function Students() {
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [showExamLogsModal, setShowExamLogsModal] = useState(false);
   const [activeLogSubmissions, setActiveLogSubmissions] = useState<Submission[]>([]);
-  const [activeLogStudent, setActiveLogStudent] = useState<StudentWithStatus | null>(null);
+  const [activeLogStudent, setActiveLogStudent] = useState<Student | null>(null);
 
   // Manual Add/Edit form state
   const [formName, setFormName] = useState('');
@@ -146,7 +141,7 @@ export default function Students() {
   };
 
   // Open Edit Student Modal
-  const openEditModal = (student: StudentWithStatus) => {
+  const openEditModal = (student: Student) => {
     setModalMode('edit');
     setSelectedStudentId(student.id);
     setFormName(student.name);
@@ -188,7 +183,7 @@ export default function Students() {
           email: formEmail || undefined
         });
         
-        const newStudent: StudentWithStatus = {
+        const newStudent: Student = {
           ...created,
           status: formStatus
         };
@@ -235,7 +230,7 @@ export default function Students() {
     }
   };
 
-  const openStudentExamHistory = (student: StudentWithStatus) => {
+  const openStudentExamHistory = (student: Student) => {
     const studentSubs = mockSubmissions.filter(sub => sub.studentId === student.id);
     setActiveLogStudent(student);
     setActiveLogSubmissions(studentSubs);
@@ -425,9 +420,9 @@ export default function Students() {
 
     try {
       const imported = await studentService.importStudents(toImport);
-      const importedWithStatus: StudentWithStatus[] = imported.map(s => ({
+      const importedWithStatus: Student[] = imported.map(s => ({
         ...s,
-        status: 'active'
+        status: 'active' as const
       }));
       setStudents(prev => [...importedWithStatus, ...prev]);
       setWizardStep(4);
@@ -940,7 +935,7 @@ export default function Students() {
                     <button
                       key={s.val}
                       type="button"
-                      onClick={() => setFormStatus(s.val as any)}
+                      onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
                       className={`py-2 text-[10px] rounded-xl border font-bold transition-all cursor-pointer ${
                         formStatus === s.val 
                           ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs' 

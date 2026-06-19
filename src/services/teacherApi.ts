@@ -3,7 +3,7 @@ import { publicEnv } from '../config/env';
 import { ApiError } from '../lib/apiClient';
 
 export function isSecureTeacherModeAvailable(): boolean {
-  return publicEnv.isSupabaseConfigured;
+  return publicEnv.isSupabaseConfigured && !publicEnv.enableMockMode;
 }
 
 export async function getTeacherAccessToken(): Promise<string | null> {

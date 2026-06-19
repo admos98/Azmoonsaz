@@ -38,14 +38,12 @@ export function queueAnswerOffline(token: string, questionId: string, value: str
   const filtered = queue.filter(q => !(q.token === token && q.questionId === questionId));
   filtered.push({ token, questionId, value, queuedAt: new Date().toISOString(), retryCount: 0 });
   saveQueue(filtered);
-  console.log(`[Offline Queue] Queued answer for question ${questionId}. Total queued: ${filtered.length}`);
 }
 
 export async function flushQueuedAnswers(): Promise<{ syncedCount: number; remainingCount: number }> {
   const queue = getQueuedAnswers();
   if (queue.length === 0) return { syncedCount: 0, remainingCount: 0 };
 
-  console.log(`[Offline Queue] Attempting to sync ${queue.length} offline answers...`);
   const remaining: QueuedAnswer[] = [];
   let syncedCount = 0;
 
