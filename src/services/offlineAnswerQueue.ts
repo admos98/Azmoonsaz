@@ -50,10 +50,9 @@ export async function flushQueuedAnswers(): Promise<{ syncedCount: number; remai
   for (const item of queue) {
     try {
       await apiPost('/api/student/save-answer', {
-        token: item.token,
         questionId: item.questionId,
         answer: { value: item.value },
-      });
+      }, { Authorization: 'Bearer ' + item.token });
       syncedCount++;
     } catch (err) {
       console.warn(`[Offline Queue] Failed to sync answer for ${item.questionId}, keeping in queue:`, err);

@@ -77,7 +77,7 @@ export default function Topbar({ currentTab, onSwitchRole, onLogout, activeExamN
 
       {/* Notifications, Settings & Actions */}
       <div className="flex items-center space-x-4 space-x-reverse" id="topbar-actions-right">
-        <div className="max-lg:hidden"><BackendModeBadge /></div>
+        <div><BackendModeBadge /></div>
         {/* Switch Role Trigger Quick */}
         <button
           id="quick-role-switch"

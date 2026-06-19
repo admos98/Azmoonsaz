@@ -12,6 +12,56 @@ const TEACHER_ONLY_KEYS = new Set([
   'teacherComment',
 ]);
 
+const QUESTION_BODY_WHITELIST = new Set([
+  'text',
+  'imageUrl',
+  'options',
+  'parts',
+  'matchingPairs',
+  'orderingItems',
+]);
+
+const OPTION_WHITELIST = new Set([
+  'id',
+  'text',
+  'imageUrl',
+]);
+
+const PART_WHITELIST = new Set([
+  'id',
+  'text',
+  'type',
+  'options',
+  'imageUrl',
+]);
+
+function whitelistObject(obj, allowedKeys) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const result = {};
+  for (const key of allowedKeys) {
+    if (key in obj) result[key] = obj[key];
+  }
+  return result;
+}
+
+function sanitizeBody(body) {
+  if (!body || typeof body !== 'object') return body;
+  const result = whitelistObject(body, QUESTION_BODY_WHITELIST);
+  if (Array.isArray(result.options)) {
+    result.options = result.options.map((o) => whitelistObject(o, OPTION_WHITELIST));
+  }
+  if (Array.isArray(result.parts)) {
+    result.parts = result.parts.map((part) => {
+      const clean = whitelistObject(part, PART_WHITELIST);
+      if (Array.isArray(clean.options)) {
+        clean.options = clean.options.map((o) => whitelistObject(o, OPTION_WHITELIST));
+      }
+      return clean;
+    });
+  }
+  return result;
+}
+
 export function stripTeacherOnlyFields(value) {
   if (Array.isArray(value)) return value.map(stripTeacherOnlyFields);
   if (!value || typeof value !== 'object') return value;
@@ -46,7 +96,7 @@ export function safeQuestionForStudent(question, examQuestion = {}) {
     grade: question.grade,
     subject: question.subject,
     title: question.title,
-    body: stripTeacherOnlyFields(question.body || {}),
+    body: sanitizeBody(question.body || {}),
     points: examQuestion.points ?? question.points,
     sectionTitle: examQuestion.section_title || '',
     position: examQuestion.position || 0,

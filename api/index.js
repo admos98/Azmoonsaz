@@ -352,7 +352,7 @@ async function handleStudentStartSession(req, res) {
 
 async function handleStudentExamPayload(req, res) {
   if (!requireMethod(req, res, ['POST'])) return;
-  const token = getBearerToken(req, req.body || {});
+  const token = getBearerToken(req);
   const payload = verifyStudentSessionToken(token);
   if (!payload || payload.type !== 'student_exam') return json(res, 401, { error: 'invalid_session' });
   try {
@@ -401,7 +401,7 @@ async function handleStudentExamPayload(req, res) {
 async function handleStudentSaveAnswer(req, res) {
   if (!requireMethod(req, res, ['POST'])) return;
   const body = req.body || {};
-  const token = getBearerToken(req, body);
+  const token = getBearerToken(req);
   const payload = verifyStudentSessionToken(token);
   if (!payload || payload.type !== 'student_exam') return json(res, 401, { error: 'invalid_session' });
   const questionId = String(body.questionId || '').trim();
@@ -437,7 +437,7 @@ async function handleStudentSaveAnswer(req, res) {
 
 async function handleStudentSubmit(req, res) {
   if (!requireMethod(req, res, ['POST'])) return;
-  const token = getBearerToken(req, req.body || {});
+  const token = getBearerToken(req);
   const payload = verifyStudentSessionToken(token);
   if (!payload || payload.type !== 'student_exam') return json(res, 401, { error: 'invalid_session' });
   try {
@@ -634,9 +634,18 @@ async function handleTeacherExams(req, res) {
     try {
       const classIds = await resolveClassGroupIds(teacher, exam.classGroupIds, exam.grade);
       const settings = { ...(exam.settings || {}), description: exam.description || '' };
-      const payload = { teacher_id: teacher.id, exam_code: exam.examCode || randomExamCode(), title: exam.title, grade: String(exam.grade || ''), subject: String(exam.subject || ''), status: exam.status || 'draft', mode: exam.settings?.mode || 'official', starts_at: exam.settings?.startTime || null, ends_at: exam.settings?.endTime || null, duration_minutes: Number(exam.duration || exam.settings?.durationMinutes || 45), settings };
-      const { data, error } = await teacher.admin.from('exams').insert(payload).select('id, teacher_id, exam_code, title, grade, subject, status, mode, starts_at, ends_at, duration_minutes, settings, created_at').single();
-      if (error) throw error;
+      const requestedCode = exam.examCode || randomExamCode();
+      let data = null;
+      let lastError = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const code = attempt === 0 ? requestedCode : randomExamCode();
+        const payload = { teacher_id: teacher.id, exam_code: code, title: exam.title, grade: String(exam.grade || ''), subject: String(exam.subject || ''), status: exam.status || 'draft', mode: exam.settings?.mode || 'official', starts_at: exam.settings?.startTime || null, ends_at: exam.settings?.endTime || null, duration_minutes: Number(exam.duration || exam.settings?.durationMinutes || 45), settings };
+        const result = await teacher.admin.from('exams').insert(payload).select('id, teacher_id, exam_code, title, grade, subject, status, mode, starts_at, ends_at, duration_minutes, settings, created_at').single();
+        if (!result.error) { data = result.data; break; }
+        lastError = result.error;
+        if (result.error.code !== '23505') throw result.error;
+      }
+      if (!data) throw lastError || new Error('exam_create_failed_after_retries');
       if (classIds.length) await teacher.admin.from('exam_allowed_classes').insert(classIds.map((id) => ({ exam_id: data.id, class_group_id: id })));
       const questions = Array.isArray(exam.questions) ? exam.questions.filter((q) => isUuid(q.id)) : [];
       if (questions.length > 0) await teacher.admin.from('exam_questions').insert(questions.map((q, index) => ({ exam_id: data.id, question_id: q.id, section_title: exam.sections?.[0]?.title || 'سوالات آزمون', position: index + 1, points: q.points || null })));

@@ -16,10 +16,10 @@ export async function apiGet<T>(path: string): Promise<T> {
   return apiRequest<T>(path, { method: 'GET' });
 }
 
-export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+export async function apiPost<T>(path: string, body?: unknown, headers?: Record<string, string>): Promise<T> {
   return apiRequest<T>(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(headers || {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }

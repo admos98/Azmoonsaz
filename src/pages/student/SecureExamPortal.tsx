@@ -84,7 +84,7 @@ export default function SecureExamPortal({ presetExamCode, onBackToTeacher }: Se
     setError('');
     setLoading(true);
     try {
-      const response = await apiPost<PayloadResponse>('/api/student/exam-payload', { token });
+      const response = await apiPost<PayloadResponse>('/api/student/exam-payload', {}, { Authorization: 'Bearer ' + token });
       setExam(response.exam);
       setQuestions(response.questions || []);
       setPhase('take');
@@ -100,7 +100,7 @@ export default function SecureExamPortal({ presetExamCode, onBackToTeacher }: Se
     setSaving(true);
     setError('');
     try {
-      const response = await apiPost<{ ok: boolean; savedAt: string }>('/api/student/save-answer', { token, questionId, answer: { value } });
+      const response = await apiPost<{ ok: boolean; savedAt: string }>('/api/student/save-answer', { questionId, answer: { value } }, { Authorization: 'Bearer ' + token });
       setSavedAt(response.savedAt);
     } catch (err) {
       console.warn('Network save failed. Queuing answer offline:', err);
@@ -146,7 +146,7 @@ export default function SecureExamPortal({ presetExamCode, onBackToTeacher }: Se
     setError('');
     setLoading(true);
     try {
-      await apiPost('/api/student/submit', { token });
+      await apiPost('/api/student/submit', {}, { Authorization: 'Bearer ' + token });
       clearQueueForToken(token);
       setPhase('submitted');
     } catch (err) {
