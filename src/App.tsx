@@ -23,6 +23,7 @@ export default function App() {
   const [userRole, setUserRole] = useState<'teacher' | 'student'>('teacher');
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // URL state management
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
@@ -262,25 +263,28 @@ export default function App() {
         currentTab={currentTab}
         onTabChange={(tab) => {
           setCurrentTab(tab);
-          // Reset subrouting when shifting tabs
           setExamSubView('list');
           setSelectedExamId(undefined);
+          setIsSidebarOpen(false);
         }}
         onLogout={() => setIsTeacherLoggedIn(false)}
         onSwitchRole={handleSwitchUserRole}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
-      {/* Main Container - offset by sidebar width (256px / w-64) */}
-      <div className="flex-1 mr-64 flex flex-col min-h-screen" id="main-content-layout">
+      {/* Main Container - offset by sidebar width on desktop only */}
+      <div className="flex-1 md:mr-64 flex flex-col min-h-screen" id="main-content-layout">
         {/* Topbar */}
         <Topbar
           currentTab={currentTab}
           onSwitchRole={handleSwitchUserRole}
           onLogout={() => setIsTeacherLoggedIn(false)}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
         />
 
         {/* Dynamic Page Router */}
-        <div className="p-6 md:p-8 flex-1 bg-slate-50/50" id="router-view-box">
+        <div className="p-4 md:p-8 flex-1 bg-slate-50/50" id="router-view-box">
           {renderTeacherContent()}
         </div>
       </div>

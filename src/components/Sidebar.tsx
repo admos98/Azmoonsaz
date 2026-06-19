@@ -5,7 +5,7 @@
 
 import { LayoutDashboard, Users, HelpCircle, FileText, CheckSquare, Settings, LogOut, GraduationCap, ArrowLeftRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { mockTeacher } from '../mockData';
 import { Teacher } from '../types';
 import { authService } from '../services/api';
@@ -15,9 +15,11 @@ interface SidebarProps {
   onTabChange: (tab: string) => void;
   onLogout: () => void;
   onSwitchRole: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRole }: SidebarProps) {
+export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRole, isOpen = false, onClose }: SidebarProps) {
   const [teacher, setTeacher] = useState<Teacher>(mockTeacher);
 
   useEffect(() => {
@@ -39,8 +41,8 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
     { id: 'settings', label: 'تنظیمات سامانه', icon: Settings },
   ];
 
-  return (
-    <aside className="fixed inset-y-0 right-0 z-20 w-64 bg-white border-l border-slate-200 flex flex-col justify-between text-slate-700 shadow-xs transition-all select-none" id="sidebar-container">
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
       <div>
         {/* Logo / Header */}
         <div className="h-20 flex items-center gap-3 px-6 border-b border-slate-100" id="logo-section">
@@ -94,7 +96,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       </div>
 
       {/* Footer Area */}
-      <div className="p-4 border-t border-slate-100 space-y-3" id="sidebar-footer">
+      <div className="p-4 border-t border-slate-100 space-y-3 mt-auto" id="sidebar-footer">
         {/* Subscription box */}
         <div className="p-4 bg-slate-900 rounded-2xl text-white relative overflow-hidden">
           <div className="relative z-10 text-right">
@@ -124,6 +126,43 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
           <span>خروج از پنل</span>
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible on md+ */}
+      <aside className="hidden md:flex fixed inset-y-0 right-0 z-20 w-64 bg-white border-l border-slate-200 flex-col justify-between text-slate-700 shadow-xs select-none" id="sidebar-container">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile sidebar — slides in from right with backdrop */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+            />
+
+            {/* Sliding panel */}
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 350 }}
+              className="md:hidden fixed inset-y-0 right-0 z-50 w-64 bg-white border-l border-slate-200 shadow-2xl flex flex-col text-slate-700 select-none"
+              id="sidebar-container-mobile"
+            >
+              {sidebarContent}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
