@@ -45,7 +45,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
     <div className="flex flex-col h-full">
       <div>
         {/* Logo / Header */}
-        <div className="h-20 flex items-center gap-3 px-6 border-b border-slate-100" id="logo-section">
+        <div className="h-20 flex items-center gap-3 px-6 border-b border-white/10" id="logo-section">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
             <GraduationCap className="w-5.5 h-5.5" />
           </div>
@@ -56,7 +56,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
         </div>
 
         {/* Teacher Mini Profile */}
-        <div className="p-4 mx-3 my-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center space-x-3 space-x-reverse shadow-2xs" id="sidebar-profile">
+        <div className="p-4 mx-3 my-4 bg-white/50 rounded-2xl border border-white/20 flex items-center space-x-3 space-x-reverse shadow-sm" id="sidebar-profile">
           <img
             src={teacher.avatarUrl}
             alt={teacher.name}
@@ -96,7 +96,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       </div>
 
       {/* Footer Area */}
-      <div className="p-4 border-t border-slate-100 space-y-3 mt-auto" id="sidebar-footer">
+      <div className="p-4 border-t border-white/10 space-y-3 mt-auto" id="sidebar-footer">
         {/* Subscription box */}
         <div className="p-4 bg-slate-900 rounded-2xl text-white relative overflow-hidden">
           <div className="relative z-10 text-right">
@@ -132,7 +132,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
   return (
     <>
       {/* Desktop sidebar — always visible on md+ */}
-      <aside className="hidden md:flex fixed inset-y-0 right-0 z-20 w-64 bg-white border-l border-slate-200 flex-col justify-between text-slate-700 shadow-xs select-none" id="sidebar-container">
+      <aside className="hidden md:flex fixed inset-y-0 right-0 z-20 w-64 bg-white/70 backdrop-blur-xl border-l border-white/20 flex-col justify-between text-slate-700 shadow-sm select-none" id="sidebar-container">
         {sidebarContent}
       </aside>
 
@@ -155,7 +155,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-              className="md:hidden fixed inset-y-0 right-0 z-50 w-64 bg-white border-l border-slate-200 shadow-2xl flex flex-col text-slate-700 select-none"
+              className="md:hidden fixed inset-y-0 right-0 z-50 w-64 bg-white/80 backdrop-blur-xl border-l border-white/20 shadow-2xl flex flex-col text-slate-700 select-none"
               id="sidebar-container-mobile"
             >
               {sidebarContent}

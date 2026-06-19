@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import CustomCursor from './components/CustomCursor';
 import Login from './pages/teacher/Login';
 import Dashboard from './pages/teacher/Dashboard';
 import Students from './pages/teacher/Students';
@@ -258,6 +259,7 @@ export default function App() {
   // 3. Otherwise, render the complete gorgeous Teacher Dashboard Shell
   return (
     <div className="min-h-screen bg-slate-50 flex" dir="rtl" id="app-teacher-shell">
+      <CustomCursor />
       {/* Sidebar - fixed on the right */}
       <Sidebar
         currentTab={currentTab}

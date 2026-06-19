@@ -91,11 +91,22 @@ export const Card = ({
   className = '',
   ...props
 }: CardProps) => {
+  if (hoverable) {
+    return (
+      <motion.div
+        whileHover={{ y: -4, scale: 1.01 }}
+        whileTap={{ scale: 0.995 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        className={`bg-white/80 backdrop-blur-sm border border-white/30 rounded-3xl p-5 md:p-6 shadow-sm hover:shadow-lg hover:shadow-indigo-100/40 ${className}`}
+        {...(props as any)}
+      >
+        {children}
+      </motion.div>
+    );
+  }
   return (
     <div
-      className={`bg-white border border-slate-100 rounded-3xl p-5 md:p-6 shadow-xs ${
-        hoverable ? 'hover:shadow-md hover:border-slate-200/80 hover:-translate-y-0.5 transition-all duration-300' : ''
-      } ${className}`}
+      className={`bg-white/80 backdrop-blur-sm border border-white/30 rounded-3xl p-5 md:p-6 shadow-sm ${className}`}
       {...props}
     >
       {children}
@@ -355,7 +366,7 @@ export const Modal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-md"
           />
 
           {/* Modal Card */}
@@ -364,7 +375,7 @@ export const Modal = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className={`relative bg-white w-full ${widthStyles[maxWidth]} rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] z-10`}
+            className={`relative bg-white/90 backdrop-blur-xl w-full ${widthStyles[maxWidth]} rounded-3xl shadow-2xl border border-white/30 overflow-hidden flex flex-col max-h-[90vh] z-10`}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-105">

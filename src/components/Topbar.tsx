@@ -54,7 +54,7 @@ export default function Topbar({ currentTab, onSwitchRole, onLogout, onOpenSideb
   };
 
   return (
-    <header className="sticky top-0 z-10 h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-2xs select-none" id="topbar-wrapper">
+    <header className="sticky top-0 z-10 h-20 bg-white/70 backdrop-blur-xl border-b border-white/20 px-4 md:px-8 flex items-center justify-between shadow-sm select-none" id="topbar-wrapper">
       {/* Hamburger Menu - mobile only */}
       {onOpenSidebar && (
         <button

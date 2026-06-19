@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'motion/react';
 import { 
   FileText, 
   Users, 
@@ -188,10 +188,15 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   const typeRestCount = qBankTotal - (typeMultiChoiceCount + typeEssayCount);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
+    <div className="space-y-6" id="teacher-dashboard-full">
       
       {/* Dynamic Sandbox Simulator Controls Box (Reviewer-friendly widget) */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 select-none" id="sandbox-simulator-panel">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="bg-white/70 backdrop-blur-sm border border-white/30 rounded-3xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 select-none" id="sandbox-simulator-panel"
+      >
         <div className="flex items-center gap-2.5">
           <span className="flex h-3 w-3 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -238,10 +243,15 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </button>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* 1. Welcome Card Hero */}
-      <div className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-slate-900 text-white shadow-md" id="dashboard-hero-banner">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 280, damping: 28, delay: 0.05 }}
+        className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-slate-900 text-white shadow-xl" id="dashboard-hero-banner"
+      >
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
         
@@ -273,13 +283,19 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* 2. Stats Grid (5 Cards) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5" id="stats-grid-layouts">
+      {/* 2. Bento Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5" id="stats-grid-layouts">
         
-        {/* Card 1: Students */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-total-students">
+        {/* Card 1: Students — spans 2 cols on large */}
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.1 }}
+          className="col-span-2"
+        >
+          <Card hoverable className="flex flex-col justify-between h-full" id="stat-card-total-students">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500">تعداد دانش‌آموزان</span>
             <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
@@ -287,7 +303,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+            <span className="text-3xl font-black text-slate-800 tracking-tight block">
               {formatPersianNumber(totalStudents)} <span className="text-xs font-normal text-slate-400">نفر</span>
             </span>
             <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">
@@ -295,9 +311,15 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </span>
           </div>
         </Card>
+        </motion.div>
 
         {/* Card 2: Total Questions */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-total-questions">
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.15 }}
+        >
+        <Card hoverable className="flex flex-col justify-between h-full" id="stat-card-total-questions">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500">تعداد کل سوالات</span>
             <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
@@ -305,73 +327,74 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+            <span className="text-3xl font-black text-slate-800 tracking-tight block">
               {formatPersianNumber(qBankTotal)} <span className="text-xs font-normal text-slate-400">سوال</span>
             </span>
-            <span className="text-[10px] text-slate-450 mt-1.5 block">
+            <span className="text-[10px] text-slate-500 mt-1.5 block">
               منطبق با کتب درسی جدید
             </span>
           </div>
         </Card>
+        </motion.div>
 
         {/* Card 3: Active Exams */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-active-exams">
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.2 }}
+        >
+        <Card hoverable className="flex flex-col justify-between h-full" id="stat-card-active-exams">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">آزمون‌های فعال در کلاس</span>
+            <span className="text-[11px] font-bold text-slate-500">آزمون‌های فعال</span>
             <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
-              {formatPersianNumber(activeExams)} <span className="text-xs font-normal text-slate-400">آزمون</span>
+            <span className="text-3xl font-black text-slate-800 tracking-tight block">
+              {formatPersianNumber(activeExams)}
             </span>
             <span className={`text-[10px] font-bold mt-1.5 block ${activeExams > 0 ? 'text-amber-600 animate-pulse' : 'text-slate-400'}`}>
-              {activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمون در حال برگذاری نیست'}
+              {activeExams > 0 ? 'درگاه پاسخ فعال' : 'بدون آزمون فعال'}
             </span>
           </div>
         </Card>
+        </motion.div>
 
         {/* Card 4: Submissions Pending Grading */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-pending-reviews">
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.25 }}
+        >
+        <Card hoverable className="flex flex-col justify-between h-full" id="stat-card-pending-reviews">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">نیازمند تصحیح تشریحی</span>
+            <span className="text-[11px] font-bold text-slate-500">نیازمند تصحیح</span>
             <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600">
               <CheckSquare className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
-              {formatPersianNumber(pendingGradings)} <span className="text-xs font-normal text-slate-400">برگه</span>
+            <span className="text-3xl font-black text-slate-800 tracking-tight block">
+              {formatPersianNumber(pendingGradings)}
             </span>
             <span className="text-[10px] text-rose-600 font-bold mt-1.5 block">
-              پاسخ‌های تشریحی چشم‌براه نمره
+              پاسخ‌های تشریحی در صف
             </span>
           </div>
         </Card>
-
-        {/* Card 5: Scheduled Exams */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-scheduled-exams">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">آزمون‌های زمان‌بندی‌شده</span>
-            <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-650">
-              <CalendarIcon className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
-              {formatPersianNumber(scheduledExams)} <span className="text-xs font-normal text-slate-400">مورد</span>
-            </span>
-            <span className="text-[10px] text-slate-450 mt-1.5 block">
-              برنامه‌ریزی آغاز در روزهای آتی
-            </span>
-          </div>
-        </Card>
+        </motion.div>
 
       </div>
 
       {/* 3. Quick Actions Row */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-right" id="quick-actions-section">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+        className="bg-white/70 backdrop-blur-sm border border-white/30 p-6 rounded-3xl shadow-sm text-right" id="quick-actions-section"
+      >
         <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
           <span>⚡ اقدامات و دسترسی‌های سریع معلم</span>
         </h3>
@@ -434,7 +457,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </button>
 
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Core Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="dashboard-core-split">
@@ -443,7 +466,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="lg:col-span-2 space-y-6">
 
           {/* 4. Upcoming and Active Exams Section */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm" id="section-upcoming-exams">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            className="bg-white/70 backdrop-blur-sm border border-white/30 p-6 rounded-3xl shadow-sm" id="section-upcoming-exams"
+          >
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">آزمون‌های زمان‌بندی‌شده مابعد و پیش‌رو</h3>
@@ -517,10 +546,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 />
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
 
           {/* 5. Recent Submissions Section */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden" id="section-recent-submissions">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            className="bg-white/70 backdrop-blur-sm border border-white/30 rounded-3xl shadow-sm overflow-hidden" id="section-recent-submissions"
+          >
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">آخرین پاسخ‌برگ‌های ارسال شده دانش‌آموزان</h3>
@@ -642,7 +677,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 />
               )}
             </AnimatePresence>
-          </div>
+          </motion.div>
 
         </div>
 
@@ -650,7 +685,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="space-y-6" id="dashboard-right-sidebar">
 
           {/* 6. Question Bank Health Section */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-right" id="section-q-bank-health">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            className="bg-white/70 backdrop-blur-sm border border-white/30 p-6 rounded-3xl shadow-sm text-right" id="section-q-bank-health"
+          >
             <h3 className="text-xs font-black text-slate-800 mb-4 flex items-center gap-2">
               <span>📊 وضعیت سلامت بانک سوالات چندگزینه‌ای و تشریحی</span>
             </h3>
@@ -743,10 +784,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               </div>
             </div>
 
-          </div>
+          </motion.div>
 
           {/* Active Class Groups List */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm" id="section-class-groups-list">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            className="bg-white/70 backdrop-blur-sm border border-white/30 p-6 rounded-3xl shadow-sm" id="section-class-groups-list"
+          >
             <h3 className="text-xs font-black text-slate-800 mb-4">آمار کلاس‌های تحت پوشش پایه‌ها</h3>
             <div className="space-y-3">
               {mockClassGroups.map((cg) => (
@@ -775,10 +822,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               <Plus className="w-3.5 h-3.5" />
               <span>ایجاد کلاس یا گروه جدید</span>
             </button>
-          </div>
+          </motion.div>
 
           {/* Quick Security Checklist / Protip */}
-          <div className="bg-gradient-to-tr from-indigo-50/50 to-violet-50/50 p-6 rounded-3xl border border-indigo-100/50 shadow-2xs">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            className="bg-gradient-to-tr from-indigo-50/50 to-violet-50/50 p-6 rounded-3xl border border-indigo-100/50 shadow-sm"
+          >
             <div className="flex items-start gap-4">
               <div className="p-2.5 bg-white text-indigo-600 rounded-xl shadow-2xs">
                 <Award className="w-5 h-5" />
@@ -798,7 +851,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
         </div>
 
