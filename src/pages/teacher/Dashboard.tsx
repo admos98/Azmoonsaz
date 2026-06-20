@@ -3,42 +3,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform, useInView } from 'motion/react';
-import { 
-  FileText, 
-  Users, 
-  HelpCircle, 
-  CheckSquare, 
-  Plus, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Clock, 
-  Award, 
-  ShieldAlert, 
-  ChevronLeft, 
-  Upload, 
-  FileSpreadsheet, 
-  AlertTriangle, 
-  CheckCircle, 
-  Flame, 
-  Eye, 
-  BookOpen, 
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  FileText,
+  Users,
+  HelpCircle,
+  CheckSquare,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+  Award,
+  ShieldAlert,
+  ChevronLeft,
+  Upload,
+  FileSpreadsheet,
+  AlertTriangle,
+  CheckCircle,
+  Flame,
+  Eye,
+  BookOpen,
   Trash2,
   ListFilter
 } from 'lucide-react';
-import { 
-  mockExams, 
-  mockStudents, 
-  mockSubmissions, 
-  mockClassGroups, 
-  mockQuestions, 
-  mockTeacher 
+import {
+  mockExams,
+  mockStudents,
+  mockSubmissions,
+  mockClassGroups,
+  mockQuestions,
+  mockTeacher
 } from '../../mockData';
-import { Student, Exam, Submission, Question } from '../../types';
+import { Student, Exam, Submission, Question, Teacher } from '../../types';
 import { Button, Card, Badge, StatusBadge, Modal, EmptyState, FileDropzone, Table } from '../../components/UIComponents';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
-import { studentService, examService, gradingService } from '../../services/api';
+import { studentService, examService, gradingService, authService } from '../../services/api';
 
 interface DashboardProps {
   onNavigate: (tab: string) => void;
@@ -46,24 +46,27 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate, onSelectExamForResults }: DashboardProps) {
-  // Setup local state to support real-time user mutations (e.g. excel import, sandbox simulation)
+  // Setup local state to support real-time user mutations
   const [localStudents, setLocalStudents] = useState<Student[]>([]);
   const [localExams, setLocalExams] = useState<Exam[]>([]);
   const [localSubmissions, setLocalSubmissions] = useState<Submission[]>([]);
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
       try {
-        const [studentsData, examsData, submissionsData] = await Promise.all([
+        const [studentsData, examsData, submissionsData, teacherData] = await Promise.all([
           studentService.getStudents(),
           examService.getExams(),
-          gradingService.getSubmissions()
+          gradingService.getSubmissions(),
+          authService.getCurrentTeacher()
         ]);
         setLocalStudents(studentsData);
         setLocalExams(examsData);
         setLocalSubmissions(submissionsData);
+        setTeacher(teacherData);
       } catch (err) {
         console.error('Error loading dashboard:', err);
       } finally {
@@ -72,10 +75,6 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     };
     loadDashboardData();
   }, []);
-  
-  // Sandbox modes for empty state preview
-  const [simulateNoExams, setSimulateNoExams] = useState(false);
-  const [simulateNoStudents, setSimulateNoStudents] = useState(false);
 
   // Excel import simulator state
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
@@ -91,10 +90,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     { id: 's-new-11', name: 'بردیا ابراهیمی', nationalId: '2283451290', maskedNationalId: '228***1290', grade: 'هشتم', classGroupId: 'c-3', email: 'bardia@example.com' },
   ];
 
-  // Dynamic values based on sandbox simulation is enabled
-  const currentStudents = simulateNoStudents ? [] : localStudents;
-  const currentExams = simulateNoExams ? [] : localExams;
-  const currentSubmissions = simulateNoExams || simulateNoStudents ? [] : localSubmissions;
+  // Dynamic values based on actual data
+  const currentStudents = localStudents;
+  const currentExams = localExams;
+  const currentSubmissions = localSubmissions;
 
   // Stats computation
   const totalExams = currentExams.length;
@@ -118,7 +117,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileSelected(e.dataTransfer.files[0]);
     }
@@ -134,15 +133,15 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     setExcelFile(file);
     setImportStep('reading');
     setImportProgress(10);
-    
+
     // Simulate Reading Steps
     setTimeout(() => {
       setImportProgress(40);
       setImportStep('mapping');
-      
+
       setTimeout(() => {
         setImportProgress(75);
-        
+
         setTimeout(() => {
           setImportProgress(100);
           setImportStep('preview');
@@ -155,7 +154,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     // Append simulated students to local standard state
     setLocalStudents(prev => [...prev, ...parsedSampleStudents]);
     setImportStep('done');
-    
+
     // Auto reset modal after short success notification delay
     setTimeout(() => {
       setIsExcelModalOpen(false);
@@ -188,81 +187,21 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   const typeRestCount = qBankTotal - (typeMultiChoiceCount + typeEssayCount);
 
   return (
-    <div className="space-y-6" id="teacher-dashboard-full">
-      
-      {/* Dynamic Sandbox Simulator Controls Box (Reviewer-friendly widget) */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="bg-white/70 backdrop-blur-sm border border-white/30 rounded-3xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 select-none" id="sandbox-simulator-panel"
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-3 w-3 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-600"></span>
-          </span>
-          <div>
-            <h4 className="text-xs font-bold text-slate-800">شبیه‌ساز وضعیت‌ها و بررسی تعاملی قابلیت‌ها</h4>
-            <p className="text-[10px] text-slate-500 mt-0.5">برای مشاهده آسان حالت‌های خالی (Empty States)، تیک‌های زیر را فعال کنید:</p>
-          </div>
-        </div>
-
-        <div className="flex items-center flex-wrap gap-4 text-xs font-medium text-slate-700">
-          <label className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 transition-colors px-3 py-1.5 rounded-xl border border-slate-100 cursor-pointer">
-            <input
-              type="checkbox"
-              id="chk-simulate-no-exams"
-              checked={simulateNoExams}
-              onChange={(e) => setSimulateNoExams(e.target.checked)}
-              className="accent-indigo-600 w-4 h-4 rounded-md"
-            />
-            <span>بدون آزمون (حالت خالی)</span>
-          </label>
-
-          <label className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 transition-colors px-3 py-1.5 rounded-xl border border-slate-100 cursor-pointer">
-            <input
-              type="checkbox"
-              id="chk-simulate-no-students"
-              checked={simulateNoStudents}
-              onChange={(e) => setSimulateNoStudents(e.target.checked)}
-              className="accent-indigo-600 w-4 h-4 rounded-md"
-            />
-            <span>بدون دانش‌آموز (حالت خالی)</span>
-          </label>
-
-          {(simulateNoExams || simulateNoStudents) && (
-            <button
-              onClick={() => {
-                setSimulateNoExams(false);
-                setSimulateNoStudents(false);
-              }}
-              className="text-[10px] text-indigo-600 font-bold hover:underline"
-            >
-              بازنشانی پیش‌فرض
-            </button>
-          )}
-        </div>
-      </motion.div>
+    <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
 
       {/* 1. Welcome Card Hero */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 280, damping: 28, delay: 0.05 }}
-        className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-slate-900 text-white shadow-xl" id="dashboard-hero-banner"
-      >
+      <div className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-slate-900 text-white shadow-md" id="dashboard-hero-banner">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="text-right">
             <span className="bg-indigo-500/20 text-indigo-300 text-[11px] font-bold px-3 py-1 rounded-full border border-indigo-400/20">
-              شنبه، ۲۳ خرداد ۱۴۰۵ - هوش مصنوعی همکار
+              {formatPersianDate(new Date().toISOString())} - پنل مدیریت هوشمند
             </span>
-            <h2 className="text-xl md:text-2xl font-black mt-3 leading-snug">سلام، استاد {mockTeacher.name} عزیز</h2>
+            <h2 className="text-xl md:text-2xl font-black mt-3 leading-snug">سلام، استاد {teacher?.name || 'گرامی'} عزیز</h2>
             <p className="text-xs md:text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
-              خلاصه وضعیت امروز: سیستم هوشمند آماده پذیرش پاسخ‌برگ‌هاست. در حال حاضر {activeExams} آزمون جاری در کلاس‌ها فعال بوده و تعداد {pendingGradings} ورقه‌ پاسخ‌برگ تستی/تشریحی ارسالی دانش‌آموزان در صف بررسی نهایی و تصحیح معلم قرار گرفته است.
+              خلاصه وضعیت امروز: سیستم هوشمند آماده پذیرش پاسخ‌برگ‌هاست. در حال حاضر {totalExams} آزمون جاری در کلاس‌ها فعال بوده و تعداد {pendingGradings} ورقه‌ پاسخ‌برگ تستی/تشریحی ارسالی دانش‌آموزان در صف بررسی نهایی و تصحیح معلم قرار گرفته است.
             </p>
           </div>
           <div className="flex gap-3 shrink-0 self-start md:self-auto">
@@ -283,19 +222,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      {/* 2. Bento Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5" id="stats-grid-layouts">
-        
-        {/* Card 1: Students — spans 2 cols on large */}
-        <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.1 }}
-          className="col-span-2"
-        >
-          <Card hoverable className="flex flex-col justify-between h-full" id="stat-card-total-students">
+      {/* 2. Stats Grid (5 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5" id="stats-grid-layouts">
+
+        {/* Card 1: Students */}
+        <Card hoverable className="flex flex-col justify-between" id="stat-card-total-students">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500">تعداد دانش‌آموزان</span>
             <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
@@ -303,7 +236,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-black text-slate-800 tracking-tight block">
+            <span className="text-2xl font-black text-slate-800 tracking-tight block">
               {formatPersianNumber(totalStudents)} <span className="text-xs font-normal text-slate-400">نفر</span>
             </span>
             <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">
@@ -311,15 +244,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </span>
           </div>
         </Card>
-        </motion.div>
 
         {/* Card 2: Total Questions */}
-        <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.15 }}
-        >
-        <Card hoverable className="flex flex-col justify-between h-full" id="stat-card-total-questions">
+        <Card hoverable className="flex flex-col justify-between" id="stat-card-total-questions">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500">تعداد کل سوالات</span>
             <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
@@ -327,80 +254,79 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-black text-slate-800 tracking-tight block">
+            <span className="text-2xl font-black text-slate-800 tracking-tight block">
               {formatPersianNumber(qBankTotal)} <span className="text-xs font-normal text-slate-400">سوال</span>
             </span>
-            <span className="text-[10px] text-slate-500 mt-1.5 block">
+            <span className="text-[10px] text-slate-450 mt-1.5 block">
               منطبق با کتب درسی جدید
             </span>
           </div>
         </Card>
-        </motion.div>
 
         {/* Card 3: Active Exams */}
-        <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.2 }}
-        >
-        <Card hoverable className="flex flex-col justify-between h-full" id="stat-card-active-exams">
+        <Card hoverable className="flex flex-col justify-between" id="stat-card-active-exams">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">آزمون‌های فعال</span>
+            <span className="text-[11px] font-bold text-slate-500">آزمون‌های فعال در کلاس</span>
             <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-black text-slate-800 tracking-tight block">
-              {formatPersianNumber(activeExams)}
+            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+              {formatPersianNumber(activeExams)} <span className="text-xs font-normal text-slate-400">آزمون</span>
             </span>
             <span className={`text-[10px] font-bold mt-1.5 block ${activeExams > 0 ? 'text-amber-600 animate-pulse' : 'text-slate-400'}`}>
-              {activeExams > 0 ? 'درگاه پاسخ فعال' : 'بدون آزمون فعال'}
+              {activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمون در حال برگذاری نیست'}
             </span>
           </div>
         </Card>
-        </motion.div>
 
         {/* Card 4: Submissions Pending Grading */}
-        <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.25 }}
-        >
-        <Card hoverable className="flex flex-col justify-between h-full" id="stat-card-pending-reviews">
+        <Card hoverable className="flex flex-col justify-between" id="stat-card-pending-reviews">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">نیازمند تصحیح</span>
+            <span className="text-[11px] font-bold text-slate-500">نیازمند تصحیح تشریحی</span>
             <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600">
               <CheckSquare className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-3xl font-black text-slate-800 tracking-tight block">
-              {formatPersianNumber(pendingGradings)}
+            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+              {formatPersianNumber(pendingGradings)} <span className="text-xs font-normal text-slate-400">برگه</span>
             </span>
             <span className="text-[10px] text-rose-600 font-bold mt-1.5 block">
-              پاسخ‌های تشریحی در صف
+              پاسخ‌های تشریحی چشم‌براه نمره
             </span>
           </div>
         </Card>
-        </motion.div>
+
+        {/* Card 5: Scheduled Exams */}
+        <Card hoverable className="flex flex-col justify-between" id="stat-card-scheduled-exams">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500">آزمون‌های زمان‌بندی‌شده</span>
+            <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-650">
+              <CalendarIcon className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+              {formatPersianNumber(scheduledExams)} <span className="text-xs font-normal text-slate-400">مورد</span>
+            </span>
+            <span className="text-[10px] text-slate-450 mt-1.5 block">
+              برنامه‌ریزی آغاز در روزهای آتی
+            </span>
+          </div>
+        </Card>
 
       </div>
 
       {/* 3. Quick Actions Row */}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-        className="bg-white/70 backdrop-blur-sm border border-white/30 p-6 rounded-3xl shadow-sm text-right" id="quick-actions-section"
-      >
+      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-right" id="quick-actions-section">
         <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
           <span>⚡ اقدامات و دسترسی‌های سریع معلم</span>
         </h3>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5" id="quick-action-btns">
-          
+
           <button
             id="qa-btn-import-excel"
             onClick={() => setIsExcelModalOpen(true)}
@@ -457,22 +383,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </button>
 
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Core Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="dashboard-core-split">
-        
+
         {/* Left Columns (2/3 Width) */}
         <div className="lg:col-span-2 space-y-6">
 
           {/* 4. Upcoming and Active Exams Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="bg-white/70 backdrop-blur-sm border border-white/30 p-6 rounded-3xl shadow-sm" id="section-upcoming-exams"
-          >
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">آزمون‌های زمان‌بندی‌شده مابعد و پیش‌رو</h3>
@@ -491,8 +411,8 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               {currentExams.length > 0 ? (
                 <div className="space-y-3" id="upcoming-exams-list">
                   {currentExams.map((ex) => (
-                    <div 
-                      key={ex.id} 
+                    <div
+                      key={ex.id}
                       className="p-4 rounded-2xl bg-slate-50/70 hover:bg-white hover:shadow-xs border border-slate-100/80 hover:border-slate-200 transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 text-right"
                     >
                       <div className="space-y-1">
@@ -535,7 +455,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   title="هیچ آزمونی برای نمایش یافت نشد!"
                   description="در حال حاضر هیچ آزمون فعالی تعریف نگردیده است. با فشردن دکمه طراح زیر، اولین سنجش تحصیلی هماهنگ خود را پایه‌ریزی کنید."
                   action={
-                    <Button 
+                    <Button
                       onClick={() => onNavigate('exams/new')}
                       variant="primary"
                       size="sm"
@@ -546,16 +466,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 />
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
 
           {/* 5. Recent Submissions Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="bg-white/70 backdrop-blur-sm border border-white/30 rounded-3xl shadow-sm overflow-hidden" id="section-recent-submissions"
-          >
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden" id="section-recent-submissions">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">آخرین پاسخ‌برگ‌های ارسال شده دانش‌آموزان</h3>
@@ -666,7 +580,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   title="موردی برای تصحیح یافت نشد!"
                   description="هیچ دانش‌آموزی در کلاس جاری ثبت‌نام نشده یا پاسخی دریافت نگردیده است. شما می‌توانید فایل اکسل رسمی دانش‌آموزان را برای شروع بارگذاری کنید."
                   action={
-                    <Button 
+                    <Button
                       onClick={() => setIsExcelModalOpen(true)}
                       variant="primary"
                       size="sm"
@@ -677,7 +591,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 />
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
 
         </div>
 
@@ -685,40 +599,34 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="space-y-6" id="dashboard-right-sidebar">
 
           {/* 6. Question Bank Health Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="bg-white/70 backdrop-blur-sm border border-white/30 p-6 rounded-3xl shadow-sm text-right" id="section-q-bank-health"
-          >
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-right" id="section-q-bank-health">
             <h3 className="text-xs font-black text-slate-800 mb-4 flex items-center gap-2">
               <span>📊 وضعیت سلامت بانک سوالات چندگزینه‌ای و تشریحی</span>
             </h3>
 
             {/* CSS-Only Visual Stacked Health Charts */}
             <div className="space-y-5" id="charts-q-bank">
-              
+
               {/* Chart A: Question Count by base/grade */}
               <div className="space-y-2">
                 <span className="text-[11px] font-bold text-slate-500 block">پراکندگی سوالات بر اساس پایه‌های درسی</span>
                 <div className="flex bg-slate-100 h-6 rounded-lg overflow-hidden text-[9px] font-semibold text-white">
-                  <div 
-                    className="bg-indigo-600 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95" 
+                  <div
+                    className="bg-indigo-600 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(grade7QCount / qBankTotal) * 100}%` }}
                     title={`هفتم: ${grade7QCount} سوال`}
                   >
                     {grade7QCount > 0 && `هفتم (${grade7QCount})`}
                   </div>
-                  <div 
-                    className="bg-violet-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95" 
+                  <div
+                    className="bg-violet-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(grade8QCount / qBankTotal) * 100}%` }}
                     title={`هشتم: ${grade8QCount} سوال`}
                   >
                     {grade8QCount > 0 && `هشتم (${grade8QCount})`}
                   </div>
-                  <div 
-                    className="bg-emerald-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95" 
+                  <div
+                    className="bg-emerald-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(grade9QCount / qBankTotal) * 100}%` }}
                     title={`نهم: ${grade9QCount} سوال`}
                   >
@@ -736,22 +644,22 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               <div className="space-y-2">
                 <span className="text-[11px] font-bold text-slate-500 block">تفکیک ساختاری نوع سوالات بانک</span>
                 <div className="flex bg-slate-100 h-6 rounded-lg overflow-hidden text-[9px] font-semibold text-white">
-                  <div 
-                    className="bg-rose-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95" 
+                  <div
+                    className="bg-rose-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(typeMultiChoiceCount / qBankTotal) * 100}%` }}
                     title={`تستی: ${typeMultiChoiceCount} سوال`}
                   >
                     {typeMultiChoiceCount > 0 && `تستی (${typeMultiChoiceCount})`}
                   </div>
-                  <div 
-                    className="bg-indigo-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95" 
+                  <div
+                    className="bg-indigo-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(typeEssayCount / qBankTotal) * 100}%` }}
                     title={`تشریحی: ${typeEssayCount} سوال`}
                   >
                     {typeEssayCount > 0 && `تشریحی (${typeEssayCount})`}
                   </div>
-                  <div 
-                    className="bg-amber-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95" 
+                  <div
+                    className="bg-amber-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(typeRestCount / qBankTotal) * 100}%` }}
                     title={`سایر: ${typeRestCount} سوال`}
                   >
@@ -784,16 +692,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               </div>
             </div>
 
-          </motion.div>
+          </div>
 
           {/* Active Class Groups List */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="bg-white/70 backdrop-blur-sm border border-white/30 p-6 rounded-3xl shadow-sm" id="section-class-groups-list"
-          >
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm" id="section-class-groups-list">
             <h3 className="text-xs font-black text-slate-800 mb-4">آمار کلاس‌های تحت پوشش پایه‌ها</h3>
             <div className="space-y-3">
               {mockClassGroups.map((cg) => (
@@ -813,7 +715,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 </div>
               ))}
             </div>
-            
+
             <button
               id="sidebar-add-class-dashboard"
               onClick={() => onNavigate('students')}
@@ -822,16 +724,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               <Plus className="w-3.5 h-3.5" />
               <span>ایجاد کلاس یا گروه جدید</span>
             </button>
-          </motion.div>
+          </div>
 
           {/* Quick Security Checklist / Protip */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-50px' }}
-            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-            className="bg-gradient-to-tr from-indigo-50/50 to-violet-50/50 p-6 rounded-3xl border border-indigo-100/50 shadow-sm"
-          >
+          <div className="bg-gradient-to-tr from-indigo-50/50 to-violet-50/50 p-6 rounded-3xl border border-indigo-100/50 shadow-2xs">
             <div className="flex items-start gap-4">
               <div className="p-2.5 bg-white text-indigo-600 rounded-xl shadow-2xs">
                 <Award className="w-5 h-5" />
@@ -851,7 +747,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
 
         </div>
 
@@ -860,7 +756,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       {/* 8. Interactively Functional Excel Import Modal Component */}
       {isExcelModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" id="excel-import-modal-backdrop">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -869,7 +765,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           >
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <button 
+              <button
                 onClick={() => {
                   setIsExcelModalOpen(false);
                   setImportStep('idle');
@@ -887,7 +783,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
             {/* Modal Body / Active Step Controls */}
             <div className="p-6 space-y-5">
-              
+
               {importStep === 'idle' && (
                 <div className="space-y-4">
                   <p className="text-slate-500 leading-relaxed text-[11px]">
@@ -897,7 +793,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     ⚠️ در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
                   </p>
 
-                  <div 
+                  <div
                     onDragEnter={handleDrag}
                     onDragOver={handleDrag}
                     onDragLeave={handleDrag}
@@ -914,10 +810,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
                     <label className="mt-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-[10px] cursor-pointer shadow-xs transition-all">
                       انتخاب فایل اکسل
-                      <input 
-                        type="file" 
-                        accept=".xlsx,.xls,.csv" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
                         onChange={handleFileChange}
                       />
                     </label>
@@ -978,7 +874,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   </div>
 
                   <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
-                    <button 
+                    <button
                       onClick={() => {
                         setImportStep('idle');
                         setExcelFile(null);
@@ -987,7 +883,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     >
                       لغو و تفکیک دگر
                     </button>
-                    <button 
+                    <button
                       onClick={handleConfirmImport}
                       className="px-4.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
                     >

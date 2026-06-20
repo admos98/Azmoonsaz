@@ -5,7 +5,7 @@
 
 import { LayoutDashboard, Users, HelpCircle, FileText, CheckSquare, Settings, LogOut, GraduationCap, ArrowLeftRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { mockTeacher } from '../mockData';
 import { Teacher } from '../types';
 import { authService } from '../services/api';
@@ -15,11 +15,9 @@ interface SidebarProps {
   onTabChange: (tab: string) => void;
   onLogout: () => void;
   onSwitchRole: () => void;
-  isOpen?: boolean;
-  onClose?: () => void;
 }
 
-export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRole, isOpen = false, onClose }: SidebarProps) {
+export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRole }: SidebarProps) {
   const [teacher, setTeacher] = useState<Teacher>(mockTeacher);
 
   useEffect(() => {
@@ -34,6 +32,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
 
   const menuItems = [
     { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard },
+    { id: 'classes', label: 'مدیریت کلاس‌ها', icon: GraduationCap },
     { id: 'students', label: 'دانش‌آموزان', icon: Users },
     { id: 'questions', label: 'بانک سوالات', icon: HelpCircle },
     { id: 'exams', label: 'آزمون‌ها', icon: FileText },
@@ -41,27 +40,27 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
     { id: 'settings', label: 'تنظیمات سامانه', icon: Settings },
   ];
 
-  const sidebarContent = (
-    <div className="flex flex-col h-full">
+  return (
+    <aside className="fixed inset-y-0 right-0 z-20 w-64 bg-white/80 backdrop-blur-xl border-l border-slate-200/60 flex flex-col justify-between text-slate-700 shadow-xl transition-all select-none" id="sidebar-container">
       <div>
         {/* Logo / Header */}
-        <div className="h-20 flex items-center gap-3 px-6 border-b border-white/10" id="logo-section">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-            <GraduationCap className="w-5.5 h-5.5" />
+        <div className="h-24 flex items-center gap-3 px-6 border-b border-slate-100/50" id="logo-section">
+          <div className="w-11 h-11 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 ring-4 ring-indigo-50">
+            <GraduationCap className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-md font-bold text-slate-800 tracking-tight">آزمون‌ساز</h1>
-            <p className="text-[10px] text-slate-400">پنل مدیریت دبیران</p>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">آزمون‌ساز</h1>
+            <p className="text-[10px] font-medium text-slate-400">پنل مدیریت دبیران</p>
           </div>
         </div>
 
         {/* Teacher Mini Profile */}
-        <div className="p-4 mx-3 my-4 bg-white/50 rounded-2xl border border-white/20 flex items-center space-x-3 space-x-reverse shadow-sm" id="sidebar-profile">
+        <div className="p-4 mx-4 my-6 bg-indigo-50/40 rounded-3xl border border-indigo-100/50 flex items-center space-x-3 space-x-reverse shadow-sm" id="sidebar-profile">
           <img
             src={teacher.avatarUrl}
             alt={teacher.name}
             referrerPolicy="no-referrer"
-            className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+            className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm ring-2 ring-indigo-100"
           />
           <div className="flex-1 overflow-hidden">
             <h4 className="text-xs font-bold text-slate-800 truncate">{teacher.name}</h4>
@@ -70,99 +69,70 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="px-4 space-y-1" id="sidebar-nav">
+        <nav className="px-4 space-y-1.5" id="sidebar-nav">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id || (item.id === 'exams' && currentTab.startsWith('exams'));
             return (
-              <button
+              <motion.button
                 key={item.id}
+                whileHover={{ x: -4 }}
+                whileTap={{ scale: 0.98 }}
                 id={`sidebar-item-${item.id}`}
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative group cursor-pointer ${
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 relative group cursor-pointer ${
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <div className="flex items-center space-x-3 space-x-reverse">
-                  <Icon className={`w-4 h-4 mr-0.5 transition-transform group-hover:scale-105 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 mr-0.5 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                   <span>{item.label}</span>
                 </div>
-              </button>
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active-pill"
+                    className="w-1.5 h-5 bg-white rounded-full"
+                  />
+                )}
+              </motion.button>
             );
           })}
         </nav>
       </div>
 
       {/* Footer Area */}
-      <div className="p-4 border-t border-white/10 space-y-3 mt-auto" id="sidebar-footer">
+      <div className="p-6 border-t border-slate-100/60 space-y-4" id="sidebar-footer">
         {/* Subscription box */}
-        <div className="p-4 bg-slate-900 rounded-2xl text-white relative overflow-hidden">
+        <div className="p-4 bg-slate-900 rounded-3xl text-white relative overflow-hidden shadow-xl shadow-slate-200">
           <div className="relative z-10 text-right">
-            <p className="text-[10px] text-slate-400 mb-0.5">اشتراک فعلی</p>
-            <p className="text-xs font-bold">نسخه حرفه‌ای (طلایی)</p>
+            <p className="text-[10px] text-slate-400 mb-1">اشتراک فعال</p>
+            <p className="text-xs font-black tracking-tight">نسخه حرفه‌ای (طلایی)</p>
           </div>
-          <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full blur-xl"></div>
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-indigo-500/20 rounded-full blur-2xl"></div>
         </div>
 
         {/* Switch Role Trigger */}
         <button
           id="btn-switch-role"
           onClick={onSwitchRole}
-          className="w-full flex items-center justify-center space-x-2 space-x-reverse py-2.5 px-3 rounded-xl text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors font-bold cursor-pointer"
+          className="w-full flex items-center justify-center space-x-2 space-x-reverse py-3 px-4 rounded-2xl text-xs bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all font-bold cursor-pointer shadow-sm"
         >
-          <ArrowLeftRight className="w-3.5 h-3.5" />
-          <span>بخش دانش‌آموزی (آزمون)</span>
+          <ArrowLeftRight className="w-3.5 h-3.5 text-indigo-600" />
+          <span>بخش دانش‌آموزی</span>
         </button>
 
         {/* Logout */}
         <button
           id="btn-logout"
           onClick={onLogout}
-          className="w-full flex items-center justify-center space-x-2 space-x-reverse py-2 px-3 rounded-xl text-xs text-rose-600 hover:bg-rose-50 transition-colors font-semibold cursor-pointer"
+          className="w-full flex items-center justify-center space-x-2 space-x-reverse py-2 px-3 rounded-xl text-xs text-rose-500 hover:bg-rose-50 transition-colors font-semibold cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span>خروج از پنل</span>
+          <span>خروج از سامانه</span>
         </button>
       </div>
-    </div>
-  );
-
-  return (
-    <>
-      {/* Desktop sidebar — always visible on md+ */}
-      <aside className="hidden md:flex fixed inset-y-0 right-0 z-20 w-64 bg-white/70 backdrop-blur-xl border-l border-white/20 flex-col justify-between text-slate-700 shadow-sm select-none" id="sidebar-container">
-        {sidebarContent}
-      </aside>
-
-      {/* Mobile sidebar — slides in from right with backdrop */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={onClose}
-              className="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
-            />
-
-            {/* Sliding panel */}
-            <motion.aside
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-              className="md:hidden fixed inset-y-0 right-0 z-50 w-64 bg-white/80 backdrop-blur-xl border-l border-white/20 shadow-2xl flex flex-col text-slate-700 select-none"
-              id="sidebar-container-mobile"
-            >
-              {sidebarContent}
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
-    </>
+    </aside>
   );
 }
