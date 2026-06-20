@@ -187,10 +187,24 @@ export default function Classes() {
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
             >
               <option value="">انتخاب پایه...</option>
-              <option value="هفتم">هفتم</option>
-              <option value="هشتم">هشتم</option>
-              <option value="نهم">نهم</option>
-              <option value="نامشخص">نامشخص</option>
+              <optgroup label="دبستان">
+                <option value="اول">اول</option>
+                <option value="دوم">دوم</option>
+                <option value="سوم">سوم</option>
+                <option value="چهارم">چهارم</option>
+                <option value="پنجم">پنجم</option>
+                <option value="ششم">ششم</option>
+              </optgroup>
+              <optgroup label="دوره اول متوسطه">
+                <option value="هفتم">هفتم</option>
+                <option value="هشتم">هشتم</option>
+                <option value="نهم">نهم</option>
+              </optgroup>
+              <optgroup label="دوره دوم متوسطه">
+                <option value="دهم">دهم</option>
+                <option value="یازدهم">یازدهم</option>
+                <option value="دوازدهم">دوازدهم</option>
+              </optgroup>
             </select>
           </div>
           <div className="pt-4 flex justify-end gap-3">

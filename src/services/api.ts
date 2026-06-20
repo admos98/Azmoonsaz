@@ -26,26 +26,7 @@ const KEYS = {
 };
 
 function initializeStorage() {
-  if (typeof window === 'undefined') return;
-
-  if (!localStorage.getItem(KEYS.TEACHER)) {
-    localStorage.setItem(KEYS.TEACHER, JSON.stringify(mockTeacher));
-  }
-  if (!localStorage.getItem(KEYS.STUDENTS)) {
-    localStorage.setItem(KEYS.STUDENTS, JSON.stringify(initialStudents));
-  }
-  if (!localStorage.getItem(KEYS.QUESTIONS)) {
-    localStorage.setItem(KEYS.QUESTIONS, JSON.stringify(initialQuestions));
-  }
-  if (!localStorage.getItem(KEYS.EXAMS)) {
-    localStorage.setItem(KEYS.EXAMS, JSON.stringify(initialExams));
-  }
-  if (!localStorage.getItem(KEYS.SUBMISSIONS)) {
-    localStorage.setItem(KEYS.SUBMISSIONS, JSON.stringify(initialSubmissions));
-  }
-  if (!localStorage.getItem(KEYS.CLASSES)) {
-    localStorage.setItem(KEYS.CLASSES, JSON.stringify(mockClassGroups));
-  }
+  // Removed mock data initialization to ensure a clean production environment.
 }
 
 initializeStorage();
@@ -80,10 +61,7 @@ export const authService = {
       return teacher;
     }
 
-    await delay(600);
-    const target = mockTeachers.find(t => t.email === email) || mockTeacher;
-    setItem(KEYS.TEACHER, target);
-    return target;
+    throw new Error('Backend configuration is missing. Please configure Supabase to login.');
   },
 
   async logoutTeacher(): Promise<void> {
@@ -119,11 +97,11 @@ export const classService = {
         const response = await teacherGet<{ classes: ClassGroup[] }>('/api/teacher/classes');
         return response.classes;
       } catch (err) {
-        console.warn('Secure class group fetch failed; falling back to mock data.', err);
+        console.error('Secure class group fetch failed:', err);
+        return [];
       }
     }
-    await delay(200);
-    return getItem<ClassGroup[]>(KEYS.CLASSES, mockClassGroups);
+    return getItem<ClassGroup[]>(KEYS.CLASSES, []);
   },
   async createClassGroup(name: string, grade: string): Promise<ClassGroup> {
     if (isSecureTeacherModeAvailable()) {
@@ -169,11 +147,11 @@ export const studentService = {
         const response = await teacherGet<{ students: Student[] }>('/api/teacher/students');
         return response.students;
       } catch (err) {
-        console.warn('Secure student fetch failed; falling back to mock data.', err);
+        console.error('Secure student fetch failed:', err);
+        return [];
       }
     }
-    await delay(300);
-    return getItem<Student[]>(KEYS.STUDENTS, initialStudents);
+    return getItem<Student[]>(KEYS.STUDENTS, []);
   },
 
   async importStudents(studentsToImport: Omit<Student, 'id' | 'maskedNationalId'>[]): Promise<Student[]> {
@@ -261,11 +239,11 @@ export const questionService = {
         const response = await teacherGet<{ questions: Question[] }>('/api/teacher/questions');
         return response.questions;
       } catch (err) {
-        console.warn('Secure question fetch failed; falling back to mock data.', err);
+        console.error('Secure question fetch failed:', err);
+        return [];
       }
     }
-    await delay(300);
-    return getItem<Question[]>(KEYS.QUESTIONS, initialQuestions);
+    return getItem<Question[]>(KEYS.QUESTIONS, []);
   },
 
   async createQuestion(question: Omit<Question, 'id' | 'createdAt'>): Promise<Question> {
@@ -318,11 +296,11 @@ export const examService = {
         const response = await teacherGet<{ exams: Exam[] }>('/api/teacher/exams');
         return response.exams;
       } catch (err) {
-        console.warn('Secure exam fetch failed; falling back to mock data.', err);
+        console.error('Secure exam fetch failed:', err);
+        return [];
       }
     }
-    await delay(300);
-    return getItem<Exam[]>(KEYS.EXAMS, initialExams);
+    return getItem<Exam[]>(KEYS.EXAMS, []);
   },
 
   async createExam(exam: Omit<Exam, 'id' | 'createdAt' | 'examCode'>): Promise<Exam> {
@@ -459,12 +437,11 @@ export const gradingService = {
         const response = await teacherGet<{ submissions: Submission[] }>('/api/teacher/submissions' + suffix);
         return response.submissions;
       } catch (err) {
-        console.warn('Secure submissions fetch failed; falling back to mock data.', err);
+        console.error('Secure submissions fetch failed:', err);
+        return [];
       }
     }
-    await delay(300);
-    const subs = getItem<Submission[]>(KEYS.SUBMISSIONS, initialSubmissions);
-    return examId ? subs.filter(s => s.examId === examId) : subs;
+    return getItem<Submission[]>(KEYS.SUBMISSIONS, []);
   },
 
   async autoGradeSubmission(submissionId: string): Promise<Submission> {

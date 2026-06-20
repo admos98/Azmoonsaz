@@ -4,21 +4,22 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Search, Bell, Sun, ArrowLeftRight, Menu } from 'lucide-react';
+import { Search, Bell, Sun, ArrowLeftRight } from 'lucide-react';
 import { mockTeacher } from '../mockData';
 import BackendModeBadge from './BackendModeBadge';
 import { Teacher } from '../types';
 import { authService } from '../services/api';
+import { formatPersianDate } from '../services/persianHelpers';
+
 
 interface TopbarProps {
   currentTab: string;
   onSwitchRole: () => void;
   onLogout: () => void;
-  onOpenSidebar?: () => void;
   activeExamNotifications?: number;
 }
 
-export default function Topbar({ currentTab, onSwitchRole, onLogout, onOpenSidebar, activeExamNotifications = 2 }: TopbarProps) {
+export default function Topbar({ currentTab, onSwitchRole, onLogout, activeExamNotifications = 2 }: TopbarProps) {
   const [teacher, setTeacher] = useState<Teacher>(mockTeacher);
 
   useEffect(() => {
@@ -49,23 +50,12 @@ export default function Topbar({ currentTab, onSwitchRole, onLogout, onOpenSideb
     return 'پنل مدیریت آزمون‌ساز';
   };
 
-  const getPersianDateString = () => {
-    return 'شنبه، ۲۳ خرداد ۱۴۰۵';
+const getPersianDateString = () => {
+    return formatPersianDate(new Date().toISOString());
   };
 
   return (
-    <header className="sticky top-0 z-10 h-20 bg-white/70 backdrop-blur-xl border-b border-white/20 px-4 md:px-8 flex items-center justify-between shadow-sm select-none" id="topbar-wrapper">
-      {/* Hamburger Menu - mobile only */}
-      {onOpenSidebar && (
-        <button
-          onClick={onOpenSidebar}
-          className="md:hidden p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-          aria-label="باز کردن منو"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-      )}
-
+    <header className="sticky top-0 z-10 h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shadow-2xs select-none" id="topbar-wrapper">
       {/* Search Bar & Title */}
       <div className="flex items-center space-x-8 space-x-reverse" id="topbar-left-side">
         <div className="hidden lg:block">
@@ -89,7 +79,7 @@ export default function Topbar({ currentTab, onSwitchRole, onLogout, onOpenSideb
 
       {/* Notifications, Settings & Actions */}
       <div className="flex items-center space-x-4 space-x-reverse" id="topbar-actions-right">
-        <div><BackendModeBadge /></div>
+        <div className="max-lg:hidden"><BackendModeBadge /></div>
         {/* Switch Role Trigger Quick */}
         <button
           id="quick-role-switch"

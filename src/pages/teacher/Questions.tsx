@@ -5,22 +5,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  HelpCircle, 
-  Search, 
-  Filter, 
-  PlusCircle, 
-  Award, 
+import {
+  HelpCircle,
+  Search,
+  Filter,
+  PlusCircle,
+  Award,
   Image as ImageIcon,
-  Layers, 
-  Check, 
-  CheckSquare, 
-  Grid, 
-  List, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Tag as TagIcon, 
+  Layers,
+  Check,
+  CheckSquare,
+  Grid,
+  List,
+  Edit,
+  Trash2,
+  Eye,
+  Tag as TagIcon,
   AlertCircle,
   X,
   FileText,
@@ -57,6 +57,23 @@ export default function Questions() {
   const [questions, setQuestions] = useState<RichQuestion[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // View & UI State
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [previewQuestion, setPreviewQuestion] = useState<RichQuestion | null>(null);
+  const [showAddEditDrawer, setShowAddEditDrawer] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<'add' | 'edit'>('add');
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filters state
+  const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [selectedSubject, setSelectedSubject] = useState<string>('all');
+  const [selectedSection, setSelectedSection] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
+  const [selectedTag, setSelectedTag] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+
   useEffect(() => {
     const fetchQuestions = async () => {
       setLoading(true);
@@ -89,28 +106,6 @@ export default function Questions() {
     fetchQuestions();
   }, []);
 
-  // Filters state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState<string>('all');
-  const [selectedSubject, setSelectedSubject] = useState<string>('all');
-  const [selectedSection, setSelectedSection] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
-  const [selectedTag, setSelectedTag] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-
-  // Layout View Mode (Card / Table)
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
-
-  // Preview Question Modal State
-  const [previewQuestion, setPreviewQuestion] = useState<RichQuestion | null>(null);
-
-  // Add / Edit Modal State
-  const [showAddEditDrawer, setShowAddEditDrawer] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<'add' | 'edit'>('add');
-  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
-
-  // Dynamic Form Fields state
   const [formGrade, setFormGrade] = useState('هفتم');
   const [formSubject, setFormSubject] = useState('علوم تجربی');
   const [formSection, setFormSection] = useState('فصل اول');
@@ -123,7 +118,7 @@ export default function Questions() {
   const [formExplanation, setFormExplanation] = useState('');
   const [formSampleAnswer, setFormSampleAnswer] = useState('');
   const [formImageUrl, setFormImageUrl] = useState('');
-  
+
   // Choice Options builder state
   const [formOptions, setFormOptions] = useState<Array<{ id: string; text: string; isCorrect: boolean; imageUrl?: string }>>([
     { id: 'o1', text: 'گزینه الف', isCorrect: true, imageUrl: '' },
@@ -153,9 +148,9 @@ export default function Questions() {
 
   // Parts / subquestions state (for Reading Comprehension & Cloze Test)
   const [formParts, setFormParts] = useState<QuestionPart[]>([
-    { 
-      id: 'part-1', 
-      text: 'مینی سوال الف', 
+    {
+      id: 'part-1',
+      text: 'مینی سوال الف',
       type: 'single_choice',
       options: [
         { id: 'p1-o1', text: 'گزینه صحیح', isCorrect: true },
@@ -268,9 +263,9 @@ export default function Questions() {
 
   // Subquestion parts handlers
   const addPartRow = () => {
-    setFormParts([...formParts, { 
-      id: `part-${Date.now()}`, 
-      text: 'زیرسوال جدید', 
+    setFormParts([...formParts, {
+      id: `part-${Date.now()}`,
+      text: 'زیرسوال جدید',
       type: 'single_choice',
       options: [{ id: 'po1', text: 'گزینه اول', isCorrect: true }]
     }]);
@@ -331,7 +326,7 @@ export default function Questions() {
     setFormExplanation(q.explanation || '');
     setFormSampleAnswer(q.sampleAnswer || '');
     setFormImageUrl(q.imageUrl || '');
-    
+
     // Type specifics
     if (q.options) {
       setFormOptions(q.options.map(o => ({
@@ -452,9 +447,9 @@ export default function Questions() {
 
   // Filter application pipeline
   const filteredQuestions = questions.filter(q => {
-    const matchesSearch = 
-      q.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      q.text.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch =
+      q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
       q.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       q.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -467,20 +462,20 @@ export default function Questions() {
     const matchesStatus = selectedStatus === 'all' || q.completenessStatus === selectedStatus;
 
     return (
-      matchesSearch && 
-      matchesGrade && 
-      matchesSubject && 
-      matchesSection && 
-      matchesType && 
-      matchesDifficulty && 
-      matchesTag && 
+      matchesSearch &&
+      matchesGrade &&
+      matchesSubject &&
+      matchesSection &&
+      matchesType &&
+      matchesDifficulty &&
+      matchesTag &&
       matchesStatus
     );
   });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 text-right font-sans mb-12" dir="rtl" id="questions-tab-view">
-      
+
       {/* Page Title Board */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-150 shadow-xs" id="questions-title-plate">
         <div className="space-y-1">
@@ -490,7 +485,7 @@ export default function Questions() {
           </h2>
           <p className="text-[11px] text-slate-400">بانک تخصصی با پشتیبانی از ۱۱ نوع قالب تستی، تشریحی، وصل‌کردنی، مرتب‌سازی، درک‌مطلب و کلوز تست با بارگذاری متنی و تصویری</p>
         </div>
-        
+
         <div className="flex items-center gap-2 w-full md:w-auto">
           {/* Card / Table Toggle */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-1 flex items-center gap-1 shrink-0">
@@ -534,7 +529,7 @@ export default function Questions() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          
+
           {/* Search text */}
           <div className="space-y-1">
             <label className="text-[10px] text-slate-400 font-bold block">جستجو در متن سوال یا برچسب‌ها:</label>
@@ -582,9 +577,24 @@ export default function Questions() {
               className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه پایه‌ها</option>
-              <option value="هفتم">پایه هفتم</option>
-              <option value="هشتم">پایه هشتم</option>
-              <option value="نهم">پایه نهم</option>
+              <optgroup label="دبستان">
+                <option value="اول">اول</option>
+                <option value="دوم">دوم</option>
+                <option value="سوم">سوم</option>
+                <option value="چهارم">چهارم</option>
+                <option value="پنجم">پنجم</option>
+                <option value="ششم">ششم</option>
+              </optgroup>
+              <optgroup label="دوره اول متوسطه">
+                <option value="هفتم">هفتم</option>
+                <option value="هشتم">هشتم</option>
+                <option value="نهم">نهم</option>
+              </optgroup>
+              <optgroup label="دوره دوم متوسطه">
+                <option value="دهم">دهم</option>
+                <option value="یازدهم">یازدهم</option>
+                <option value="دوازدهم">دوازدهم</option>
+              </optgroup>
             </select>
           </div>
 
@@ -696,7 +706,7 @@ export default function Questions() {
                 {filteredQuestions.map(q => {
                   const hasImage = !!q.imageUrl || q.options?.some(o => (o as any).imageUrl);
                   const subquestionsCount = q.parts?.length || 0;
-                  
+
                   return (
                     <motion.div
                       key={q.id}
@@ -708,7 +718,7 @@ export default function Questions() {
                       id={`card-q-${q.id}`}
                     >
                       <div className="space-y-3.5">
-                        
+
                         {/* Upper line metadata */}
                         <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -716,7 +726,7 @@ export default function Questions() {
                             <span className="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-md">{q.category}</span>
                             {q.section && <span className="text-slate-500 italic">فصل: {q.section}</span>}
                           </div>
-                          
+
                           <div className={`px-2 py-0.5 rounded-full border text-[9px] font-bold ${getDifficultyBadgeColor(q.difficulty)}`}>
                             {getDifficultyLabel(q.difficulty)}
                           </div>
@@ -827,7 +837,7 @@ export default function Questions() {
                       {filteredQuestions.map(q => {
                         const hasImage = !!q.imageUrl || q.options?.some(o => (o as any).imageUrl);
                         const subquestionsCount = q.parts?.length || 0;
-                        
+
                         return (
                           <motion.tr
                             key={q.id}
@@ -955,12 +965,12 @@ export default function Questions() {
 
             {/* Renderer core scroll */}
             <div className="p-6 overflow-y-auto flex-1">
-              <QuestionRenderer 
-                question={previewQuestion} 
-                showCorrectAnswers={true} 
+              <QuestionRenderer
+                question={previewQuestion}
+                showCorrectAnswers={true}
               />
             </div>
-            
+
             {/* Footer comments */}
             <div className="bg-white border-t border-slate-150 p-4 flex justify-between items-center text-[10px] text-slate-400 font-medium">
               <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
@@ -974,7 +984,7 @@ export default function Questions() {
       {showAddEditDrawer && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex justify-end" id="add-edit-drawer-overlay">
           <div className="fixed inset-0" onClick={() => setShowAddEditDrawer(false)} />
-          
+
           <motion.div
             initial={{ opacity: 0, x: 200 }}
             animate={{ opacity: 1, x: 0 }}
@@ -1002,7 +1012,7 @@ export default function Questions() {
 
             {/* Split layout inside drawer: Form on right, instant Realtime-rendered Live Preview on left! */}
             <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
-              
+
               {/* Left Column (Realtime live visual preview of QuestionRenderer as the teacher types!) */}
               <div className="hidden lg:block lg:col-span-5 bg-slate-100 p-5 overflow-y-auto border-l border-slate-200" id="drawer-live-visual">
                 <div className="sticky top-0 space-y-3.5">
@@ -1010,9 +1020,9 @@ export default function Questions() {
                     <Eye className="w-4 h-4 text-indigo-500" />
                     <span className="text-[11px]">محیط پیش‌نمایش لحظه‌ای دبیر:</span>
                   </div>
-                  
+
                   {/* Construct temporary dummy question to feed to high-fidelity QuestionRenderer in real-time! */}
-                  <QuestionRenderer 
+                  <QuestionRenderer
                     question={{
                       id: 'dummy-drawer',
                       type: formType,
@@ -1048,11 +1058,11 @@ export default function Questions() {
               {/* Right Column (Intense Form controls) */}
               <div className="lg:col-span-7 overflow-y-auto p-6 bg-white space-y-5" id="drawer-form-contents">
                 <form onSubmit={handleSaveQuestion} className="space-y-4">
-                  
+
                   {/* 1. Grade, Subject, Section, Difficulty */}
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3">
                     <span className="font-bold text-slate-800 text-[11px] block border-r-2 border-indigo-500 pr-2 mb-2">شناسنامه علمی سوال</span>
-                    
+
                     <div className="grid grid-cols-2 gap-3.5">
                       {/* Grade Selector */}
                       <div className="space-y-1">
@@ -1062,9 +1072,25 @@ export default function Questions() {
                           onChange={(e) => setFormGrade(e.target.value)}
                           className="w-full bg-white border border-slate-200 p-2 rounded-xl focus:outline-hidden font-bold"
                         >
-                          <option value="هفتم">پایه هفتم</option>
-                          <option value="هشتم">پایه هشتم</option>
-                          <option value="نهم">پایه نهم</option>
+                          <option value="">انتخاب پایه...</option>
+                          <optgroup label="دبستان">
+                            <option value="اول">اول</option>
+                            <option value="دوم">دوم</option>
+                            <option value="سوم">سوم</option>
+                            <option value="چهارم">چهارم</option>
+                            <option value="پنجم">پنجم</option>
+                            <option value="ششم">ششم</option>
+                          </optgroup>
+                          <optgroup label="دوره اول متوسطه">
+                            <option value="هفتم">هفتم</option>
+                            <option value="هشتم">هشتم</option>
+                            <option value="نهم">نهم</option>
+                          </optgroup>
+                          <optgroup label="دوره دوم متوسطه">
+                            <option value="دهم">دهم</option>
+                            <option value="یازدهم">یازدهم</option>
+                            <option value="دوازدهم">دوازدهم</option>
+                          </optgroup>
                         </select>
                       </div>
 
@@ -1188,26 +1214,26 @@ export default function Questions() {
                   {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2">
                     <span className="text-[10px] text-slate-550 font-bold block">الصاق پرونده تصویر برای کل سوال (اختیاری):</span>
-                    
+
                     <div className="flex items-center gap-3">
                       {/* Hidden manual selector */}
                       <label className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-250 text-slate-700 text-[11px] rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
                         <ImageIcon className="w-3.5 h-3.5" />
                         <span>انتخاب فایل تصویر</span>
-                        <input 
-                          type="file" 
+                        <input
+                          type="file"
                           accept="image/*"
-                          className="hidden" 
+                          className="hidden"
                           onChange={(e) => handleMockImageUpload(e, 'main')}
                         />
                       </label>
 
                       {formImageUrl ? (
                         <div className="flex items-center gap-2">
-                          <img 
-                            src={formImageUrl} 
-                            alt="تصویر بارگذاری شده در فرم" 
-                            className="w-12 h-12 rounded-lg object-cover border border-slate-250 bg-white" 
+                          <img
+                            src={formImageUrl}
+                            alt="تصویر بارگذاری شده در فرم"
+                            className="w-12 h-12 rounded-lg object-cover border border-slate-250 bg-white"
                           />
                           <button
                             type="button"
@@ -1293,10 +1319,10 @@ export default function Questions() {
                                 <div className="flex items-center gap-2">
                                   <label className="px-2 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-650 rounded-md text-[9px] font-bold cursor-pointer shrink-0">
                                     <span>الحاق تصویر</span>
-                                    <input 
-                                      type="file" 
+                                    <input
+                                      type="file"
                                       accept="image/*"
-                                      className="hidden" 
+                                      className="hidden"
                                       onChange={(e) => handleMockImageUpload(e, { optIndex: oIdx })}
                                     />
                                   </label>
@@ -1329,12 +1355,12 @@ export default function Questions() {
                         <label className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
                           formCorrectTrueFalse === true ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200'
                         }`}>
-                          <input 
-                            type="radio" 
-                            name="drawer-tf-key" 
+                          <input
+                            type="radio"
+                            name="drawer-tf-key"
                             checked={formCorrectTrueFalse === true}
                             onChange={() => setFormCorrectTrueFalse(true)}
-                            className="hidden" 
+                            className="hidden"
                           />
                           <span>صحیح / درست</span>
                         </label>
@@ -1342,12 +1368,12 @@ export default function Questions() {
                         <label className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
                           formCorrectTrueFalse === false ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200'
                         }`}>
-                          <input 
-                            type="radio" 
-                            name="drawer-tf-key" 
+                          <input
+                            type="radio"
+                            name="drawer-tf-key"
                             checked={formCorrectTrueFalse === false}
                             onChange={() => setFormCorrectTrueFalse(false)}
-                            className="hidden" 
+                            className="hidden"
                           />
                           <span>غلط / نادرست</span>
                         </label>
@@ -1540,7 +1566,7 @@ export default function Questions() {
                               >
                                 &times;
                               </button>
-                              
+
                               <div className="grid grid-cols-3 gap-2">
                                 <div className="col-span-2 space-y-1">
                                   <span className="text-[9px] text-slate-400 block">عنوان معیار:</span>

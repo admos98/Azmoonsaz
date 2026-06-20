@@ -234,19 +234,35 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
           {/* Grade and Class selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label htmlFor="exam-grade-select" className="text-xs font-bold text-slate-700 block">پایه آموزشی مرجع:</label>
-              <select
-                id="exam-grade-select"
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-700 px-3.5 py-2 rounded-xl focus:outline-hidden focus:border-indigo-400"
-              >
+          <div className="space-y-2">
+            <label htmlFor="exam-grade-select" className="text-xs font-bold text-slate-700 block">پایه آموزشی مرجع:</label>
+            <select
+              id="exam-grade-select"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-700 px-3.5 py-2 rounded-xl focus:outline-hidden focus:border-indigo-400"
+            >
+              <option value="">انتخاب پایه...</option>
+              <optgroup label="دبستان">
+                <option value="اول">پایه اول</option>
+                <option value="دوم">پایه دوم</option>
+                <option value="سوم">پایه سوم</option>
+                <option value="چهارم">پایه چهارم</option>
+                <option value="پنجم">پایه پنجم</option>
+                <option value="ششم">پایه ششم</option>
+              </optgroup>
+              <optgroup label="دوره اول متوسطه">
                 <option value="هفتم">پایه هفتم</option>
                 <option value="هشتم">پایه هشتم</option>
                 <option value="نهم">پایه نهم</option>
-              </select>
-            </div>
+              </optgroup>
+              <optgroup label="دوره دوم متوسطه">
+                <option value="دهم">پایه دهم</option>
+                <option value="یازدهم">پایه یازدهم</option>
+                <option value="دوازدهم">پایه دوازدهم</option>
+              </optgroup>
+            </select>
+          </div>
 
             <div className="space-y-2">
               <span className="text-xs font-bold text-slate-700 block">تخصیص کلاس‌های دبیرستان (امکان بیش از یک تشکیلات):</span>
