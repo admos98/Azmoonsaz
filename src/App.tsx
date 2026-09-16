@@ -3,23 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { TeacherProvider } from './contexts/TeacherContext';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import Login from './pages/teacher/Login';
-import Dashboard from './pages/teacher/Dashboard';
-import Students from './pages/teacher/Students';
-import Classes from './pages/teacher/Classes';
-import Questions from './pages/teacher/Questions';
-import Exams from './pages/teacher/Exams';
-import NewExam from './pages/teacher/NewExam';
-import Settings from './pages/teacher/Settings';
 import Onboarding from './pages/teacher/Onboarding';
 import ResetPassword from './pages/teacher/ResetPassword';
 import ExamPortal from './pages/student/ExamPortal';
 import SecureExamPortal from './pages/student/SecureExamPortal';
 import { Exam, Teacher } from './types';
+
+// Lazy-loaded teacher pages (code-split)
+const Dashboard = lazy(() => import('./pages/teacher/Dashboard'));
+const Students = lazy(() => import('./pages/teacher/Students'));
+const Classes = lazy(() => import('./pages/teacher/Classes'));
+const Questions = lazy(() => import('./pages/teacher/Questions'));
+const Exams = lazy(() => import('./pages/teacher/Exams'));
+const NewExam = lazy(() => import('./pages/teacher/NewExam'));
+const Settings = lazy(() => import('./pages/teacher/Settings'));
 
 export default function App() {
   const [userRole, setUserRole] = useState<'teacher' | 'student'>('teacher');
@@ -286,7 +288,19 @@ export default function App() {
 
         {/* Dynamic Page Router */}
         <div className="p-6 md:p-8 flex-1 bg-slate-50/50" id="router-view-box">
-          {renderTeacherContent()}
+          <Suspense fallback={
+            <div className="space-y-6 animate-pulse">
+              <div className="h-8 w-48 bg-slate-200 rounded-xl" />
+              <div className="h-40 bg-slate-100 rounded-2xl" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-32 bg-slate-100 rounded-2xl" />
+                ))}
+              </div>
+            </div>
+          }>
+            {renderTeacherContent()}
+          </Suspense>
         </div>
       </div>
     </div>
