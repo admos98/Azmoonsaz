@@ -192,24 +192,6 @@ export default function App() {
     );
   }
 
-  const mockExamRouteMatch = currentPath.match(/^\/mock-exam\/([^/]+)(?:\/(start|take|submitted))?$/);
-
-  if (mockExamRouteMatch) {
-    const code = mockExamRouteMatch[1];
-    const subRoute = mockExamRouteMatch[2] || 'login';
-    return (
-      <ExamPortal
-        onBackToTeacher={() => {
-          navigateToLocalPath('/');
-          setUserRole('teacher');
-        }}
-        presetExamCode={code}
-        subRoute={subRoute as 'login' | 'start' | 'take' | 'submitted'}
-        onNavigate={navigateToLocalPath}
-      />
-    );
-  }
-
   // ROUTE INTERCEPTION:
   // Check if current URL matches public student exam subroutes:
   // /exam/:examCode

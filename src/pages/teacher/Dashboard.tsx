@@ -81,12 +81,6 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   const [importProgress, setImportProgress] = useState(0);
 
   // Simulated new students parsed from file
-  const parsedSampleStudents: Student[] = [
-    { id: 's-new-9', name: 'پیمان مشیری', nationalId: '0075482143', maskedNationalId: '007***2143', grade: 'هفتم', classGroupId: 'c-1', email: 'peyman@example.com' },
-    { id: 's-new-10', name: 'کیمیا شریفی', nationalId: '1284567890', maskedNationalId: '128***7890', grade: 'نهم', classGroupId: 'c-4', email: 'kimia@example.com' },
-    { id: 's-new-11', name: 'بردیا ابراهیمی', nationalId: '2283451290', maskedNationalId: '228***1290', grade: 'هشتم', classGroupId: 'c-3', email: 'bardia@example.com' },
-  ];
-
   // Dynamic values based on actual data
   const currentStudents = localStudents;
   const currentExams = localExams;
@@ -148,17 +142,12 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   };
 
   const handleConfirmImport = () => {
-    // Append simulated students to local standard state
-    setLocalStudents(prev => [...prev, ...parsedSampleStudents]);
-    setImportStep('done');
-
-    // Auto reset modal after short success notification delay
-    setTimeout(() => {
-      setIsExcelModalOpen(false);
-      setImportStep('idle');
-      setExcelFile(null);
-      setImportProgress(0);
-    }, 1500);
+    // TODO: Implement real Excel parsing with papaparse/xlsx
+    alert('ورود اکسل هنوز پیاده‌سازی نشده است.');
+    setIsExcelModalOpen(false);
+    setImportStep('idle');
+    setExcelFile(null);
+    setImportProgress(0);
   };
 
   // Helper resolvers for table
@@ -235,9 +224,6 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <div className="mt-4">
             <span className="text-2xl font-black text-slate-800 tracking-tight block">
               {formatPersianNumber(totalStudents)} <span className="text-xs font-normal text-slate-400">نفر</span>
-            </span>
-            <span className="text-[10px] text-emerald-600 font-bold mt-1.5 block">
-              +{formatPersianNumber(3)} نفر آماده تأیید اکسل
             </span>
           </div>
         </Card>
@@ -849,25 +835,8 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
                   <p className="text-slate-500 text-[11px]">پیش‌نمایش رکوردهای خوانده‌شده قبل از درج نهایی دیتابیس:</p>
 
-                  <div className="border border-slate-150 rounded-xl overflow-hidden bg-slate-50 max-h-48 overflow-y-auto">
-                    <table className="w-full text-[10px] text-right">
-                      <thead className="bg-slate-100 border-b border-slate-200 text-slate-600">
-                        <tr>
-                          <th className="p-2.5 font-bold">نام و فامیل</th>
-                          <th className="p-2.5 font-bold">کد ملی</th>
-                          <th className="p-2.5 font-bold">پایه تحصیلی</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {parsedSampleStudents.map((stud) => (
-                          <tr key={stud.id} className="bg-white">
-                            <td className="p-2.5 font-bold text-slate-700">{stud.name}</td>
-                            <td className="p-2.5 font-mono text-slate-500">{stud.nationalId}</td>
-                            <td className="p-2.5 text-slate-600">پایه {stud.grade} (کلاس ۷۰۱/۹۰۱)</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-6 text-center">
+                    <p className="text-sm text-slate-500 font-bold">پیش‌نمایش داده‌ها پس از پیاده‌سازی واقعی ورود اکسل نمایش داده خواهد شد.</p>
                   </div>
 
                   <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
