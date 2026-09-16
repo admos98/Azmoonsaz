@@ -11,7 +11,9 @@ import { requireTeacher } from '../_lib/teacherAuth.js';
 export async function handleSignup(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'method_not_allowed' });
 
-  const { email, password } = JSON.parse(await readBody(req));
+  const body = req.body || {};
+  const email = String(body.email || '').trim();
+  const password = String(body.password || '');
   if (!email || !password) return json(res, 400, { error: 'missing_fields' });
   if (password.length < 6) return json(res, 400, { error: 'password_too_short' });
 
@@ -81,7 +83,7 @@ export async function handleOnboarding(req, res) {
   const teacher = await requireTeacher(req, res);
   if (!teacher) return;
 
-  const body = JSON.parse(await readBody(req));
+  const body = req.body || {};
   const schoolName = String(body.schoolName || '').trim();
   const subject = String(body.subject || '').trim();
 
@@ -100,13 +102,4 @@ export async function handleOnboarding(req, res) {
   if (error) return json(res, 500, { error: 'onboarding_update_failed' });
 
   return json(res, 200, { ok: true });
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => { data += chunk; });
-    req.on('end', () => resolve(data));
-    req.on('error', reject);
-  });
 }
