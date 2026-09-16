@@ -79,6 +79,7 @@ src/
 api/                         # Vercel Serverless API
 ├── index.js                 # Thin router → dispatches to route files
 ├── routes/
+│   ├── auth.js              # Signup, email verification, onboarding
 │   ├── public.js            # Public endpoints (exam lookup, student auth)
 │   ├── student.js           # Student endpoints (start exam, save answers, submit)
 │   └── teacher.js           # Teacher endpoints (CRUD for all resources)
@@ -107,6 +108,8 @@ api/                         # Vercel Serverless API
 - **Review:** Per-question stats, score distribution, export-ready results
 
 ### Security
+- **Teacher signup/login:** Email-first flow — enter email, then password. New emails get a Supabase verification email automatically. Existing emails authenticate with password.
+- **Onboarding gate:** First login requires school name and subject before accessing the dashboard.
 - Teacher authentication via Supabase Auth with access tokens
 - Student sessions scoped per exam with entry code verification
 - Exam content locked during active session (no pre-fetching)
@@ -144,6 +147,19 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_API_URL=/api
 ```
+
+Apply database migrations:
+```bash
+npx supabase db push
+```
+
+### First Time Use
+
+1. Open the app → enter your email → enter a password
+2. If the email is new, Supabase sends a verification email — click the link
+3. After email verification, log in with email + password
+4. First login shows the onboarding page — enter school name and subject
+5. Done — you're in the dashboard
 
 ### Development
 

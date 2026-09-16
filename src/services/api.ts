@@ -15,14 +15,40 @@ export const authService = {
     const supabase = getSupabasePublicClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error('ایمیل یا رمز عبور معتبر نیست.');
-    const me = await teacherGet<{ teacher: { id: string; email: string; name: string; schoolName: string } }>('/api/teacher/me');
+    const me = await teacherGet<{ teacher: { id: string; email: string; name: string; schoolName: string; subject: string; isOnboarded: boolean } }>('/api/teacher/me');
     const teacher: Teacher = {
       id: me.teacher.id,
       email: me.teacher.email,
       name: me.teacher.name,
       schoolName: me.teacher.schoolName || '',
+      subject: me.teacher.subject || '',
+      isOnboarded: me.teacher.isOnboarded ?? false,
     };
     return teacher;
+  },
+
+  async signupTeacher(email: string, password: string): Promise<{ ok: boolean; message: string }> {
+    const response = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      if (data.error === 'email_already_registered') throw new Error('این ایمیل قبلاً ثبت شده است. لطفاً وارد شوید.');
+      throw new Error(data.error || 'خطا در ثبت‌نام');
+    }
+    return data;
+  },
+
+  async completeOnboarding(schoolName: string, subject: string): Promise<void> {
+    const response = await fetch('/api/auth/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getTeacherAccessToken()}` },
+      body: JSON.stringify({ schoolName, subject }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'خطا در تکمیل اطلاعات');
   },
 
   async logoutTeacher(): Promise<void> {
@@ -34,12 +60,14 @@ export const authService = {
     const token = await getTeacherAccessToken();
     if (!token) return null;
     try {
-      const me = await teacherGet<{ teacher: { id: string; email: string; name: string; schoolName: string } }>('/api/teacher/me');
+      const me = await teacherGet<{ teacher: { id: string; email: string; name: string; schoolName: string; subject: string; isOnboarded: boolean } }>('/api/teacher/me');
       return {
         id: me.teacher.id,
         email: me.teacher.email,
         name: me.teacher.name,
         schoolName: me.teacher.schoolName || '',
+        subject: me.teacher.subject || '',
+        isOnboarded: me.teacher.isOnboarded ?? false,
       };
     } catch {
       return null;

@@ -4,7 +4,17 @@
  */
 
 import React, { useState } from 'react';
-import { ShieldCheck, GraduationCap, Eye, EyeOff, Lock, Mail, ArrowLeftRight } from 'lucide-react';
+import {
+  ShieldCheck,
+  GraduationCap,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ArrowLeftRight,
+  CheckCircle2,
+  Send,
+} from 'lucide-react';
 import { authService } from '../../services/api';
 
 interface LoginProps {
@@ -12,162 +22,200 @@ interface LoginProps {
   onSwitchToStudent: () => void;
 }
 
+type View = 'email' | 'password' | 'signup-sent';
+
 export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps) {
+  const [view, setView] = useState<View>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Step 1: User enters email
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
-    setInfoMessage(null);
+    if (!email.trim()) {
+      setError('ایمیل را وارد کنید');
+      return;
+    }
+    // Just move to password step — we'll determine login vs signup on submit
+    setView('password');
+  };
+
+  // Step 2: User enters password → try login, if user not found → signup
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
     try {
+      // Try login first
       await authService.loginTeacher(email, password);
       onLoginSuccess();
-    } catch (err: any) {
-      setError(err?.message || 'کد کاربری یا رمز عبور نامعتبر است.');
+    } catch (loginErr: any) {
+      const msg = loginErr?.message || '';
+
+      // If the error suggests wrong credentials, try signup
+      if (msg.includes('عتبر نیست') || msg.includes('Invalid') || msg.includes('invalid')) {
+        try {
+          await authService.signupTeacher(email, password);
+          setView('signup-sent');
+        } catch (signupErr: any) {
+          // If signup says already registered, show login error
+          if (signupErr?.message?.includes('ثبت شده')) {
+            setError('رمز عبور اشتباه است.');
+          } else {
+            setError(signupErr?.message || 'خطا در ثبت‌نام');
+          }
+        }
+      } else {
+        setError(msg || 'خطا در ورود');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleForgotPassword = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setError(null);
-    setInfoMessage('بازیابی رمز عبور در نسخه آزمایشی فعال نیست.');
-  };
-
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden select-none" id="login-wrapper">
-      {/* Absolute Decorative Circles representing dashboard design premium */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Main card panel */}
-      <div className="w-full max-w-md bg-slate-850/80 backdrop-blur-md rounded-3xl border border-slate-800 shadow-2xl p-6 md:p-8 space-y-6 relative z-10 text-right text-slate-200">
-        
-        {/* Brand Banner */}
-        <div className="text-center space-y-3" id="brand-header">
-          <div className="w-12 h-12 bg-linear-to-tr from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-550/20">
-            <GraduationCap className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 rounded-3xl mb-4 shadow-lg shadow-indigo-100">
+            <GraduationCap className="w-10 h-10 text-indigo-600" />
           </div>
-          <div>
-            <h1 className="text-lg font-black text-white">سامانه هوشمند آزمون‌ساز</h1>
-            <p className="text-[11px] text-slate-400 mt-1">امتحانات آنلاین مدارس و مراکز آموزش عالی تراز اول کشور</p>
-          </div>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">آزمون‌ساز</h1>
+          <p className="text-sm text-slate-500 mt-1">پنل مدیریت دبیران</p>
         </div>
 
-        {/* Input fields form */}
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Email or Username */}
-          <div className="space-y-1.5">
-            <label htmlFor="login-email" className="text-xs font-semibold text-slate-300 block">پست الکترونیک (ایمیل):</label>
-            <div className="relative">
-              <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input
-                type="email"
-                id="login-email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="teacher@example.com"
-                className="w-full bg-slate-900/60 border border-slate-800 text-xs text-slate-200 pr-10 pl-4 py-2.5 rounded-xl focus:outline-hidden focus:border-indigo-500 focus:bg-slate-950 font-mono text-left"
-              />
-            </div>
-          </div>
+        {/* Card */}
+        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8">
+          {/* View: Enter Email */}
+          {view === 'email' && (
+            <form onSubmit={handleEmailSubmit} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">ایمیل</label>
+                <div className="relative">
+                  <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="email"
+                    dir="ltr"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@gmail.com"
+                    className="w-full bg-slate-50 border border-slate-200 text-sm text-slate-800 pr-10 pl-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder-slate-400"
+                    autoFocus
+                  />
+                </div>
+              </div>
 
-          {/* Password */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <label htmlFor="login-pass" className="text-xs font-semibold text-slate-300 block">رمز عبور ورود:</label>
-              <a href="#" onClick={handleForgotPassword} className="text-[10px] text-indigo-400 hover:text-indigo-300 hover:underline">فراموشی رمز عبور؟</a>
-            </div>
-            <div className="relative">
-              <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="login-pass"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-slate-900/60 border border-slate-800 text-xs text-slate-200 pr-10 pl-11 py-2.5 rounded-xl focus:outline-hidden focus:border-indigo-500 focus:bg-slate-950 font-mono text-left"
-              />
+              {error && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+              )}
+
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm py-3 rounded-xl transition-colors shadow-lg shadow-indigo-200 cursor-pointer"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                ادامه
+              </button>
+            </form>
+          )}
+
+          {/* View: Enter Password */}
+          {view === 'password' && (
+            <form onSubmit={handlePasswordSubmit} className="space-y-5">
+              <div className="text-center">
+                <p className="text-xs text-slate-500">ورود با</p>
+                <p className="text-sm font-bold text-slate-800" dir="ltr">{email}</p>
+                <button
+                  type="button"
+                  onClick={() => { setView('email'); setError(null); setPassword(''); }}
+                  className="text-[10px] text-indigo-600 hover:underline cursor-pointer mt-1"
+                >
+                  تغییر ایمیل
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">رمز عبور</label>
+                <div className="relative">
+                  <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    dir="ltr"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-slate-50 border border-slate-200 text-sm text-slate-800 pr-10 pl-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder-slate-400"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold text-sm py-3 rounded-xl transition-colors shadow-lg shadow-indigo-200 cursor-pointer"
+              >
+                {loading ? 'در حال بررسی...' : 'ورود'}
+              </button>
+
+              <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+                اگر حساب کاربری ندارید، با همین ایمیل و رمز عبور حساب جدید ساخته می‌شود
+              </p>
+            </form>
+          )}
+
+          {/* View: Signup Email Sent */}
+          {view === 'signup-sent' && (
+            <div className="text-center space-y-4 py-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-2">
+                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-800">ایمیل تأیید ارسال شد</h2>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                لطفاً ایمیل خود را بررسی کنید و لینک تأیید را کلیک کنید.
+                <br />
+                پس از تأیید، با همین ایمیل و رمز عبور وارد شوید.
+              </p>
+              <div className="bg-slate-50 rounded-xl px-4 py-3">
+                <p className="text-xs text-slate-400">ارسال شده به:</p>
+                <p className="text-sm font-bold text-slate-700" dir="ltr">{email}</p>
+              </div>
+              <button
+                onClick={() => { setView('email'); setEmail(''); setPassword(''); setError(null); }}
+                className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer"
+              >
+                بازگشت به ورود
               </button>
             </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-200 text-xs rounded-xl text-center">
-              {error}
-            </div>
           )}
-
-          {/* Info Message (Forgot Password etc.) */}
-          {infoMessage && (
-            <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-xs rounded-xl text-center">
-              {infoMessage}
-            </div>
-          )}
-
-          {/* Remember Me */}
-          <div className="flex items-center space-x-2 space-x-reverse text-xs pt-1 select-none">
-            <input
-              type="checkbox"
-              id="remember-me"
-              defaultChecked
-              className="w-4 h-4 text-indigo-600 rounded-md border-slate-800 bg-slate-900 cursor-pointer focus:ring-indigo-550"
-            />
-            <label htmlFor="remember-me" className="text-[11px] text-slate-400 cursor-pointer">مرا به خاطر بسپار</label>
-          </div>
-
-          {/* Sign in Button */}
-          <button
-            type="submit"
-            id="btn-login-submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg hover:shadow-indigo-500/20 flex items-center justify-center gap-2 cursor-pointer mt-4"
-          >
-            {loading ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                <ShieldCheck className="w-4.5 h-4.5" />
-                <span>ورود امن به پنل معلم</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Quick shortcut demo guide */}
-        <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-800 text-[10px] text-slate-400 leading-normal" id="login-protips">
-          💡 <strong>راهنما:</strong> اگر Supabase تنظیم شده باشد، ورود معلم با حساب واقعی انجام می‌شود. در حالت بدون بک‌اند، داده‌های آزمایشی نمایش داده می‌شوند.
         </div>
 
-        {/* Student panel swap visual trigger */}
-        <div className="pt-4 border-t border-slate-800 text-center space-y-2">
-          <p className="text-[10px] text-slate-400">آیا شما دانش‌آموز هستید؟</p>
+        {/* Student switch */}
+        <div className="mt-6 text-center">
           <button
-            id="swap-to-student-mode-login"
             onClick={onSwitchToStudent}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-550/20 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
-            <span>انتقال مستقیم به پرتال شروع آزمون دانش‌آموزان</span>
+            ورود دانش‌آموز
           </button>
         </div>
-
       </div>
     </div>
   );

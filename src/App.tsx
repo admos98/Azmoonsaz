@@ -14,13 +14,15 @@ import Questions from './pages/teacher/Questions';
 import Exams from './pages/teacher/Exams';
 import NewExam from './pages/teacher/NewExam';
 import Settings from './pages/teacher/Settings';
+import Onboarding from './pages/teacher/Onboarding';
 import ExamPortal from './pages/student/ExamPortal';
 import SecureExamPortal from './pages/student/SecureExamPortal';
-import { Exam } from './types';
+import { Exam, Teacher } from './types';
 
 export default function App() {
   const [userRole, setUserRole] = useState<'teacher' | 'student'>('teacher');
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
+  const [isOnboarded, setIsOnboarded] = useState(true); // assume onboarded until checked
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
 
   // URL state management
@@ -50,6 +52,16 @@ export default function App() {
       setExamSubView('results');
     }
   }, [currentPath]);
+
+  // Check onboarding status after login
+  useEffect(() => {
+    if (!isTeacherLoggedIn) return;
+    import('./services/api').then(({ authService }) => {
+      authService.getCurrentTeacher().then((teacher) => {
+        if (teacher) setIsOnboarded(teacher.isOnboarded ?? true);
+      });
+    });
+  }, [isTeacherLoggedIn]);
 
   // Exam sub-routing state
   const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
@@ -236,6 +248,13 @@ export default function App() {
           navigateToLocalPath('/secure-exam/DEMO7');
         }}
       />
+    );
+  }
+
+  // 2.5. If logged in but not onboarded, show onboarding
+  if (userRole === 'teacher' && isTeacherLoggedIn && !isOnboarded) {
+    return (
+      <Onboarding onComplete={() => setIsOnboarded(true)} />
     );
   }
 

@@ -4,6 +4,8 @@ export interface Teacher {
   email: string;
   avatarUrl?: string;
   schoolName: string;
+  subject?: string;
+  isOnboarded?: boolean;
   managerName?: string;
   schoolLogoUrl?: string;
   domainUrl?: string;

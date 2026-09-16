@@ -31,7 +31,7 @@ async function ensureTeacherProfile(admin, user) {
       id: user.id,
       full_name: fullName,
       school_name: schoolName,
-    }, { onConflict: 'id' });
+    }, { onConflict: 'id', ignoreDuplicates: false });
 
   if (error) {
     // Do not block login in rare cases, but inserts may fail if this stays broken.

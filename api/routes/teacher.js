@@ -7,9 +7,9 @@ async function handleTeacherMe(req, res) {
   if (!requireMethod(req, res, ['GET'])) return;
   const teacher = await requireTeacher(req, res);
   if (!teacher) return;
-  const { data: profile, error } = await teacher.admin.from('teacher_profiles').select('id, full_name, school_name').eq('id', teacher.id).maybeSingle();
+  const { data: profile, error } = await teacher.admin.from('teacher_profiles').select('id, full_name, school_name, subject, is_onboarded').eq('id', teacher.id).maybeSingle();
   if (error) return json(res, 500, { error: 'teacher_profile_failed' });
-  json(res, 200, { ok: true, teacher: { id: teacher.id, email: teacher.email, name: profile?.full_name || teacher.email || 'Teacher', schoolName: profile?.school_name || '' } });
+  json(res, 200, { ok: true, teacher: { id: teacher.id, email: teacher.email, name: profile?.full_name || teacher.email || 'Teacher', schoolName: profile?.school_name || '', subject: profile?.subject || '', isOnboarded: profile?.is_onboarded ?? false } });
 }
 
 async function handleTeacherClasses(req, res) {
