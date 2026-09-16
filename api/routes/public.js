@@ -1,4 +1,5 @@
-import { json, requireMethod, getSupabaseConfigStatus } from '../_lib/http.js';
+import { json, requireMethod } from '../_lib/http.js';
+import { getSupabaseConfigStatus } from '../_lib/supabaseAdmin.js';
 import { normalizeNationalId, maskNationalId } from '../_lib/crypto.js';
 
 async function handleHealth(req, res) {
