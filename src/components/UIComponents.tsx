@@ -10,8 +10,10 @@ import {
   Loader2, 
   UploadCloud, 
   CheckCircle2, 
+  CheckCircle,
   AlertCircle, 
   HelpCircle, 
+  Info,
   Clock, 
   ChevronLeft, 
   ChevronRight, 
@@ -41,7 +43,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   disabled,
   ...props
 }, ref) => {
-  const baseStyle = "inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-4 focus-visible:outline-indigo-500/30 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
+  const baseStyle = "inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
   
   const variants = {
     primary: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-600/10",
@@ -97,7 +99,7 @@ export const Card = ({
         whileHover={{ y: -4, scale: 1.01 }}
         whileTap={{ scale: 0.995 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className={`bg-white/80 backdrop-blur-sm border border-white/30 rounded-3xl p-5 md:p-6 shadow-sm hover:shadow-lg hover:shadow-indigo-100/40 ${className}`}
+        className={`glass-1 rounded-xl p-5 md:p-6 hover:shadow-lg hover:shadow-indigo-100/40 transition-all ${className}`}
         {...(props as any)}
       >
         {children}
@@ -106,7 +108,7 @@ export const Card = ({
   }
   return (
     <div
-      className={`bg-white/80 backdrop-blur-sm border border-white/30 rounded-3xl p-5 md:p-6 shadow-sm ${className}`}
+      className={`glass-1 rounded-xl p-5 md:p-6 ${className}`}
       {...props}
     >
       {children}
@@ -129,8 +131,8 @@ export const Badge = ({
   className = ''
 }: BadgeProps) => {
   const styles = {
-    primary: "bg-indigo-55 bg-indigo-50 text-indigo-700 border-indigo-100",
-    success: "bg-emerald-50 text-emerald-700 border-emerald-110",
+    primary: "bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-indigo-100",
+    success: "bg-[var(--color-success-soft)] text-[var(--color-success)] border-emerald-100",
     warning: "bg-amber-50 text-amber-700 border-amber-100",
     danger: "bg-rose-50 text-rose-700 border-rose-100",
     slate: "bg-slate-100 text-slate-600 border-slate-200",
@@ -375,10 +377,13 @@ export const Modal = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className={`relative bg-white/90 backdrop-blur-xl w-full ${widthStyles[maxWidth]} rounded-3xl shadow-2xl border border-white/30 overflow-hidden flex flex-col max-h-[90vh] z-10`}
+            className={`relative glass-2 w-full ${widthStyles[maxWidth]} rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-105">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200">
               <h3 className="text-sm md:text-md font-black text-slate-800 text-right">
                 {title}
               </h3>
@@ -397,7 +402,7 @@ export const Modal = ({
 
             {/* Footer */}
             {footer && (
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-105 flex items-center justify-end gap-3">
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
                 {footer}
               </div>
             )}
@@ -436,7 +441,7 @@ export const Drawer = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-3xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
           />
 
           {/* Drawer container body */}
@@ -446,7 +451,7 @@ export const Drawer = ({
               animate={{ x: 0 }}
               exit={{ x: placement === 'right' ? '100%' : '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className="w-screen max-w-md bg-white shadow-2xl flex flex-col divide-y divide-slate-105"
+              className="w-screen max-w-md glass-1 shadow-2xl flex flex-col divide-y divide-slate-200"
             >
               {/* Head */}
               <div className="p-6 flex items-center justify-between">
@@ -588,7 +593,7 @@ export const ConfirmDialog = ({
       }
     >
       <div className="flex items-start gap-4 text-right">
-        <div className={`p-2.5 rounded-full ${variant === 'danger' ? 'bg-rose-50 text-rose-605' : 'bg-indigo-50 text-indigo-500'}`}>
+        <div className={`p-2.5 rounded-full ${variant === 'danger' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-indigo-50 text-indigo-500'}`}>
           <AlertTriangle className="w-5 h-5 text-current" />
         </div>
         <div className="space-y-1">
@@ -807,7 +812,7 @@ export const ExamTimer = ({
         ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse ring-2 ring-rose-500/20' 
         : 'bg-indigo-50 text-indigo-700 border-indigo-100'
     }`}>
-      <Clock className={`w-4 h-4 ${isWarning ? 'text-rose-605' : 'text-indigo-650'}`} />
+      <Clock className={`w-4 h-4 ${isWarning ? 'text-[var(--color-danger)]' : 'text-[var(--color-accent)]'}`} />
       <div className="flex items-center gap-0.5" dir="ltr">
         {hrs > 0 && (
           <>
@@ -820,6 +825,58 @@ export const ExamTimer = ({
         <span>{formatPersianNumber(formatTime(secs))}</span>
       </div>
       <span className="text-[10px] text-current font-sans leading-none pb-0.5">زمان باقی‌مانده</span>
+    </div>
+  );
+};
+
+/* ==========================================
+   17. TOAST COMPONENT
+   ========================================== */
+interface ToastProps {
+  message: string;
+  type?: 'success' | 'error' | 'warning' | 'info';
+  onClose?: () => void;
+  duration?: number;
+}
+
+export const Toast = ({ message, type = 'info', onClose, duration = 4000 }: ToastProps) => {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisible(false);
+      setTimeout(() => onClose?.(), 300);
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [duration, onClose]);
+
+  const styles = {
+    success: 'bg-[var(--color-success)] text-white',
+    error: 'bg-[var(--color-danger)] text-white',
+    warning: 'bg-[var(--color-warning)] text-white',
+    info: 'bg-[var(--color-ink)] text-white'
+  };
+
+  const icons = {
+    success: <CheckCircle className="w-4 h-4" />,
+    error: <AlertTriangle className="w-4 h-4" />,
+    warning: <AlertTriangle className="w-4 h-4" />,
+    info: <Info className="w-4 h-4" />
+  };
+
+  return (
+    <div
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-3 rounded-xl shadow-lg text-sm font-bold flex items-center gap-2 transition-all duration-300 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
+      role="alert"
+      aria-live="polite"
+    >
+      {icons[type]}
+      <span>{message}</span>
+      {onClose && (
+        <button onClick={onClose} className="mr-2 cursor-pointer">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 };
