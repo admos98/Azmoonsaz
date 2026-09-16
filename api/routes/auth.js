@@ -19,12 +19,6 @@ export async function handleSignup(req, res) {
 
   const admin = getSupabaseAdmin();
 
-  // Check if user already exists
-  const { data: existing } = await admin.auth.admin.listUsers({ filter: email });
-  if (existing?.users?.length > 0) {
-    return json(res, 409, { error: 'email_already_registered' });
-  }
-
   // Create auth user — Supabase sends verification email automatically
   const { data, error } = await admin.auth.admin.createUser({
     email,
@@ -32,7 +26,12 @@ export async function handleSignup(req, res) {
     email_confirm: false,
   });
 
-  if (error) return json(res, 400, { error: error.message });
+  if (error) {
+    if (error.code === '23505' || error.message?.includes('already registered')) {
+      return json(res, 409, { error: 'email_already_registered' });
+    }
+    return json(res, 400, { error: error.message });
+  }
 
   // Upsert teacher profile with is_onboarded = false
   await admin.from('teacher_profiles').upsert({
