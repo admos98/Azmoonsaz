@@ -39,6 +39,14 @@ export const authService = {
     return { ok: true, message: 'verification_email_sent' };
   },
 
+  async resetPassword(email: string): Promise<void> {
+    const supabase = getSupabasePublicClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: publicEnv.appUrl || window.location.origin,
+    });
+    if (error) throw new Error(error.message || 'خطا در ارسال ایمیل بازیابی');
+  },
+
   async completeOnboarding(schoolName: string, subject: string): Promise<void> {
     const response = await fetch('/api/auth/onboarding', {
       method: 'POST',
