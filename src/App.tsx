@@ -15,6 +15,7 @@ import Exams from './pages/teacher/Exams';
 import NewExam from './pages/teacher/NewExam';
 import Settings from './pages/teacher/Settings';
 import Onboarding from './pages/teacher/Onboarding';
+import ResetPassword from './pages/teacher/ResetPassword';
 import ExamPortal from './pages/student/ExamPortal';
 import SecureExamPortal from './pages/student/SecureExamPortal';
 import { Exam, Teacher } from './types';
@@ -24,6 +25,11 @@ export default function App() {
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
   const [isOnboarded, setIsOnboarded] = useState(true); // assume onboarded until checked
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
+
+  // Detect password reset link in URL hash
+  const [isPasswordReset, setIsPasswordReset] = useState(() => {
+    return window.location.hash.includes('type=recovery');
+  });
 
   // URL state management
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
@@ -240,6 +246,17 @@ export default function App() {
 
   // 2. If we are in TEACHER mode but not logged in, show the Login Page
   if (userRole === 'teacher' && !isTeacherLoggedIn) {
+    // Password reset link detected
+    if (isPasswordReset) {
+      return (
+        <ResetPassword
+          onDone={() => {
+            setIsPasswordReset(false);
+            window.history.replaceState(null, '', window.location.pathname);
+          }}
+        />
+      );
+    }
     return (
       <Login
         onLoginSuccess={() => setIsTeacherLoggedIn(true)}
