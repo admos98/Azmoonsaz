@@ -1,67 +1,165 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Vazirmatn", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Typography */
+  --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+
+  /* Spacing (4px base) */
+  --spacing-px: 1px;
+  --spacing-0: 0px;
+  --spacing-0\.5: 2px;
+  --spacing-1: 4px;
+  --spacing-1\.5: 6px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* Surfaces */
+  --color-surface-primary: #FFFFFF;
+  --color-surface-secondary: #F7F1E4;
+  --color-surface-tertiary: #F1F5F9;
+
+  /* Glass */
+  --color-glass-surface: rgba(255, 255, 255, 0.72);
+  --color-glass-surface-dim: rgba(255, 255, 255, 0.45);
+  --color-glass-border: rgba(255, 255, 255, 0.40);
+  --color-glass-highlight: rgba(255, 255, 255, 0.60);
+  --color-glass-dark: rgba(34, 30, 74, 0.88);
+  --color-glass-dark-border: rgba(255, 255, 255, 0.08);
+  --color-glass-dark-highlight: rgba(255, 255, 255, 0.06);
+
+  /* Brand — The Mark */
+  --color-ink: #221E4A;
+  --color-gold: #F5B301;
+  --color-gold-soft: #FEF9E7;
+
+  /* Semantic — Primary */
+  --color-accent: #4F46E5;
+  --color-accent-hover: #4338CA;
+  --color-accent-soft: #EEF2FF;
+  --color-accent-glow: rgba(79, 70, 229, 0.15);
+
+  /* Semantic — Status */
+  --color-success: #059669;
+  --color-success-soft: #ECFDF5;
+  --color-warning: #D97706;
+  --color-warning-soft: #FFFBEB;
+  --color-danger: #DC2626;
+  --color-danger-soft: #FEF2F2;
+
+  /* Text */
+  --color-text-primary: #221E4A;
+  --color-text-secondary: #6B6489;
+  --color-text-tertiary: #94A3B8;
+  --color-text-on-dark: #F8FAFC;
+  --color-text-on-dark-secondary: #94A3B8;
 }
+
+/* ─── Base ─── */
 
 body {
   font-family: var(--font-sans);
   direction: rtl;
   text-align: right;
-  @apply bg-slate-50 text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900;
+  background: var(--color-surface-secondary);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom modern scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+/* ─── Scrollbar ─── */
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ─── Glass Surfaces ─── */
+
+.glass-1 {
+  background: var(--color-glass-surface);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid var(--color-glass-border);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 var(--color-glass-highlight);
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+.glass-2 {
+  background: var(--color-glass-surface);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  border: 1px solid var(--color-glass-border);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 var(--color-glass-highlight);
 }
 
-/* Glassmorphism utility */
-.glass-panel {
-  @apply bg-white/85 backdrop-blur-md border border-slate-200/50 shadow-sm;
+.glass-3 {
+  background: var(--color-glass-dark);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border-left: 1px solid var(--color-glass-dark-border);
+  box-shadow: inset 0 1px 0 var(--color-glass-dark-highlight);
 }
 
-.glass-panel-dark {
-  @apply bg-slate-900/90 backdrop-blur-md border border-slate-800/50 shadow-xl;
+/* ─── Skeleton Shimmer ─── */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-/* Accent gloss effect */
-.shiny-btn {
-  position: relative;
-  overflow: hidden;
+.skeleton {
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
 }
 
-.shiny-btn::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent 45%,
-    rgba(255, 255, 255, 0.1) 48%,
-    rgba(255, 255, 255, 0.3) 50%,
-    rgba(255, 255, 255, 0.1) 52%,
-    transparent 55%
-  );
-  transform: rotate(45deg);
-  transition: transform 0.6s ease;
-  pointer-events: none;
+/* ─── The Mark — Gold Pop Animation ─── */
+
+.goldpop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mark-pop 0.55s cubic-bezier(0.25, 1.6, 0.45, 1) both;
 }
 
-.shiny-btn:hover::after {
-  transform: translate(50%, 50%) rotate(45deg);
+@keyframes mark-pop {
+  from { transform: scale(0); }
+  70% { transform: scale(1.15); }
+  to { transform: scale(1); }
+}
+
+/* ─── Reduced Motion ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  .goldpop { animation: none; }
+  .skeleton { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
