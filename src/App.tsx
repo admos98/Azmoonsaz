@@ -277,8 +277,8 @@ export default function App() {
         onSwitchRole={handleSwitchUserRole}
       />
 
-      {/* Main Container - offset by sidebar width (256px / w-64) */}
-      <div className="flex-1 mr-64 flex flex-col min-h-screen" id="main-content-layout">
+      {/* Main Container - offset by sidebar width (240px / w-60 on desktop, padding on mobile) */}
+      <div className="flex-1 lg:mr-60 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
         {/* Topbar */}
         <Topbar
           currentTab={currentTab}
