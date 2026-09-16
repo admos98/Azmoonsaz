@@ -28,17 +28,15 @@ export const authService = {
   },
 
   async signupTeacher(email: string, password: string): Promise<{ ok: boolean; message: string }> {
-    const response = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      if (data.error === 'email_already_registered') throw new Error('این ایمیل قبلاً ثبت شده است. لطفاً وارد شوید.');
-      throw new Error(data.error || 'خطا در ثبت‌نام');
+    const supabase = getSupabasePublicClient();
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      if (error.message?.includes('already registered') || error.message?.includes('already been registered')) {
+        throw new Error('این ایمیل قبلاً ثبت شده است. لطفاً وارد شوید.');
+      }
+      throw new Error(error.message || 'خطا در ثبت‌نام');
     }
-    return data;
+    return { ok: true, message: 'verification_email_sent' };
   },
 
   async completeOnboarding(schoolName: string, subject: string): Promise<void> {

@@ -1,49 +1,5 @@
-import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
 import { json } from '../_lib/http.js';
 import { requireTeacher } from '../_lib/teacherAuth.js';
-
-/**
- * POST /api/auth/signup
- * Body: { email, password }
- * Creates a Supabase Auth user with email_confirm: false.
- * Supabase sends the verification email automatically.
- */
-export async function handleSignup(req, res) {
-  if (req.method !== 'POST') return json(res, 405, { error: 'method_not_allowed' });
-
-  const body = req.body || {};
-  const email = String(body.email || '').trim();
-  const password = String(body.password || '');
-  if (!email || !password) return json(res, 400, { error: 'missing_fields' });
-  if (password.length < 6) return json(res, 400, { error: 'password_too_short' });
-
-  const admin = getSupabaseAdmin();
-
-  // Create auth user — Supabase sends verification email automatically
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: false,
-  });
-
-  if (error) {
-    if (error.code === '23505' || error.message?.includes('already registered')) {
-      return json(res, 409, { error: 'email_already_registered' });
-    }
-    return json(res, 400, { error: error.message });
-  }
-
-  // Upsert teacher profile with is_onboarded = false
-  await admin.from('teacher_profiles').upsert({
-    id: data.user.id,
-    full_name: email.split('@')[0],
-    school_name: '',
-    subject: '',
-    is_onboarded: false,
-  }, { onConflict: 'id' });
-
-  return json(res, 200, { ok: true, message: 'verification_email_sent' });
-}
 
 /**
  * GET /api/auth/onboarding-status

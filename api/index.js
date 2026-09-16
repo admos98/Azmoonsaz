@@ -2,7 +2,7 @@ import { json } from './_lib/http.js';
 import { handleHealth, handleSecurityCheck, handleStudentIdDemo } from './routes/public.js';
 import { handleStudentStartSession, handleStudentExamPayload, handleStudentSaveAnswer, handleStudentSubmit } from './routes/student.js';
 import { handleTeacherMe, handleTeacherClasses, handleTeacherStudents, handleTeacherSummary, handleTeacherQuestions, handleTeacherExams, handleTeacherSubmissions, handleTeacherGradeAnswer, handleTeacherFinalizeSubmission } from './routes/teacher.js';
-import { handleSignup, handleOnboardingStatus, handleOnboarding } from './routes/auth.js';
+import { handleOnboardingStatus, handleOnboarding } from './routes/auth.js';
 
 function routePath(req) {
   // Vercel usually provides req.query.path for api/[...path].js,
@@ -26,7 +26,6 @@ const routes = {
   'health': handleHealth,
   'security-check': handleSecurityCheck,
   'student-id-demo': handleStudentIdDemo,
-  'auth/signup': handleSignup,
   'auth/onboarding-status': handleOnboardingStatus,
   'auth/onboarding': handleOnboarding,
   'student/start-session': handleStudentStartSession,
