@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Search, Bell, Sun, ArrowLeftRight } from 'lucide-react';
 import BackendModeBadge from './BackendModeBadge';
-import { Teacher } from '../types';
-import { authService } from '../services/api';
+import { useTeacher } from '../contexts/TeacherContext';
 import { formatPersianDate } from '../services/persianHelpers';
 
 
@@ -19,17 +18,7 @@ interface TopbarProps {
 }
 
 export default function Topbar({ currentTab, onSwitchRole, onLogout, activeExamNotifications = 2 }: TopbarProps) {
-  const [teacher, setTeacher] = useState<Teacher | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    authService.getCurrentTeacher()
-      .then((current) => {
-        if (active && current) setTeacher(current);
-      })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, []);
+  const { teacher } = useTeacher();
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

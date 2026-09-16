@@ -4,10 +4,9 @@
  */
 
 import { LayoutDashboard, Users, HelpCircle, FileText, CheckSquare, Settings, LogOut, GraduationCap, ArrowLeftRight } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
-import { Teacher } from '../types';
-import { authService } from '../services/api';
+import { useTeacher } from '../contexts/TeacherContext';
 
 interface SidebarProps {
   currentTab: string;
@@ -17,15 +16,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRole }: SidebarProps) {
-  const [teacher, setTeacher] = useState<Teacher | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    authService.getCurrentTeacher()
-      .then((current) => { if (active && current) setTeacher(current); })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, []);
+  const { teacher } = useTeacher();
 
   const menuItems = [
     { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard },

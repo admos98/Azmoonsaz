@@ -32,7 +32,8 @@ import { logger } from '../../lib/logger';
 import { Student, Exam, Submission, Question, Teacher, ClassGroup } from '../../types';
 import { Button, Card, Badge, StatusBadge, Modal, EmptyState, FileDropzone, Table } from '../../components/UIComponents';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
-import { studentService, examService, gradingService, authService, classService, questionService } from '../../services/api';
+import { studentService, examService, gradingService, classService, questionService } from '../../services/api';
+import { useTeacher } from '../../contexts/TeacherContext';
 
 interface DashboardProps {
   onNavigate: (tab: string) => void;
@@ -40,11 +41,11 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate, onSelectExamForResults }: DashboardProps) {
+  const { teacher } = useTeacher();
   // Setup local state to support real-time user mutations
   const [localStudents, setLocalStudents] = useState<Student[]>([]);
   const [localExams, setLocalExams] = useState<Exam[]>([]);
   const [localSubmissions, setLocalSubmissions] = useState<Submission[]>([]);
-  const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [loading, setLoading] = useState(true);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   const [localQuestions, setLocalQuestions] = useState<Question[]>([]);
@@ -53,18 +54,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     const loadDashboardData = async () => {
       setLoading(true);
       try {
-        const [studentsData, examsData, submissionsData, teacherData] = await Promise.all([
+        const [studentsData, examsData, submissionsData] = await Promise.all([
           studentService.getStudents(),
           examService.getExams(),
           gradingService.getSubmissions(),
-          authService.getCurrentTeacher()
         ]);
         setLocalStudents(studentsData);
         setLocalExams(examsData);
         setLocalSubmissions(submissionsData);
         classService.getClassGroups().then(setClassGroups).catch(() => {});
         questionService.getQuestions().then(setLocalQuestions).catch(() => {});
-        setTeacher(teacherData);
       } catch (err) {
         logger.error('Error loading dashboard:', err);
       } finally {

@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { logger } from '../../lib/logger';
 import {
   Settings as SettingsIcon,
   User,
@@ -23,33 +22,16 @@ import {
   X
 } from 'lucide-react';
 import { Card, Button, Input, Badge } from '../../components/UIComponents';
-import { Teacher } from '../../types';
-import { authService } from '../../services/api';
+import { useTeacher } from '../../contexts/TeacherContext';
 import { isSecureBackendMode, getRuntimeModeLabel } from '../../config/runtimeMode';
 import { publicEnv } from '../../config/env';
 
 export default function Settings() {
-  const [teacher, setTeacher] = useState<Teacher | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { teacher, loading, updateTeacher } = useTeacher();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editSchoolName, setEditSchoolName] = useState('');
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const loadTeacher = async () => {
-      setLoading(true);
-      try {
-        const current = await authService.getCurrentTeacher();
-        setTeacher(current);
-      } catch (err) {
-        logger.error('Error loading teacher:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTeacher();
-  }, []);
 
   const handleStartEdit = () => {
     if (!teacher) return;
@@ -65,9 +47,7 @@ export default function Settings() {
   const handleSave = async () => {
     if (!teacher) return;
     setSaving(true);
-    const updated: Teacher = { ...teacher, name: editName, schoolName: editSchoolName };
-    localStorage.setItem('azmoonsaz_current_teacher', JSON.stringify(updated));
-    setTeacher(updated);
+    updateTeacher({ name: editName, schoolName: editSchoolName });
     setIsEditing(false);
     setSaving(false);
   };

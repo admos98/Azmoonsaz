@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { TeacherProvider } from './contexts/TeacherContext';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import Login from './pages/teacher/Login';
@@ -277,6 +278,7 @@ export default function App() {
 
   // 3. Otherwise, render the complete gorgeous Teacher Dashboard Shell
   return (
+    <TeacherProvider>
     <div className="min-h-screen bg-slate-50 flex" dir="rtl" id="app-teacher-shell">
       {/* Sidebar - fixed on the right */}
       <Sidebar
@@ -306,5 +308,6 @@ export default function App() {
         </div>
       </div>
     </div>
+    </TeacherProvider>
   );
 }
