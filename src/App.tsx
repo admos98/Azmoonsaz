@@ -263,7 +263,7 @@ export default function App() {
   // 3. Otherwise, render the complete gorgeous Teacher Dashboard Shell
   return (
     <TeacherProvider>
-    <div className="min-h-screen bg-slate-50 flex" dir="rtl" id="app-teacher-shell">
+    <div className="min-h-screen bg-[var(--color-surface-secondary)] flex" dir="rtl" id="app-teacher-shell">
       {/* Sidebar - fixed on the right */}
       <Sidebar
         currentTab={currentTab}
@@ -287,7 +287,7 @@ export default function App() {
         />
 
         {/* Dynamic Page Router */}
-        <div className="p-6 md:p-8 flex-1 bg-slate-50/50" id="router-view-box">
+        <div className="p-4 lg:p-8 flex-1" id="router-view-box">
           <Suspense fallback={
             <div className="space-y-6 animate-pulse">
               <div className="h-8 w-48 bg-slate-200 rounded-xl" />
