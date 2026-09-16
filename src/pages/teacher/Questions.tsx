@@ -36,7 +36,7 @@ import {
   CloudLightning,
   BookOpen
 } from 'lucide-react';
-import { mockQuestions as initialQuestions } from '../../mockData';
+import { logger } from '../../lib/logger';
 import { Question, QuestionType, QuestionOption, QuestionPart, RubricCriterion } from '../../types';
 import QuestionRenderer from '../../components/QuestionRenderer';
 import { questionService } from '../../services/api';
@@ -98,7 +98,7 @@ export default function Questions() {
         });
         setQuestions(enriched);
       } catch (err) {
-        console.error('Error fetching questions:', err);
+        logger.error('Error fetching questions:', err);
       } finally {
         setLoading(false);
       }

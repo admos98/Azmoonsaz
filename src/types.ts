@@ -159,7 +159,7 @@ export interface ExamVariant {
 
 export interface StudentAnswer {
   questionId: string;
-  answer: any;
+  answer: string | number | string[] | Record<string, string>;
   isCorrect?: boolean;
   scoreGained?: number;
   teacherComment?: string;

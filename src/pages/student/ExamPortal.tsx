@@ -30,8 +30,10 @@ import {
   Check,
   AlertTriangle
 } from 'lucide-react';
-import { mockExams, mockStudents, mockSubmissions } from '../../mockData';
-import { Exam, Question, StudentAnswer, Submission } from '../../types';
+
+import { logger } from '../../lib/logger';
+import { Exam, Question, StudentAnswer, Submission, Student } from '../../types';
+import { examService, studentService, gradingService } from '../../services/api';
 
 interface ExamPortalProps {
   onBackToTeacher: () => void;
@@ -71,7 +73,7 @@ export default function ExamPortal({
 
   // Current Active Exam
   const [activeExam, setActiveExam] = useState<Exam | null>(() => {
-    const resolved = mockExams.find(ex => ex.examCode.toUpperCase() === presetExamCode.toUpperCase());
+    const resolved = exams.find(ex => ex.examCode.toUpperCase() === presetExamCode.toUpperCase());
     return resolved || null;
   });
 
@@ -86,6 +88,17 @@ export default function ExamPortal({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isPassageExpanded, setIsPassageExpanded] = useState(true);
 
+  // Data fetched from API (replacing mock arrays)
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+
+  // Fetch exams on mount
+  useEffect(() => {
+    examService.getExams().then(setExams).catch(() => {});
+    studentService.getStudents().then(setAllStudents).catch(() => {});
+  }, []);
+
   // Live Timer references
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -97,7 +110,7 @@ export default function ExamPortal({
   useEffect(() => {
     if (presetExamCode) {
       setExamCode(presetExamCode);
-      const resolved = mockExams.find(ex => ex.examCode.toUpperCase() === presetExamCode.toUpperCase());
+      const resolved = exams.find(ex => ex.examCode.toUpperCase() === presetExamCode.toUpperCase());
       setActiveExam(resolved || null);
     }
   }, [presetExamCode]);
@@ -110,7 +123,7 @@ export default function ExamPortal({
         try {
           setStudentAnswers(JSON.parse(savedAnswers));
         } catch (e) {
-          console.error(e);
+          logger.error(e);
         }
       }
       
@@ -119,7 +132,7 @@ export default function ExamPortal({
         try {
           setFlaggedQuestions(JSON.parse(savedFlags));
         } catch (e) {
-          console.error(e);
+          logger.error(e);
         }
       }
     }
@@ -170,7 +183,7 @@ export default function ExamPortal({
     
     // Gregorian to Jalali mapping algorithm
     const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    let gy2 = (gm > 2) ? (gy + 1) : gy;
+    const gy2 = (gm > 2) ? (gy + 1) : gy;
     let days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + g_d_m[gm - 1];
     let jy = -1595 + (33 * Math.floor(days / 12053));
     days %= 12053;
@@ -180,8 +193,8 @@ export default function ExamPortal({
       jy += Math.floor((days - 1) / 365);
       days = (days - 1) % 365;
     }
-    let jm = (days < 186) ? (1 + Math.floor(days / 31)) : (7 + Math.floor((days - 186) / 30));
-    let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+    const jm = (days < 186) ? (1 + Math.floor(days / 31)) : (7 + Math.floor((days - 186) / 30));
+    const jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
     
     const months = [
       'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
@@ -302,7 +315,7 @@ export default function ExamPortal({
   // --- Search for mock submission ---
   const getSubmissionsForLoggedIn = () => {
     if (!loggedInStudent || !activeExam) return null;
-    return mockSubmissions.find(sub => sub.studentId === loggedInStudent.id && sub.examId === activeExam.id);
+    return submissions.find(sub => sub.studentId === loggedInStudent.id && sub.examId === activeExam.id);
   };
 
   const currentSubmission = getSubmissionsForLoggedIn();
@@ -310,7 +323,7 @@ export default function ExamPortal({
   // Active question-taking timer
   useEffect(() => {
     if (activeView === 'take' && loggedInStudent && activeExam) {
-      const subs = mockSubmissions.find(s => s.studentId === loggedInStudent.id && s.examId === activeExam.id);
+      const subs = submissions.find(s => s.studentId === loggedInStudent.id && s.examId === activeExam.id);
       
       const sessionDurationMinutes = activeExam.duration || 60;
       let targetSeconds = sessionDurationMinutes * 60;
@@ -404,7 +417,7 @@ export default function ExamPortal({
     if (!isValidFormat) return;
 
     // Search for student in mock list
-    const foundStudent = mockStudents.find(s => s.nationalId === formattedId);
+    const foundStudent = allStudents.find(s => s.nationalId === formattedId);
 
     // Security check: Check if student exists and is assigned to the classes or students of this exam
     let isStudentAllowed = false;
@@ -444,7 +457,7 @@ export default function ExamPortal({
     if (!activeExam || !loggedInStudent) return;
 
     // Check if there is already an ongoing submission for this exam
-    let sub = mockSubmissions.find(s => s.studentId === loggedInStudent.id && s.examId === activeExam.id);
+    let sub = submissions.find(s => s.studentId === loggedInStudent.id && s.examId === activeExam.id);
     
     if (!sub) {
       // Create a live new ongoing submission representation
@@ -461,7 +474,7 @@ export default function ExamPortal({
         maxScore: activeExam.questions?.reduce((acc, q) => acc + q.points, 0) || 20,
         answers: []
       };
-      mockSubmissions.push(sub);
+      setSubmissions(prev => [...prev, sub]);
       
       // Wipe clean start state
       localStorage.removeItem(`azmoonsaz_session_ANSWERS_${loggedInStudent.id}_${activeExam.id}`);
@@ -480,7 +493,7 @@ export default function ExamPortal({
     if (!activeExam || !loggedInStudent) return;
     
     // Finalize submission
-    const subIdx = mockSubmissions.findIndex(s => s.studentId === loggedInStudent.id && s.examId === activeExam.id);
+    const subIdx = submissions.findIndex(s => s.studentId === loggedInStudent.id && s.examId === activeExam.id);
     
     const formattedAnswers = Object.entries(studentAnswers).map(([qid, ans]) => ({
       questionId: qid,
@@ -488,12 +501,10 @@ export default function ExamPortal({
     }));
 
     if (subIdx !== -1) {
-      mockSubmissions[subIdx].status = 'submitted';
-      mockSubmissions[subIdx].submittedAt = new Date().toISOString();
-      mockSubmissions[subIdx].answers = formattedAnswers;
+      setSubmissions(prev => prev.map((s, i) => i === subIdx ? { ...s, status: 'submitted', submittedAt: new Date().toISOString(), answers: formattedAnswers } : s));
     } else {
       // Push if missing
-      mockSubmissions.push({
+      setSubmissions(prev => [...prev, {
         id: `sub-${Date.now()}`,
         examId: activeExam.id,
         examCode: activeExam.examCode,
@@ -506,7 +517,7 @@ export default function ExamPortal({
         score: 0,
         maxScore: activeExam.questions?.reduce((acc, q) => acc + q.points, 0) || 20,
         answers: formattedAnswers
-      });
+      }]);
     }
 
     // Clean up local temp caches

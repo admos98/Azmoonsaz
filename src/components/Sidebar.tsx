@@ -6,7 +6,6 @@
 import { LayoutDashboard, Users, HelpCircle, FileText, CheckSquare, Settings, LogOut, GraduationCap, ArrowLeftRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { mockTeacher } from '../mockData';
 import { Teacher } from '../types';
 import { authService } from '../services/api';
 
@@ -18,14 +17,12 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRole }: SidebarProps) {
-  const [teacher, setTeacher] = useState<Teacher>(mockTeacher);
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
 
   useEffect(() => {
     let active = true;
     authService.getCurrentTeacher()
-      .then((current) => {
-        if (active && current) setTeacher({ ...mockTeacher, ...current });
-      })
+      .then((current) => { if (active && current) setTeacher(current); })
       .catch(() => undefined);
     return () => { active = false; };
   }, []);
@@ -56,15 +53,21 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
 
         {/* Teacher Mini Profile */}
         <div className="p-4 mx-4 my-6 bg-indigo-50/40 rounded-3xl border border-indigo-100/50 flex items-center space-x-3 space-x-reverse shadow-sm" id="sidebar-profile">
-          <img
-            src={teacher.avatarUrl}
-            alt={teacher.name}
-            referrerPolicy="no-referrer"
-            className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm ring-2 ring-indigo-100"
-          />
+          {teacher?.avatarUrl ? (
+            <img
+              src={teacher.avatarUrl}
+              alt={teacher.name}
+              referrerPolicy="no-referrer"
+              className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm ring-2 ring-indigo-100"
+            />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-indigo-200 border-2 border-white shadow-sm ring-2 ring-indigo-100 flex items-center justify-center text-indigo-700 text-sm font-bold">
+              {teacher?.name?.[0] || '?'}
+            </div>
+          )}
           <div className="flex-1 overflow-hidden">
-            <h4 className="text-xs font-bold text-slate-800 truncate">{teacher.name}</h4>
-            <p className="text-[10px] text-slate-500 truncate mt-0.5">{teacher.schoolName}</p>
+            <h4 className="text-xs font-bold text-slate-800 truncate">{teacher?.name || '...'}</h4>
+            <p className="text-[10px] text-slate-500 truncate mt-0.5">{teacher?.schoolName || ''}</p>
           </div>
         </div>
 

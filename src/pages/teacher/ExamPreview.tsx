@@ -37,8 +37,9 @@ import {
   Trash,
   Settings2
 } from 'lucide-react';
-import { Exam, Question, QuestionType, QuestionOption, QuestionPart, RubricCriterion, ExamSection } from '../../types';
-import { mockQuestions, mockClassGroups } from '../../mockData';
+import { Exam, Question, QuestionType, QuestionOption, QuestionPart, RubricCriterion, ExamSection, ClassGroup } from '../../types';
+import { classService, questionService } from '../../services/api';
+
 
 interface ExamPreviewProps {
   exam: Exam;
@@ -78,6 +79,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
   const [replaceFilterType, setReplaceFilterType] = useState<string>('all');
   const [replaceFilterDifficulty, setReplaceFilterDifficulty] = useState<string>('all');
   const [replaceSearchQuery, setReplaceSearchQuery] = useState<string>('');
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
+  const [bankQuestions, setBankQuestions] = useState<Question[]>([]);
+  useEffect(() => {
+    classService.getClassGroups().then(setClassGroups).catch(() => {});
+    questionService.getQuestions().then(setBankQuestions).catch(() => {});
+  }, []);
 
   // Sync state if initial prop changes
   useEffect(() => {
@@ -217,7 +224,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
   const getAssignedClassesString = () => {
     if (!localExam.classGroupIds || localExam.classGroupIds.length === 0) return 'به کلاسی تخصیص داده نشده';
     return localExam.classGroupIds
-      .map(cid => mockClassGroups.find(c => c.id === cid)?.name)
+      .map(cid => classGroups.find(c => c.id === cid)?.name)
       .filter(Boolean)
       .join(' و ');
   };
@@ -519,7 +526,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
   };
 
   // Replacement search filter pipeline
-  const filteredBankQuestions = mockQuestions.filter(bq => {
+  const filteredBankQuestions = bankQuestions.filter(bq => {
     // Exclude physical matches already assigned in exam to avoid duplication
     if (localExam.questions.some(eq => eq.text === bq.text)) return false;
 

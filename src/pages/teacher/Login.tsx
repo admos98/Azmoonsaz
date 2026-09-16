@@ -5,7 +5,6 @@
 
 import React, { useState } from 'react';
 import { ShieldCheck, GraduationCap, Eye, EyeOff, Lock, Mail, ArrowLeftRight } from 'lucide-react';
-import { mockTeacher } from '../../mockData';
 import { authService } from '../../services/api';
 
 interface LoginProps {
@@ -14,7 +13,7 @@ interface LoginProps {
 }
 
 export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps) {
-  const [email, setEmail] = useState(mockTeacher.email);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);

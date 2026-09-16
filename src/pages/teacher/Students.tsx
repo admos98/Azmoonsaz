@@ -30,14 +30,18 @@ import {
   Activity,
   UserPlus
 } from 'lucide-react';
-import { mockStudents as initialStudents, mockClassGroups, mockSubmissions, mockExams } from '../../mockData';
-import { Student, Submission } from '../../types';
-import { studentService } from '../../services/api';
+
+import { logger } from '../../lib/logger';
+import { Student, Submission, ClassGroup, Exam } from '../../types';
+import { studentService, classService, gradingService, examService } from '../../services/api';
 
 export default function Students() {
   // State management
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [allExams, setAllExams] = useState<Exam[]>([]);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -49,12 +53,15 @@ export default function Students() {
           status: s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active')
         })));
       } catch (err) {
-        console.error('Error fetching students:', err);
+        logger.error('Error fetching students:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchStudents();
+    classService.getClassGroups().then(setClassGroups).catch(() => {});
+    gradingService.getSubmissions().then(setSubmissions).catch(() => {});
+    examService.getExams().then(setAllExams).catch(() => {});
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -133,7 +140,7 @@ export default function Students() {
     setFormName('');
     setFormNationalId('');
     setFormGrade('هفتم');
-    setFormClassGroupId(mockClassGroups[0]?.id || 'c-1');
+    setFormClassGroupId(classGroups[0]?.id || 'c-1');
     setFormPhone('');
     setFormEmail('');
     setFormStatus('active');
@@ -231,7 +238,7 @@ export default function Students() {
   };
 
   const openStudentExamHistory = (student: Student) => {
-    const studentSubs = mockSubmissions.filter(sub => sub.studentId === student.id);
+    const studentSubs = submissions.filter(sub => sub.studentId === student.id);
     setActiveLogStudent(student);
     setActiveLogSubmissions(studentSubs);
     setShowExamLogsModal(true);
@@ -407,7 +414,7 @@ export default function Students() {
     // Map valid wizard rows into existing students layout
     const toImport = wizardValidationResults.valid.map((r) => {
       // Try to find matching classGroupId by name or default
-      const matchedClass = mockClassGroups.find(c => c.name.includes(r.class) || r.class.includes(c.name)) || mockClassGroups[0];
+      const matchedClass = classGroups.find(c => c.name.includes(r.class) || r.class.includes(c.name)) || classGroups[0];
       return {
         name: r.name,
         nationalId: r.national_id,
@@ -550,7 +557,7 @@ export default function Students() {
               className="bg-transparent text-xs text-slate-700 focus:outline-hidden font-bold cursor-pointer"
             >
               <option value="all">همه کلاس‌ها</option>
-              {mockClassGroups.map(cg => (
+              {classGroups.map(cg => (
                 <option key={cg.id} value={cg.id}>{cg.name}</option>
               ))}
             </select>
@@ -612,7 +619,7 @@ export default function Students() {
               <AnimatePresence initial={false}>
                 {filteredStudents.length > 0 ? (
                   filteredStudents.map((student) => {
-                    const classGroup = mockClassGroups.find(c => c.id === student.classGroupId);
+                    const classGroup = classGroups.find(c => c.id === student.classGroupId);
                     
                     return (
                       <motion.tr
@@ -743,7 +750,7 @@ export default function Students() {
           <AnimatePresence initial={false}>
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student) => {
-                const classGroup = mockClassGroups.find(c => c.id === student.classGroupId);
+                const classGroup = classGroups.find(c => c.id === student.classGroupId);
                 return (
                   <motion.div
                     key={student.id}
@@ -916,7 +923,7 @@ export default function Students() {
                     onChange={(e) => setFormClassGroupId(e.target.value)}
                     className="w-full bg-slate-50/70 border border-slate-200 px-2 py-2.5 rounded-xl focus:bg-white focus:border-indigo-400 font-bold"
                   >
-                    {mockClassGroups.map(c => (
+                    {classGroups.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
@@ -1367,7 +1374,7 @@ export default function Students() {
                 {activeLogSubmissions.length > 0 ? (
                   <div className="space-y-2.5 max-h-64 overflow-y-auto">
                     {activeLogSubmissions.map((sub, index) => {
-                      const examItem = mockExams.find(e => e.id === sub.examId);
+                      const examItem = allExams.find(e => e.id === sub.examId);
                       return (
                         <div 
                           key={sub.id || index} 

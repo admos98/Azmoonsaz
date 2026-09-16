@@ -4,6 +4,7 @@
  */
 
 import { apiPost } from '../lib/apiClient';
+import { logger } from '../lib/logger';
 
 export interface QueuedAnswer {
   token: string;
@@ -20,7 +21,7 @@ export function getQueuedAnswers(): QueuedAnswer[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (err) {
-    console.warn('Failed to read offline answers queue:', err);
+    logger.warn('Failed to read offline answers queue:', err);
     return [];
   }
 }
@@ -29,7 +30,7 @@ function saveQueue(queue: QueuedAnswer[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
   } catch (err) {
-    console.warn('Failed to persist offline answers queue:', err);
+    logger.warn('Failed to persist offline answers queue:', err);
   }
 }
 
@@ -55,7 +56,7 @@ export async function flushQueuedAnswers(): Promise<{ syncedCount: number; remai
       }, { Authorization: 'Bearer ' + item.token });
       syncedCount++;
     } catch (err) {
-      console.warn(`[Offline Queue] Failed to sync answer for ${item.questionId}, keeping in queue:`, err);
+      logger.warn(`[Offline Queue] Failed to sync answer for ${item.questionId}, keeping in queue:`, err);
       item.retryCount++;
       remaining.push(item);
     }

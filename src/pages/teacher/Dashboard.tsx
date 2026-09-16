@@ -27,18 +27,12 @@ import {
   Trash2,
   ListFilter
 } from 'lucide-react';
-import {
-  mockExams,
-  mockStudents,
-  mockSubmissions,
-  mockClassGroups,
-  mockQuestions,
-  mockTeacher
-} from '../../mockData';
-import { Student, Exam, Submission, Question, Teacher } from '../../types';
+
+import { logger } from '../../lib/logger';
+import { Student, Exam, Submission, Question, Teacher, ClassGroup } from '../../types';
 import { Button, Card, Badge, StatusBadge, Modal, EmptyState, FileDropzone, Table } from '../../components/UIComponents';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
-import { studentService, examService, gradingService, authService } from '../../services/api';
+import { studentService, examService, gradingService, authService, classService, questionService } from '../../services/api';
 
 interface DashboardProps {
   onNavigate: (tab: string) => void;
@@ -52,6 +46,8 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   const [localSubmissions, setLocalSubmissions] = useState<Submission[]>([]);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [loading, setLoading] = useState(true);
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
+  const [localQuestions, setLocalQuestions] = useState<Question[]>([]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -66,9 +62,11 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         setLocalStudents(studentsData);
         setLocalExams(examsData);
         setLocalSubmissions(submissionsData);
+        classService.getClassGroups().then(setClassGroups).catch(() => {});
+        questionService.getQuestions().then(setLocalQuestions).catch(() => {});
         setTeacher(teacherData);
       } catch (err) {
-        console.error('Error loading dashboard:', err);
+        logger.error('Error loading dashboard:', err);
       } finally {
         setLoading(false);
       }
@@ -168,7 +166,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   const getStudentClassLabel = (studentId: string) => {
     const student = currentStudents.find(s => s.id === studentId);
     if (!student) return 'کلاس نامشخص';
-    const group = mockClassGroups.find(cg => cg.id === student.classGroupId);
+    const group = classGroups.find(cg => cg.id === student.classGroupId);
     return group ? group.name : `پایه ${student.grade}`;
   };
 
@@ -177,13 +175,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   };
 
   // Compute Question Bank health counts
-  const qBankTotal = mockQuestions.length;
-  const grade7QCount = mockQuestions.filter(q => q.grade === 'هفتم').length;
-  const grade8QCount = mockQuestions.filter(q => q.grade === 'هشتم').length;
-  const grade9QCount = mockQuestions.filter(q => q.grade === 'نهم').length;
+  const qBankTotal = localQuestions.length;
+  const grade7QCount = localQuestions.filter(q => q.grade === 'هفتم').length;
+  const grade8QCount = localQuestions.filter(q => q.grade === 'هشتم').length;
+  const grade9QCount = localQuestions.filter(q => q.grade === 'نهم').length;
 
-  const typeMultiChoiceCount = mockQuestions.filter(q => q.type === 'single_choice' || q.type === 'multiple_choice').length;
-  const typeEssayCount = mockQuestions.filter(q => q.type === 'long_answer' || q.type === 'short_answer').length;
+  const typeMultiChoiceCount = localQuestions.filter(q => q.type === 'single_choice' || q.type === 'multiple_choice').length;
+  const typeEssayCount = localQuestions.filter(q => q.type === 'long_answer' || q.type === 'short_answer').length;
   const typeRestCount = qBankTotal - (typeMultiChoiceCount + typeEssayCount);
 
   return (
@@ -427,7 +425,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                         <div className="flex items-center gap-3 text-[10px] text-slate-450">
                           <span>پایه: {ex.grade}</span>
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                          <span>کلاس: {ex.classGroupIds.map(cid => mockClassGroups.find(c => c.id === cid)?.name).filter(Boolean).join(' و ')}</span>
+                          <span>کلاس: {ex.classGroupIds.map(cid => classGroups.find(c => c.id === cid)?.name).filter(Boolean).join(' و ')}</span>
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-slate-400" />
@@ -698,7 +696,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm" id="section-class-groups-list">
             <h3 className="text-xs font-black text-slate-800 mb-4">آمار کلاس‌های تحت پوشش پایه‌ها</h3>
             <div className="space-y-3">
-              {mockClassGroups.map((cg) => (
+              {classGroups.map((cg) => (
                 <div key={cg.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-center hover:bg-white hover:border-slate-300 hover:shadow-2xs transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold">

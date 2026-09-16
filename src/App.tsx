@@ -17,8 +17,6 @@ import Settings from './pages/teacher/Settings';
 import ExamPortal from './pages/student/ExamPortal';
 import SecureExamPortal from './pages/student/SecureExamPortal';
 import { Exam } from './types';
-import { mockExams } from './mockData';
-import { isSecureBackendMode } from './config/runtimeMode';
 
 export default function App() {
   const [userRole, setUserRole] = useState<'teacher' | 'student'>('teacher');
@@ -58,10 +56,9 @@ export default function App() {
   const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>('list');
 
   // Handle addition of designed exam
-  const [customExams, setCustomExams] = useState<Exam[]>(mockExams);
+  const [customExams, setCustomExams] = useState<Exam[]>([]);
 
   const handleAddNewExam = (newExam: Exam) => {
-    mockExams.push(newExam); // Appends to static list for student portal lookup
     setCustomExams([newExam, ...customExams]);
     setCurrentTab('exams');
     setExamSubView('list');
@@ -78,7 +75,7 @@ export default function App() {
   const handleSwitchUserRole = () => {
     if (userRole === 'teacher') {
       setUserRole('student');
-      navigateToLocalPath(isSecureBackendMode() ? '/secure-exam/DEMO7' : '/exam/8AF39');
+      navigateToLocalPath('/secure-exam/DEMO7');
     } else {
       setUserRole('teacher');
       navigateToLocalPath('/');
@@ -202,29 +199,14 @@ export default function App() {
 
   if (examRouteMatch) {
     const code = examRouteMatch[1];
-    const subRoute = examRouteMatch[2] || 'login';
-
-    if (isSecureBackendMode()) {
-      return (
-        <SecureExamPortal
-          presetExamCode={code}
-          onBackToTeacher={() => {
-            navigateToLocalPath('/');
-            setUserRole('teacher');
-          }}
-        />
-      );
-    }
 
     return (
-      <ExamPortal
+      <SecureExamPortal
+        presetExamCode={code}
         onBackToTeacher={() => {
           navigateToLocalPath('/');
           setUserRole('teacher');
         }}
-        presetExamCode={code}
-        subRoute={subRoute as 'login' | 'start' | 'take' | 'submitted'}
-        onNavigate={navigateToLocalPath}
       />
     );
   }
@@ -251,7 +233,7 @@ export default function App() {
         onLoginSuccess={() => setIsTeacherLoggedIn(true)}
         onSwitchToStudent={() => {
           setUserRole('student');
-          navigateToLocalPath(isSecureBackendMode() ? '/secure-exam/DEMO7' : '/exam/8AF39');
+          navigateToLocalPath('/secure-exam/DEMO7');
         }}
       />
     );

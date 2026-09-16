@@ -31,8 +31,9 @@ import {
   Laptop,
   Eye
 } from 'lucide-react';
-import { Exam, ExamSettings as SettingsType } from '../../types';
-import { mockClassGroups, mockStudents } from '../../mockData';
+import { Exam, ExamSettings as SettingsType, ClassGroup, Student } from '../../types';
+import { classService, studentService } from '../../services/api';
+
 
 interface ExamSettingsProps {
   exam: Exam;
@@ -53,6 +54,13 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
   const [allowedClasses, setAllowedClasses] = useState<string[]>(exam.settings.allowedClasses || exam.classGroupIds || []);
   const [requireNationalId, setRequireNationalId] = useState<boolean>(exam.settings.requireNationalId ?? true);
   const [entryCode, setEntryCode] = useState<string>(exam.settings.entryCode || '');
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+
+  useEffect(() => {
+    classService.getClassGroups().then(setClassGroups).catch(() => {});
+    studentService.getStudents().then(setAllStudents).catch(() => {});
+  }, []);
   const [maxAttempts, setMaxAttempts] = useState<number>(exam.settings.maxAttempts || 1);
   const [limitToSpecificStudents, setLimitToSpecificStudents] = useState<boolean>(
     !!(exam.settings.allowedStudents && exam.settings.allowedStudents.length > 0)
@@ -98,7 +106,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
     
     // Gregorian to Jalali mapping algorithm
     const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    let gy2 = (gm > 2) ? (gy + 1) : gy;
+    const gy2 = (gm > 2) ? (gy + 1) : gy;
     let days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + g_d_m[gm - 1];
     let jy = -1595 + (33 * Math.floor(days / 12053));
     days %= 12053;
@@ -108,8 +116,8 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
       jy += Math.floor((days - 1) / 365);
       days = (days - 1) % 365;
     }
-    let jm = (days < 186) ? (1 + Math.floor(days / 31)) : (7 + Math.floor((days - 186) / 30));
-    let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+    const jm = (days < 186) ? (1 + Math.floor(days / 31)) : (7 + Math.floor((days - 186) / 30));
+    const jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
     
     const months = [
       'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
@@ -142,7 +150,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
     if (allowedClasses.includes(classId)) {
       setAllowedClasses(allowedClasses.filter(id => id !== classId));
       // Remove students that are no longer in allowed classes
-      const relatedStudents = mockStudents.filter(s => s.classGroupId === classId).map(s => s.id);
+      const relatedStudents = allStudents.filter(s => s.classGroupId === classId).map(s => s.id);
       setAllowedStudents(allowedStudents.filter(sid => !relatedStudents.includes(sid)));
     } else {
       setAllowedClasses([...allowedClasses, classId]);
@@ -160,7 +168,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
   // Checkbox/Toggle toggler helpers
   const handleSelectAllStudentsForClass = (classId: string) => {
-    const classStudents = mockStudents.filter(s => s.classGroupId === classId).map(s => s.id);
+    const classStudents = allStudents.filter(s => s.classGroupId === classId).map(s => s.id);
     const allSelected = classStudents.every(sId => allowedStudents.includes(sId));
     
     if (allSelected) {
@@ -172,7 +180,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
   };
 
   // Real-time student calculation list
-  const activeClassStudents = mockStudents.filter(s => allowedClasses.includes(s.classGroupId));
+  const activeClassStudents = allStudents.filter(s => allowedClasses.includes(s.classGroupId));
   const filteredStudents = activeClassStudents.filter(s => 
     s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) || 
     s.nationalId.includes(studentSearchQuery)
@@ -181,7 +189,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
   const totalCalculatedStudents = limitToSpecificStudents 
     ? allowedStudents.length 
     : allowedClasses.reduce((sum, cid) => {
-        const found = mockClassGroups.find(c => c.id === cid);
+        const found = classGroups.find(c => c.id === cid);
         return sum + (found ? found.studentCount : 0);
       }, 0);
 
@@ -552,7 +560,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
             <div className="space-y-2">
               <span className="text-xs font-bold text-slate-700 block">کلاس‌های درسی مجاز جهت شرکت در آزمون:</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {mockClassGroups.map(cls => {
+                {classGroups.map(cls => {
                   const isChecked = allowedClasses.includes(cls.id);
                   return (
                     <div
@@ -620,7 +628,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                       ) : (
                         filteredStudents.map(student => {
                           const isChecked = allowedStudents.includes(student.id);
-                          const clsName = mockClassGroups.find(c => c.id === student.classGroupId)?.name || '';
+                          const clsName = classGroups.find(c => c.id === student.classGroupId)?.name || '';
                           return (
                             <div
                               key={student.id}
@@ -652,7 +660,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                       <span>کل افراد منتخب: {toPersianDigits(allowedStudents.length)} از {toPersianDigits(activeClassStudents.length)} نفر</span>
                       <div className="flex gap-3">
                         {allowedClasses.map(cid => {
-                          const clsName = mockClassGroups.find(c => c.id === cid)?.name || '';
+                          const clsName = classGroups.find(c => c.id === cid)?.name || '';
                           return (
                             <button
                               key={cid}
@@ -1002,9 +1010,9 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
               <div className="flex justify-between items-center">
                 <span className="text-slate-400 text-[11px]">پایه و نوع کلاس:</span>
-                <span className="font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md text-[10px] max-w-[130px] truncate" title={allowedClasses.map(cid => mockClassGroups.find(c => c.id === cid)?.name).join(' و ')}>
+                <span className="font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md text-[10px] max-w-[130px] truncate" title={allowedClasses.map(cid => classGroups.find(c => c.id === cid)?.name).join(' و ')}>
                   {allowedClasses.length > 0 
-                    ? allowedClasses.map(cid => mockClassGroups.find(c => c.id === cid)?.name).join(' و ') 
+                    ? allowedClasses.map(cid => classGroups.find(c => c.id === cid)?.name).join(' و ') 
                     : 'کلاسی تعیین نشده'}
                 </span>
               </div>

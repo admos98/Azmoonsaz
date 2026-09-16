@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Clock, Loader2, Lock, Send, ShieldCheck, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { apiPost, ApiError } from '../../lib/apiClient';
+import { logger } from '../../lib/logger';
 import { toPersianDigits } from '../../utils/persian';
 import { queueAnswerOffline, flushQueuedAnswers, clearQueueForToken, getQueuedAnswers } from '../../services/offlineAnswerQueue';
 
@@ -103,7 +104,7 @@ export default function SecureExamPortal({ presetExamCode, onBackToTeacher }: Se
       const response = await apiPost<{ ok: boolean; savedAt: string }>('/api/student/save-answer', { questionId, answer: { value } }, { Authorization: 'Bearer ' + token });
       setSavedAt(response.savedAt);
     } catch (err) {
-      console.warn('Network save failed. Queuing answer offline:', err);
+      logger.warn('Network save failed. Queuing answer offline:', err);
       queueAnswerOffline(token, questionId, value);
       setSavedAt('ذخیره به‌صورت آفلاین (در انتظار همگام‌سازی شبکه)');
     } finally {

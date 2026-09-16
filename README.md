@@ -1,73 +1,203 @@
-﻿<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+﻿# آزمون‌ساز (Azmoonsaz)
 
-# Run and deploy your AI Studio app
+A full-stack Iranian education exam platform — build, manage, and take exams online with secure authentication, real-time grading, and a Persian-first UI.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/cf840fa5-9958-4ec4-b270-963a2ab3c3d7
+## What It Does
 
-## Run Locally
+**For teachers:** Create exams from a question bank, assign them to class groups, set time windows and access controls, review submissions, and grade both auto-graded and descriptive questions.
 
-**Prerequisites:**  Node.js
+**For students:** Authenticate with national ID + entry code, take timed exams with anti-cheat measures, answer offline if the connection drops, and receive instant results for auto-graded sections.
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Tech Stack
 
-## Security-first production notes
+| Layer | Tech |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS v4 |
+| Backend | Vercel Serverless Functions (Node.js) |
+| Database | Supabase (PostgreSQL + Auth + Storage) |
+| Animation | Motion (Framer Motion successor) |
+| Testing | Vitest, React Testing Library |
+| Linting | ESLint (flat config), Prettier |
 
-This app is currently a frontend prototype with mock/localStorage data. Do not use it for real exams until the backend security work is complete.
+---
 
-Read:
+## Project Structure
 
-- docs/security-architecture.md
-- docs/supabase-hardening.md
-- supabase/schema-security-draft.sql
+```
+src/
+├── App.tsx                  # Root — routing, role switching
+├── main.tsx                 # Entry point, ErrorBoundary
+├── types.ts                 # All shared TypeScript interfaces
+├── config/
+│   ├── env.ts               # Public environment variables
+│   └── runtimeMode.ts       # Backend mode detection
+├── lib/
+│   ├── apiClient.ts         # Typed fetch wrapper (apiGet, apiPost)
+│   ├── logger.ts            # Centralized logger (dev: all levels, prod: errors only)
+│   └── supabasePublic.ts    # Supabase client singleton
+├── services/
+│   ├── api.ts               # All data services (auth, students, questions, exams, grading)
+│   ├── storageService.ts    # Supabase Storage uploads
+│   ├── teacherApi.ts        # Teacher session / access token helpers
+│   ├── offlineAnswerQueue.ts # Offline answer persistence + sync
+│   └── persianHelpers.ts    # Re-exports from utils/persian
+├── utils/
+│   └── persian.ts           # Iranian national ID validation, Persian date/number formatting
+├── components/
+│   ├── ErrorBoundary.tsx    # React error boundary with retry
+│   ├── BackendModeBadge.tsx # "بک‌اند امن" indicator
+│   ├── Sidebar.tsx          # Teacher panel navigation
+│   ├── Topbar.tsx           # Teacher panel top bar
+│   └── UIComponents.tsx     # Shared UI primitives (Button, Card, Badge, Modal, Table, etc.)
+├── pages/
+│   ├── teacher/
+│   │   ├── Login.tsx        # Email + password auth
+│   │   ├── Dashboard.tsx    # Stats, charts, class overview
+│   │   ├── Classes.tsx      # Class group management
+│   │   ├── Students.tsx     # Student roster, Excel import
+│   │   ├── Questions.tsx    # Question bank (CRUD, import, search)
+│   │   ├── Exams.tsx        # Exam list with sub-views
+│   │   ├── NewExam.tsx      # Multi-step exam builder
+│   │   ├── ExamPreview.tsx  # Live exam preview + question replacement
+│   │   ├── ExamSettings.tsx # Per-exam config (timing, access, anti-cheat)
+│   │   ├── ExamResults.tsx  # Submission review, grading, score tables
+│   │   └── Settings.tsx     # Account settings, backend status
+│   └── student/
+│       ├── SecureExamPortal.tsx  # Secure student exam (Supabase-backed)
+│       └── ExamPortal.tsx        # Legacy exam portal
+└── test/                    # Unit tests (Vitest + RTL)
+    ├── components/
+    ├── config/
+    ├── lib/
+    ├── services/
+    └── utils/
 
-Important rules:
+api/                         # Vercel Serverless API
+├── index.js                 # Thin router → dispatches to route files
+├── routes/
+│   ├── public.js            # Public endpoints (exam lookup, student auth)
+│   ├── student.js           # Student endpoints (start exam, save answers, submit)
+│   └── teacher.js           # Teacher endpoints (CRUD for all resources)
+└── _lib/
+    ├── auth.js              # Session token creation / verification
+    ├── crypto.js            # Entry code hashing
+    ├── env.js               # Server-side env vars
+    ├── examSecurity.js      # Exam access validation
+    ├── http.js              # Response helpers (json, cors headers)
+    ├── rateLimit.js         # Supabase-backed rate limiter with local fallback
+    ├── studentSession.js    # Student session management
+    ├── supabaseAdmin.js     # Supabase service-role client
+    ├── teacherAuth.js       # Teacher authentication middleware
+    └── utils.js             # Shared server utilities
+```
 
-- Do not store plain national IDs in production.
-- Do not expose SUPABASE_SERVICE_ROLE_KEY, STUDENT_ID_PEPPER, or GEMINI_API_KEY to browser code.
-- Student exam access should go through server-side API endpoints.
-- Student-facing payloads must never include answer keys.
+---
 
+## Key Features
 
-## Backend foundation patch 003
+### Exam Lifecycle
+- **Build:** Multi-step wizard — title/grade → pick questions from bank → configure settings → preview → publish
+- **Assign:** Target specific class groups, set start/end windows, generate entry codes
+- **Take:** Student enters national ID + code → timed exam → anti-cheat (tab switch detection, fullscreen lock) → auto-submit on timeout
+- **Grade:** Auto-graded MCQ + manual grading for descriptive questions with rubrics
+- **Review:** Per-question stats, score distribution, export-ready results
 
-This project now includes a secure backend foundation for Vercel API functions and Supabase.
+### Security
+- Teacher authentication via Supabase Auth with access tokens
+- Student sessions scoped per exam with entry code verification
+- Exam content locked during active session (no pre-fetching)
+- Cross-instance rate limiting via Supabase (prevents per-Vercel-instance bypass)
+- Anti-cheat: tab-switch warnings, fullscreen enforcement, one-device-per-login
 
-New frontend helpers:
+### Offline Resilience
+- Student answers are saved to localStorage during the exam
+- If the network drops, answers queue locally and sync when connection returns
+- Exam state survives page refresh
 
-- src/config/env.ts
-- src/lib/supabasePublic.ts
-- src/lib/apiClient.ts
+### Persian-First
+- All UI text in Persian (RTL layout)
+- Iranian national ID validation (10-digit checksum)
+- Persian date formatting (Jalali calendar)
+- Persian digit display for numbers
 
-New server helpers:
+---
 
-- api/_lib/supabaseAdmin.js
-- api/_lib/studentSession.js
-- api/_lib/rateLimit.js
+## Getting Started
 
-Test endpoints:
+### Prerequisites
+- Node.js 18+
+- Supabase project (for database, auth, storage)
 
-- /api/health
-- /api/security-check
-- /api/student-id-demo
-- /api/student/exam-entry
+### Setup
 
-Do not use real exams until the full database schema, RLS policies, teacher auth, student sessions, answer stripping, autosave, and submission locking are complete.
+```bash
+npm install
+```
 
-## Small fixes patch 004
+Create `.env.local`:
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_API_URL=/api
+```
 
-Added safe local tooling:
+### Development
 
-- `npm run check:env`
-- `npm run hash:national-id -- 0012345678`
-- `npm run dev:vercel`
+```bash
+npm run dev          # Vite dev server (proxies /api to localhost:3001)
+npx vercel dev       # Full stack with Vercel serverless
+```
 
-Read `docs/local-api-testing.md` and `docs/supabase-first-run.md` before connecting real data.
+### Commands
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Production build |
+| `npm run typecheck` | TypeScript type checking |
+| `npm run lint` | ESLint (0 errors, warnings tracked) |
+| `npm run test` | Run unit tests (Vitest) |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run check` | Full pipeline: typecheck + lint + build |
+
+### Deployment
+
+Deployed on Vercel. Push to `main` triggers automatic deployment. The API runs as serverless functions under `/api/`.
+
+Supabase migrations live in `supabase/migrations/`. Apply via:
+```bash
+npx supabase db push
+```
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Yes | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Yes | Supabase anonymous/public key |
+| `VITE_API_URL` | No | API base path (default: `/api`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Supabase admin key (set in Vercel) |
+
+---
+
+## Audit & Quality
+
+A comprehensive audit was conducted on 2026-09-15 covering security, architecture, and code quality. All 16 findings have been resolved. See `.hermes/plans/2026-09-15_comprehensive-audit.md` for the full audit report and fix details.
+
+### Quality Gates
+- **TypeScript** — strict type checking (0 errors)
+- **ESLint** — flat config with TypeScript + React Hooks rules (0 errors, 217 warnings tracked)
+- **Vitest** — 40 unit tests across 9 test files (utils, services, config, lib, components)
+- **Vite build** — production-optimized, ~259KB gzipped
+
+---
+
+## License
+
+Apache-2.0 (SPDX)

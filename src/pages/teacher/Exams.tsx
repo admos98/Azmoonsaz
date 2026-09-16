@@ -6,9 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FileText, Plus, Eye, Settings as SettingsIcon, Award, Clock, ArrowLeft, Check, CheckSquare, Calendar, Users, Flame, Play, Trash2, ArrowRight } from 'lucide-react';
-import { mockExams as initialExams, mockClassGroups, mockQuestions, mockTeacher } from '../../mockData';
-import { Exam, ClassGroup, Question } from '../../types';
-import { examService } from '../../services/api';
+import { logger } from '../../lib/logger';
+import { Exam, ClassGroup, Question, Teacher } from '../../types';
+import { classService, examService } from '../../services/api';
 
 // Import subviews
 import ExamSettings from './ExamSettings';
@@ -25,6 +25,7 @@ interface ExamsProps {
 export default function Exams({ onNavigate, selectedExamId: propExamId, subView: propSubView = 'list', onSubViewChange }: ExamsProps) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -33,12 +34,13 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
         const data = await examService.getExams();
         setExams(data);
       } catch (err) {
-        console.error('Error fetching exams:', err);
+        logger.error('Error fetching exams:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchExams();
+    classService.getClassGroups().then(setClassGroups).catch(() => {});
   }, []);
 
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'scheduled' | 'draft' | 'completed'>('all');
@@ -111,7 +113,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
 
   const getClassNamesForExam = (classGroupIds: string[]) => {
     return classGroupIds
-      .map(id => mockClassGroups.find(c => c.id === id)?.name)
+      .map(id => classGroups.find(c => c.id === id)?.name)
       .filter(Boolean)
       .join(' و ');
   };

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { logger } from '../../lib/logger';
 import {
   Settings as SettingsIcon,
   User,
@@ -42,7 +43,7 @@ export default function Settings() {
         const current = await authService.getCurrentTeacher();
         setTeacher(current);
       } catch (err) {
-        console.error('Error loading teacher:', err);
+        logger.error('Error loading teacher:', err);
       } finally {
         setLoading(false);
       }
@@ -74,7 +75,6 @@ export default function Settings() {
   const isSecure = isSecureBackendMode();
   const modeLabel = getRuntimeModeLabel();
   const supabaseConfigured = publicEnv.isSupabaseConfigured;
-  const mockModeEnabled = publicEnv.enableMockMode;
 
   if (loading) {
     return (
@@ -217,13 +217,13 @@ export default function Settings() {
           </div>
 
           <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
-            <div className={`p-2 rounded-full ${mockModeEnabled ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>
-              {mockModeEnabled ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+            <div className="p-2 rounded-full bg-emerald-50 text-emerald-600">
+              <CheckCircle className="w-4 h-4" />
             </div>
             <div>
               <p className="text-[10px] text-slate-400 font-bold">حالت آزمایشی</p>
-              <Badge variant={mockModeEnabled ? 'warning' : 'success'}>
-                {mockModeEnabled ? 'فعال' : 'غیرفعال'}
+              <Badge variant="success">
+                غیرفعال
               </Badge>
             </div>
           </div>

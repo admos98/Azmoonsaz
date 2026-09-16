@@ -1,13 +1,11 @@
 import { getSupabasePublicClient } from '../lib/supabasePublic';
-import { publicEnv } from '../config/env';
 import { ApiError } from '../lib/apiClient';
 
 export function isSecureTeacherModeAvailable(): boolean {
-  return publicEnv.isSupabaseConfigured && !publicEnv.enableMockMode;
+  return true; // Supabase is always the backend
 }
 
 export async function getTeacherAccessToken(): Promise<string | null> {
-  if (!isSecureTeacherModeAvailable()) return null;
   const supabase = getSupabasePublicClient();
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token || null;

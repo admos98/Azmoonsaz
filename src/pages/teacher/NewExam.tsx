@@ -6,9 +6,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, ArrowLeft, CheckCircle2, Award, Clock, FileText, Check, CheckSquare, Plus, Layers, ShieldAlert } from 'lucide-react';
-import { mockClassGroups } from '../../mockData';
-import { Exam, ExamSection, Question } from '../../types';
-import { examService, questionService } from '../../services/api';
+import { logger } from '../../lib/logger';
+import { Exam, ExamSection, Question, ClassGroup } from '../../types';
+import { examService, questionService, classService } from '../../services/api';
 
 interface NewExamProps {
   onBack: () => void;
@@ -38,6 +38,10 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   const [allowBacktrack, setAllowBacktrack] = useState(true);
   const [showImmediateResults, setShowImmediateResults] = useState(false);
   const [browserLockdown, setBrowserLockdown] = useState(true);
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
+  useEffect(() => {
+    classService.getClassGroups().then(setClassGroups).catch(() => {});
+  }, []);
   useEffect(() => {
     let active = true;
     setQuestionsLoading(true);
@@ -48,7 +52,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
         setSelectedQuestionIds((current) => current.filter((id) => questions.some((q) => q.id === id)));
       })
       .catch((err) => {
-        console.error('Failed to load question bank for exam builder:', err);
+        logger.error('Failed to load question bank for exam builder:', err);
         if (active) setQuestionBank([]);
       })
       .finally(() => { if (active) setQuestionsLoading(false); });
@@ -267,7 +271,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
             <div className="space-y-2">
               <span className="text-xs font-bold text-slate-700 block">تخصیص کلاس‌های دبیرستان (امکان بیش از یک تشکیلات):</span>
               <div className="flex flex-wrap gap-2.5">
-                {mockClassGroups.map(cg => (
+                {classGroups.map(cg => (
                   <button
                     key={cg.id}
                     type="button"
@@ -445,7 +449,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               <div>
                 <span className="text-slate-400 block mb-1">کلاس‌ها:</span>
                 <p className="font-bold text-slate-800">
-                  {selectedClasses.map(id => mockClassGroups.find(c => c.id === id)?.name || id).join(' و ')}
+                  {selectedClasses.map(id => classGroups.find(c => c.id === id)?.name || id).join(' و ')}
                 </p>
               </div>
             </div>

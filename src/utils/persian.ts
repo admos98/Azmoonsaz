@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { logger } from '../lib/logger';
+
 /**
  * Validates an Iranian National ID (کد ملی).
  * @param code 10-digit National ID string
@@ -89,7 +91,7 @@ export function formatPersianDate(dateInput: string | Date | null | undefined, i
     const formatted = new Intl.DateTimeFormat('fa-IR', options).format(date);
     return formatted;
   } catch (error) {
-    console.warn('Persian date conversion failed, returning default representation', error);
+    logger.warn('Persian date conversion failed, returning default representation', error);
     return String(dateInput);
   }
 }

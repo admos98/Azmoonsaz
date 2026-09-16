@@ -1,21 +1,11 @@
-import { publicEnv } from './env';
-
 export function isSecureBackendMode(): boolean {
-  return publicEnv.isSupabaseConfigured && !publicEnv.enableMockMode;
+  return true; // Supabase is always the backend
 }
 
 export function getRuntimeModeLabel(): string {
-  if (isSecureBackendMode()) return 'متصل به بک‌اند امن';
-  if (publicEnv.enableMockMode) return 'حالت آزمایشی محلی';
-  return 'بک‌اند تنظیم نشده';
-}
-
-export function shouldUseMockFallback(): boolean {
-  return publicEnv.enableMockMode || !publicEnv.isSupabaseConfigured;
+  return 'متصل به بک‌اند امن';
 }
 
 export function assertProductionSafeRuntime(): void {
-  if (publicEnv.isProduction && !isSecureBackendMode()) {
-    throw new Error('Production requires secure backend mode. Configure Supabase env variables and keep VITE_ENABLE_MOCK_MODE=false.');
-  }
+  // No-op: Supabase is always the backend
 }

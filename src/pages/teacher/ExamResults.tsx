@@ -34,11 +34,12 @@ import {
   Settings,
   ShieldAlert
 } from 'lucide-react';
-import { mockSubmissions as initialSubmissions, mockStudents, mockClassGroups } from '../../mockData';
-import { Exam, Submission, StudentAnswer, Question } from '../../types';
+
+import { logger } from '../../lib/logger';
+import { Exam, Submission, StudentAnswer, Question, ClassGroup, Student } from '../../types';
 import { Button, Card, Badge, StatusBadge, Table } from '../../components/UIComponents';
 import { formatPersianNumber } from '../../services/persianHelpers';
-import { gradingService } from '../../services/api';
+import { gradingService, classService, studentService } from '../../services/api';
 
 interface ExamResultsProps {
   exam: Exam;
@@ -51,18 +52,17 @@ const toPersianDigits = (str: string | number): string => {
 };
 
 export default function ExamResults({ exam, onBack }: ExamResultsProps) {
-  // Combine real submissions and general cohort to have a complete student ledger
-  // Find students belonging to this exam's class target list
-  const examCohortStudents = mockStudents.filter(student => 
-    exam.classGroupIds.includes(student.classGroupId)
-  );
-
-  // Fallback if examCohortStudents is empty for some mock exam
-  const effectiveCohort = examCohortStudents.length > 0 ? examCohortStudents : mockStudents;
-
   // Track state of submissions locally for interactive grading sessions
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+
+  // Combine real submissions and general cohort to have a complete student ledger
+  const examCohortStudents = allStudents.filter(student => 
+    exam.classGroupIds.includes(student.classGroupId)
+  );
+  const effectiveCohort = examCohortStudents.length > 0 ? examCohortStudents : allStudents;
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -71,7 +71,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
         const data = await gradingService.getSubmissions(exam.id);
         setSubmissions(data);
       } catch (err) {
-        console.error('Error fetching submissions:', err);
+        logger.error('Error fetching submissions:', err);
       } finally {
         setLoading(false);
       }
@@ -118,7 +118,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   // Construct complete row data pairing cohort with submissions
   let studentRows = effectiveCohort.map(student => {
     const sub = submissions.find(s => s.studentId === student.id);
-    const classGroup = mockClassGroups.find(c => c.id === student.classGroupId);
+    const classGroup = classGroups.find(c => c.id === student.classGroupId);
     
     // Auto-calculate objective score vs descriptive
     let hasDescriptive = false;
@@ -713,7 +713,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                     className="w-full px-3 py-2 border rounded-xl bg-slate-50/50 text-xs text-slate-700 outline-hidden focus:border-indigo-500 transition-colors cursor-pointer"
                   >
                     <option value="all">همه کلاس‌ها</option>
-                    {mockClassGroups.filter(c => exam.classGroupIds.includes(c.id)).map(group => (
+                    {classGroups.filter(c => exam.classGroupIds.includes(c.id)).map(group => (
                       <option key={group.id} value={group.id}>{group.name}</option>
                     ))}
                   </select>

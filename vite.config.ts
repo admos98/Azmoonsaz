@@ -12,10 +12,7 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
       proxy: {
         '/api': {
@@ -23,6 +20,19 @@ export default defineConfig(() => {
           changeOrigin: true,
           secure: false,
         },
+      },
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: ['./src/test/setup.ts'],
+      css: true,
+      exclude: ['tests/**', 'node_modules/**'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html'],
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: ['src/test/**', 'src/**/*.d.ts', 'src/main.tsx', 'tests/**'],
       },
     },
   };
