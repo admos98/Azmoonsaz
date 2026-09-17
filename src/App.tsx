@@ -313,14 +313,14 @@ export default function App() {
           <div className="p-4 lg:p-8 flex-1 glx" id="router-view-box">
             <Suspense fallback={
               <div className="space-y-6" id="page-skeleton">
-                <div className="h-8 w-48 bg-slate-300 skeleton rounded-xl" />
-                <div className="h-40 bg-slate-300 skeleton rounded-3xl" />
+                <div className="h-8 w-48 bg-white/3 skeleton rounded-xl" />
+                <div className="h-40 bg-white/3 skeleton rounded-3xl" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="h-32 bg-slate-300 skeleton rounded-3xl" />
+                    <div key={i} className="h-32 bg-white/3 skeleton rounded-3xl" />
                   ))}
                 </div>
-                <div className="h-60 bg-slate-300 skeleton rounded-3xl" />
+                <div className="h-60 bg-white/3 skeleton rounded-3xl" />
               </div>
             }>
               <GlassSheen>{renderTeacherContent()}</GlassSheen>

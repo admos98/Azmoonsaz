@@ -46,13 +46,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   const baseStyle = "inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
   
   const variants = {
-    primary: "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-600/10",
-    secondary: "bg-slate-100 hover:bg-slate-200 text-slate-800",
-    outline: "bg-transparent hover:bg-slate-50 border border-slate-200 text-slate-700",
-    ghost: "bg-transparent hover:bg-slate-100 text-slate-600",
-    danger: "bg-rose-600 hover:bg-rose-700 text-white shadow-sm shadow-rose-600/10",
-    success: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/10",
-    indigo: "bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 text-indigo-700"
+    primary: "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-sm",
+    secondary: "bg-white/8 hover:bg-white/3 text-[var(--color-text-primary)]",
+    outline: "bg-transparent hover:bg-white/4 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)]",
+    ghost: "bg-transparent hover:bg-white/4 text-[var(--color-text-secondary)]",
+    danger: "bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90 text-white shadow-sm",
+    success: "bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white shadow-sm",
+    gold: "bg-[var(--color-gold)] hover:bg-[var(--color-gold)]/90 text-[var(--color-ink)] shadow-sm"
   };
 
   const sizes = {
@@ -99,7 +99,7 @@ export const Card = ({
         whileHover={{ y: -4, scale: 1.01 }}
         whileTap={{ scale: 0.995 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className={`glass-1 rounded-xl p-5 md:p-6 hover:shadow-lg hover:shadow-indigo-100/40 transition-all ${className}`}
+        className={`glass-1 rounded-xl p-5 md:p-6 hover:shadow-lg hover:shadow-[var(--color-accent-soft)]/40 transition-all ${className}`}
         {...(props as any)}
       >
         {children}
@@ -131,11 +131,11 @@ export const Badge = ({
   className = ''
 }: BadgeProps) => {
   const styles = {
-    primary: "bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-indigo-100",
-    success: "bg-[var(--color-success-soft)] text-[var(--color-success)] border-emerald-100",
-    warning: "bg-amber-50 text-amber-700 border-amber-100",
-    danger: "bg-rose-50 text-rose-700 border-rose-100",
-    slate: "bg-slate-100 text-slate-600 border-slate-200",
+    primary: "bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[var(--color-accent-soft)]",
+    success: "bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/10",
+    warning: "bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/10",
+    danger: "bg-rose-50 text-[var(--color-danger)] border-[var(--color-danger)]/10",
+    slate: "bg-white/4 text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]",
     info: "bg-blue-50 text-blue-700 border-blue-100"
   };
 
@@ -201,7 +201,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
   return (
     <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
       {label && (
-        <label htmlFor={inputId} className="block text-xs md:text-sm font-bold text-slate-700">
+        <label htmlFor={inputId} className="block text-xs md:text-sm font-bold text-[var(--color-text-secondary)]">
           {label}
         </label>
       )}
@@ -210,25 +210,25 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
           id={inputId}
           ref={ref}
           type={type}
-          className={`w-full text-xs md:text-sm px-4 py-2.5 bg-slate-50/50 hover:bg-slate-50 border rounded-xl outline-hidden focus:border-indigo-500 transition-all text-slate-800 placeholder-slate-400 ${
-            error ? 'border-rose-350 focus:border-rose-500' : 'border-slate-200'
+          className={`w-full text-xs md:text-sm px-4 py-2.5 bg-white/3/50 hover:bg-white/3 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-slate-400 ${
+            error ? 'border-rose-350 focus:border-rose-500' : 'border-[var(--color-glass-light-stroke)]'
           } ${icon ? 'pr-11' : ''} ${className}`}
           {...props}
         />
         {icon && (
-          <div className="absolute top-1/2 -translate-y-1/2 right-3 text-slate-400 pointer-events-none">
+          <div className="absolute top-1/2 -translate-y-1/2 right-3 text-[var(--color-text-tertiary)] pointer-events-none">
             {icon}
           </div>
         )}
       </div>
       {error && (
-        <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1">
+        <p className="text-[11px] text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
           <AlertCircle className="w-3.5 h-3.5" />
           <span>{error}</span>
         </p>
       )}
       {!error && helperText && (
-        <p className="text-[11px] text-slate-400 font-semibold">{helperText}</p>
+        <p className="text-[11px] text-[var(--color-text-tertiary)] font-semibold">{helperText}</p>
       )}
     </div>
   );
@@ -257,15 +257,15 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({
   return (
     <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
       {label && (
-        <label htmlFor={selectId} className="block text-xs md:text-sm font-bold text-slate-700">
+        <label htmlFor={selectId} className="block text-xs md:text-sm font-bold text-[var(--color-text-secondary)]">
           {label}
         </label>
       )}
       <select
         id={selectId}
         ref={ref}
-        className={`w-full text-xs md:text-sm px-4 py-2.5 bg-slate-50/50 hover:bg-slate-50 border rounded-xl outline-hidden focus:border-indigo-500 transition-all text-slate-800 ${
-          error ? 'border-rose-350 focus:border-rose-500' : 'border-slate-200'
+        className={`w-full text-xs md:text-sm px-4 py-2.5 bg-white/3/50 hover:bg-white/3 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] ${
+          error ? 'border-rose-350 focus:border-rose-500' : 'border-[var(--color-glass-light-stroke)]'
         } ${className}`}
         {...props}
       >
@@ -276,7 +276,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({
         ))}
       </select>
       {error && (
-        <p className="text-[11px] text-rose-600 font-bold flex items-center gap-1 mt-1">
+        <p className="text-[11px] text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
           <AlertCircle className="w-3.5 h-3.5" />
           <span>{error}</span>
         </p>
@@ -308,7 +308,7 @@ export const Tabs = ({
   className = ''
 }: TabsProps) => {
   return (
-    <div className={`flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl w-fit ${className}`}>
+    <div className={`flex items-center gap-1 bg-white/4 p-1.5 rounded-2xl w-fit ${className}`}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (
@@ -317,8 +317,8 @@ export const Tabs = ({
             onClick={() => onChange(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-bold rounded-xl transition-all cursor-pointer select-none ${
               isActive 
-                ? 'bg-white text-indigo-700 shadow-sm' 
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                ? 'bg-white text-[var(--color-accent)] shadow-sm' 
+                : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-white/6/50'
             }`}
           >
             {tab.icon && tab.icon}
@@ -368,7 +368,7 @@ export const Modal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-md"
+            className="fixed inset-0 bg-ink/40/40 backdrop-blur-md"
           />
 
           {/* Modal Card */}
@@ -383,26 +383,26 @@ export const Modal = ({
             aria-label={title}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200">
-              <h3 className="text-sm md:text-md font-black text-slate-800 text-right">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-glass-light-stroke)]">
+              <h3 className="text-sm md:text-md font-black text-[var(--color-text-primary)] text-right">
                 {title}
               </h3>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:bg-white/4 hover:text-[var(--color-text-secondary)] transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Scrollable Body */}
-            <div className="p-6 overflow-y-auto text-xs md:text-sm text-slate-600 leading-relaxed text-right">
+            <div className="p-6 overflow-y-auto text-xs md:text-sm text-[var(--color-text-secondary)] leading-relaxed text-right">
               {children}
             </div>
 
             {/* Footer */}
             {footer && (
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+              <div className="px-6 py-4 bg-white/3 border-t border-[var(--color-glass-light-stroke)] flex items-center justify-end gap-3">
                 {footer}
               </div>
             )}
@@ -441,7 +441,7 @@ export const Drawer = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+            className="absolute inset-0 bg-ink/40/40 backdrop-blur-md"
           />
 
           {/* Drawer container body */}
@@ -455,10 +455,10 @@ export const Drawer = ({
             >
               {/* Head */}
               <div className="p-6 flex items-center justify-between">
-                <h2 className="text-md font-black text-slate-800">{title}</h2>
+                <h2 className="text-md font-black text-[var(--color-text-primary)]">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                  className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:bg-white/4 hover:text-[var(--color-text-secondary)] cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -488,11 +488,11 @@ export const Stepper = ({ steps, activeStep }: StepperProps) => {
   return (
     <div className="flex items-center justify-between w-full relative mb-6">
       {/* Background connector line */}
-      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-100 -translate-y-1/2 z-0" />
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/4 -translate-y-1/2 z-0" />
       
       {/* Animated active path */}
       <div 
-        className="absolute top-1/2 right-0 h-0.5 bg-indigo-600 -translate-y-1/2 z-0 transition-all duration-500"
+        className="absolute top-1/2 right-0 h-0.5 bg-[var(--color-accent)] -translate-y-1/2 z-0 transition-all duration-500"
         style={{ width: `${(activeStep / (steps.length - 1)) * 100}%` }}
       />
 
@@ -504,15 +504,15 @@ export const Stepper = ({ steps, activeStep }: StepperProps) => {
             <div 
               className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs select-none ring-4 ring-white transition-all duration-300 ${
                 isCompleted 
-                  ? 'bg-indigo-600 text-white' 
+                  ? 'bg-[var(--color-accent)] text-white' 
                   : isActive 
-                    ? 'bg-white border-2 border-indigo-600 text-indigo-700 font-extrabold' 
-                    : 'bg-slate-50 border-2 border-slate-200 text-slate-400'
+                    ? 'bg-white border-2 border-indigo-600 text-[var(--color-accent)] font-extrabold' 
+                    : 'bg-white/3 border-2 border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'
               }`}
             >
               {isCompleted ? '✓' : formatPersianNumber(idx + 1)}
             </div>
-            <span className={`text-[10px] md:text-xs font-bold transition-all duration-300 ${isActive ? 'text-indigo-600 font-black' : isCompleted ? 'text-slate-600' : 'text-slate-400'}`}>
+            <span className={`text-[10px] md:text-xs font-bold transition-all duration-300 ${isActive ? 'text-indigo-600 font-black' : isCompleted ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-tertiary)]'}`}>
               {step}
             </span>
           </div>
@@ -539,13 +539,13 @@ export const EmptyState = ({
   action
 }: EmptyStateProps) => {
   return (
-    <div className="flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed border-slate-200 bg-slate-50/50 rounded-3xl space-y-4">
-      <div className="p-4 bg-indigo-50 text-indigo-500 rounded-full">
+    <div className="flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed border-[var(--color-glass-light-stroke)] bg-white/3/50 rounded-3xl space-y-4">
+      <div className="p-4 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-full">
         {icon || <HelpCircle className="w-8 h-8" />}
       </div>
       <div className="space-y-1 w-full max-w-sm">
-        <h4 className="text-sm md:text-md font-bold text-slate-800">{title}</h4>
-        <p className="text-xs text-slate-400 font-medium leading-relaxed">{description}</p>
+        <h4 className="text-sm md:text-md font-bold text-[var(--color-text-primary)]">{title}</h4>
+        <p className="text-xs text-[var(--color-text-tertiary)] font-medium leading-relaxed">{description}</p>
       </div>
       {action && <div className="pt-2">{action}</div>}
     </div>
@@ -593,12 +593,12 @@ export const ConfirmDialog = ({
       }
     >
       <div className="flex items-start gap-4 text-right">
-        <div className={`p-2.5 rounded-full ${variant === 'danger' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-indigo-50 text-indigo-500'}`}>
+        <div className={`p-2.5 rounded-full ${variant === 'danger' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}>
           <AlertTriangle className="w-5 h-5 text-current" />
         </div>
         <div className="space-y-1">
-          <p className="font-bold text-slate-800 text-xs md:text-sm">{title}</p>
-          <p className="text-xs text-slate-500 leading-relaxed font-semibold">{message}</p>
+          <p className="font-bold text-[var(--color-text-primary)] text-xs md:text-sm">{title}</p>
+          <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed font-semibold">{message}</p>
         </div>
       </div>
     </Modal>
@@ -662,8 +662,8 @@ export const FileDropzone = ({
       onDragLeave={handleDrag}
       onDrop={handleDrop}
       onClick={triggerInput}
-      className={`border-2 border-dashed rounded-3xl p-8 hover:border-indigo-500 hover:bg-slate-50/50 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${
-        isDragActive ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-200 bg-white'
+      className={`border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:bg-white/3/50 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${
+        isDragActive ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30' : 'border-[var(--color-glass-light-stroke)] bg-white'
       }`}
     >
       <input
@@ -673,12 +673,12 @@ export const FileDropzone = ({
         className="hidden"
         onChange={handleChange}
       />
-      <div className="p-3 bg-indigo-50 rounded-full text-indigo-500">
+      <div className="p-3 bg-[var(--color-accent-soft)] rounded-full text-[var(--color-accent)]">
         <UploadCloud className="w-6 h-6" />
       </div>
       <div>
-        <p className="text-xs md:text-sm font-bold text-slate-800">{label}</p>
-        <p className="text-[11px] text-slate-400 font-medium mt-1">{description}</p>
+        <p className="text-xs md:text-sm font-bold text-[var(--color-text-primary)]">{label}</p>
+        <p className="text-[11px] text-[var(--color-text-tertiary)] font-medium mt-1">{description}</p>
       </div>
     </div>
   );
@@ -717,10 +717,10 @@ export const Table = ({
   return (
     <div className="w-full">
       {/* Table for Desktop Viewports */}
-      <div className={`overflow-x-auto rounded-2xl border border-slate-100 hidden ${renderMobileCard ? 'md:block' : 'block'}`}>
+      <div className={`overflow-x-auto rounded-2xl border border-[var(--color-glass-light-stroke)] hidden ${renderMobileCard ? 'md:block' : 'block'}`}>
         <table className="w-full text-right border-collapse text-xs md:text-sm bg-white">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold text-[11px] md:text-xs">
+            <tr className="bg-white/3 border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)] font-bold text-[11px] md:text-xs">
               {headers.map((col, idx) => {
                 const alignStyles = {
                   right: "text-right",
@@ -735,7 +735,7 @@ export const Table = ({
               })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-slate-700">
+          <tbody className="divide-y divide-slate-100 text-[var(--color-text-secondary)]">
             {data.map((row, idx) => renderRow(row, idx))}
           </tbody>
         </table>
@@ -809,8 +809,8 @@ export const ExamTimer = ({
   return (
     <div className={`inline-flex items-center gap-2.5 px-3 py-1.5 md:px-4 md:py-2.5 rounded-2xl border font-mono font-bold text-xs select-none transition-all ${
       isWarning 
-        ? 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse ring-2 ring-rose-500/20' 
-        : 'bg-indigo-50 text-indigo-700 border-indigo-100'
+        ? 'bg-rose-50 text-[var(--color-danger)] border-rose-200 animate-pulse ring-2 ring-rose-500/20' 
+        : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[var(--color-accent-soft)]'
     }`}>
       <Clock className={`w-4 h-4 ${isWarning ? 'text-[var(--color-danger)]' : 'text-[var(--color-accent)]'}`} />
       <div className="flex items-center gap-0.5" dir="ltr">

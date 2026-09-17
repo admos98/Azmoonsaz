@@ -211,7 +211,7 @@ export default function Topbar({
         <button
           id="quick-role-switch"
           onClick={onSwitchRole}
-          className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border border-[var(--color-accent)]/20 text-[var(--color-accent)] bg-[var(--color-accent-soft)] hover:bg-indigo-100 transition-all cursor-pointer"
+          className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border border-[var(--color-accent)]/20 text-[var(--color-accent)] bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent)]/10 transition-all cursor-pointer"
           title="سوییچ به آزمون دانش‌آموز"
         >
           <ArrowLeftRight className="w-3.5 h-3.5" />

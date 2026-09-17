@@ -57,11 +57,11 @@ export function DashboardSkeleton() {
 export function PageSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="h-8 w-48 bg-slate-200 rounded-xl" />
-      <div className="h-40 bg-slate-100 rounded-2xl" />
+      <div className="h-8 w-48 bg-white/6 rounded-xl" />
+      <div className="h-40 bg-white/4 rounded-2xl" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-32 bg-slate-100 rounded-2xl" />
+          <div key={i} className="h-32 bg-white/4 rounded-2xl" />
         ))}
       </div>
     </div>

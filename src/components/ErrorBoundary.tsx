@@ -33,15 +33,15 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8" dir="rtl">
+        <div className="min-h-screen flex items-center justify-center bg-white/3 p-8" dir="rtl">
           <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-red-200 p-8 text-center">
             <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">خطایی رخ داد</h2>
-            <p className="text-slate-600 mb-1 text-sm">
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">خطایی رخ داد</h2>
+            <p className="text-[var(--color-text-secondary)] mb-1 text-sm">
               بخشی از برنامه با خطا مواجه شد. لطفاً دوباره تلاش کنید.
             </p>
             {this.state.error && (
-              <p className="text-xs text-slate-400 mb-4 font-mono" dir="ltr">
+              <p className="text-xs text-[var(--color-text-tertiary)] mb-4 font-mono" dir="ltr">
                 {this.state.error.message}
               </p>
             )}

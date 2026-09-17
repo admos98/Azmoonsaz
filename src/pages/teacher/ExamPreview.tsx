@@ -106,9 +106,9 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
   };
 
   const getDifficultyColor = (diff: string | undefined): string => {
-    if (diff === 'easy') return 'bg-emerald-50 text-emerald-700 border-emerald-150';
-    if (diff === 'hard') return 'bg-rose-50 text-rose-700 border-rose-150';
-    return 'bg-amber-50 text-amber-700 border-amber-150';
+    if (diff === 'easy') return 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15';
+    if (diff === 'hard') return 'bg-rose-50 text-[var(--color-danger)] border-rose-150';
+    return 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-amber-150';
   };
 
   const getTypeNameInPersian = (type: QuestionType | undefined): string => {
@@ -543,37 +543,37 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 text-right bg-slate-50/50 p-1 md:p-3 rounded-2xl" dir="rtl" id="exam-preview-edit-canvas">
+    <div className="space-y-6 animate-in fade-in duration-300 text-right bg-white/3/50 p-1 md:p-3 rounded-2xl" dir="rtl" id="exam-preview-edit-canvas">
       
       {/* Upper header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs">
         <div className="flex items-center gap-3">
           <button
             id="btn-back-to-exams-list"
             onClick={onBack}
-            className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 cursor-pointer border border-slate-150 transition-all font-bold"
+            className="p-2 hover:bg-white/4 rounded-xl text-[var(--color-text-tertiary)] cursor-pointer border border-[var(--color-glass-light-stroke)] transition-all font-bold"
             title="رجوع به بانک لیست آزمون‌ها"
           >
             <ArrowRight className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-sm md:text-md font-extrabold text-slate-800 flex items-center gap-2">
+            <h2 className="text-sm md:text-md font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
               <FileText className="w-5 h-5 text-indigo-600" />
               <span>پیش‌نمایش و ویرایش آزمون</span>
             </h2>
-            <p className="text-[11px] text-slate-400 mt-1">تغییر ساختار فصل‌ها، جابه‌جایی نمرات، برسی الگوهای دانش‌آموزان و رفع نواقص فنی قبل از انتشار</p>
+            <p className="text-[11px] text-[var(--color-text-tertiary)] mt-1">تغییر ساختار فصل‌ها، جابه‌جایی نمرات، برسی الگوهای دانش‌آموزان و رفع نواقص فنی قبل از انتشار</p>
           </div>
         </div>
 
         {/* View mode toggle switcher layout */}
         <div className="flex items-center gap-2 w-full lg:w-auto self-end lg:self-center">
-          <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200 flex items-center gap-1 w-full lg:w-auto">
+          <div className="bg-white/4 p-1 rounded-2xl border border-[var(--color-glass-light-stroke)] flex items-center gap-1 w-full lg:w-auto">
             <button
               onClick={() => setViewMode('teacher')}
               className={`flex-1 lg:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 viewMode === 'teacher' 
-                  ? 'bg-white text-indigo-700 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white text-[var(--color-accent)] shadow-sm' 
+                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
               }`}
             >
               <Settings2 className="w-4 h-4" />
@@ -583,8 +583,8 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
               onClick={() => setViewMode('student')}
               className={`flex-1 lg:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 viewMode === 'student' 
-                  ? 'bg-white text-indigo-700 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white text-[var(--color-accent)] shadow-sm' 
+                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
               }`}
             >
               <Eye className="w-4 h-4" />
@@ -597,16 +597,16 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
       {/* Dynamic Validation Alert Warnings bar */}
       {viewMode === 'teacher' && warnings.length > 0 && (
         <div className="bg-rose-50 border border-rose-150 rounded-2xl p-4.5 space-y-3" id="validation-errors-alert">
-          <div className="flex items-center gap-2 text-rose-800">
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+          <div className="flex items-center gap-2 text-[var(--color-danger)]/80">
+            <AlertCircle className="w-5 h-5 text-[var(--color-danger)] shrink-0" />
             <h3 className="text-xs font-extrabold">بررسی خودکار عیوب طراح ({toPersianDigits(warnings.length)} اشکال برجا مانده)</h3>
           </div>
-          <p className="text-[11px] text-rose-700">دبیـر گرامی، سوالات برای انتشار امن و بدون خطا نیازمند برطرف کردن نواقص زیر می‌باشند:</p>
+          <p className="text-[11px] text-[var(--color-danger)]">دبیـر گرامی، سوالات برای انتشار امن و بدون خطا نیازمند برطرف کردن نواقص زیر می‌باشند:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10.5px]">
             {warnings.map(warn => (
               <div 
                 key={warn.id} 
-                className="bg-white/80 p-2.5 rounded-xl border border-rose-100 flex items-start gap-2 text-rose-900 cursor-pointer hover:bg-white transition-all"
+                className="bg-white/80 p-2.5 rounded-xl border border-[var(--color-danger)]/10 flex items-start gap-2 text-rose-900 cursor-pointer hover:bg-white transition-all"
                 onClick={() => {
                   const targetElement = document.getElementById(`editor-q-box-${warn.targetId}`);
                   if (targetElement) {
@@ -631,58 +631,58 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
         <div className="col-span-1 space-y-5" id="specifications-column">
           
           {/* 1. Exam Static Summary Panel */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-4 text-right">
-            <h3 className="text-xs font-extrabold text-slate-800 pb-2.5 border-b border-slate-100 flex items-center gap-1.5">
-              <Layers className="w-4.5 h-4.5 text-slate-500" />
+          <div className="bg-white p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-4 text-right">
+            <h3 className="text-xs font-extrabold text-[var(--color-text-primary)] pb-2.5 border-b border-[var(--color-glass-light-stroke)] flex items-center gap-1.5">
+              <Layers className="w-4.5 h-4.5 text-[var(--color-text-tertiary)]" />
               <span>جزییات شناسنامه آزمون</span>
             </h3>
             
             <div className="space-y-3.5 text-xs text-slate-705">
-              <div className="flex justify-between items-center bg-slate-50/60 p-2 rounded-xl border border-slate-100">
-                <span className="text-slate-400">عنوان آزمون:</span>
-                <span className="font-extrabold text-slate-800 text-[11px] max-w-[130px] truncate" title={localExam.title}>
+              <div className="flex justify-between items-center bg-white/3/60 p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
+                <span className="text-[var(--color-text-tertiary)]">عنوان آزمون:</span>
+                <span className="font-extrabold text-[var(--color-text-primary)] text-[11px] max-w-[130px] truncate" title={localExam.title}>
                   {localExam.title}
                 </span>
               </div>
               
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">نوع بازخورد:</span>
+                <span className="text-[var(--color-text-tertiary)]">نوع بازخورد:</span>
                 <span className={`font-bold px-2 py-0.5 rounded-md text-[10.5px] ${
                   localExam.settings.mode === 'official' 
-                    ? 'bg-rose-50 text-rose-700 border border-rose-100' 
-                    : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                    ? 'bg-rose-50 text-[var(--color-danger)] border border-[var(--color-danger)]/10' 
+                    : 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
                 }`}>
                   {localExam.settings.mode === 'official' ? 'رسمی (بارم‌دار)' : 'تمرینی (خودسنجی)'}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">پایه تحصیلی:</span>
-                <span className="font-bold text-slate-700">پایه {localExam.grade}</span>
+                <span className="text-[var(--color-text-tertiary)]">پایه تحصیلی:</span>
+                <span className="font-bold text-[var(--color-text-secondary)]">پایه {localExam.grade}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">درس هدف:</span>
-                <span className="font-bold text-slate-700">{localExam.subject}</span>
+                <span className="text-[var(--color-text-tertiary)]">درس هدف:</span>
+                <span className="font-bold text-[var(--color-text-secondary)]">{localExam.subject}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">کـلاس اختصاصی:</span>
-                <span className="font-bold text-slate-700 text-[11px] truncate max-w-[120px]" title={getAssignedClassesString()}>
+                <span className="text-[var(--color-text-tertiary)]">کـلاس اختصاصی:</span>
+                <span className="font-bold text-[var(--color-text-secondary)] text-[11px] truncate max-w-[120px]" title={getAssignedClassesString()}>
                   {getAssignedClassesString()}
                 </span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">تعداد کل سوالات:</span>
-                <span className="bg-slate-100 px-2.5 py-0.5 rounded-md font-extrabold text-slate-850 font-mono text-[11.5px]">
+                <span className="text-[var(--color-text-tertiary)]">تعداد کل سوالات:</span>
+                <span className="bg-white/4 px-2.5 py-0.5 rounded-md font-extrabold text-slate-850 font-mono text-[11.5px]">
                   {toPersianDigits(totalQuestions)}
                 </span>
               </div>
               
-              <div className="flex justify-between items-center pt-2 border-t border-slate-150/60">
-                <span className="text-slate-800 font-bold">مجموع کل نمرات:</span>
-                <span className="bg-amber-50 border border-amber-200/60 text-amber-800 px-3 py-1 rounded-xl font-black font-mono text-xs">
+              <div className="flex justify-between items-center pt-2 border-t border-[var(--color-glass-light-stroke)]/60">
+                <span className="text-[var(--color-text-primary)] font-bold">مجموع کل نمرات:</span>
+                <span className="bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/20/60 text-[var(--color-warning)]/80 px-3 py-1 rounded-xl font-black font-mono text-xs">
                   {toPersianDigits(totalScore)} نمره
                 </span>
               </div>
@@ -691,8 +691,8 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             {/* Completeness Status alert block */}
             <div className={`mt-4 p-3 rounded-2xl border flex items-center gap-2 ${
               warnings.length === 0 
-                ? 'bg-emerald-50 text-emerald-950 border-emerald-200' 
-                : 'bg-amber-50 text-amber-950 border-amber-205'
+                ? 'bg-[var(--color-success-soft)] text-emerald-950 border-[var(--color-success)]/20' 
+                : 'bg-[var(--color-warning-soft)] text-amber-950 border-amber-205'
             }`}>
               {warnings.length === 0 ? (
                 <>
@@ -704,10 +704,10 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 </>
               ) : (
                 <>
-                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <AlertCircle className="w-5 h-5 text-[var(--color-warning)] shrink-0" />
                   <div className="space-y-0.5">
                     <p className="text-[11px] font-extrabold">نیاز به تصحیح طراح</p>
-                    <p className="text-[9.5px] text-amber-600 leading-normal">{toPersianDigits(warnings.length)} هشدار فعال روی برگه یافت شد.</p>
+                    <p className="text-[9.5px] text-[var(--color-warning)] leading-normal">{toPersianDigits(warnings.length)} هشدار فعال روی برگه یافت شد.</p>
                   </div>
                 </>
               )}
@@ -715,12 +715,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
           </div>
 
           {/* Guidelines info block */}
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-3xs text-xs space-y-3">
-            <h4 className="font-bold text-slate-700 flex items-center gap-1.5">
-              <Info className="w-4 h-4 text-indigo-500" />
+          <div className="bg-white p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-3xs text-xs space-y-3">
+            <h4 className="font-bold text-[var(--color-text-secondary)] flex items-center gap-1.5">
+              <Info className="w-4 h-4 text-[var(--color-accent)]" />
               <span>ملاحظات پاسخ‌نامه‌ها</span>
             </h4>
-            <ul className="space-y-2 text-[10px] text-slate-500 list-disc pr-4 leading-relaxed">
+            <ul className="space-y-2 text-[10px] text-[var(--color-text-tertiary)] list-disc pr-4 leading-relaxed">
               <li>جابه‌جایی نمره هر سوال مستقیماً بارم کل ورقه نهایی را تغییر می‌دهد.</li>
               <li>سوالات تشریحی نیاز به تعریف معیارهای مشخص بارم‌بندی برای صحت ارزیابی نهایی دارند.</li>
               <li>در حالت پیش‌نمایش دانش‌آموزی، پاسخ‌ها در کش موقت شبیه‌سازی خواهند شد.</li>
@@ -738,21 +738,21 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             return (
               <div 
                 key={section.id} 
-                className="bg-white p-5 md:p-6 rounded-3xl border border-slate-200 shadow-xs space-y-5"
+                className="bg-white p-5 md:p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-5"
                 id={`pview-section-${section.id}`}
               >
                 
                 {/* Section Header */}
-                <div className="border-b border-indigo-50/60 pb-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="border-b border-[var(--color-accent)]/10/60 pb-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="bg-indigo-600 text-white font-extrabold rounded-md px-2.5 py-0.5 text-[10px]">
+                      <span className="bg-[var(--color-accent)] text-white font-extrabold rounded-md px-2.5 py-0.5 text-[10px]">
                         بخش {toPersianDigits(sIdx + 1)}
                       </span>
                       <h4 className="text-xs font-slate-800 font-extrabold">{section.title}</h4>
                     </div>
                     {section.description && (
-                      <p className="text-[10px] text-slate-400">{section.description}</p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)]">{section.description}</p>
                     )}
                   </div>
 
@@ -761,7 +761,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                     <button
                       type="button"
                       onClick={() => triggerAddManualQuestion(section.id)}
-                      className="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-[10.5px] font-bold border border-indigo-100 flex items-center gap-1.5 cursor-pointer transition-all self-end md:self-center"
+                      className="px-3.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl text-[10.5px] font-bold border border-[var(--color-accent-soft)] flex items-center gap-1.5 cursor-pointer transition-all self-end md:self-center"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       <span>افزودن سوال دستی به این بخش</span>
@@ -788,17 +788,17 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                         {/* Upper mini spec line inside (Teacher edit vs student meta) */}
                         <div className="flex items-center justify-between gap-2 text-[10px]">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-bold">
+                            <span className="bg-white/4 text-[var(--color-text-secondary)] px-2 py-0.5 rounded-md font-bold">
                               شماره {toPersianDigits(qIdx + 1)}
                             </span>
-                            <span className="bg-indigo-50 text-indigo-800 border border-indigo-100/50 px-2 py-0.5 rounded-md font-semibold">
+                            <span className="bg-[var(--color-accent-soft)] text-indigo-800 border border-[var(--color-accent-soft)]/50 px-2 py-0.5 rounded-md font-semibold">
                               {getTypeNameInPersian(q.type)}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className="bg-amber-50 text-amber-700 font-bold border border-amber-250 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                              <Award className="w-3.5 h-3.5 text-amber-500" />
+                            <span className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] font-bold border border-amber-250 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                              <Award className="w-3.5 h-3.5 text-[var(--color-warning-soft)]/500" />
                               <span>{toPersianDigits(q.points)} امتیاز</span>
                             </span>
                           </div>
@@ -806,17 +806,17 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                         {/* Visual Image/Diagram in question Prompt if available */}
                         <div className="space-y-3.5">
-                          <p className="text-xs text-slate-800 font-bold leading-relaxed">{q.text}</p>
+                          <p className="text-xs text-[var(--color-text-primary)] font-bold leading-relaxed">{q.text}</p>
                           
                           {q.imageUrl && (
-                            <div className="max-w-md bg-slate-50 border border-slate-200 rounded-2xl p-2 relative group inline-block">
+                            <div className="max-w-md bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-2xl p-2 relative group inline-block">
                               <img
                                 src={q.imageUrl}
                                 alt="سوال پیوست"
                                 referrerPolicy="no-referrer"
                                 className="max-h-56 rounded-xl object-contain bg-white transition-all shadow-3xs"
                               />
-                              <span className="absolute bottom-3 right-3 bg-slate-900/70 text-white rounded-md px-2 py-0.5 text-[9px]">
+                              <span className="absolute bottom-3 right-3 bg-black/30 text-white rounded-md px-2 py-0.5 text-[9px]">
                                 تصویر ضمیمه سوال
                               </span>
                             </div>
@@ -848,10 +848,10 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                   }}
                                   className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-all flex flex-col justify-between ${
                                     viewMode === 'teacher' && isCorrectOption
-                                      ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900 font-semibold shadow-3xs'
+                                      ? 'bg-[var(--color-success-soft)]/70 border-[var(--color-success)]/30 text-[var(--color-success)] font-semibold shadow-3xs'
                                       : currentSelected && viewMode === 'student'
-                                      ? 'bg-indigo-50 border-indigo-400 text-indigo-900 font-semibold shadow-3xs'
-                                      : 'bg-slate-50 border-slate-150 text-slate-700 hover:border-slate-350'
+                                      ? 'bg-[var(--color-accent-soft)] border-indigo-400 text-indigo-900 font-semibold shadow-3xs'
+                                      : 'bg-white/3 border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-slate-350'
                                   }`}
                                 >
                                   <div className="flex items-start gap-2.5">
@@ -859,16 +859,16 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                       {q.type === 'multiple_choice' ? (
                                         <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
                                           (viewMode === 'teacher' && isCorrectOption) || (viewMode === 'student' && currentSelected)
-                                            ? 'bg-indigo-600 border-indigo-600 text-white'
-                                            : 'border-slate-300 bg-white'
+                                            ? 'bg-[var(--color-accent)] border-indigo-600 text-white'
+                                            : 'border-[var(--color-glass-light-stroke)] bg-white'
                                         }`}>
                                           <Check className="w-3 h-3" />
                                         </div>
                                       ) : (
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                           (viewMode === 'teacher' && isCorrectOption) || (viewMode === 'student' && currentSelected)
-                                            ? 'bg-indigo-600 border-indigo-600 text-white'
-                                            : 'border-slate-300 bg-white'
+                                            ? 'bg-[var(--color-accent)] border-indigo-600 text-white'
+                                            : 'border-[var(--color-glass-light-stroke)] bg-white'
                                         }`}>
                                           <div className="w-1.5 h-1.5 rounded-full bg-white" />
                                         </div>
@@ -883,7 +883,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                             src={(opt as any).imageUrl}
                                             alt="گزینه"
                                             referrerPolicy="no-referrer"
-                                            className="rounded-lg border border-slate-200/80 max-h-32 object-contain bg-white w-full"
+                                            className="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 object-contain bg-white w-full"
                                           />
                                         </div>
                                       )}
@@ -891,7 +891,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                   </div>
 
                                   {viewMode === 'teacher' && isCorrectOption && (
-                                    <div className="mr-6 mt-2 flex items-center gap-1 text-[10px] font-bold text-emerald-700">
+                                    <div className="mr-6 mt-2 flex items-center gap-1 text-[10px] font-bold text-[var(--color-success)]">
                                       <Check className="w-3.5 h-3.5" />
                                       <span>گزینه کلید پاسخ صحیح (معلم)</span>
                                     </div>
@@ -922,15 +922,15 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                   }}
                                   className={`flex-1 p-3.5 rounded-xl border text-center font-bold text-xs flex items-center justify-center cursor-pointer gap-2 ${
                                     viewMode === 'teacher' && isCorrect
-                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-3xs'
+                                      ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] shadow-3xs'
                                       : viewMode === 'student' && isSelected
-                                      ? 'bg-indigo-50 border-indigo-400 text-indigo-800 shadow-3xs'
-                                      : 'bg-slate-50 border-slate-150 text-slate-600 hover:border-slate-300'
+                                      ? 'bg-[var(--color-accent-soft)] border-indigo-400 text-indigo-800 shadow-3xs'
+                                      : 'bg-white/3 border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)]'
                                   }`}
                                 >
                                   <span>{item.label}</span>
                                   {((viewMode === 'teacher' && isCorrect) || (viewMode === 'student' && isSelected)) && (
-                                    <span className="bg-indigo-600 text-white p-0.5 rounded-full">
+                                    <span className="bg-[var(--color-accent)] text-white p-0.5 rounded-full">
                                       <Check className="w-3 h-3" />
                                     </span>
                                   )}
@@ -943,17 +943,17 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                         {/* 3. Short Answer Area */}
                         {isShortAnswer && (
                           <div className="space-y-2 mt-2">
-                            <label className="text-[10px] text-slate-400 font-bold block">محل پاسخ کوتاه دانش‌آموز:</label>
+                            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">محل پاسخ کوتاه دانش‌آموز:</label>
                             <input
                               type="text"
                               disabled={viewMode === 'teacher'}
                               placeholder={viewMode === 'teacher' ? 'فقط در حالت پیش‌نمایش دانش‌آموز قابل پاسخ‌دهی است...' : 'پاسخ کوتاه خود را در اینجا بنویسید...'}
                               value={studentAnswers[q.id] || ''}
                               onChange={(e) => handleStudentAnswerChange(q.id, e.target.value)}
-                              className="w-full bg-white border border-slate-200 text-xs text-slate-750 px-3.5 py-2.5 rounded-xl focus:outline-hidden focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 placeholder-slate-300"
+                              className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 px-3.5 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-slate-300"
                             />
                             {viewMode === 'teacher' && q.correctAnswer && (
-                              <div className="bg-emerald-50 text-emerald-800 border-l-2 border-emerald-400 p-2 text-[10.5px] rounded-md font-medium">
+                              <div className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-l-2 border-emerald-400 p-2 text-[10.5px] rounded-md font-medium">
                                 کلید پاسخ مورد قبول سیستم: «{String(q.correctAnswer)}»
                               </div>
                             )}
@@ -963,28 +963,28 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                         {/* 4. Long Answer Form / Area */}
                         {isLongAnswer && (
                           <div className="space-y-3.5 mt-2">
-                            <label className="text-[10px] text-slate-400 font-bold block">محل پاسخ تشریحی دانش‌آموز:</label>
+                            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">محل پاسخ تشریحی دانش‌آموز:</label>
                             <textarea
                               rows={3}
                               disabled={viewMode === 'teacher'}
                               placeholder={viewMode === 'teacher' ? 'فقط در حالت پیش‌نمایش دانش‌آموز قابل پاسخ‌دهی است...' : 'پاسخ کامل تشریحی خود را در زیر بنویسید... برای سوالات درس محاسباتی حتماً فرمول‌ها را وارد کنید.'}
                               value={studentAnswers[q.id] || ''}
                               onChange={(e) => handleStudentAnswerChange(q.id, e.target.value)}
-                              className="w-full bg-white border border-slate-200 text-xs text-slate-750 p-3.5 rounded-xl focus:outline-hidden focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 placeholder-slate-350 leading-relaxed text-right"
+                              className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-3.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-slate-350 leading-relaxed text-right"
                             />
                             
                             {/* Rubric evaluation criteria info boxes */}
                             {q.rubrics && q.rubrics.length > 0 && (
-                              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4.5 space-y-2.5 text-[11px]">
-                                <span className="block font-bold text-slate-700">معیارهای توزیع بارم تصحیح معلم:</span>
+                              <div className="bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-2xl p-4.5 space-y-2.5 text-[11px]">
+                                <span className="block font-bold text-[var(--color-text-secondary)]">معیارهای توزیع بارم تصحیح معلم:</span>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   {q.rubrics.map((rub: RubricCriterion) => (
-                                    <div key={rub.id} className="p-3 bg-white border border-slate-150 rounded-xl space-y-1">
-                                      <div className="flex justify-between items-center text-slate-900 border-b border-slate-100 pb-1">
+                                    <div key={rub.id} className="p-3 bg-white border border-[var(--color-glass-light-stroke)] rounded-xl space-y-1">
+                                      <div className="flex justify-between items-center text-slate-900 border-b border-[var(--color-glass-light-stroke)] pb-1">
                                         <strong className="font-bold">{rub.title}</strong>
-                                        <span className="bg-indigo-50 text-indigo-700 rounded-md px-1.5 py-0.5 text-[9.5px] font-extrabold">{toPersianDigits(rub.maxPoints)} نمره</span>
+                                        <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-md px-1.5 py-0.5 text-[9.5px] font-extrabold">{toPersianDigits(rub.maxPoints)} نمره</span>
                                       </div>
-                                      <p className="text-[9.5px] text-slate-400">{rub.description}</p>
+                                      <p className="text-[9.5px] text-[var(--color-text-tertiary)]">{rub.description}</p>
                                     </div>
                                   ))}
                                 </div>
@@ -996,12 +996,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                         {/* 5. Fill Blank input area */}
                         {isFillBlank && (
                           <div className="space-y-2 mt-2">
-                            <label className="text-[10px] text-slate-400 font-bold block">محل جایگذاری جاهای خالی:</label>
+                            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">محل جایگذاری جاهای خالی:</label>
                             {viewMode === 'student' ? (
                               <div className="flex flex-wrap gap-2">
                                 {(q.correctFillBlanks || ['']).map((_, fIdx) => (
                                   <div key={fIdx} className="flex items-center gap-1 text-xs">
-                                    <span className="text-slate-400 font-bold">جای خالی ({toPersianDigits(fIdx + 1)}):</span>
+                                    <span className="text-[var(--color-text-tertiary)] font-bold">جای خالی ({toPersianDigits(fIdx + 1)}):</span>
                                     <input
                                       type="text"
                                       placeholder="کلمه گمشده..."
@@ -1012,16 +1012,16 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                         nextList[fIdx] = e.target.value;
                                         handleStudentAnswerChange(q.id, nextList);
                                       }}
-                                      className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold focus:outline-hidden focus:border-indigo-400 w-28 text-center"
+                                      className="bg-white border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-lg text-xs font-semibold focus:outline-hidden focus:border-[var(--color-accent)]/40 w-28 text-center"
                                     />
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <div className="flex flex-wrap gap-1 bg-emerald-50 p-2 rounded-xl text-[10.5px] border border-emerald-100/60 text-emerald-800">
+                              <div className="flex flex-wrap gap-1 bg-[var(--color-success-soft)] p-2 rounded-xl text-[10.5px] border border-[var(--color-success)]/10/60 text-[var(--color-success)]">
                                 <span className="font-bold block mr-2">کلید کل کلمات گمشده:</span>
                                 {q.correctFillBlanks?.map((word, idx) => (
-                                  <span key={idx} className="bg-white px-2 py-0.5 rounded-md font-bold font-mono text-emerald-700 ml-1">
+                                  <span key={idx} className="bg-white px-2 py-0.5 rounded-md font-bold font-mono text-[var(--color-success)] ml-1">
                                     {toPersianDigits(idx + 1)}. {word}
                                   </span>
                                 ))}
@@ -1032,16 +1032,16 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                         {/* 6. Matching Pairs elements rendering */}
                         {q.type === 'matching' && q.matchingPairs && (
-                          <div className="bg-slate-50/70 rounded-2xl p-4.5 border border-slate-150 mt-2 space-y-3.5 text-xs">
-                            <span className="block font-bold text-slate-700">تطبیق ستون الف با ب:</span>
+                          <div className="bg-white/3/70 rounded-2xl p-4.5 border border-[var(--color-glass-light-stroke)] mt-2 space-y-3.5 text-xs">
+                            <span className="block font-bold text-[var(--color-text-secondary)]">تطبیق ستون الف با ب:</span>
                             <div className="space-y-2">
                               {q.matchingPairs.map((pair, pIdx) => (
-                                <div key={pIdx} className="flex items-center justify-between gap-2.5 bg-white px-3 py-2 rounded-xl border border-slate-150">
-                                  <span className="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg font-bold flex-1 text-center">
+                                <div key={pIdx} className="flex items-center justify-between gap-2.5 bg-white px-3 py-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
+                                  <span className="bg-white/4 text-[var(--color-text-secondary)] px-3 py-1.5 rounded-lg font-bold flex-1 text-center">
                                     {pair.right}
                                   </span>
                                   <span className="text-slate-300 font-black">➔</span>
-                                  <span className="bg-indigo-50 text-indigo-800 border border-indigo-100 px-3 py-1.5 rounded-lg font-bold flex-1 text-center">
+                                  <span className="bg-[var(--color-accent-soft)] text-indigo-800 border border-[var(--color-accent-soft)] px-3 py-1.5 rounded-lg font-bold flex-1 text-center">
                                     {pair.left}
                                   </span>
                                 </div>
@@ -1052,16 +1052,16 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                         {/* 7. Ordering array rendering */}
                         {q.type === 'ordering' && q.orderingItems && (
-                          <div className="bg-slate-50 rounded-2xl p-4.5 border border-slate-150 mt-2 text-xs">
+                          <div className="bg-white/3 rounded-2xl p-4.5 border border-[var(--color-glass-light-stroke)] mt-2 text-xs">
                             <span className="font-bold text-slate-755 block mb-2.5">ترتیب قرارگیری مراحل صحیح:</span>
                             <div className="flex flex-wrap gap-2 items-center">
                               {q.orderingItems.map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
-                                  <span className="bg-white border border-slate-200 text-slate-800 px-3.5 py-2 font-black rounded-xl shadow-3xs">
+                                  <span className="bg-white border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)] px-3.5 py-2 font-black rounded-xl shadow-3xs">
                                     {toPersianDigits(idx + 1)}. {item}
                                   </span>
                                   {idx < (q.orderingItems?.length || 0) - 1 && (
-                                    <span className="text-slate-400 font-extrabold text-[12px]">➔</span>
+                                    <span className="text-[var(--color-text-tertiary)] font-extrabold text-[12px]">➔</span>
                                   )}
                                 </div>
                               ))}
@@ -1074,12 +1074,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                           <div className="space-y-4 mt-2">
                             {q.parts && q.parts.length > 0 && (
                               <div className="space-y-3" id="comprehension-parts">
-                                <span className="block font-bold text-slate-700 text-xs border-r-2 border-indigo-500 pr-2 pb-0.5">زیرسوالات درک مطلب:</span>
+                                <span className="block font-bold text-[var(--color-text-secondary)] text-xs border-r-2 border-[var(--color-accent)]/100 pr-2 pb-0.5">زیرسوالات درک مطلب:</span>
                                 {q.parts.map((part: QuestionPart, idx: number) => {
                                   return (
-                                    <div key={part.id} className="bg-slate-50 border border-slate-150 rounded-xl p-3.5 space-y-3">
-                                      <h6 className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                                        <span className="bg-indigo-100 text-indigo-700 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">
+                                    <div key={part.id} className="bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-xl p-3.5 space-y-3">
+                                      <h6 className="text-[11px] font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
+                                        <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">
                                           {toPersianDigits(idx + 1)}
                                         </span>
                                         <span>{part.text}</span>
@@ -1095,8 +1095,8 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                                 key={opt.id}
                                                 className={`p-2 rounded-lg border ${
                                                   viewMode === 'teacher' && isCorrect
-                                                    ? 'bg-emerald-50 border-emerald-250 text-emerald-900 font-bold'
-                                                    : 'bg-white border-slate-200 text-slate-700'
+                                                    ? 'bg-[var(--color-success-soft)] border-emerald-250 text-[var(--color-success)] font-bold'
+                                                    : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                                                 }`}
                                               >
                                                 <span>{opt.text}</span>
@@ -1119,7 +1119,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                             {q.parts && q.parts.length > 0 && (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {q.parts.map((p, pIdx) => (
-                                  <div key={p.id} className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-2">
+                                  <div key={p.id} className="p-3 bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-xl space-y-2">
                                     <strong className="text-indigo-900 font-bold text-[10.5px] block text-right">جای خالی کلوز شماره {toPersianDigits(pIdx + 1)}</strong>
                                     <div className="flex flex-wrap gap-1.5 text-[10.5px]">
                                       {p.options?.map((opt) => (
@@ -1127,8 +1127,8 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                           key={opt.id} 
                                           className={`px-2 py-0.5 rounded-md border text-center ${
                                             (opt.isCorrect || p.correctAnswer === opt.id) && viewMode === 'teacher'
-                                              ? 'bg-emerald-100 border-emerald-300 text-emerald-800 font-bold font-mono'
-                                              : 'bg-white border-slate-200 text-slate-650'
+                                              ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] font-bold font-mono'
+                                              : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                                           }`}
                                         >
                                           {opt.text}
@@ -1144,14 +1144,14 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                         {/* Teacher Edit Controls (ONLY visible in teacher view mode) */}
                         {viewMode === 'teacher' && (
-                          <div className="bg-slate-50 -mx-5 -mb-6 mt-4 p-3.5 border-t border-slate-150 flex flex-wrap items-center justify-between gap-3.5 rounded-b-3xl">
+                          <div className="bg-white/3 -mx-5 -mb-6 mt-4 p-3.5 border-t border-[var(--color-glass-light-stroke)] flex flex-wrap items-center justify-between gap-3.5 rounded-b-3xl">
                             
                             {/* Order Moving Controls */}
                             <div className="flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => moveQuestion(q.id, 'up')}
-                                className="p-2 bg-white hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 cursor-pointer text-[10px] font-bold flex items-center gap-1 transition-all"
+                                className="p-2 bg-white hover:bg-white/4 text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-glass-light-stroke)] cursor-pointer text-[10px] font-bold flex items-center gap-1 transition-all"
                                 title="جابه‌جایی سوال به بالا"
                               >
                                 <ChevronUp className="w-4 h-4 text-indigo-600" />
@@ -1160,7 +1160,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               <button
                                 type="button"
                                 onClick={() => moveQuestion(q.id, 'down')}
-                                className="p-2 bg-white hover:bg-slate-100 text-slate-600 rounded-lg border border-slate-200 cursor-pointer text-[10px] font-bold flex items-center gap-1 transition-all"
+                                className="p-2 bg-white hover:bg-white/4 text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-glass-light-stroke)] cursor-pointer text-[10px] font-bold flex items-center gap-1 transition-all"
                                 title="جابه‌جایی سوال به پایین"
                               >
                                 <ChevronDown className="w-4 h-4 text-indigo-600" />
@@ -1173,7 +1173,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               <button
                                 type="button"
                                 onClick={() => triggerEditQuestion(q)}
-                                className="p-2 bg-white hover:bg-slate-150 text-indigo-700 hover:text-indigo-900 rounded-lg border border-indigo-100 hover:border-indigo-200 cursor-pointer text-[10.5px] font-bold flex items-center gap-1.5 transition-all"
+                                className="p-2 bg-white hover:bg-slate-150 text-[var(--color-accent)] hover:text-indigo-900 rounded-lg border border-[var(--color-accent-soft)] hover:border-indigo-200 cursor-pointer text-[10.5px] font-bold flex items-center gap-1.5 transition-all"
                               >
                                 <Edit className="w-3.5 h-3.5 text-indigo-600" />
                                 <span>ویرایش محتوا و گزینه‌ها</span>
@@ -1181,17 +1181,17 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               <button
                                 type="button"
                                 onClick={() => triggerReplaceQuestion(q.id, section.id)}
-                                className="p-2 bg-white hover:bg-slate-150 text-amber-700 hover:text-amber-900 rounded-lg border border-amber-100 hover:border-amber-200 cursor-pointer text-[10.5px] font-bold flex items-center gap-1.5 transition-all"
+                                className="p-2 bg-white hover:bg-slate-150 text-[var(--color-warning)] hover:text-[var(--color-warning)] rounded-lg border border-[var(--color-warning)]/10 hover:border-[var(--color-warning)]/20 cursor-pointer text-[10.5px] font-bold flex items-center gap-1.5 transition-all"
                               >
-                                <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
+                                <RefreshCw className="w-3.5 h-3.5 text-[var(--color-warning)]" />
                                 <span>جایگزینی از بانک سوالات</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => deleteQuestion(q.id)}
-                                className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-100 cursor-pointer text-[10.5px] font-bold flex items-center gap-1 transition-all"
+                                className="p-2 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] rounded-lg border border-[var(--color-danger)]/10 cursor-pointer text-[10.5px] font-bold flex items-center gap-1 transition-all"
                               >
-                                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                <Trash2 className="w-3.5 h-3.5 text-[var(--color-danger)]" />
                                 <span>حذف سوال</span>
                               </button>
                             </div>
@@ -1204,10 +1204,10 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   })}
 
                   {sectionQuestions.length === 0 && (
-                    <div className="py-12 text-center text-slate-400 select-none space-y-2">
+                    <div className="py-12 text-center text-[var(--color-text-tertiary)] select-none space-y-2">
                       <HelpCircle className="w-10 h-10 mx-auto text-slate-300" />
-                      <p className="text-xs font-bold text-slate-600">این بخش فاقد هرگونه سوال انتصابی است</p>
-                      <p className="text-[10px] text-slate-400">می‌توانید با دکمه بالا سوال دستی اضافه کنید یا از بانک سوالات کپی نمایید.</p>
+                      <p className="text-xs font-bold text-[var(--color-text-secondary)]">این بخش فاقد هرگونه سوال انتصابی است</p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)]">می‌توانید با دکمه بالا سوال دستی اضافه کنید یا از بانک سوالات کپی نمایید.</p>
                     </div>
                   )}
                 </div>
@@ -1221,10 +1221,10 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
       </div>
 
       {/* FOOTER ACTIONS BAR */}
-      <div className="border-t border-slate-200 bg-white p-5 rounded-3xl mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-3xs" id="preview-footer-plate">
+      <div className="border-t border-[var(--color-glass-light-stroke)] bg-white p-5 rounded-3xl mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-3xs" id="preview-footer-plate">
         <button
           onClick={onBack}
-          className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer text-center"
+          className="w-full sm:w-auto px-5 py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] font-bold rounded-xl text-xs transition-all cursor-pointer text-center"
         >
           بازگشت به ساخت آزمون
         </button>
@@ -1238,7 +1238,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 alert('پیش‌نویس جدید آزمون با موفقیت در فضای ابری ذخیره شد.');
               }
             }}
-            className="flex-1 sm:flex-none px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl text-xs transition-all border border-indigo-100 cursor-pointer text-center"
+            className="flex-1 sm:flex-none px-5 py-2.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-bold rounded-xl text-xs transition-all border border-[var(--color-accent-soft)] cursor-pointer text-center"
           >
             ذخیره پیش‌نویس موقت
           </button>
@@ -1251,7 +1251,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 alert('تغییرات شما ذخیره شد. در حال هدایت به تنظیمات توزیع آزمون...');
               }
             }}
-            className="flex-1 sm:flex-none px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-xs hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer text-center"
+            className="flex-1 sm:flex-none px-5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-xs shadow-xs hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer text-center"
           >
             ادامه به تنظیمات توزیع آزمون
           </button>
@@ -1261,32 +1261,32 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
       {/* MODAL 1: REPLACE QUESTION BANK */}
       {replacingQuestionId && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4" id="replace-modal-backdrop">
-          <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] text-right font-sans" dir="rtl">
+          <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[85vh] text-right font-sans" dir="rtl">
             
             {/* Modal Header */}
-            <div className="px-6 py-4.5 bg-slate-50 border-b border-slate-150 flex items-center justify-between">
-              <h3 className="font-extrabold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+            <div className="px-6 py-4.5 bg-white/3 border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+              <h3 className="font-extrabold text-[var(--color-text-primary)] text-xs md:text-sm flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-indigo-600 animate-spin-slow" />
                 <span>جایگزینی سوال با مخزن بانک سوالات همگام</span>
               </h3>
               <button
                 onClick={() => setReplacingQuestionId(null)}
-                className="p-1 hover:bg-slate-200 rounded-lg text-slate-400 cursor-pointer"
+                className="p-1 hover:bg-white/6 rounded-lg text-[var(--color-text-tertiary)] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Smart Filters Header block inside modal */}
-            <div className="p-4 bg-slate-100/60 border-b border-slate-150 space-y-3">
+            <div className="p-4 bg-white/4/60 border-b border-[var(--color-glass-light-stroke)] space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                 
                 <div className="space-y-1">
-                  <label className="text-[9px] text-slate-400 font-bold block">پایه تحصیلی:</label>
+                  <label className="text-[9px] text-[var(--color-text-tertiary)] font-bold block">پایه تحصیلی:</label>
                   <select
                     value={replaceFilterGrade}
                     onChange={(e) => setReplaceFilterGrade(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-[11px] p-1.5 rounded-lg text-slate-700 cursor-pointer focus:outline-hidden"
+                    className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
                   >
                     <option value="all">همه پایه‌ها</option>
                     <option value="هفتم">پایه هفتم</option>
@@ -1296,11 +1296,11 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] text-slate-400 font-bold block">درس هدف:</label>
+                  <label className="text-[9px] text-[var(--color-text-tertiary)] font-bold block">درس هدف:</label>
                   <select
                     value={replaceFilterSubject}
                     onChange={(e) => setReplaceFilterSubject(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-[11px] p-1.5 rounded-lg text-slate-700 cursor-pointer focus:outline-hidden"
+                    className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
                   >
                     <option value="all">همه درس‌ها</option>
                     <option value={localExam.subject}>{localExam.subject}</option>
@@ -1311,11 +1311,11 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] text-slate-400 font-bold block">قالب سوال قالب:</label>
+                  <label className="text-[9px] text-[var(--color-text-tertiary)] font-bold block">قالب سوال قالب:</label>
                   <select
                     value={replaceFilterType}
                     onChange={(e) => setReplaceFilterType(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-[11px] p-1.5 rounded-lg text-slate-700 cursor-pointer focus:outline-hidden"
+                    className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
                   >
                     <option value="all">همه قالب‌ها</option>
                     <option value="single_choice">چهارگزینه‌ای</option>
@@ -1327,11 +1327,11 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] text-slate-400 font-bold block">سطح سختی:</label>
+                  <label className="text-[9px] text-[var(--color-text-tertiary)] font-bold block">سطح سختی:</label>
                   <select
                     value={replaceFilterDifficulty}
                     onChange={(e) => setReplaceFilterDifficulty(e.target.value)}
-                    className="w-full bg-white border border-slate-200 text-[11px] p-1.5 rounded-lg text-slate-700 cursor-pointer focus:outline-hidden"
+                    className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
                   >
                     <option value="all">همه سطوح</option>
                     <option value="easy">آسان</option>
@@ -1348,28 +1348,28 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 placeholder="جستجو در کل صورت سوال یا موضوعات..."
                 value={replaceSearchQuery}
                 onChange={(e) => setReplaceSearchQuery(e.target.value)}
-                className="w-full bg-white border border-slate-200 text-xs text-slate-750 px-3 py-2 rounded-xl focus:outline-hidden focus:border-indigo-400 text-right"
+                className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 text-right"
               />
             </div>
 
             {/* Questions Bank scrolling container list */}
-            <div className="p-5 overflow-y-auto flex-1 space-y-4 bg-slate-50">
+            <div className="p-5 overflow-y-auto flex-1 space-y-4 bg-white/3">
               {filteredBankQuestions.length > 0 ? (
                 filteredBankQuestions.map(bq => {
                   const hasImg = !!bq.imageUrl;
                   return (
                     <div 
                       key={bq.id} 
-                      className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-indigo-400 transition-all shadow-3xs flex flex-col justify-between gap-3"
+                      className="bg-white p-4 rounded-2xl border border-[var(--color-glass-light-stroke)] hover:border-indigo-400 transition-all shadow-3xs flex flex-col justify-between gap-3"
                     >
                       <div className="space-y-2 text-right">
                         
                         {/* Upper indicators bar */}
-                        <div className="flex items-center justify-between gap-1 text-[9px] text-slate-400">
+                        <div className="flex items-center justify-between gap-1 text-[9px] text-[var(--color-text-tertiary)]">
                           <div className="flex items-center gap-1.5">
-                            <span className="bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded-md">پایه {bq.grade}</span>
-                            <span className="bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-md">{bq.category}</span>
-                            <span className="bg-slate-50 text-slate-500 rounded-md px-1.5 py-0.5 font-medium border border-slate-150">
+                            <span className="bg-white/4 text-[var(--color-text-secondary)] font-bold px-1.5 py-0.5 rounded-md">پایه {bq.grade}</span>
+                            <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-semibold px-2 py-0.5 rounded-md">{bq.category}</span>
+                            <span className="bg-white/3 text-[var(--color-text-tertiary)] rounded-md px-1.5 py-0.5 font-medium border border-[var(--color-glass-light-stroke)]">
                               {getTypeNameInPersian(bq.type)}
                             </span>
                           </div>
@@ -1380,22 +1380,22 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                         </div>
 
                         {/* Text */}
-                        <h4 className="font-extrabold text-slate-800 text-[11.5px] line-clamp-1">{bq.title}</h4>
-                        <p className="text-[10.5px] text-slate-500 leading-relaxed line-clamp-2">{bq.text}</p>
+                        <h4 className="font-extrabold text-[var(--color-text-primary)] text-[11.5px] line-clamp-1">{bq.title}</h4>
+                        <p className="text-[10.5px] text-[var(--color-text-tertiary)] leading-relaxed line-clamp-2">{bq.text}</p>
                         
                         {hasImg && (
-                          <div className="text-[9.5px] text-indigo-600 bg-indigo-50/50 rounded-lg px-2 py-0.5 w-fit border border-indigo-100 font-semibold">
+                          <div className="text-[9.5px] text-indigo-600 bg-[var(--color-accent-soft)]/30 rounded-lg px-2 py-0.5 w-fit border border-[var(--color-accent-soft)] font-semibold">
                             دارای تصویر ضمیمه مرتبط
                           </div>
                         )}
                       </div>
 
                       {/* Select and apply button */}
-                      <div className="border-t border-slate-100 pt-2.5 flex justify-between items-center text-[10px] text-slate-400">
+                      <div className="border-t border-[var(--color-glass-light-stroke)] pt-2.5 flex justify-between items-center text-[10px] text-[var(--color-text-tertiary)]">
                         <span>بارم استاندارد: {toPersianDigits(bq.points)} نمره</span>
                         <button
                           onClick={() => handleExecuteReplacement(bq)}
-                          className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-[10.5px] cursor-pointer transition-all shadow-3xs"
+                          className="px-4 py-1.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-[10.5px] cursor-pointer transition-all shadow-3xs"
                         >
                           تایید و جایگزینی این سوال
                         </button>
@@ -1405,16 +1405,16 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   );
                 })
               ) : (
-                <div className="py-12 text-center text-slate-400 select-none space-y-2">
+                <div className="py-12 text-center text-[var(--color-text-tertiary)] select-none space-y-2">
                   <HelpCircle className="w-10 h-10 mx-auto text-slate-300" />
-                  <p className="text-xs font-bold text-slate-650">سوال همخوانی داری در بانک یافت نشد</p>
+                  <p className="text-xs font-bold text-[var(--color-text-secondary)]">سوال همخوانی داری در بانک یافت نشد</p>
                   <p className="text-[10px]">فیلترها را بردارید یا کلمه جستجو را کوتاه کنید.</p>
                 </div>
               )}
             </div>
 
             {/* Modal Footer comments */}
-            <div className="bg-slate-50 border-t border-slate-150 p-3 text-center text-[9px] text-slate-400 font-semibold">
+            <div className="bg-white/3 border-t border-[var(--color-glass-light-stroke)] p-3 text-center text-[9px] text-[var(--color-text-tertiary)] font-semibold">
               <span>تطبیق‌دهنده هوشمند آزمون‌ساز همگام دبیـران</span>
             </div>
 
@@ -1428,13 +1428,13 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
           <div className="fixed inset-0" onClick={() => setEditingQuestion(null)} />
           
           <div
-            className="w-full max-w-xl bg-slate-50 shadow-2xl z-10 flex flex-col h-full border-r border-slate-250 overflow-hidden text-xs text-right animate-in slide-in-from-right duration-300 font-sans"
+            className="w-full max-w-xl bg-white/3 shadow-2xl z-10 flex flex-col h-full border-r border-slate-250 overflow-hidden text-xs text-right animate-in slide-in-from-right duration-300 font-sans"
             dir="rtl"
             id="drawer-edit-form"
           >
             {/* Drawer Header */}
-            <div className="px-5 py-4 bg-white border-b border-slate-150 flex items-center justify-between">
-              <h3 className="font-extrabold text-slate-800 text-xs md:text-sm flex items-center gap-1.5">
+            <div className="px-5 py-4 bg-white border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+              <h3 className="font-extrabold text-[var(--color-text-primary)] text-xs md:text-sm flex items-center gap-1.5">
                 <Sliders className="w-5 h-5 text-indigo-600" />
                 <span>
                   {isAddingNew ? 'طرح سوال تازه برای برگه آزمون' : 'ویرایش جزئیات فنی و بارم سوال'}
@@ -1443,7 +1443,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
               <button
                 type="button"
                 onClick={() => setEditingQuestion(null)}
-                className="p-1 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold cursor-pointer"
+                className="p-1 px-3 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] rounded-xl font-bold cursor-pointer"
               >
                 انصراف ×
               </button>
@@ -1453,8 +1453,8 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             <div className="p-5 overflow-y-auto space-y-5 flex-1">
               
               {/* Type selector */}
-              <div className="space-y-1 bg-white p-3 rounded-2xl border border-slate-200">
-                <label className="text-[10px] text-slate-400 font-bold block">نوع قالب‌بندی سوال:</label>
+              <div className="space-y-1 bg-white p-3 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+                <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">نوع قالب‌بندی سوال:</label>
                 <select
                   value={editingQuestion.type}
                   onChange={(e) => {
@@ -1473,7 +1473,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       parts: nextVal === 'reading_comprehension' ? [] : undefined
                     });
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-700 p-2 rounded-xl focus:outline-hidden font-bold cursor-pointer"
+                  className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-[var(--color-text-secondary)] p-2 rounded-xl focus:outline-hidden font-bold cursor-pointer"
                 >
                   <option value="single_choice">چهارگزینه‌ای یا کتبی تستی</option>
                   <option value="multiple_choice">چندگزینه‌ای چندپاسخ</option>
@@ -1489,58 +1489,58 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
               {/* Title & Points row */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-2 space-y-1 bg-white p-3.5 rounded-2xl border border-slate-200">
-                  <label className="text-[10px] text-slate-400 font-bold block">عنوان خلاصه سوال:</label>
+                <div className="md:col-span-2 space-y-1 bg-white p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+                  <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">عنوان خلاصه سوال:</label>
                   <input
                     type="text"
                     value={editingQuestion.title || ''}
                     onChange={(e) => setEditingQuestion({ ...editingQuestion, title: e.target.value })}
-                    className="w-full bg-slate-55 border border-slate-200/80 text-xs px-2.5 py-1.5 rounded-lg focus:outline-hidden focus:border-indigo-400"
+                    className="w-full bg-slate-55 border border-[var(--color-glass-light-stroke)] text-xs px-2.5 py-1.5 rounded-lg focus:outline-hidden focus:border-[var(--color-accent)]/40"
                     placeholder="مثال: سوال مضاف‌الیه ادبیات"
                   />
                 </div>
 
-                <div className="space-y-1 bg-white p-3.5 rounded-2xl border border-slate-200 text-center">
-                  <label className="text-[10px] text-slate-400 font-bold block text-right">بارم (امتیاز عددی):</label>
+                <div className="space-y-1 bg-white p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)] text-center">
+                  <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block text-right">بارم (امتیاز عددی):</label>
                   <input
                     type="number"
                     step="0.25"
                     min="0"
                     value={editingQuestion.points || 0}
                     onChange={(e) => setEditingQuestion({ ...editingQuestion, points: Number(e.target.value) })}
-                    className="w-full bg-slate-55 border border-slate-200/80 text-xs text-center font-bold px-2 py-1.5 rounded-lg focus:outline-hidden font-mono focus:border-indigo-400"
+                    className="w-full bg-slate-55 border border-[var(--color-glass-light-stroke)] text-xs text-center font-bold px-2 py-1.5 rounded-lg focus:outline-hidden font-mono focus:border-[var(--color-accent)]/40"
                   />
                 </div>
               </div>
 
               {/* Question Text Prompt */}
-              <div className="space-y-1 bg-white p-4 rounded-2xl border border-slate-200">
-                <label className="text-[10px] text-slate-400 font-bold block">متن اصلی صورت سوال:</label>
+              <div className="space-y-1 bg-white p-4 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+                <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">متن اصلی صورت سوال:</label>
                 <textarea
                   rows={4}
                   value={editingQuestion.text || ''}
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
-                  className="w-full bg-slate-55 border border-slate-200/80 text-xs p-3 rounded-lg focus:outline-hidden focus:border-indigo-400 leading-relaxed text-right placeholder-slate-300"
+                  className="w-full bg-slate-55 border border-[var(--color-glass-light-stroke)] text-xs p-3 rounded-lg focus:outline-hidden focus:border-[var(--color-accent)]/40 leading-relaxed text-right placeholder-slate-300"
                   placeholder="صورت سوال علمی، پیوند‌ها و نمادها را در اینجا تایپ کنید..."
                 />
               </div>
 
               {/* Image URL / media upload simulation */}
-              <div className="space-y-2 bg-white p-3.5 rounded-2xl border border-slate-200">
-                <label className="text-[10px] text-slate-400 font-bold block">تصویر یا نمودار پیوست سوال:</label>
+              <div className="space-y-2 bg-white p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+                <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">تصویر یا نمودار پیوست سوال:</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={editingQuestion.imageUrl || ''}
                     onChange={(e) => setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs px-2.5 py-1.5 rounded-lg placeholder-slate-300 focus:outline-hidden"
+                    className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs px-2.5 py-1.5 rounded-lg placeholder-slate-300 focus:outline-hidden"
                     placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
                   />
                   {editingQuestion.imageUrl && (
                     <button
                       type="button"
                       onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: undefined })}
-                      className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] transition-all cursor-pointer font-bold shrink-0"
+                      className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] rounded-lg text-[10px] transition-all cursor-pointer font-bold shrink-0"
                     >
                       حذف
                     </button>
@@ -1548,7 +1548,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 </div>
                 {/* Simulative quick presets to populate mock images safely */}
                 <div className="flex flex-wrap gap-1 mt-1 justify-start">
-                  <span className="text-[9px] text-slate-400 font-semibold self-center ml-1">چند پیوست پیش‌فرض:</span>
+                  <span className="text-[9px] text-[var(--color-text-tertiary)] font-semibold self-center ml-1">چند پیوست پیش‌فرض:</span>
                   {[
                     { label: 'سلول گیاهی', url: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=500&auto=format&fit=crop&q=60' },
                     { label: 'نمودار اهرم‌ها', url: 'https://images.unsplash.com/photo-1632571401005-458e9d244591?w=500&auto=format&fit=crop&q=60' }
@@ -1557,7 +1557,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       key={pIdx}
                       type="button"
                       onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: preset.url })}
-                      className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100 hover:bg-indigo-100 transition-all text-[9px] font-bold"
+                      className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-md border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] transition-all text-[9px] font-bold"
                     >
                       {preset.label}
                     </button>
@@ -1569,13 +1569,13 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
               {/* A. Choice Options edit area */}
               {['single_choice', 'multiple_choice', 'image_based'].includes(editingQuestion.type || '') && (
-                <div className="space-y-3 bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100/50">
-                  <div className="flex justify-between items-center border-b border-indigo-100/60 pb-1.5">
+                <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
+                  <div className="flex justify-between items-center border-b border-[var(--color-accent-soft)]/60 pb-1.5">
                     <span className="text-[10.5px] text-indigo-900 font-extrabold">گزینه‌های پاسخ و تخصیص کلید:</span>
                     <button
                       type="button"
                       onClick={addNewOptionInDrawer}
-                      className="bg-indigo-600 text-white px-2.5 py-1 rounded-lg hover:bg-slate-800 transition-all font-bold text-[9.5px] flex items-center gap-1.5"
+                      className="bg-[var(--color-accent)] text-white px-2.5 py-1 rounded-lg hover:bg-slate-800 transition-all font-bold text-[9.5px] flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>افزودن گزینه جدید</span>
@@ -1584,7 +1584,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   
                   <div className="space-y-2.5">
                     {(editingQuestion.options || []).map((opt, oIdx) => (
-                      <div key={opt.id} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-200">
+                      <div key={opt.id} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
                         
                         {/* Correct trigger */}
                         <button
@@ -1592,8 +1592,8 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                           onClick={() => toggleOptionCorrectInDrawer(opt.id)}
                           className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
                             opt.isCorrect 
-                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs' 
-                              : 'border-slate-300 bg-slate-50 hover:bg-slate-100'
+                              ? 'bg-[var(--color-success)] border-emerald-500 text-white shadow-xs' 
+                              : 'border-[var(--color-glass-light-stroke)] bg-white/3 hover:bg-white/4'
                           }`}
                           title={opt.isCorrect ? 'کلید پاسخ صحیح (غیرفعال‌سازی)' : 'تبدیل به کلید پاسخ صحیح'}
                         >
@@ -1617,7 +1617,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                             const updatedOpts = (editingQuestion.options || []).map(o => o.id === opt.id ? { ...o, imageUrl: e.target.value } : o);
                             setEditingQuestion({ ...editingQuestion, options: updatedOpts });
                           }}
-                          className="bg-slate-50 border border-slate-150 text-[10px] w-28 px-1 rounded-md"
+                          className="bg-white/3 border border-[var(--color-glass-light-stroke)] text-[10px] w-28 px-1 rounded-md"
                           placeholder="آدرس تصویر گزینه"
                         />
 
@@ -1625,7 +1625,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                         <button
                           type="button"
                           onClick={() => removeOptionInDrawer(opt.id)}
-                          className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer"
+                          className="p-1 text-[var(--color-danger)] hover:bg-rose-50 rounded-lg cursor-pointer"
                           title="حذف این گزینه"
                         >
                           <Trash className="w-4 h-4" />
@@ -1638,7 +1638,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
               {/* B. True False setup */}
               {editingQuestion.type === 'true_false' && (
-                <div className="space-y-2 bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100/50">
+                <div className="space-y-2 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
                   <span className="text-[10.5px] text-indigo-900 font-extrabold block">مشخص‌سازی کلید پاسخ درست:</span>
                   <div className="flex gap-3">
                     <button
@@ -1646,8 +1646,8 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       onClick={() => setEditingQuestion({ ...editingQuestion, correctAnswer: true })}
                       className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
                         editingQuestion.correctAnswer === true
-                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-700'
+                          ? 'bg-[var(--color-success)] border-emerald-500 text-white shadow-xs'
+                          : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                       }`}
                     >
                       صحیح
@@ -1657,8 +1657,8 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       onClick={() => setEditingQuestion({ ...editingQuestion, correctAnswer: false })}
                       className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
                         editingQuestion.correctAnswer === false
-                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-700'
+                          ? 'bg-[var(--color-success)] border-emerald-500 text-white shadow-xs'
+                          : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                       }`}
                     >
                       غلط
@@ -1669,12 +1669,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
               {/* C. Fill Blanks input tag builders */}
               {editingQuestion.type === 'fill_blank' && (
-                <div className="space-y-3 bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100/50">
+                <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
                   <span className="text-[10.5px] text-indigo-900 font-extrabold block">کلید واژه‌های صحیح برای پرکردن جاهای خالی (به ترتیب):</span>
                   <div className="space-y-2">
                     {(editingQuestion.correctFillBlanks || ['']).map((word, wIdx) => (
-                      <div key={wIdx} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-200">
-                        <span className="text-slate-400 font-bold font-mono">جای خالی ({toPersianDigits(wIdx + 1)}):</span>
+                      <div key={wIdx} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
+                        <span className="text-[var(--color-text-tertiary)] font-bold font-mono">جای خالی ({toPersianDigits(wIdx + 1)}):</span>
                         <input
                           type="text"
                           value={word}
@@ -1692,7 +1692,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                             const nextWords = (editingQuestion.correctFillBlanks || []).filter((_, i) => i !== wIdx);
                             setEditingQuestion({ ...editingQuestion, correctFillBlanks: nextWords });
                           }}
-                          className="p-1 hover:bg-slate-100 text-rose-500 rounded-lg"
+                          className="p-1 hover:bg-white/4 text-[var(--color-danger)] rounded-lg"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -1706,7 +1706,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       const nextWords = [...(editingQuestion.correctFillBlanks || []), ''];
                       setEditingQuestion({ ...editingQuestion, correctFillBlanks: nextWords });
                     }}
-                    className="w-full bg-white text-indigo-700 text-[10.5px] py-1.5 rounded-xl border border-indigo-200 font-bold hover:bg-indigo-50 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    className="w-full bg-white text-[var(--color-accent)] text-[10.5px] py-1.5 rounded-xl border border-indigo-200 font-bold hover:bg-[var(--color-accent-soft)] transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>افزودن جای خالی گمشده دیگر</span>
@@ -1716,13 +1716,13 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
               {/* D. Rubrics Metrics setup (Descriptive Long Answer) */}
               {editingQuestion.type === 'long_answer' && (
-                <div className="space-y-3 bg-rose-50/40 p-4 rounded-2xl border border-rose-100">
-                  <div className="flex justify-between items-center border-b border-rose-100 pb-1.5">
+                <div className="space-y-3 bg-[var(--color-danger-soft)]/40 p-4 rounded-2xl border border-[var(--color-danger)]/10">
+                  <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-1.5">
                     <span className="text-[10.5px] text-rose-950 font-extrabold">معیارهای واگذاری بارم تصحیح:</span>
                     <button
                       type="button"
                       onClick={addNewRubricInDrawer}
-                      className="bg-rose-600 text-white px-2.5 py-1 rounded-lg hover:bg-slate-800 transition-all font-bold text-[9.5px] flex items-center gap-1"
+                      className="bg-[var(--color-danger)] text-white px-2.5 py-1 rounded-lg hover:bg-slate-800 transition-all font-bold text-[9.5px] flex items-center gap-1"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>افزودن معیار بارم</span>
@@ -1731,13 +1731,13 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                   <div className="space-y-3">
                     {(editingQuestion.rubrics || []).map((rub) => (
-                      <div key={rub.id} className="bg-white p-3 rounded-xl border border-rose-100 space-y-2">
+                      <div key={rub.id} className="bg-white p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2">
                         <div className="flex gap-2 justify-between">
                           <input
                             type="text"
                             value={rub.title}
                             onChange={(e) => updateRubricInDrawer(rub.id, { title: e.target.value })}
-                            className="w-full bg-slate-50 border-none px-2 py-1 rounded-md text-slate-800 font-bold font-sans"
+                            className="w-full bg-white/3 border-none px-2 py-1 rounded-md text-[var(--color-text-primary)] font-bold font-sans"
                             placeholder="نام معیار (مثال: رسم درست نمودار)"
                           />
                           <input
@@ -1745,7 +1745,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                             step="0.25"
                             value={rub.maxPoints}
                             onChange={(e) => updateRubricInDrawer(rub.id, { maxPoints: Number(e.target.value) })}
-                            className="w-20 bg-slate-50 border-none px-2 py-1 rounded-md font-bold font-mono text-center"
+                            className="w-20 bg-white/3 border-none px-2 py-1 rounded-md font-bold font-mono text-center"
                             placeholder="بارم"
                           />
                         </div>
@@ -1753,13 +1753,13 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                           type="text"
                           value={rub.description}
                           onChange={(e) => updateRubricInDrawer(rub.id, { description: e.target.value })}
-                          className="w-full bg-slate-50/60 border-none px-2 py-1 rounded-md"
+                          className="w-full bg-white/3/60 border-none px-2 py-1 rounded-md"
                           placeholder="شرح کوتاه برای دبیـر تصحیح‌کننده..."
                         />
                         <button
                           type="button"
                           onClick={() => removeRubricInDrawer(rub.id)}
-                          className="text-rose-500 font-bold hover:bg-rose-50 px-2 py-1 rounded-md block text-[9px] transition-all"
+                          className="text-[var(--color-danger)] font-bold hover:bg-rose-50 px-2 py-1 rounded-md block text-[9px] transition-all"
                         >
                           پاک کردن این گزینه معیار
                         </button>
@@ -1771,13 +1771,13 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
               {/* E. Subquestions parts list (Reading comprehension) */}
               {editingQuestion.type === 'reading_comprehension' && (
-                <div className="space-y-3 bg-teal-50/40 p-4 rounded-2xl border border-teal-100">
+                <div className="space-y-3 bg-teal-50/30/40 p-4 rounded-2xl border border-teal-100">
                   <div className="flex justify-between items-center border-b border-teal-150 pb-1.5">
                     <span className="text-[10.5px] text-teal-950 font-extrabold">زیرسوالات درک مطلب (مینی‌سوال‌ها):</span>
                     <button
                       type="button"
                       onClick={addNewSubquestionPartInDrawer}
-                      className="bg-teal-600 text-white px-2.5 py-1 rounded-xl font-bold text-[9.5px]"
+                      className="bg-teal-600/80 text-white px-2.5 py-1 rounded-xl font-bold text-[9.5px]"
                     >
                       افزودن زیرسوال جدید
                     </button>
@@ -1786,12 +1786,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   <div className="space-y-3">
                     {(editingQuestion.parts || []).map((part, pIdx) => (
                       <div key={part.id} className="bg-white p-3 rounded-xl border border-teal-100 space-y-2">
-                        <div className="flex justify-between items-center text-[10px] text-slate-400">
+                        <div className="flex justify-between items-center text-[10px] text-[var(--color-text-tertiary)]">
                           <span>زیرسوال شماره {toPersianDigits(pIdx + 1)}</span>
                           <button
                             type="button"
                             onClick={() => removeSubquestionPartInDrawer(part.id)}
-                            className="text-rose-600"
+                            className="text-[var(--color-danger)]"
                           >
                             حذف
                           </button>
@@ -1800,7 +1800,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                           type="text"
                           value={part.text}
                           onChange={(e) => updateSubquestionTextInDrawer(part.id, e.target.value)}
-                          className="w-full bg-slate-50 border-none p-1.5 rounded-md font-semibold text-slate-850"
+                          className="w-full bg-white/3 border-none p-1.5 rounded-md font-semibold text-slate-850"
                           placeholder="نمام متن مینی‌سوال..."
                         />
                       </div>
@@ -1812,18 +1812,18 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             </div>
 
             {/* Save trigger inside drawer */}
-            <div className="p-4 bg-white border-t border-slate-150 flex gap-2">
+            <div className="p-4 bg-white border-t border-[var(--color-glass-light-stroke)] flex gap-2">
               <button
                 type="button"
                 onClick={handleSaveDrawerQuestion}
-                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-center shadow-xs cursor-pointer text-xs"
+                className="flex-1 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-center shadow-xs cursor-pointer text-xs"
               >
                 ثبت نهایی و بازگشت به ورقه املاکی
               </button>
               <button
                 type="button"
                 onClick={() => setEditingQuestion(null)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-650 font-bold rounded-xl text-center cursor-pointer text-xs"
+                className="flex-1 py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] font-bold rounded-xl text-center cursor-pointer text-xs"
               >
                 لغو تغییرات
               </button>

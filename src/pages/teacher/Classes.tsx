@@ -88,8 +88,8 @@ export default function Classes() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" dir="rtl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-800">مدیریت گروه‌های کلاسی</h1>
-          <p className="text-sm text-slate-500 mt-1">سازماندهی دانش‌آموزان بر اساس پایه و کلاس</p>
+          <h1 className="text-2xl font-black text-[var(--color-text-primary)]">مدیریت گروه‌های کلاسی</h1>
+          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">سازماندهی دانش‌آموزان بر اساس پایه و کلاس</p>
         </div>
         <Button
           onClick={() => handleOpenModal()}
@@ -102,7 +102,7 @@ export default function Classes() {
       </div>
 
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl text-xs font-bold flex items-center gap-2">
+        <div className="bg-rose-50 border border-rose-200 text-[var(--color-danger)]/80 p-4 rounded-2xl text-xs font-bold flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
@@ -113,7 +113,7 @@ export default function Classes() {
           <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <Card className="overflow-hidden border-slate-200 shadow-sm">
+        <Card className="overflow-hidden border-[var(--color-glass-light-stroke)] shadow-sm">
           <Table
             headers={[
               { key: 'name', label: 'نام کلاس' },
@@ -123,12 +123,12 @@ export default function Classes() {
             ]}
             data={classes}
             renderRow={(cls) => (
-              <tr key={cls.id} className="hover:bg-slate-50 transition-colors text-xs md:text-sm">
-                <td className="p-4 font-bold text-slate-700">{cls.name}</td>
+              <tr key={cls.id} className="hover:bg-white/3 transition-colors text-xs md:text-sm">
+                <td className="p-4 font-bold text-[var(--color-text-secondary)]">{cls.name}</td>
                 <td className="p-4">
-                  <Badge variant="slate" className="bg-slate-100 text-slate-600">{cls.grade}</Badge>
+                  <Badge variant="slate" className="bg-white/4 text-[var(--color-text-secondary)]">{cls.grade}</Badge>
                 </td>
-                <td className="p-4 text-center font-mono text-slate-600">
+                <td className="p-4 text-center font-mono text-[var(--color-text-secondary)]">
                   {formatPersianNumber(cls.studentCount)} نفر
                 </td>
                 <td className="p-4 flex items-center justify-center gap-2">
@@ -136,7 +136,7 @@ export default function Classes() {
                     onClick={() => handleOpenModal(cls)}
                     variant="ghost"
                     size="sm"
-                    className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50"
+                    className="text-indigo-600 hover:text-indigo-800 hover:bg-[var(--color-accent-soft)]"
                   >
                     <Edit3 className="w-4 h-4" />
                   </Button>
@@ -144,7 +144,7 @@ export default function Classes() {
                     onClick={() => handleDelete(cls.id)}
                     variant="ghost"
                     size="sm"
-                    className="text-rose-600 hover:text-rose-800 hover:bg-rose-50"
+                    className="text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 hover:bg-rose-50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -152,13 +152,13 @@ export default function Classes() {
               </tr>
             )}
             renderMobileCard={(cls) => (
-              <Card key={cls.id} className="p-4 space-y-3 border-slate-100">
+              <Card key={cls.id} className="p-4 space-y-3 border-[var(--color-glass-light-stroke)]">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-bold text-slate-800">{cls.name}</h4>
-                    <p className="text-[11px] text-slate-500">پایه {cls.grade}</p>
+                    <h4 className="font-bold text-[var(--color-text-primary)]">{cls.name}</h4>
+                    <p className="text-[11px] text-[var(--color-text-tertiary)]">پایه {cls.grade}</p>
                   </div>
-                  <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg">
+                  <span className="text-[10px] font-bold bg-[var(--color-accent-soft)] text-indigo-600 px-2 py-1 rounded-lg">
                     {formatPersianNumber(cls.studentCount)} دانش‌آموز
                   </span>
                 </div>
@@ -179,20 +179,20 @@ export default function Classes() {
       >
         <div className="space-y-4 text-right" dir="rtl">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-600 block">نام کلاس / گروه</label>
+            <label className="text-xs font-bold text-[var(--color-text-secondary)] block">نام کلاس / گروه</label>
             <input
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               placeholder="مثلاً کلاس ۷۰۱ یا گروه پیشرفته نهم"
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] bg-white/3 text-sm focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-600 block">پایه تحصیلی</label>
+            <label className="text-xs font-bold text-[var(--color-text-secondary)] block">پایه تحصیلی</label>
             <select
               value={formData.grade}
               onChange={(e) => setFormData({...formData, grade: e.target.value})}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] bg-white/3 text-sm focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
             >
               <option value="">انتخاب پایه...</option>
               <optgroup label="دبستان">

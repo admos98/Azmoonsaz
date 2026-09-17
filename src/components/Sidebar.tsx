@@ -77,16 +77,16 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       </div>
 
       {/* Teacher Profile */}
-      <div className="mx-4 my-4 p-3 rounded-xl bg-white/5 border border-white/8 flex items-center gap-3" id="sidebar-profile">
+      <div className="mx-4 my-4 p-3 rounded-xl bg-white/4 border border-white/8 flex items-center gap-3" id="sidebar-profile">
         {teacher?.avatarUrl ? (
           <img
             src={teacher.avatarUrl}
             alt={teacher.name}
             referrerPolicy="no-referrer"
-            className="w-10 h-10 rounded-full object-cover border-2 border-white/10"
+            className="w-10 h-10 rounded-full object-cover border-2 border-[var(--color-glass-ink-stroke)]"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-[var(--color-accent)]/20 border-2 border-white/10 flex items-center justify-center text-[var(--color-accent)] text-sm font-bold">
+          <div className="w-10 h-10 rounded-full bg-[var(--color-accent)]/20 border-2 border-[var(--color-glass-ink-stroke)] flex items-center justify-center text-[var(--color-accent)] text-sm font-bold">
             {teacher?.name?.[0] || '?'}
           </div>
         )}
@@ -117,8 +117,8 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative cursor-pointer ${
                       active
-                        ? 'bg-white/12 text-white shadow-sm'
-                        : 'text-[var(--color-text-on-dark-secondary)] hover:bg-white/4 hover:text-white'
+                        ? 'bg-[var(--color-gold)]/15 text-[var(--color-text-on-dark)] shadow-sm'
+                        : 'text-[var(--color-text-on-dark-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-on-dark)]'
                     }`}
                   >
                     <Icon className={`w-4 h-4 transition-transform ${active ? 'text-[var(--color-gold)]' : ''}`} />
@@ -145,7 +145,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       <button
         id="btn-switch-role"
         onClick={() => { onSwitchRole(); setMobileOpen(false); }}
-        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs bg-white/8 text-[var(--color-text-on-dark-secondary)] hover:bg-white/12 hover:text-[var(--color-text-on-dark)] transition-all font-bold cursor-pointer"
+        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs text-[var(--color-text-on-dark-secondary)] bg-white/4 hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-on-dark)] transition-all font-bold cursor-pointer"
       >
         <ArrowLeftRight className="w-3.5 h-3.5" />
         <span>بخش دانش‌آموزی</span>
@@ -155,7 +155,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       <button
         id="btn-logout"
         onClick={() => { onLogout(); setMobileOpen(false); }}
-        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs text-rose-400 hover:bg-rose-500/10 transition-colors font-semibold cursor-pointer"
+        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors font-semibold cursor-pointer"
       >
         <LogOut className="w-3.5 h-3.5" />
         <span>خروج از سامانه</span>
@@ -167,7 +167,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
     <>
       {/* Mobile Hamburger */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl glass-1 shadow-lg cursor-pointer"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl glx shadow-md cursor-pointer"
         onClick={() => setMobileOpen(true)}
         aria-label="باز کردن منو"
       >
@@ -181,7 +181,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="lg:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm"
+            className="lg:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-[3px]"
             onClick={() => setMobileOpen(false)}
           />
         )}
@@ -189,7 +189,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
 
       {/* Desktop Sidebar */}
       <aside
-        className="hidden lg:flex fixed inset-y-0 right-0 z-30 w-60 flex-col lg-dark text-[var(--color-text-on-dark)] select-none"
+        className="hidden lg:flex fixed inset-y-0 right-0 z-30 w-60 flex-col glx-dark text-[var(--color-text-on-dark)] select-none"
                 id="sidebar-container"
       >
         {navContent}
@@ -204,12 +204,12 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="lg:hidden fixed inset-y-0 right-0 z-50 w-72 flex flex-col lg-strong text-[var(--color-text-on-dark)] select-none"
+            className="lg:hidden fixed inset-y-0 right-0 z-50 w-72 flex flex-col glx-strong text-[var(--color-text-on-dark)] select-none"
                         id="sidebar-container-mobile"
           >
             {/* Close button */}
             <button
-              className="absolute top-4 left-4 p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 cursor-pointer"
+              className="absolute top-4 left-4 p-1 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-white/4 cursor-pointer"
               onClick={() => setMobileOpen(false)}
               aria-label="بستن منو"
             >

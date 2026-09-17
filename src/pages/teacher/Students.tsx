@@ -476,11 +476,11 @@ export default function Students() {
       {toastElement}
       
       {/* Privacy Warning Card (Critical Safeguard) */}
-      <div className="bg-amber-50 border border-amber-200 p-4.5 rounded-2xl flex items-start gap-3 shadow-sm" id="privacy-warning-banner">
-        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+      <div className="bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/20 p-4.5 rounded-2xl flex items-start gap-3 shadow-sm" id="privacy-warning-banner">
+        <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] shrink-0 mt-0.5" />
         <div className="space-y-1 text-right">
-          <h4 className="text-xs font-bold text-amber-800">هشدار صیانت از اطلاعات حساس سجلی دانش‌آموزان</h4>
-          <p className="text-[11px] text-amber-700 leading-relaxed">
+          <h4 className="text-xs font-bold text-[var(--color-warning)]/80">هشدار صیانت از اطلاعات حساس سجلی دانش‌آموزان</h4>
+          <p className="text-[11px] text-[var(--color-warning)] leading-relaxed">
             کد ملی اطلاعات حساس محسوب می‌شود. از اشتراک‌گذاری فایل دانش‌آموزان با افراد غیرمجاز خودداری کنید. تمامی کدملی‌ها و پاسخ‌برگ‌های ارسالی همگام با سامانه امتحانات استعدادهای درخشان رمزنگاری می‌شوند.
           </p>
         </div>
@@ -489,11 +489,11 @@ export default function Students() {
       {/* Primary Tab Headers */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-1 p-6 rounded-2xl" id="students-control-board">
         <div>
-          <h2 className="text-md font-bold text-slate-800 flex items-center gap-2">
-            <Users className="w-5 h-5 text-indigo-500" />
+          <h2 className="text-md font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+            <Users className="w-5 h-5 text-[var(--color-accent)]" />
             <span>مدیریت دانش‌آموزان و درگاه ورودی</span>
           </h2>
-          <p className="text-[11px] text-slate-400 mt-1">پذیرش اطلاعات دانش‌آموزی، ویرایش شناسنامه تحصیلی و قرینه‌سازی با فرمت اکسل سناد</p>
+          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-1">پذیرش اطلاعات دانش‌آموزی، ویرایش شناسنامه تحصیلی و قرینه‌سازی با فرمت اکسل سناد</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -501,7 +501,7 @@ export default function Students() {
           <button
             id="btn-trigger-add-student"
             onClick={openAddModal}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.01] active:scale-99 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] hover:scale-[1.01] active:scale-99 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>افزودن دستی دانش‌آموز</span>
@@ -514,7 +514,7 @@ export default function Students() {
               setWizardStep(1);
               setShowImportWizard(true);
             }}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 hover:scale-[1.01] active:scale-99 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 hover:scale-[1.01] active:scale-99 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>ورود از Excel یا CSV</span>
@@ -527,13 +527,13 @@ export default function Students() {
         
         {/* Real-time search by name/nationalId */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
           <input
             type="text"
             placeholder="جستجوی دانش‌آموز با نام و کد ملی..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-50/70 border border-slate-200 text-xs text-slate-750 pr-9.5 pl-4 py-2.5 rounded-xl focus:outline-hidden focus:border-indigo-400 focus:bg-white transition-all text-right"
+            className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 pr-9.5 pl-4 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-white transition-all text-right"
           />
         </div>
 
@@ -541,14 +541,14 @@ export default function Students() {
         <div className="flex flex-wrap items-center gap-3">
           
           {/* Grade filter */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-[10px] text-slate-500 font-semibold">پایه تحصیلی:</span>
+          <div className="flex items-center gap-1.5 bg-white/3 border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-xl">
+            <Filter className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
+            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">پایه تحصیلی:</span>
             <select
               id="filter-grade"
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value)}
-              className="bg-transparent text-xs text-slate-700 focus:outline-hidden font-bold cursor-pointer"
+              className="bg-transparent text-xs text-[var(--color-text-secondary)] focus:outline-hidden font-bold cursor-pointer"
             >
               <option value="all">همه پایه‌ها</option>
               <option value="هفتم">پایه هفتم</option>
@@ -558,14 +558,14 @@ export default function Students() {
           </div>
 
           {/* Class Group filter */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl">
-            <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-[10px] text-slate-500 font-semibold">گروه کلاسی:</span>
+          <div className="flex items-center gap-1.5 bg-white/3 border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-xl">
+            <GraduationCap className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
+            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">گروه کلاسی:</span>
             <select
               id="filter-class"
               value={selectedClassGroup}
               onChange={(e) => setSelectedClassGroup(e.target.value)}
-              className="bg-transparent text-xs text-slate-700 focus:outline-hidden font-bold cursor-pointer"
+              className="bg-transparent text-xs text-[var(--color-text-secondary)] focus:outline-hidden font-bold cursor-pointer"
             >
               <option value="all">همه کلاس‌ها</option>
               {classGroups.map(cg => (
@@ -575,14 +575,14 @@ export default function Students() {
           </div>
 
           {/* Status filter */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl">
-            <Activity className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-[10px] text-slate-500 font-semibold">وضعیت دانش‌آموز:</span>
+          <div className="flex items-center gap-1.5 bg-white/3 border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-xl">
+            <Activity className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
+            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">وضعیت دانش‌آموز:</span>
             <select
               id="filter-status"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-transparent text-xs text-slate-700 focus:outline-hidden font-bold cursor-pointer"
+              className="bg-transparent text-xs text-[var(--color-text-secondary)] focus:outline-hidden font-bold cursor-pointer"
             >
               <option value="all">همه وضعیت‌ها</option>
               <option value="active">فعال</option>
@@ -600,7 +600,7 @@ export default function Students() {
                 setSelectedClassGroup('all');
                 setSelectedStatus('all');
               }}
-              className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+              className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] rounded-lg text-[10px] font-bold transition-all cursor-pointer"
             >
               حذف فیلترها
             </button>
@@ -615,7 +615,7 @@ export default function Students() {
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
           <table className="w-full text-xs" id="students-desk-table">
-            <thead className="bg-slate-50/75 border-b border-slate-200 text-slate-550">
+            <thead className="bg-white/3/75 border-b border-[var(--color-glass-light-stroke)] text-slate-550">
               <tr>
                 <th className="p-4 font-bold text-right">نام و نام خانوادگی</th>
                 <th className="p-4 font-bold text-right">کد ملی (ماسک زنده)</th>
@@ -638,43 +638,43 @@ export default function Students() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="hover:bg-slate-50/40 transition-colors"
+                        className="hover:bg-white/3/40 transition-colors"
                         id={`stud-row-${student.id}`}
                       >
                         {/* Name */}
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full bg-white/4 text-[var(--color-text-secondary)] font-black text-xs flex items-center justify-center">
                               {student.name.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-bold text-slate-800 text-[12px]">{student.name}</p>
-                              <p className="text-[10px] text-slate-400 mt-0.5">شناسه: {student.id}</p>
+                              <p className="font-bold text-[var(--color-text-primary)] text-[12px]">{student.name}</p>
+                              <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">شناسه: {student.id}</p>
                             </div>
                           </div>
                         </td>
 
                         {/* Masked National ID: ۱۲۳****۸۹۰ */}
                         <td className="p-4">
-                          <span className="font-mono bg-slate-50 px-2 py-1 rounded-md border border-slate-100 select-all font-semibold text-slate-700 text-[11px] hover:text-indigo-600 transition-colors">
+                          <span className="font-mono bg-white/3 px-2 py-1 rounded-md border border-[var(--color-glass-light-stroke)] select-all font-semibold text-[var(--color-text-secondary)] text-[11px] hover:text-indigo-600 transition-colors">
                             {maskNationalIdPersian(student.nationalId)}
                           </span>
                         </td>
 
                         {/* Grade */}
-                        <td className="p-4 text-slate-700 font-medium">پایه {student.grade}</td>
+                        <td className="p-4 text-[var(--color-text-secondary)] font-medium">پایه {student.grade}</td>
 
                         {/* Class */}
-                        <td className="p-4 text-slate-700 font-bold">
+                        <td className="p-4 text-[var(--color-text-secondary)] font-bold">
                           {classGroup ? classGroup.name : 'انتساب نیافته'}
                         </td>
 
                         {/* Status */}
                         <td className="p-4 text-center">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            student.status === 'examining' ? 'bg-amber-50 text-amber-700 border border-amber-100 animate-pulse' :
-                            student.status === 'suspended' ? 'bg-rose-50 text-rose-700 border border-rose-100' :
-                            'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            student.status === 'examining' ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 animate-pulse' :
+                            student.status === 'suspended' ? 'bg-rose-50 text-[var(--color-danger)] border border-[var(--color-danger)]/10' :
+                            'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
                           }`}>
                             {student.status === 'examining' ? 'در حال آزمون' :
                              student.status === 'suspended' ? 'غیرفعال / مسدود' : 'فعال'}
@@ -682,21 +682,21 @@ export default function Students() {
                         </td>
 
                         {/* Channels */}
-                        <td className="p-4 text-slate-500">
+                        <td className="p-4 text-[var(--color-text-tertiary)]">
                           <div className="space-y-1 text-right">
                             {student.phoneNumber && (
                               <p className="text-[10px] font-mono flex items-center gap-1">
-                                <Smartphone className="w-3 h-3 text-slate-400" />
+                                <Smartphone className="w-3 h-3 text-[var(--color-text-tertiary)]" />
                                 <span>{toPersianDigits(student.phoneNumber)}</span>
                               </p>
                             )}
                             {student.email ? (
                               <p className="text-[10px] font-mono flex items-center gap-1">
-                                <Mail className="w-3 h-3 text-slate-400" />
+                                <Mail className="w-3 h-3 text-[var(--color-text-tertiary)]" />
                                 <span>{student.email}</span>
                               </p>
                             ) : !student.phoneNumber && (
-                              <p className="text-[10px] text-slate-400 italic">بدون اطلاعات تماس</p>
+                              <p className="text-[10px] text-[var(--color-text-tertiary)] italic">بدون اطلاعات تماس</p>
                             )}
                           </div>
                         </td>
@@ -709,7 +709,7 @@ export default function Students() {
                             <button
                               id={`logs-std-${student.id}`}
                               onClick={() => openStudentExamHistory(student)}
-                              className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all cursor-pointer"
+                              className="p-2 text-indigo-600 hover:bg-[var(--color-accent-soft)] rounded-xl transition-all cursor-pointer"
                               title="سوابق آزمون"
                             >
                               <Eye className="w-4 h-4" />
@@ -719,7 +719,7 @@ export default function Students() {
                             <button
                               id={`edit-std-${student.id}`}
                               onClick={() => openEditModal(student)}
-                              className="p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 rounded-xl transition-all cursor-pointer"
+                              className="p-2 text-[var(--color-text-tertiary)] hover:bg-white/4 hover:text-[var(--color-text-primary)] rounded-xl transition-all cursor-pointer"
                               title="ویرایش شناسنامه"
                             >
                               <Edit className="w-4 h-4" />
@@ -729,7 +729,7 @@ export default function Students() {
                             <button
                               id={`delete-std-${student.id}`}
                               onClick={() => handleDeleteStudent(student.id, student.name)}
-                              className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
+                              className="p-2 text-[var(--color-danger)] hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
                               title="حذف اطلاعات"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -743,8 +743,8 @@ export default function Students() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="p-12 text-center text-slate-400 select-none">
-                      <div className="w-12 h-12 rounded-full border border-dashed border-slate-300 mx-auto flex items-center justify-center text-slate-300 mb-3">
+                    <td colSpan={7} className="p-12 text-center text-[var(--color-text-tertiary)] select-none">
+                      <div className="w-12 h-12 rounded-full border border-dashed border-[var(--color-glass-light-stroke)] mx-auto flex items-center justify-center text-slate-300 mb-3">
                         <Users className="w-6 h-6" />
                       </div>
                       <span>هیچ دانش‌آموزی همسان با فیلترهای بالا یافت نگردید.</span>
@@ -768,63 +768,63 @@ export default function Students() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="bg-slate-50/70 border border-slate-200 p-4.5 rounded-2xl flex flex-col gap-3 text-right text-xs"
+                    className="bg-white/3/70 border border-[var(--color-glass-light-stroke)] p-4.5 rounded-2xl flex flex-col gap-3 text-right text-xs"
                     id={`stud-card-${student.id}`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-white/6 text-[var(--color-text-secondary)] font-bold flex items-center justify-center">
                           {student.name.charAt(0)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-slate-800 text-[12px]">{student.name}</h4>
-                          <span className="text-[9px] text-slate-400">شناسه: {student.id}</span>
+                          <h4 className="font-bold text-[var(--color-text-primary)] text-[12px]">{student.name}</h4>
+                          <span className="text-[9px] text-[var(--color-text-tertiary)]">شناسه: {student.id}</span>
                         </div>
                       </div>
 
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                        student.status === 'examining' ? 'bg-amber-50 text-amber-700 animate-pulse' :
-                        student.status === 'suspended' ? 'bg-rose-50 text-rose-700' :
-                        'bg-emerald-50 text-emerald-700'
+                        student.status === 'examining' ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] animate-pulse' :
+                        student.status === 'suspended' ? 'bg-rose-50 text-[var(--color-danger)]' :
+                        'bg-[var(--color-success-soft)] text-[var(--color-success)]'
                       }`}>
                         {student.status === 'examining' ? 'در حال آزمون' :
                          student.status === 'suspended' ? 'غیرفعال' : 'فعال'}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 border-t border-slate-200/60 pt-3 text-[11px] text-slate-600">
+                    <div className="grid grid-cols-2 gap-2 border-t border-[var(--color-glass-light-stroke)]/60 pt-3 text-[11px] text-[var(--color-text-secondary)]">
                       <div>
-                        <span className="text-slate-400 block pb-0.5">پایه تحصیلی</span>
+                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">پایه تحصیلی</span>
                         <span className="font-bold">{student.grade}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block pb-0.5">کلاس ثبت‌شده</span>
+                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">کلاس ثبت‌شده</span>
                         <span className="font-bold">{classGroup?.name || 'بدون انتساب'}</span>
                       </div>
                       <div className="col-span-2 pt-1">
-                        <span className="text-slate-400 block pb-0.5">کد ملی ورود به آزمون</span>
-                        <span className="font-mono bg-white px-2 py-0.5 rounded-md border border-slate-100">
+                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">کد ملی ورود به آزمون</span>
+                        <span className="font-mono bg-white px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
                           {maskNationalIdPersian(student.nationalId)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end gap-1 border-t border-slate-200/60 pt-3.5">
+                    <div className="flex items-center justify-end gap-1 border-t border-[var(--color-glass-light-stroke)]/60 pt-3.5">
                       <button
                         onClick={() => openStudentExamHistory(student)}
-                        className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-[10px]"
+                        className="px-3 py-1.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl font-bold text-[10px]"
                       >
                         سوابق آزمون
                       </button>
                       <button
                         onClick={() => openEditModal(student)}
-                        className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl font-bold text-[10px]"
+                        className="px-3 py-1.5 bg-white/4 text-[var(--color-text-secondary)] rounded-xl font-bold text-[10px]"
                       >
                         ویرایش
                       </button>
                       <button
                         onClick={() => handleDeleteStudent(student.id, student.name)}
-                        className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-xl font-bold text-[10px]"
+                        className="px-3 py-1.5 bg-rose-50 text-[var(--color-danger)] rounded-xl font-bold text-[10px]"
                       >
                         حذف
                       </button>
@@ -834,7 +834,7 @@ export default function Students() {
                 );
               })
             ) : (
-              <div className="py-12 text-center text-slate-400 font-medium bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <div className="py-12 text-center text-[var(--color-text-tertiary)] font-medium bg-white/3 rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)]">
                 هیچ موردی منطبق با فیلترها و مقادیر بالا یافت نشد.
               </div>
             )}
@@ -853,15 +853,15 @@ export default function Students() {
             id="add-edit-student-box"
           >
             {/* Modal Header */}
-            <div className="px-6 py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-6 py-5 bg-white/3 border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <button 
                 onClick={() => setShowAddEditModal(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer"
+                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] font-bold text-lg cursor-pointer"
               >
                 &times;
               </button>
-              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                <UserPlus className="w-5 h-5 text-indigo-500" />
+              <h3 className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
+                <UserPlus className="w-5 h-5 text-[var(--color-accent)]" />
                 <span>{modalMode === 'add' ? 'ایجاد پرونده تحصیلی دانش‌آموز نو' : 'ویرایش شناسنامه تحصیلی دانش‌آموز'}</span>
               </h3>
             </div>
@@ -871,20 +871,20 @@ export default function Students() {
               
               {/* Family name */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-600 block">نام و نام خانوادگی:</label>
+                <label className="font-semibold text-[var(--color-text-secondary)] block">نام و نام خانوادگی:</label>
                 <input 
                   type="text"
                   required
                   placeholder="مثال: بردیا مهدوی"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-slate-50/70 border border-slate-200 px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-indigo-400 text-[11px] text-slate-800 text-right"
+                  className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 text-[11px] text-[var(--color-text-primary)] text-right"
                 />
               </div>
 
               {/* National ID + Interactive Live Validation logic */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-600 block">کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):</label>
+                <label className="font-semibold text-[var(--color-text-secondary)] block">کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):</label>
                 <input 
                   type="text"
                   required
@@ -892,20 +892,20 @@ export default function Students() {
                   placeholder="مثال: 0012487654"
                   value={formNationalId}
                   onChange={(e) => setFormNationalId(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-slate-50/70 border border-slate-200 px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-indigo-400 text-[11px] font-mono tracking-widest text-slate-800 text-right"
+                  className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 text-[11px] font-mono tracking-widest text-[var(--color-text-primary)] text-right"
                 />
                 
                 {/* Live validation feedback display! */}
                 {formNationalId && (
                   <div className={`p-2.5 rounded-lg border flex items-start gap-1.5 transition-all text-[9.5px] leading-relaxed ${
                     validateIranianNationalId(formNationalId).isValid 
-                      ? 'bg-emerald-50 border-emerald-100/60 text-emerald-800' 
-                      : 'bg-rose-50 border-rose-100/60 text-rose-800'
+                      ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/10/60 text-[var(--color-success)]' 
+                      : 'bg-rose-50 border-[var(--color-danger)]/10/60 text-[var(--color-danger)]/80'
                   }`}>
                     {validateIranianNationalId(formNationalId).isValid ? (
                       <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                     ) : (
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)] shrink-0 mt-0.5" />
                     )}
                     <span>{validateIranianNationalId(formNationalId).message}</span>
                   </div>
@@ -915,11 +915,11 @@ export default function Students() {
               {/* Grade and Class Row */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-slate-600 block">پایه تحصیلی:</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)] block">پایه تحصیلی:</label>
                   <select
                     value={formGrade}
                     onChange={(e) => setFormGrade(e.target.value)}
-                    className="w-full bg-slate-50/70 border border-slate-200 px-2 py-2.5 rounded-xl focus:bg-white focus:border-indigo-400 font-bold"
+                    className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-2 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 font-bold"
                   >
                     <option value="هفتم">پایه هفتم</option>
                     <option value="هشتم">پایه هشتم</option>
@@ -928,11 +928,11 @@ export default function Students() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-slate-600 block">کلاس اختصاصی:</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)] block">کلاس اختصاصی:</label>
                   <select
                     value={formClassGroupId}
                     onChange={(e) => setFormClassGroupId(e.target.value)}
-                    className="w-full bg-slate-50/70 border border-slate-200 px-2 py-2.5 rounded-xl focus:bg-white focus:border-indigo-400 font-bold"
+                    className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-2 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 font-bold"
                   >
                     {classGroups.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
@@ -943,7 +943,7 @@ export default function Students() {
 
               {/* Status Selector */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-600 block">وضعیت دانش‌آموز:</label>
+                <label className="font-semibold text-[var(--color-text-secondary)] block">وضعیت دانش‌آموز:</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { val: 'active', label: 'فعال' },
@@ -956,8 +956,8 @@ export default function Students() {
                       onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
                       className={`py-2 text-[10px] rounded-xl border font-bold transition-all cursor-pointer ${
                         formStatus === s.val 
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' 
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                          ? 'bg-[var(--color-accent)] border-indigo-600 text-white shadow-sm' 
+                          : 'bg-white/3 border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:bg-white/4'
                       }`}
                     >
                       {s.label}
@@ -967,41 +967,41 @@ export default function Students() {
               </div>
 
               {/* Phone and Email Optional */}
-              <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4.5">
+              <div className="grid grid-cols-2 gap-4 border-t border-[var(--color-glass-light-stroke)] pt-4.5">
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-slate-600 block">همراه ولی (اختیاری):</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)] block">همراه ولی (اختیاری):</label>
                   <input 
                     type="text"
                     placeholder="مثال: 09123456789"
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full bg-slate-50/70 border border-slate-200 px-3.5 py-2.5 rounded-xl font-mono"
+                    className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl font-mono"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-slate-600 block">پست الکترونیک (ایمیل):</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)] block">پست الکترونیک (ایمیل):</label>
                   <input 
                     type="email"
                     placeholder="stud@school.ir"
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
-                    className="w-full bg-slate-50/70 border border-slate-200 px-3 py-2.5 rounded-xl font-mono text-left"
+                    className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-3 py-2.5 rounded-xl font-mono text-left"
                   />
                 </div>
               </div>
 
               {/* Error messages if form is incomplete */}
               {!formName && (
-                <p className="text-[10px] text-rose-500 text-center font-bold">برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.</p>
+                <p className="text-[10px] text-[var(--color-danger)] text-center font-bold">برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.</p>
               )}
 
               {/* Submit triggers */}
-              <div className="flex gap-2.5 pt-4.5 border-t border-slate-100 justify-end">
+              <div className="flex gap-2.5 pt-4.5 border-t border-[var(--color-glass-light-stroke)] justify-end">
                 <button 
                   type="button"
                   onClick={() => setShowAddEditModal(false)}
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold cursor-pointer"
+                  className="px-4 py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer"
                 >
                   انصراف
                 </button>
@@ -1009,7 +1009,7 @@ export default function Students() {
                   type="submit"
                   disabled={!formName}
                   className={`px-5 py-2.5 rounded-xl font-bold text-white shadow-xs transition-colors cursor-pointer ${
-                    formName ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-300 cursor-not-allowed'
+                    formName ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]' : 'bg-indigo-300 cursor-not-allowed'
                   }`}
                 >
                   {modalMode === 'add' ? 'ثبت و درج نهایی' : 'ذخیره دگرگونی‌ها'}
@@ -1023,7 +1023,7 @@ export default function Students() {
 
       {/* 4-Step Excel / CSV Import Wizard Modal! */}
       {showImportWizard && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="wizard-backdrop">
+        <div className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="wizard-backdrop">
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1031,7 +1031,7 @@ export default function Students() {
             id="wizard-container"
           >
             {/* Header with Close */}
-            <div className="px-6 py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-6 py-5 bg-white/3 border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <button
                 onClick={() => {
                   setShowImportWizard(false);
@@ -1039,18 +1039,18 @@ export default function Students() {
                   setUploadedFileName('');
                   setWizardRawData([]);
                 }}
-                className="px-2.5 py-1 bg-slate-100/60 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all font-bold rounded-xl cursor-pointer"
+                className="px-2.5 py-1 bg-white/4/60 hover:bg-white/6 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-bold rounded-xl cursor-pointer"
               >
                 بستن راهنما ×
               </button>
-              <h3 className="font-bold text-slate-800 text-[13px] flex items-center gap-1.5">
+              <h3 className="font-bold text-[var(--color-text-primary)] text-[13px] flex items-center gap-1.5">
                 <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
                 <span>دستیار هوشمند ورود ستونی دانش‌آموزان از اکسل / CSV</span>
               </h3>
             </div>
 
             {/* Step Wizard visual track bar! */}
-            <div className="bg-slate-50 border-b border-slate-200 px-6 py-3.5 flex items-center justify-around gap-2 select-none">
+            <div className="bg-white/3 border-b border-[var(--color-glass-light-stroke)] px-6 py-3.5 flex items-center justify-around gap-2 select-none">
               {[
                 { s: 1, label: 'مرحله ۱: انتخاب فایل' },
                 { s: 2, label: 'مرحله ۲: پیش‌نمایش اطلاعات' },
@@ -1060,15 +1060,15 @@ export default function Students() {
                 <div key={stepObj.s} className="flex items-center gap-2">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
                     wizardStep === stepObj.s 
-                      ? 'bg-indigo-600 text-white shadow-sm' 
+                      ? 'bg-[var(--color-accent)] text-white shadow-sm' 
                       : wizardStep > stepObj.s 
-                      ? 'bg-emerald-500 text-white' 
-                      : 'bg-slate-200 text-slate-400'
+                      ? 'bg-[var(--color-success)] text-white' 
+                      : 'bg-white/6 text-[var(--color-text-tertiary)]'
                   }`}>
                     {wizardStep > stepObj.s ? '✓' : toPersianDigits(stepObj.s)}
                   </div>
                   <span className={`text-[10px] font-bold hidden sm:inline ${
-                    wizardStep === stepObj.s ? 'text-indigo-600 font-extrabold' : 'text-slate-400'
+                    wizardStep === stepObj.s ? 'text-indigo-600 font-extrabold' : 'text-[var(--color-text-tertiary)]'
                   }`}>
                     {stepObj.label}
                   </span>
@@ -1082,15 +1082,15 @@ export default function Students() {
               {/* Step 1: File selection Drag & Drop */}
               {wizardStep === 1 && (
                 <div className="space-y-4">
-                  <div className="space-y-1 bg-slate-50/80 border border-slate-100 p-4.5 rounded-2xl leading-relaxed">
-                    <p className="font-bold text-slate-800 text-[11px]">ملاحظات قالب فایل بارگذاری شده:</p>
-                    <p className="text-slate-500">
-                      فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با <strong className="font-bold text-slate-700">name</strong> (نام و نام خانوادگی)، <strong className="font-bold text-slate-700">national_id</strong> (کدملی)، <strong className="font-bold text-slate-700 text-indigo-600">class</strong> (نام کلاس) و <strong className="font-bold text-slate-700">grade</strong> (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
+                  <div className="space-y-1 bg-white/3/80 border border-[var(--color-glass-light-stroke)] p-4.5 rounded-2xl leading-relaxed">
+                    <p className="font-bold text-[var(--color-text-primary)] text-[11px]">ملاحظات قالب فایل بارگذاری شده:</p>
+                    <p className="text-[var(--color-text-tertiary)]">
+                      فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با <strong className="font-bold text-[var(--color-text-secondary)]">name</strong> (نام و نام خانوادگی)، <strong className="font-bold text-[var(--color-text-secondary)]">national_id</strong> (کدملی)، <strong className="font-bold text-[var(--color-text-secondary)] text-indigo-600">class</strong> (نام کلاس) و <strong className="font-bold text-[var(--color-text-secondary)]">grade</strong> (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
                     </p>
-                    <p className="text-amber-700 font-bold text-[10.5px] mt-1 bg-amber-50 border border-amber-100 p-2 rounded-xl text-center">
+                    <p className="text-[var(--color-warning)] font-bold text-[10.5px] mt-1 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
                       در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
                     </p>
-                    <span className="text-[11px] block mt-1 bg-indigo-50/70 border border-indigo-100/40 text-indigo-800 p-2 rounded-xl text-center font-bold">
+                    <span className="text-[11px] block mt-1 bg-[var(--color-accent-soft)]/70 border border-[var(--color-accent-soft)]/40 text-indigo-800 p-2 rounded-xl text-center font-bold">
                       "فایل شما باید شامل ستون‌های name، national_id، class و grade باشد."
                     </span>
                   </div>
@@ -1102,16 +1102,16 @@ export default function Students() {
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center gap-3 transition-colors ${
-                      dragActive ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300 bg-slate-50 hover:bg-slate-100/50'
+                      dragActive ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30' : 'border-[var(--color-glass-light-stroke)] bg-white/3 hover:bg-white/4/50'
                     }`}
                   >
-                    <Upload className="w-12 h-12 text-slate-400 animate-pulse" />
+                    <Upload className="w-12 h-12 text-[var(--color-text-tertiary)] animate-pulse" />
                     <div className="text-center space-y-1.5 select-none">
-                      <p className="font-bold text-slate-700 text-[11.5px]">درگ و دراپ مستقیم فایل اکسل (.xlsx) یا فایل کامادار (CSV)</p>
-                      <p className="text-[10px] text-slate-400">یا برای مرور دستی فایل در حافظه کامپیوتر کلیک کنید</p>
+                      <p className="font-bold text-[var(--color-text-secondary)] text-[11.5px]">درگ و دراپ مستقیم فایل اکسل (.xlsx) یا فایل کامادار (CSV)</p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)]">یا برای مرور دستی فایل در حافظه کامپیوتر کلیک کنید</p>
                     </div>
 
-                    <label className="mt-2.5 px-4.5 py-2 hover:brightness-95 active:scale-98 bg-indigo-600 text-white text-[10.5px] font-bold rounded-xl cursor-pointer transition-all shadow-xs">
+                    <label className="mt-2.5 px-4.5 py-2 hover:brightness-95 active:scale-98 bg-[var(--color-accent)] text-white text-[10.5px] font-bold rounded-xl cursor-pointer transition-all shadow-xs">
                       جستجو و انتخاب فایل
                       <input 
                         type="file" 
@@ -1123,20 +1123,20 @@ export default function Students() {
                   </div>
 
                   {/* Sandboxed Demo Presets triggers so testers don't even need to provide a file! */}
-                  <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-100 space-y-3">
-                    <p className="font-bold text-slate-700 block text-[10.5px]">بررسی ساده و سریع دمو بدون آپلود فایل واقعی:</p>
+                  <div className="bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <p className="font-bold text-[var(--color-text-secondary)] block text-[10.5px]">بررسی ساده و سریع دمو بدون آپلود فایل واقعی:</p>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={loadValidSampleTemplate}
-                        className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-150 text-emerald-800 rounded-xl font-bold cursor-pointer"
+                        className="flex-1 py-2 bg-[var(--color-success-soft)] hover:bg-[var(--color-success-soft)]/80 border border-[var(--color-success)]/15 text-[var(--color-success)] rounded-xl font-bold cursor-pointer"
                       >
                         بارگذاری رکوردهای نمونه فایل معتبر دمو
                       </button>
                       <button
                         type="button"
                         onClick={loadErrorSampleTemplate}
-                        className="flex-1 py-2 bg-rose-50 hover:bg-rose-100/80 border border-rose-100 text-rose-800 rounded-xl font-bold cursor-pointer"
+                        className="flex-1 py-2 bg-rose-50 hover:bg-rose-100/80 border border-[var(--color-danger)]/10 text-[var(--color-danger)]/80 rounded-xl font-bold cursor-pointer"
                       >
                         بارگذاری رکوردهای دارای خطا و کد تکراری دمو
                       </button>
@@ -1149,16 +1149,16 @@ export default function Students() {
               {/* Step 2: Preview of Raw Rows */}
               {wizardStep === 2 && (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                    <span className="text-slate-500 font-semibold">فایل دریافتی: <strong className="text-slate-900">{uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}</strong></span>
-                    <span className="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">{toPersianDigits(wizardRawData.length)} ردیف یافت شد</span>
+                  <div className="flex justify-between items-center bg-white/3 p-3 rounded-xl">
+                    <span className="text-[var(--color-text-tertiary)] font-semibold">فایل دریافتی: <strong className="text-slate-900">{uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}</strong></span>
+                    <span className="font-bold text-indigo-600 bg-[var(--color-accent-soft)] px-2.5 py-1 rounded-full">{toPersianDigits(wizardRawData.length)} ردیف یافت شد</span>
                   </div>
 
-                  <p className="text-slate-400 text-[10px]">لیست سطور خام خوانده‌شده از فایل قبل از اعتبارسنجی:</p>
+                  <p className="text-[var(--color-text-tertiary)] text-[10px]">لیست سطور خام خوانده‌شده از فایل قبل از اعتبارسنجی:</p>
 
-                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm max-h-60 overflow-y-auto">
+                  <div className="border border-[var(--color-glass-light-stroke)] rounded-xl overflow-hidden shadow-sm max-h-60 overflow-y-auto">
                     <table className="w-full text-right text-[11px]">
-                      <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 sticky top-0">
+                      <thead className="bg-white/4 border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] sticky top-0">
                         <tr>
                           <th className="p-3 font-bold text-center w-12">ردیف</th>
                           <th className="p-3 font-bold">name (نام و نام خانوادگی)</th>
@@ -1169,28 +1169,28 @@ export default function Students() {
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
                         {wizardRawData.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/40">
-                            <td className="p-3 text-center text-slate-400 font-bold">{toPersianDigits(row.row)}</td>
-                            <td className="p-3 font-bold text-slate-800">{row.name || <span className="text-rose-500 italic">خالی</span>}</td>
-                            <td className="p-3 font-mono text-slate-600">{toPersianDigits(row.national_id) || <span className="text-rose-500 italic">خالی</span>}</td>
-                            <td className="p-3 text-slate-700">{row.grade || <span className="text-rose-500 italic">خالی</span>}</td>
-                            <td className="p-3 text-slate-700 font-semibold">{row.class || <span className="text-rose-500 italic">خالی</span>}</td>
+                          <tr key={idx} className="hover:bg-white/3/40">
+                            <td className="p-3 text-center text-[var(--color-text-tertiary)] font-bold">{toPersianDigits(row.row)}</td>
+                            <td className="p-3 font-bold text-[var(--color-text-primary)]">{row.name || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
+                            <td className="p-3 font-mono text-[var(--color-text-secondary)]">{toPersianDigits(row.national_id) || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
+                            <td className="p-3 text-[var(--color-text-secondary)]">{row.grade || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
+                            <td className="p-3 text-[var(--color-text-secondary)] font-semibold">{row.class || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                  <div className="flex justify-end gap-2 pt-2 border-t border-[var(--color-glass-light-stroke)]">
                     <button
                       onClick={() => setWizardStep(1)}
-                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold cursor-pointer"
+                      className="px-4 py-2 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
                     >
                       بازگشت و انتخاب فایل دیگر
                     </button>
                     <button
                       onClick={processWizardValidations}
-                      className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center gap-1 cursor-pointer"
+                      className="px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl flex items-center gap-1 cursor-pointer"
                     >
                       <span>شروع پردازش و صحت‌سنجی فیلدها</span>
                       <ArrowLeft className="w-3.5 h-3.5" />
@@ -1202,36 +1202,36 @@ export default function Students() {
               {/* Step 3: Error logs & categorized results */}
               {wizardStep === 3 && (
                 <div className="space-y-4">
-                  <h4 className="font-bold text-slate-800">گزارش نهایی آنالیز اعتبارسنجی هوشمند:</h4>
+                  <h4 className="font-bold text-[var(--color-text-primary)]">گزارش نهایی آنالیز اعتبارسنجی هوشمند:</h4>
                   
                   {/* Category cards summary Grid */}
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-2xl text-center">
-                      <span className="text-emerald-700 font-bold text-lg block">{toPersianDigits(wizardValidationResults.valid.length)}</span>
-                      <span className="text-[10px] text-emerald-800">عده ردیف‌های صحیح</span>
+                    <div className="p-3.5 bg-[var(--color-success-soft)] border border-[var(--color-success)]/10 rounded-2xl text-center">
+                      <span className="text-[var(--color-success)] font-bold text-lg block">{toPersianDigits(wizardValidationResults.valid.length)}</span>
+                      <span className="text-[10px] text-[var(--color-success)]">عده ردیف‌های صحیح</span>
                     </div>
 
-                    <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-2xl text-center">
-                      <span className="text-rose-700 font-bold text-lg block">{toPersianDigits(wizardValidationResults.errors.length)}</span>
-                      <span className="text-[10px] text-rose-800">عده ردیف‌های دارای خطا</span>
+                    <div className="p-3.5 bg-rose-50 border border-[var(--color-danger)]/10 rounded-2xl text-center">
+                      <span className="text-[var(--color-danger)] font-bold text-lg block">{toPersianDigits(wizardValidationResults.errors.length)}</span>
+                      <span className="text-[10px] text-[var(--color-danger)]/80">عده ردیف‌های دارای خطا</span>
                     </div>
 
-                    <div className="p-3.5 bg-amber-50 border border-amber-100 rounded-2xl text-center">
-                      <span className="text-amber-700 font-bold text-lg block">{toPersianDigits(wizardValidationResults.duplicates.length)}</span>
-                      <span className="text-[10px] text-amber-800">عده ردیف‌های تکراری</span>
+                    <div className="p-3.5 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 rounded-2xl text-center">
+                      <span className="text-[var(--color-warning)] font-bold text-lg block">{toPersianDigits(wizardValidationResults.duplicates.length)}</span>
+                      <span className="text-[10px] text-[var(--color-warning)]/80">عده ردیف‌های تکراری</span>
                     </div>
                   </div>
 
                   {/* Segment: Error Rows warnings if any exists */}
                   {wizardValidationResults.errors.length > 0 && (
                     <div className="space-y-2 text-right">
-                      <p className="font-bold text-rose-800 flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                      <p className="font-bold text-[var(--color-danger)]/80 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)]" />
                         <span>ردیف‌های نیازمند تصحیح (ردیف‌های خطا):</span>
                       </p>
-                      <div className="bg-rose-50/50 p-2.5 rounded-xl border border-rose-100/60 text-[10px] text-rose-800 space-y-1 max-h-36 overflow-y-auto">
+                      <div className="bg-rose-50/50 p-2.5 rounded-xl border border-[var(--color-danger)]/10/60 text-[10px] text-[var(--color-danger)]/80 space-y-1 max-h-36 overflow-y-auto">
                         {wizardValidationResults.errors.map((e, idx) => (
-                          <div key={idx} className="flex justify-between border-b border-rose-100/40 pb-1.5" id={`err-wizard-${idx}`}>
+                          <div key={idx} className="flex justify-between border-b border-[var(--color-danger)]/10/40 pb-1.5" id={`err-wizard-${idx}`}>
                             <span>ردیف {toPersianDigits(e.row)} - دانش‌آموز {e.student.name || '(نامشخص)'}</span>
                             <span className="font-bold">{e.reason}</span>
                           </div>
@@ -1243,13 +1243,13 @@ export default function Students() {
                   {/* Segment: Duplicate Warnings */}
                   {wizardValidationResults.duplicates.length > 0 && (
                     <div className="space-y-2 text-right">
-                      <p className="font-bold text-amber-800 flex items-center gap-1">
-                        <Info className="w-3.5 h-3.5 text-amber-500" />
+                      <p className="font-bold text-[var(--color-warning)]/80 flex items-center gap-1">
+                        <Info className="w-3.5 h-3.5 text-[var(--color-warning-soft)]/500" />
                         <span>ردیف‌های دارای شماره ملی تکراری در پایگاه داده:</span>
                       </p>
-                      <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/60 text-[10px] text-amber-800 space-y-1 max-h-36 overflow-y-auto">
+                      <div className="bg-[var(--color-warning-soft)]/50 p-2.5 rounded-xl border border-[var(--color-warning)]/10/60 text-[10px] text-[var(--color-warning)]/80 space-y-1 max-h-36 overflow-y-auto">
                         {wizardValidationResults.duplicates.map((d, idx) => (
-                          <div key={idx} className="flex justify-between border-b border-amber-100/40 pb-1.5" id={`dupe-wizard-${idx}`}>
+                          <div key={idx} className="flex justify-between border-b border-[var(--color-warning)]/10/40 pb-1.5" id={`dupe-wizard-${idx}`}>
                             <span>ردیف {toPersianDigits(d.row)} - {d.student.name} ({toPersianDigits(d.student.national_id)})</span>
                             <span className="font-bold">{d.reason}</span>
                           </div>
@@ -1261,13 +1261,13 @@ export default function Students() {
                   {/* Segment: Correct Rows preview */}
                   {wizardValidationResults.valid.length > 0 ? (
                     <div className="space-y-2 text-right">
-                      <p className="font-bold text-emerald-800 flex items-center gap-1">
+                      <p className="font-bold text-[var(--color-success)] flex items-center gap-1">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                         <span>پیش‌نمایش ارقام سالم و آماده درج نهایی:</span>
                       </p>
-                      <div className="border border-emerald-100 bg-white rounded-xl max-h-40 overflow-y-auto text-[10px]">
+                      <div className="border border-[var(--color-success)]/10 bg-white rounded-xl max-h-40 overflow-y-auto text-[10px]">
                         <table className="w-full text-right">
-                          <thead className="bg-emerald-50 text-emerald-800 border-b border-emerald-100 sticky top-0">
+                          <thead className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-b border-[var(--color-success)]/10 sticky top-0">
                             <tr>
                               <th className="p-2.5">نام و فامیل</th>
                               <th className="p-2.5">کد ملی</th>
@@ -1276,10 +1276,10 @@ export default function Students() {
                           </thead>
                           <tbody>
                             {wizardValidationResults.valid.map((r, idx) => (
-                              <tr key={idx} className="border-b border-slate-50 hover:bg-emerald-50/15">
-                                <td className="p-2.5 font-bold text-slate-800">{r.name}</td>
+                              <tr key={idx} className="border-b border-slate-50 hover:bg-[var(--color-success-soft)]/15">
+                                <td className="p-2.5 font-bold text-[var(--color-text-primary)]">{r.name}</td>
                                 <td className="p-2.5 font-mono text-slate-655">{toPersianDigits(r.national_id)}</td>
-                                <td className="p-2.5 text-slate-600">{r.class} (پایه {r.grade})</td>
+                                <td className="p-2.5 text-[var(--color-text-secondary)]">{r.class} (پایه {r.grade})</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1287,23 +1287,23 @@ export default function Students() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-6 bg-rose-50 border border-rose-100 rounded-2xl text-center text-rose-800">
+                    <div className="p-6 bg-rose-50 border border-[var(--color-danger)]/10 rounded-2xl text-center text-[var(--color-danger)]/80">
                       هیچ ردیف معتبری جهت درج در دیتابیسی فعلی یافت نشد. لطفاً قالب فایل زیستی خود را بازبینی و مجدداً بارگذاری کنید.
                     </div>
                   )}
 
                   {/* Wizard Step Action triggers */}
-                  <div className="flex justify-between gap-2.5 pt-3.5 border-t border-slate-200">
+                  <div className="flex justify-between gap-2.5 pt-3.5 border-t border-[var(--color-glass-light-stroke)]">
                     <button
                       onClick={() => setWizardStep(2)}
-                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold cursor-pointer"
+                      className="px-4 py-2 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
                     >
                       بازگشت به پیش‌نمایش سطور
                     </button>
                     {wizardValidationResults.valid.length > 0 ? (
                       <button
                         onClick={handleWizardSubmitDone}
-                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm hover:scale-[1.01] transition-transform cursor-pointer"
+                        className="px-5 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm hover:scale-[1.01] transition-transform cursor-pointer"
                       >
                         <Check className="w-4 h-4" />
                         <span>انتساب سوابق و واردکردن نهایی {toPersianDigits(wizardValidationResults.valid.length)} دانش‌آموز</span>
@@ -1311,7 +1311,7 @@ export default function Students() {
                     ) : (
                       <button
                         onClick={() => setWizardStep(1)}
-                        className="px-5 py-2.5 bg-rose-600 text-white font-bold rounded-xl cursor-pointer"
+                        className="px-5 py-2.5 bg-[var(--color-danger)] text-white font-bold rounded-xl cursor-pointer"
                       >
                         بارگذاری فایلِ اصلاح شده نو
                       </button>
@@ -1324,16 +1324,16 @@ export default function Students() {
               {/* Step 4: Finished with stunning celebrate layout */}
               {wizardStep === 4 && (
                 <div className="py-12 space-y-4 text-center">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto text-3xl animate-bounce">
+                  <div className="w-16 h-16 rounded-full bg-[var(--color-success-soft)] text-emerald-600 border border-[var(--color-success)]/20 flex items-center justify-center mx-auto text-3xl animate-bounce">
                     ✓
                   </div>
                   <div className="space-y-1.5">
-                    <h4 className="text-md font-bold text-slate-800">عملیات واردکردن دانش‌آموزان با موفقیت کامل انجام پذیرفت!</h4>
-                    <p className="text-slate-500 max-w-sm mx-auto leading-relaxed text-[11px]">
+                    <h4 className="text-md font-bold text-[var(--color-text-primary)]">عملیات واردکردن دانش‌آموزان با موفقیت کامل انجام پذیرفت!</h4>
+                    <p className="text-[var(--color-text-tertiary)] max-w-sm mx-auto leading-relaxed text-[11px]">
                       اطلاعات شناسنامه‌ای گله‌ای با کدهای ملی ماسک شده به خوبی به فهرست فیزیکی دیتابیس کلاس‌ها ملحق گردید.
                     </p>
                   </div>
-                  <p className="text-[10px] text-slate-400 animate-pulse">کادر جادویی تا چند لحظه دیگر به صورت خودکار بسته خواهد شد...</p>
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] animate-pulse">کادر جادویی تا چند لحظه دیگر به صورت خودکار بسته خواهد شد...</p>
                 </div>
               )}
 
@@ -1344,7 +1344,7 @@ export default function Students() {
 
       {/* Submodal: Detailed Student Exam Participation logs */}
       {showExamLogsModal && activeLogStudent && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="exam-logs-modal-backdrop">
+        <div className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="exam-logs-modal-backdrop">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1352,10 +1352,10 @@ export default function Students() {
             id="exam-logs-box"
           >
             {/* Header */}
-            <div className="px-6 py-5 bg-indigo-50/70 border-b border-indigo-100 flex items-center justify-between">
+            <div className="px-6 py-5 bg-[var(--color-accent-soft)]/70 border-b border-[var(--color-accent-soft)] flex items-center justify-between">
               <button 
                 onClick={() => setShowExamLogsModal(false)}
-                className="text-slate-500 hover:text-slate-800 font-extrabold text-xs bg-white px-2.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-xs bg-white px-2.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
               >
                 بستن سوابق
               </button>
@@ -1368,14 +1368,14 @@ export default function Students() {
             {/* Logs Body info */}
             <div className="p-6 space-y-5">
               
-              <div className="flex justify-between items-center bg-slate-50 p-4.5 rounded-2xl border border-slate-100">
+              <div className="flex justify-between items-center bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
                 <div>
-                  <p className="font-bold text-slate-800 text-[11.5px]">{activeLogStudent.name}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}</p>
+                  <p className="font-bold text-[var(--color-text-primary)] text-[11.5px]">{activeLogStudent.name}</p>
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}</p>
                 </div>
                 <div className="text-left font-mono text-[10.5px]">
-                  <p className="text-slate-500">کد ملی ورود:</p>
-                  <p className="font-bold text-slate-700">{toPersianDigits(activeLogStudent.nationalId)}</p>
+                  <p className="text-[var(--color-text-tertiary)]">کد ملی ورود:</p>
+                  <p className="font-bold text-[var(--color-text-secondary)]">{toPersianDigits(activeLogStudent.nationalId)}</p>
                 </div>
               </div>
 
@@ -1389,21 +1389,21 @@ export default function Students() {
                       return (
                         <div 
                           key={sub.id || index} 
-                          className="p-3.5 bg-slate-50/70 border border-slate-100 rounded-2xl flex justify-between items-center hover:bg-indigo-50/10 transition-colors"
+                          className="p-3.5 bg-white/3/70 border border-[var(--color-glass-light-stroke)] rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
                         >
                           <div>
-                            <h5 className="font-bold text-slate-700 text-[11px]">{examItem?.title || sub.examCode}</h5>
-                            <span className="text-[9.5px] text-slate-400 mt-1 block">کد یکتای برگ پاسخ: {sub.id}</span>
+                            <h5 className="font-bold text-[var(--color-text-secondary)] text-[11px]">{examItem?.title || sub.examCode}</h5>
+                            <span className="text-[9.5px] text-[var(--color-text-tertiary)] mt-1 block">کد یکتای برگ پاسخ: {sub.id}</span>
                           </div>
 
                           <div className="text-left">
                             <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold block mb-1 text-center ${
-                              sub.status === 'graded' ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' :
-                              'bg-amber-50 text-amber-800 border border-amber-100 animate-pulse'
+                              sub.status === 'graded' ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10' :
+                              'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10 animate-pulse'
                             }`}>
                               {sub.status === 'graded' ? 'تصحیح نهایی شده' : 'در حال سنجش یا نیازمند تصحیح'}
                             </span>
-                            <span className="text-[11px] font-bold text-slate-800">
+                            <span className="text-[11px] font-bold text-[var(--color-text-primary)]">
                               نمره: <strong className="text-xs font-black text-indigo-600">{toPersianDigits(sub.score)}</strong> از {toPersianDigits(sub.maxScore)}
                             </span>
                           </div>
@@ -1412,9 +1412,9 @@ export default function Students() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-8 text-center bg-slate-50/45 rounded-2xl border border-dashed border-slate-200 select-none">
-                    <Info className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                    <p className="text-[10px] text-slate-400">هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت نگردیده است.</p>
+                  <div className="p-8 text-center bg-white/3/45 rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)] select-none">
+                    <Info className="w-8 h-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
+                    <p className="text-[10px] text-[var(--color-text-tertiary)]">هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت نگردیده است.</p>
                   </div>
                 )}
               </div>

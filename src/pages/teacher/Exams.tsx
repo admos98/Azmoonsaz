@@ -105,12 +105,12 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
 
   const getStatusBadgeStyles = (status: Exam['status']) => {
     const styles = {
-      draft: 'bg-slate-100 text-slate-600 border-slate-200',
+      draft: 'bg-white/4 text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]',
       scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
       active: 'bg-orange-500/10 text-orange-600 border-orange-500/20 animate-pulse',
-      completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      completed: 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/20',
     };
-    return styles[status] || 'bg-slate-100 text-slate-600';
+    return styles[status] || 'bg-white/4 text-[var(--color-text-secondary)]';
   };
 
   const getClassNamesForExam = (classGroupIds: string[]) => {
@@ -179,16 +179,16 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       {/* Upper Panel Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-1 p-6 rounded-2xl">
         <div>
-          <h2 className="text-md font-bold text-slate-800 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-indigo-500" />
+          <h2 className="text-md font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+            <FileText className="w-5 h-5 text-[var(--color-accent)]" />
             <span>مدیریت آزمون‌های دوره‌ای و هماهنگ کشوری</span>
           </h2>
-          <p className="text-[11px] text-slate-400 mt-1">امکان تعریف، زمان‌بندی، فعال‌سازی با یک کلیک و ارجاع به کلاس‌ها و ثبت نمره‌برگ نهایی</p>
+          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-1">امکان تعریف، زمان‌بندی، فعال‌سازی با یک کلیک و ارجاع به کلاس‌ها و ثبت نمره‌برگ نهایی</p>
         </div>
         <button
           id="btn-create-exam-trigger"
           onClick={() => onNavigate('exams/new')}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+          className="px-4 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>طراحی آزمون نو</span>
@@ -196,7 +196,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       </div>
 
       {/* Tabs list for Status categories */}
-      <div className="flex items-center space-x-2 space-x-reverse border-b border-slate-200/80 pb-1" id="exam-status-tabs">
+      <div className="flex items-center space-x-2 space-x-reverse border-b border-[var(--color-glass-light-stroke)] pb-1" id="exam-status-tabs">
         {[
           { id: 'all', label: 'همه آزمون‌ها' },
           { id: 'active', label: 'در حال برگزاری (زنده)' },
@@ -211,14 +211,14 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
             className={`px-3.5 py-2 text-xs font-bold transition-all relative cursor-pointer ${
               activeTab === tab.id
                 ? 'text-indigo-600'
-                : 'text-slate-500 hover:text-slate-800'
+                : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
             }`}
           >
             <span>{tab.label}</span>
             {activeTab === tab.id && (
               <motion.div
                 layoutId="activeExamTabIndicator"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-accent)] rounded-full"
               />
             )}
           </button>
@@ -251,23 +251,23 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${getStatusBadgeStyles(ex.status)}`}>
                       {getStatusLabelInPersian(ex.status)}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono font-bold select-all bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono font-bold select-all bg-white/3 px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
                       کد ورود: {ex.examCode}
                     </span>
                   </div>
 
-                  <h3 className="text-xs font-bold text-slate-800 leading-snug line-clamp-1">{ex.title}</h3>
-                  <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 h-[34px]">{ex.description || 'توضیحاتی برای این آزمون ثبت نگردیده است.'}</p>
+                  <h3 className="text-xs font-bold text-[var(--color-text-primary)] leading-snug line-clamp-1">{ex.title}</h3>
+                  <p className="text-[11px] text-[var(--color-text-tertiary)] leading-relaxed line-clamp-2 h-[34px]">{ex.description || 'توضیحاتی برای این آزمون ثبت نگردیده است.'}</p>
                 </div>
 
                 {/* Sub Metadata parameters */}
-                <div className="py-2 border-y border-slate-100 grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                <div className="py-2 border-y border-[var(--color-glass-light-stroke)] grid grid-cols-2 gap-2 text-[10px] text-[var(--color-text-tertiary)]">
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <Calendar className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
                     <span>پایه {ex.grade} (در کلاس: {getClassNamesForExam(ex.classGroupIds)})</span>
                   </span>
                   <span className="flex items-center gap-1 justify-end">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <Clock className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
                     <span>مدت زمان: <b>{ex.duration} دقیقه</b></span>
                   </span>
                 </div>
@@ -279,7 +279,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-pre-${ex.id}`}
                       onClick={() => navigateToSubView('preview', ex.id)}
-                      className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-colors border border-slate-200 cursor-pointer"
+                      className="p-2 bg-white/3 hover:bg-white/4 text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-glass-light-stroke)] cursor-pointer"
                       title="پیش‌نمایش آزمون"
                     >
                       <Eye className="w-4 h-4" />
@@ -289,7 +289,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-set-${ex.id}`}
                       onClick={() => navigateToSubView('settings', ex.id)}
-                      className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-colors border border-slate-200 cursor-pointer"
+                      className="p-2 bg-white/3 hover:bg-white/4 text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-glass-light-stroke)] cursor-pointer"
                       title="تنظیمات فنی آزمون"
                     >
                       <SettingsIcon className="w-4 h-4" />
@@ -299,7 +299,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-res-${ex.id}`}
                       onClick={() => navigateToSubView('results', ex.id)}
-                      className="p-2 bg-slate-50 hover:bg-slate-100 text-indigo-600 rounded-xl transition-colors border border-indigo-100 hover:bg-indigo-50 cursor-pointer"
+                      className="p-2 bg-white/3 hover:bg-white/4 text-indigo-600 rounded-xl transition-colors border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] cursor-pointer"
                       title="مشاهده کارنامه‌ها و نتایج"
                     >
                       <CheckSquare className="w-4 h-4" />
@@ -312,7 +312,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                       <button
                         id={`ex-act-${ex.id}`}
                         onClick={() => handleStatusChange(ex.id, 'active')}
-                        className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-105 text-indigo-700 font-bold text-[10px] rounded-lg border border-indigo-150 flex items-center gap-1 cursor-pointer animate-pulse"
+                        className="px-2.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-indigo-105 text-[var(--color-accent)] font-bold text-[10px] rounded-lg border border-indigo-150 flex items-center gap-1 cursor-pointer animate-pulse"
                       >
                         <Play className="w-3 h-3" />
                         <span>فعال‌سازی آزمون</span>
@@ -322,13 +322,13 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                       <button
                         id={`ex-comp-${ex.id}`}
                         onClick={() => handleStatusChange(ex.id, 'completed')}
-                        className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] rounded-lg border border-rose-100 flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] font-bold text-[10px] rounded-lg border border-[var(--color-danger)]/10 flex items-center gap-1 cursor-pointer"
                       >
                         <span>اتمام برگزاری آزمون</span>
                       </button>
                     )}
                     {ex.status === 'completed' && (
-                      <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2.5 py-1 rounded-md">
+                      <span className="text-[10px] text-emerald-600 font-semibold bg-[var(--color-success-soft)] px-2.5 py-1 rounded-md">
                         ثبت نهایی شده
                       </span>
                     )}
@@ -337,7 +337,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
               </motion.div>
             ))
           ) : (
-            <div className="col-span-full py-16 text-center glass-1 rounded-2xl text-slate-400">
+            <div className="col-span-full py-16 text-center glass-1 rounded-2xl text-[var(--color-text-tertiary)]">
               هیچ آزمونی با ویژگی‌های بالا یافت نشد. می‌توانید با «طراحی آزمون نو» اولین سنجش خود را راه‌اندازی کنید.
             </div>
           )}

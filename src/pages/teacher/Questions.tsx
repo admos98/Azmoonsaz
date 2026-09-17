@@ -200,9 +200,9 @@ export default function Questions() {
   };
 
   const getDifficultyBadgeColor = (diff: string | undefined): string => {
-    if (diff === 'easy') return 'bg-emerald-50 text-emerald-700 border-emerald-150';
-    if (diff === 'hard') return 'bg-rose-50 text-rose-700 border-rose-100';
-    return 'bg-amber-50 text-amber-700 border-amber-150';
+    if (diff === 'easy') return 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15';
+    if (diff === 'hard') return 'bg-rose-50 text-[var(--color-danger)] border-[var(--color-danger)]/10';
+    return 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-amber-150';
   };
 
   // Image Upload handler (Simulation)
@@ -488,22 +488,22 @@ export default function Questions() {
       {toastElement}
 
       {/* Page Title Board */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs" id="questions-title-plate">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs" id="questions-title-plate">
         <div className="space-y-1">
-          <h2 className="text-md font-bold text-slate-800 flex items-center gap-2">
+          <h2 className="text-md font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <HelpCircle className="w-5 h-5 text-indigo-600" />
             <span>مدیریت بانک سوالات نهایی و تستی</span>
           </h2>
-          <p className="text-[11px] text-slate-400">بانک تخصصی با پشتیبانی از ۱۱ نوع قالب تستی، تشریحی، وصل‌کردنی، مرتب‌سازی، درک‌مطلب و کلوز تست با بارگذاری متنی و تصویری</p>
+          <p className="text-[11px] text-[var(--color-text-tertiary)]">بانک تخصصی با پشتیبانی از ۱۱ نوع قالب تستی، تشریحی، وصل‌کردنی، مرتب‌سازی، درک‌مطلب و کلوز تست با بارگذاری متنی و تصویری</p>
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
           {/* Card / Table Toggle */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-1 flex items-center gap-1 shrink-0">
+          <div className="bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-xl p-1 flex items-center gap-1 shrink-0">
             <button
               onClick={() => setViewMode('card')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'card' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'
+                viewMode === 'card' ? 'bg-white text-indigo-600 shadow-xs' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
               }`}
               title="نمایش کارتی بخر"
             >
@@ -512,7 +512,7 @@ export default function Questions() {
             <button
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'table' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'
+                viewMode === 'table' ? 'bg-white text-indigo-600 shadow-xs' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
               }`}
               title="نمایش جدولی منظم"
             >
@@ -524,7 +524,7 @@ export default function Questions() {
           <button
             id="btn-add-question-trigger"
             onClick={openCreateDrawer}
-            className="flex-1 md:flex-none px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.01] active:scale-[0.99] text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 md:flex-none px-4.5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] hover:scale-[1.01] active:scale-[0.99] text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>افزودن سوال جدید</span>
@@ -533,36 +533,36 @@ export default function Questions() {
       </div>
 
       {/* COMPREHENSIVE MULTI-FILTER PANEL */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4" id="filters-container">
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5 mb-2">
-          <Sliders className="w-4 h-4 text-indigo-500" />
-          <h4 className="text-xs font-bold text-slate-700">جستجوی موضوعی و پالایش هوشمند سوالات</h4>
+      <div className="bg-white p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm space-y-4" id="filters-container">
+        <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-2.5 mb-2">
+          <Sliders className="w-4 h-4 text-[var(--color-accent)]" />
+          <h4 className="text-xs font-bold text-[var(--color-text-secondary)]">جستجوی موضوعی و پالایش هوشمند سوالات</h4>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
 
           {/* Search text */}
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-bold block">جستجو در متن سوال یا برچسب‌ها:</label>
+            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">جستجو در متن سوال یا برچسب‌ها:</label>
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
               <input
                 type="text"
                 placeholder="کلمه کلیدی، عنوان، هشتگ یا درس..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 pr-9 pl-3.5 py-2 rounded-xl focus:outline-hidden focus:border-indigo-400 focus:bg-white transition-all text-right"
+                className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 pr-9 pl-3.5 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-white transition-all text-right"
               />
             </div>
           </div>
 
           {/* Type Filter */}
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-bold block">نوع قالب‌بندی سوال:</label>
+            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">نوع قالب‌بندی سوال:</label>
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه قالب‌ها (۱۱ نوع)</option>
               <option value="single_choice">چهارگزینه‌ای تک‌پاسخ</option>
@@ -581,11 +581,11 @@ export default function Questions() {
 
           {/* Grade Filter */}
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-bold block">پایه تحصیلی:</label>
+            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">پایه تحصیلی:</label>
             <select
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه پایه‌ها</option>
               <optgroup label="دبستان">
@@ -611,11 +611,11 @@ export default function Questions() {
 
           {/* Subject Filter */}
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-bold block">درس یا موضوع:</label>
+            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">درس یا موضوع:</label>
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه درس‌ها</option>
               {uniqueSubjects.map(sub => (
@@ -626,11 +626,11 @@ export default function Questions() {
 
           {/* Section/Chapter Filter */}
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-bold block">بخش یا فصل کتاب:</label>
+            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">بخش یا فصل کتاب:</label>
             <select
               value={selectedSection}
               onChange={(e) => setSelectedSection(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه فصل‌ها</option>
               {uniqueSections.map(s => (
@@ -641,11 +641,11 @@ export default function Questions() {
 
           {/* Difficulty Filter */}
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-bold block">سطح سختی سوال:</label>
+            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">سطح سختی سوال:</label>
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه سطوح</option>
               <option value="easy">آسان</option>
@@ -656,11 +656,11 @@ export default function Questions() {
 
           {/* Selective Tag Filter */}
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-bold block">برچسب‌ها (هشتگ):</label>
+            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">برچسب‌ها (هشتگ):</label>
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه برچسب‌ها</option>
               {uniqueTags.map(t => (
@@ -671,11 +671,11 @@ export default function Questions() {
 
           {/* Completeness Status Filter */}
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-bold block">وضعیت کاملی سوال:</label>
+            <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">وضعیت کاملی سوال:</label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه وضعیت‌ها</option>
               <option value="complete">کامل (دارای جواب معتبر)</option>
@@ -687,7 +687,7 @@ export default function Questions() {
 
         {/* Clear Filter tags */}
         {(searchQuery || selectedGrade !== 'all' || selectedSubject !== 'all' || selectedSection !== 'all' || selectedType !== 'all' || selectedDifficulty !== 'all' || selectedTag !== 'all' || selectedStatus !== 'all') && (
-          <div className="flex justify-start pt-2 border-t border-slate-100">
+          <div className="flex justify-start pt-2 border-t border-[var(--color-glass-light-stroke)]">
             <button
               onClick={() => {
                 setSearchQuery('');
@@ -699,7 +699,7 @@ export default function Questions() {
                 setSelectedTag('all');
                 setSelectedStatus('all');
               }}
-              className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+              className="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] rounded-lg text-[10px] font-bold transition-all cursor-pointer"
             >
               حذف فیلترها و نمایش همگانی
             </button>
@@ -725,17 +725,17 @@ export default function Questions() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
-                      className="bg-white rounded-3xl p-5 border border-slate-200 hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
+                      className="bg-white rounded-3xl p-5 border border-[var(--color-glass-light-stroke)] hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
                       id={`card-q-${q.id}`}
                     >
                       <div className="space-y-3.5">
 
                         {/* Upper line metadata */}
-                        <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400">
+                        <div className="flex items-center justify-between gap-1 text-[10px] text-[var(--color-text-tertiary)]">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-md">پایه {q.grade}</span>
-                            <span className="bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-md">{q.category}</span>
-                            {q.section && <span className="text-slate-500 italic">فصل: {q.section}</span>}
+                            <span className="bg-white/4 text-[var(--color-text-secondary)] font-bold px-2 py-0.5 rounded-md">پایه {q.grade}</span>
+                            <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-bold px-2 py-0.5 rounded-md">{q.category}</span>
+                            {q.section && <span className="text-[var(--color-text-tertiary)] italic">فصل: {q.section}</span>}
                           </div>
 
                           <div className={`px-2 py-0.5 rounded-full border text-[9px] font-bold ${getDifficultyBadgeColor(q.difficulty)}`}>
@@ -745,40 +745,40 @@ export default function Questions() {
 
                         {/* Title block */}
                         <div>
-                          <h4 className="font-bold text-slate-800 text-xs lines-1 flex items-center gap-1.5">
+                          <h4 className="font-bold text-[var(--color-text-primary)] text-xs lines-1 flex items-center gap-1.5">
                             <Bookmark className="w-3.5 h-3.5 text-indigo-400" />
                             <span>{q.title}</span>
                           </h4>
-                          <p className="text-[11px] text-slate-500 leading-relaxed mt-1.5 line-clamp-2">
+                          <p className="text-[11px] text-[var(--color-text-tertiary)] leading-relaxed mt-1.5 line-clamp-2">
                             {q.text}
                           </p>
                         </div>
 
                         {/* Middle specific indicators badges */}
-                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
-                          <span className="bg-slate-50 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60">
+                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--color-glass-light-stroke)]">
+                          <span className="bg-white/3 text-[var(--color-text-secondary)] rounded-md px-2 py-0.5 text-[10px] font-semibold border border-[var(--color-glass-light-stroke)]/60">
                             {getTypeNameInPersian(q.type)}
                           </span>
 
-                          <span className="bg-amber-50 text-amber-700 border border-amber-100 px-2.5 py-0.5 rounded-md text-[10px] font-bold">
+                          <span className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 px-2.5 py-0.5 rounded-md text-[10px] font-bold">
                             نمره: {toPersianDigits(q.points)}
                           </span>
 
                           {subquestionsCount > 0 && (
-                            <span className="bg-teal-50 text-teal-700 border border-teal-100 px-2 py-0.5 rounded-md text-[10px] font-bold font-semibold">
+                            <span className="bg-teal-50/30 text-teal-700 border border-teal-100 px-2 py-0.5 rounded-md text-[10px] font-bold font-semibold">
                               {toPersianDigits(subquestionsCount)} مینی‌سوال تابعه
                             </span>
                           )}
 
                           {hasImage && (
                             <span className="bg-purple-50 text-purple-700 border border-purple-100 px-2 py-0.5 rounded-md text-[10px] flex items-center gap-1 font-semibold">
-                              <ImageIcon className="w-3 h-3 text-purple-600" />
+                              <ImageIcon className="w-3 h-3 text-[var(--color-accent)]" />
                               <span>تصویردار</span>
                             </span>
                           )}
 
                           {q.completenessStatus === 'incomplete' && (
-                            <span className="bg-rose-50 text-rose-700 border border-rose-100 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-0.5">
+                            <span className="bg-rose-50 text-[var(--color-danger)] border border-[var(--color-danger)]/10 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-0.5">
                               <AlertCircle className="w-3" />
                               پیش‌نویس
                             </span>
@@ -788,10 +788,10 @@ export default function Questions() {
                       </div>
 
                       {/* Card Action footer operations */}
-                      <div className="border-t border-slate-100 pt-3.5 flex justify-between items-center bg-slate-50/50 -m-5 mt-2 px-5 py-3">
+                      <div className="border-t border-[var(--color-glass-light-stroke)] pt-3.5 flex justify-between items-center bg-white/3/50 -m-5 mt-2 px-5 py-3">
                         <div className="flex gap-1.5">
                           {q.tags?.slice(0, 2).map((tag, i) => (
-                            <span key={i} className="text-[9px] text-indigo-600 bg-white border border-slate-200 px-1.5 py-0.5 rounded-md font-bold">
+                            <span key={i} className="text-[9px] text-indigo-600 bg-white border border-[var(--color-glass-light-stroke)] px-1.5 py-0.5 rounded-md font-bold">
                               #{tag}
                             </span>
                           ))}
@@ -800,21 +800,21 @@ export default function Questions() {
                         <div className="flex gap-1.5">
                           <button
                             onClick={() => setPreviewQuestion(q)}
-                            className="p-1.5 text-indigo-600 hover:bg-slate-100 rounded-lg transition-all cursor-pointer"
+                            className="p-1.5 text-indigo-600 hover:bg-white/4 rounded-lg transition-all cursor-pointer"
                             title="پیش‌نمایش زنده"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openEditDrawer(q)}
-                            className="p-1.5 text-slate-700 hover:bg-slate-100 hover:text-slate-800 rounded-lg transition-all cursor-pointer"
+                            className="p-1.5 text-[var(--color-text-secondary)] hover:bg-white/4 hover:text-[var(--color-text-primary)] rounded-lg transition-all cursor-pointer"
                             title="ویرایش سوال"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteQuestion(q.id, q.title)}
-                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                            className="p-1.5 text-[var(--color-danger)] hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
                             title="حذف سوال"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -828,10 +828,10 @@ export default function Questions() {
               </div>
             ) : (
               /* TABLE ROW VIEW MODE */
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden" id="questions-table-view-box">
+              <div className="bg-white rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs overflow-hidden" id="questions-table-view-box">
                 <div className="overflow-x-auto text-right">
-                  <table className="w-full text-xs text-slate-700" id="questions-table">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                  <table className="w-full text-xs text-[var(--color-text-secondary)]" id="questions-table">
+                    <thead className="bg-white/3 border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]">
                       <tr>
                         <th className="p-4 font-bold text-right">خلاصه متن سوال</th>
                         <th className="p-4 font-bold text-right">پایه</th>
@@ -853,28 +853,28 @@ export default function Questions() {
                           <motion.tr
                             key={q.id}
                             layout
-                            className="hover:bg-slate-50/40 transition-colors"
+                            className="hover:bg-white/3/40 transition-colors"
                           >
                             {/* Short question text */}
                             <td className="p-4 max-w-xs md:max-w-sm">
                               <div>
-                                <h5 className="font-bold text-slate-800 line-clamp-1">{q.title}</h5>
-                                <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">{q.text}</p>
+                                <h5 className="font-bold text-[var(--color-text-primary)] line-clamp-1">{q.title}</h5>
+                                <p className="text-[10px] text-[var(--color-text-tertiary)] line-clamp-1 mt-0.5">{q.text}</p>
                               </div>
                             </td>
 
                             {/* Grade */}
-                            <td className="p-4 text-slate-600 font-medium">پایه {q.grade}</td>
+                            <td className="p-4 text-[var(--color-text-secondary)] font-medium">پایه {q.grade}</td>
 
                             {/* Subject & Section */}
-                            <td className="p-4 text-slate-700">
+                            <td className="p-4 text-[var(--color-text-secondary)]">
                               <span className="font-semibold block">{q.category}</span>
-                              <span className="text-[10px] text-slate-400 block mt-0.5">{q.section || 'فصل کلی'}</span>
+                              <span className="text-[10px] text-[var(--color-text-tertiary)] block mt-0.5">{q.section || 'فصل کلی'}</span>
                             </td>
 
                             {/* Grade Type */}
                             <td className="p-4">
-                              <span className="text-indigo-700 font-semibold bg-indigo-50 text-[10px] px-2 py-0.5 rounded-full border border-indigo-100">
+                              <span className="text-[var(--color-accent)] font-semibold bg-[var(--color-accent-soft)] text-[10px] px-2 py-0.5 rounded-full border border-[var(--color-accent-soft)]">
                                 {getTypeNameInPersian(q.type)}
                               </span>
                             </td>
@@ -887,20 +887,20 @@ export default function Questions() {
                             </td>
 
                             {/* Score Gained */}
-                            <td className="p-4 text-center font-bold text-amber-700 font-mono text-[11px]">
+                            <td className="p-4 text-center font-bold text-[var(--color-warning)] font-mono text-[11px]">
                               {toPersianDigits(q.points)}
                             </td>
 
                             {/* Subquestions count */}
                             <td className="p-4 text-center">
-                              <span className={`font-semibold ${subquestionsCount > 0 ? 'text-teal-600' : 'text-slate-400'}`}>
+                              <span className={`font-semibold ${subquestionsCount > 0 ? 'text-teal-600' : 'text-[var(--color-text-tertiary)]'}`}>
                                 {subquestionsCount > 0 ? toPersianDigits(subquestionsCount) : '—'}
                               </span>
                             </td>
 
                             {/* Has image? */}
                             <td className="p-4 text-center">
-                              <span className={`inline-block w-2.5 h-2.5 rounded-full ${hasImage ? 'bg-purple-505 border border-purple-500 bg-purple-500 shadow-xs' : 'bg-slate-200'}`} title={hasImage ? 'دارای تصویر ضمیمه' : 'فاقد تصویر'}></span>
+                              <span className={`inline-block w-2.5 h-2.5 rounded-full ${hasImage ? 'bg-purple-505 border border-purple-500 bg-purple-500 shadow-xs' : 'bg-white/6'}`} title={hasImage ? 'دارای تصویر ضمیمه' : 'فاقد تصویر'}></span>
                             </td>
 
                             {/* Row Actions */}
@@ -908,21 +908,21 @@ export default function Questions() {
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   onClick={() => setPreviewQuestion(q)}
-                                  className="p-1 hover:bg-slate-100 text-indigo-600 rounded-lg cursor-pointer"
+                                  className="p-1 hover:bg-white/4 text-indigo-600 rounded-lg cursor-pointer"
                                   title="پیش‌نمایش"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => openEditDrawer(q)}
-                                  className="p-1 hover:bg-slate-100 text-slate-500 cursor-pointer"
+                                  className="p-1 hover:bg-white/4 text-[var(--color-text-tertiary)] cursor-pointer"
                                   title="ویرایش"
                                 >
                                   <Edit className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteQuestion(q.id, q.title)}
-                                  className="p-1 hover:bg-rose-50 text-rose-500 rounded-lg cursor-pointer"
+                                  className="p-1 hover:bg-rose-50 text-[var(--color-danger)] rounded-lg cursor-pointer"
                                   title="حذف"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -940,12 +940,12 @@ export default function Questions() {
             )
           ) : (
             /* EMPTY FILTERED QUESTIONS STATE */
-            <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center text-slate-400 select-none space-y-3" id="empty-questions">
-              <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 mx-auto flex items-center justify-center text-slate-300 shadow-xs">
+            <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-3xl p-16 text-center text-[var(--color-text-tertiary)] select-none space-y-3" id="empty-questions">
+              <div className="w-16 h-16 rounded-full bg-white/3 border border-[var(--color-glass-light-stroke)] mx-auto flex items-center justify-center text-slate-300 shadow-xs">
                 <HelpCircle className="w-8 h-8" />
               </div>
-              <h4 className="font-bold text-slate-700 text-xs">هیچ سوالی با فیلترهای بالا همخوانی ندارد</h4>
-              <p className="text-[10px] text-slate-400 max-w-md mx-auto">می‌توانید فیلترهای جستجو، سطح سختی یا نوع سوالات را تغییر دهید یا نسبت به افزودن سوال جدید به مخزن اقدام کنید.</p>
+              <h4 className="font-bold text-[var(--color-text-secondary)] text-xs">هیچ سوالی با فیلترهای بالا همخوانی ندارد</h4>
+              <p className="text-[10px] text-[var(--color-text-tertiary)] max-w-md mx-auto">می‌توانید فیلترهای جستجو، سطح سختی یا نوع سوالات را تغییر دهید یا نسبت به افزودن سوال جدید به مخزن اقدام کنید.</p>
             </div>
           )}
         </AnimatePresence>
@@ -953,23 +953,23 @@ export default function Questions() {
 
       {/* REUSABLE live preview question modal overlay */}
       {previewQuestion && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" id="live-preview-overlay">
+        <div className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4" id="live-preview-overlay">
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-50 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-300 flex flex-col max-h-[90vh]"
+            className="bg-white/3 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[90vh]"
             id="preview-box"
           >
             {/* Header */}
-            <div className="px-6 py-4.5 bg-white border-b border-slate-200 flex items-center justify-between">
+            <div className="px-6 py-4.5 bg-white border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <button
                 onClick={() => setPreviewQuestion(null)}
-                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 transition-all font-bold rounded-xl text-[10px] cursor-pointer"
+                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 transition-all font-bold rounded-xl text-[10px] cursor-pointer"
               >
                 بستن پیش‌نمایش ×
               </button>
-              <h3 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-indigo-500" />
+              <h3 className="font-bold text-[var(--color-text-primary)] text-xs flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-[var(--color-accent)]" />
                 <span>شبیه‌ساز پیش‌نمایش سوال در برگه پاسخ‌نامه</span>
               </h3>
             </div>
@@ -983,7 +983,7 @@ export default function Questions() {
             </div>
 
             {/* Footer comments */}
-            <div className="bg-white border-t border-slate-200 p-4 flex justify-between items-center text-[10px] text-slate-400 font-medium">
+            <div className="bg-white border-t border-[var(--color-glass-light-stroke)] p-4 flex justify-between items-center text-[10px] text-[var(--color-text-tertiary)] font-medium">
               <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
               <span>بروزرسانی شده در: {toPersianDigits(new Date(previewQuestion.createdAt).toLocaleDateString('fa-IR'))}</span>
             </div>
@@ -993,7 +993,7 @@ export default function Questions() {
 
       {/* MEGA ADD / EDIT DRAWER (Saves into state cleanly with live options form build!) */}
       {showAddEditDrawer && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex justify-end" id="add-edit-drawer-overlay">
+        <div className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex justify-end" id="add-edit-drawer-overlay">
           <div className="fixed inset-0" onClick={() => setShowAddEditDrawer(false)} />
 
           <motion.div
@@ -1001,19 +1001,19 @@ export default function Questions() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 200 }}
             transition={{ type: 'spring', damping: 25 }}
-            className="w-full max-w-3xl bg-slate-50 shadow-2xl z-10 flex flex-col h-full border-l border-slate-200 overflow-hidden text-xs text-right"
+            className="w-full max-w-3xl bg-white/3 shadow-2xl z-10 flex flex-col h-full border-l border-[var(--color-glass-light-stroke)] overflow-hidden text-xs text-right"
             id="add-edit-drawer"
           >
             {/* Drawer Header */}
-            <div className="px-6 py-5 bg-white border-b border-slate-200 flex items-center justify-between">
+            <div className="px-6 py-5 bg-white border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setShowAddEditDrawer(false)}
-                className="p-1 px-3 bg-rose-50 text-rose-600 rounded-xl font-bold cursor-pointer"
+                className="p-1 px-3 bg-rose-50 text-[var(--color-danger)] rounded-xl font-bold cursor-pointer"
               >
                 بستن قالب ×
               </button>
-              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+              <h3 className="font-bold text-[var(--color-text-primary)] text-sm flex items-center gap-1.5">
                 <CloudLightning className="w-5 h-5 text-indigo-600 animate-pulse" />
                 <span>
                   {drawerMode === 'add' ? 'افزودن و پیکربندی سوال نو در بانک' : 'ویرایش شناسنامه فنی و فرمول‌های سوال'}
@@ -1025,10 +1025,10 @@ export default function Questions() {
             <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
 
               {/* Left Column (Realtime live visual preview of QuestionRenderer as the teacher types!) */}
-              <div className="hidden lg:block lg:col-span-5 bg-slate-100 p-5 overflow-y-auto border-l border-slate-200" id="drawer-live-visual">
+              <div className="hidden lg:block lg:col-span-5 bg-white/4 p-5 overflow-y-auto border-l border-[var(--color-glass-light-stroke)]" id="drawer-live-visual">
                 <div className="sticky top-0 space-y-3.5">
-                  <div className="flex items-center gap-1 text-slate-500 font-bold mb-1">
-                    <Eye className="w-4 h-4 text-indigo-500" />
+                  <div className="flex items-center gap-1 text-[var(--color-text-tertiary)] font-bold mb-1">
+                    <Eye className="w-4 h-4 text-[var(--color-accent)]" />
                     <span className="text-[11px]">محیط پیش‌نمایش لحظه‌ای دبیر:</span>
                   </div>
 
@@ -1059,8 +1059,8 @@ export default function Questions() {
                     showCorrectAnswers={true}
                   />
 
-                  <div className="bg-white/80 border border-slate-200 p-3.5 rounded-2xl text-[9.5px] leading-relaxed text-slate-500 flex items-start gap-1.5 shadow-xs">
-                    <Info className="w-3.5 h-3.5 shrink-0 text-slate-400 mt-0.5" />
+                  <div className="bg-white/80 border border-[var(--color-glass-light-stroke)] p-3.5 rounded-2xl text-[9.5px] leading-relaxed text-[var(--color-text-tertiary)] flex items-start gap-1.5 shadow-xs">
+                    <Info className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-tertiary)] mt-0.5" />
                     <span>تغیرات بالا بلافاصله با تایپ کردن فرم زیر، به‌روزرسانی می‌شوند تا ساختار نهایی را بررسی نمایید.</span>
                   </div>
                 </div>
@@ -1071,17 +1071,17 @@ export default function Questions() {
                 <form onSubmit={handleSaveQuestion} className="space-y-4">
 
                   {/* 1. Grade, Subject, Section, Difficulty */}
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-                    <span className="font-bold text-slate-800 text-[11px] block border-r-2 border-indigo-500 pr-2 mb-2">شناسنامه علمی سوال</span>
+                  <div className="bg-white/3 p-4 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <span className="font-bold text-[var(--color-text-primary)] text-[11px] block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">شناسنامه علمی سوال</span>
 
                     <div className="grid grid-cols-2 gap-3.5">
                       {/* Grade Selector */}
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold block">پایه تحصیلی:</label>
+                        <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">پایه تحصیلی:</label>
                         <select
                           value={formGrade}
                           onChange={(e) => setFormGrade(e.target.value)}
-                          className="w-full bg-white border border-slate-200 p-2 rounded-xl focus:outline-hidden font-bold"
+                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
                         >
                           <option value="">انتخاب پایه...</option>
                           <optgroup label="دبستان">
@@ -1107,37 +1107,37 @@ export default function Questions() {
 
                       {/* Subject */}
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold block">موضوع درس:</label>
+                        <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">موضوع درس:</label>
                         <input
                           type="text"
                           required
                           value={formSubject}
                           onChange={(e) => setFormSubject(e.target.value)}
                           placeholder="مثال: علوم تجربی، ریاضی"
-                          className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl focus:outline-hidden focus:border-indigo-400"
+                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
                         />
                       </div>
 
                       {/* Section */}
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold block">بخش / فصل کتاب:</label>
+                        <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">بخش / فصل کتاب:</label>
                         <input
                           type="text"
                           required
                           value={formSection}
                           onChange={(e) => setFormSection(e.target.value)}
                           placeholder="مثال: فصل اول یا مبحث فیزیک"
-                          className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl focus:outline-hidden focus:border-indigo-400"
+                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
                         />
                       </div>
 
                       {/* Difficulty */}
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold block">سطح سختی علمی:</label>
+                        <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">سطح سختی علمی:</label>
                         <select
                           value={formDifficulty}
                           onChange={(e) => setFormDifficulty(e.target.value as any)}
-                          className="w-full bg-white border border-slate-200 p-2 rounded-xl focus:outline-hidden font-bold"
+                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
                         >
                           <option value="easy">آسان</option>
                           <option value="medium">متوسط</option>
@@ -1147,7 +1147,7 @@ export default function Questions() {
 
                       {/* Points / Barom */}
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold block">امتیاز / بارم نمره:</label>
+                        <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">امتیاز / بارم نمره:</label>
                         <input
                           type="number"
                           min={0.25}
@@ -1155,19 +1155,19 @@ export default function Questions() {
                           step={0.25}
                           value={formPoints}
                           onChange={(e) => setFormPoints(Number(e.target.value))}
-                          className="w-full bg-white border border-slate-200 p-2 rounded-xl focus:outline-hidden font-bold"
+                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
                         />
                       </div>
 
                       {/* Tags separated */}
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold block">کلمات کلیدی / تگ‌ها (کاما جدا کننده):</label>
+                        <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">کلمات کلیدی / تگ‌ها (کاما جدا کننده):</label>
                         <input
                           type="text"
                           value={formTagsString}
                           onChange={(e) => setFormTagsString(e.target.value)}
                           placeholder="کنکوری، تستی، مهم"
-                          className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl focus:outline-hidden text-indigo-700 font-bold"
+                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden text-[var(--color-accent)] font-bold"
                         />
                       </div>
                     </div>
@@ -1175,11 +1175,11 @@ export default function Questions() {
 
                   {/* 2. Type selection picker */}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-slate-500 font-bold block">انتخاب قالب بندی ساختاری سوال (۱۱ نوع):</label>
+                    <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">انتخاب قالب بندی ساختاری سوال (۱۱ نوع):</label>
                     <select
                       value={formType}
                       onChange={(e) => setFormType(e.target.value as QuestionType)}
-                      className="w-full bg-indigo-50/50 border border-indigo-200 p-2.5 rounded-xl font-bold text-indigo-900 focus:outline-white cursor-pointer"
+                      className="w-full bg-[var(--color-accent-soft)]/30 border border-indigo-200 p-2.5 rounded-xl font-bold text-indigo-900 focus:outline-white cursor-pointer"
                     >
                       <option value="single_choice">چهارگزینه‌ای تک‌پاسخ</option>
                       <option value="multiple_choice">چندگزینه‌ای چندپاسخ</option>
@@ -1198,37 +1198,37 @@ export default function Questions() {
                   {/* 3. Title & Text prompts */}
                   <div className="space-y-3.5">
                     <div className="space-y-1">
-                      <label className="text-[10px] text-slate-400 font-bold block">عنوان خلاصه سوال (برای معلم):</label>
+                      <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">عنوان خلاصه سوال (برای معلم):</label>
                       <input
                         type="text"
                         required
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
                         placeholder="ماشاالله: محاسبه سرعت زاویه‌ای"
-                        className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-indigo-400 font-bold"
+                        className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 font-bold"
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] text-slate-400 font-bold block">متن اصلی صورت سوال / مسئله (فرمول گذاری):</label>
+                      <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">متن اصلی صورت سوال / مسئله (فرمول گذاری):</label>
                       <textarea
                         required
                         rows={4}
                         value={formText}
                         onChange={(e) => setFormText(e.target.value)}
                         placeholder="متن کامل سوال خود را به زبان فارسی روان تالیف کنید..."
-                        className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-indigo-400 font-medium leading-relaxed"
+                        className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 font-medium leading-relaxed"
                       />
                     </div>
                   </div>
 
                   {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                  <div className="bg-white/3 p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2">
                     <span className="text-[10px] text-slate-550 font-bold block">الصاق پرونده تصویر برای کل سوال (اختیاری):</span>
 
                     <div className="flex items-center gap-3">
                       {/* Hidden manual selector */}
-                      <label className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-[11px] rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
+                      <label className="px-4 py-2 bg-white hover:bg-white/4 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] text-[11px] rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
                         <ImageIcon className="w-3.5 h-3.5" />
                         <span>انتخاب فایل تصویر</span>
                         <input
@@ -1244,22 +1244,22 @@ export default function Questions() {
                           <img
                             src={formImageUrl}
                             alt="تصویر بارگذاری شده در فرم"
-                            className="w-12 h-12 rounded-lg object-cover border border-slate-300 bg-white"
+                            className="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-white"
                           />
                           <button
                             type="button"
                             onClick={() => setFormImageUrl('')}
-                            className="text-rose-500 font-bold hover:underline"
+                            className="text-[var(--color-danger)] font-bold hover:underline"
                           >
                             حذف پیوست ×
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-400">تصویری ضمیمه نشده است (فرمت .png, .jpg و .gif پشتیبانی می‌شود)</span>
+                        <span className="text-[10px] text-[var(--color-text-tertiary)]">تصویری ضمیمه نشده است (فرمت .png, .jpg و .gif پشتیبانی می‌شود)</span>
                       )}
                     </div>
                     {/* Outline structure for Supabase integration comment per specs */}
-                    <p className="text-[9px] text-indigo-400 bg-indigo-50/50 p-2 rounded-lg italic leading-normal">
+                    <p className="text-[9px] text-indigo-400 bg-[var(--color-accent-soft)]/30 p-2 rounded-lg italic leading-normal">
                       داده به صورت base64 محلی ذخیره می‌شود. ساختار تابع آماده ارتقای سنکرون به خدمات استوریج ابری Supabase Storage از بستر کلاینت است.
                     </p>
                   </div>
@@ -1268,13 +1268,13 @@ export default function Questions() {
 
                   {/* Choice builder (single_choice, multiple_choice, image_based) */}
                   {(formType === 'single_choice' || formType === 'multiple_choice' || formType === 'image_based') && (
-                    <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-4">
-                      <div className="flex justify-between items-center border-b border-slate-200 pb-2 mb-1">
-                        <span className="font-bold text-slate-800 text-[11px]">سازنده گزینه‌های آزمون (تعداد کلید گزینه‌ها)</span>
+                    <div className="bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-4">
+                      <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2 mb-1">
+                        <span className="font-bold text-[var(--color-text-primary)] text-[11px]">سازنده گزینه‌های آزمون (تعداد کلید گزینه‌ها)</span>
                         <button
                           type="button"
                           onClick={addOptionRow}
-                          className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold cursor-pointer"
+                          className="px-2.5 py-1 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-[10px] font-bold cursor-pointer"
                         >
                           + افزودن گزینه نو
                         </button>
@@ -1282,25 +1282,25 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formOptions.map((opt, oIdx) => (
-                          <div key={opt.id} className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 text-right">
+                          <div key={opt.id} className="bg-white p-3 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2 text-right">
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Is correct tick check */}
-                              <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
+                              <label className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-text-secondary)] cursor-pointer">
                                 <input
                                   type={formType === 'multiple_choice' ? 'checkbox' : 'radio'}
                                   name="drawer-opt-correct"
                                   checked={opt.isCorrect}
                                   onChange={() => handleOptionCorrectChange(oIdx)}
-                                  className="w-4 h-4 text-emerald-600 border-slate-300 cursor-pointer accent-emerald-500"
+                                  className="w-4 h-4 text-emerald-600 border-[var(--color-glass-light-stroke)] cursor-pointer accent-emerald-500"
                                 />
-                                <span className={opt.isCorrect ? 'text-emerald-700 font-black' : ''}>پاسخ صحیح</span>
+                                <span className={opt.isCorrect ? 'text-[var(--color-success)] font-black' : ''}>پاسخ صحیح</span>
                               </label>
 
                               {/* Remove opt */}
                               <button
                                 type="button"
                                 onClick={() => removeOptionRow(oIdx)}
-                                className="mr-auto p-1 text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer"
+                                className="mr-auto p-1 text-[var(--color-danger)] hover:bg-rose-50 rounded-lg cursor-pointer"
                               >
                                 <Trash className="w-3.5 h-3.5" />
                               </button>
@@ -1309,7 +1309,7 @@ export default function Questions() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                               {/* Option text */}
                               <div className="space-y-1">
-                                <span className="text-[9px] text-slate-400 block">متن گزینه:</span>
+                                <span className="text-[9px] text-[var(--color-text-tertiary)] block">متن گزینه:</span>
                                 <input
                                   type="text"
                                   required
@@ -1320,15 +1320,15 @@ export default function Questions() {
                                     setFormOptions(updated);
                                   }}
                                   placeholder={`عبارت گزینه ${oIdx + 1}`}
-                                  className="w-full bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg text-[11px]"
+                                  className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3.5 py-1.5 rounded-lg text-[11px]"
                                 />
                               </div>
 
                               {/* Option image */}
                               <div className="space-y-1">
-                                <span className="text-[9px] text-slate-400 block">پیوست عکس گزینه (الزامی برای سوال تصویری):</span>
+                                <span className="text-[9px] text-[var(--color-text-tertiary)] block">پیوست عکس گزینه (الزامی برای سوال تصویری):</span>
                                 <div className="flex items-center gap-2">
-                                  <label className="px-2 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-md text-[9px] font-bold cursor-pointer shrink-0">
+                                  <label className="px-2 py-1 bg-white/4 hover:bg-white/6 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-[9px] font-bold cursor-pointer shrink-0">
                                     <span>الحاق تصویر</span>
                                     <input
                                       type="file"
@@ -1344,10 +1344,10 @@ export default function Questions() {
                                         const updated = [...formOptions];
                                         updated[oIdx].imageUrl = '';
                                         setFormOptions(updated);
-                                      }} className="text-rose-500 text-[9px]">حذف</button>
+                                      }} className="text-[var(--color-danger)] text-[9px]">حذف</button>
                                     </div>
                                   ) : (
-                                    <span className="text-[9px] text-slate-400 italic">عکسی نیست</span>
+                                    <span className="text-[9px] text-[var(--color-text-tertiary)] italic">عکسی نیست</span>
                                   )}
                                 </div>
                               </div>
@@ -1360,11 +1360,11 @@ export default function Questions() {
 
                   {/* True / False picker builder */}
                   {formType === 'true_false' && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                      <span className="font-bold text-slate-700 text-[11px] block">انتخاب گزینه پاسخ درست:</span>
+                    <div className="bg-white/3 p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2">
+                      <span className="font-bold text-[var(--color-text-secondary)] text-[11px] block">انتخاب گزینه پاسخ درست:</span>
                       <div className="flex gap-4">
                         <label className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
-                          formCorrectTrueFalse === true ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200'
+                          formCorrectTrueFalse === true ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-white border-[var(--color-glass-light-stroke)]'
                         }`}>
                           <input
                             type="radio"
@@ -1377,7 +1377,7 @@ export default function Questions() {
                         </label>
 
                         <label className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
-                          formCorrectTrueFalse === false ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200'
+                          formCorrectTrueFalse === false ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-white border-[var(--color-glass-light-stroke)]'
                         }`}>
                           <input
                             type="radio"
@@ -1394,13 +1394,13 @@ export default function Questions() {
 
                   {/* Fill blank builder */}
                   {formType === 'fill_blank' && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <div className="bg-white/3 p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-3">
                       <div className="flex justify-between items-center mb-1 bg-white p-2 rounded-lg border">
-                        <strong className="text-slate-800 text-[11px]">کلید واژه‌های صحیح برای جاهای خالی:</strong>
+                        <strong className="text-[var(--color-text-primary)] text-[11px]">کلید واژه‌های صحیح برای جاهای خالی:</strong>
                         <button
                           type="button"
                           onClick={() => setFormFillBlanks([...formFillBlanks, ''])}
-                          className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-bold"
+                          className="px-2 py-0.5 bg-[var(--color-accent)] text-white rounded text-[10px] font-bold"
                         >
                           + الحاق محل جدید
                         </button>
@@ -1409,7 +1409,7 @@ export default function Questions() {
                       <div className="space-y-2">
                         {formFillBlanks.map((fb, idx) => (
                           <div key={idx} className="flex gap-2 items-center">
-                            <span className="text-[10px] text-slate-400 font-bold w-12 shrink-0">جای خالی {idx + 1}:</span>
+                            <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold w-12 shrink-0">جای خالی {idx + 1}:</span>
                             <input
                               type="text"
                               required
@@ -1420,13 +1420,13 @@ export default function Questions() {
                                 setFormFillBlanks(updated);
                               }}
                               placeholder="کلمه کلید صحیح"
-                              className="w-full bg-white border border-slate-300 px-2.5 py-1.5 rounded-md text-[11px]"
+                              className="w-full bg-white border border-[var(--color-glass-light-stroke)] px-2.5 py-1.5 rounded-md text-[11px]"
                             />
                             {formFillBlanks.length > 1 && (
                               <button
                                 type="button"
                                 onClick={() => setFormFillBlanks(formFillBlanks.filter((_, i) => i !== idx))}
-                                className="text-rose-500 font-bold p-1 text-sm"
+                                className="text-[var(--color-danger)] font-bold p-1 text-sm"
                               >
                                 &times;
                               </button>
@@ -1439,13 +1439,13 @@ export default function Questions() {
 
                   {/* Matching matchingPairs builder */}
                   {formType === 'matching' && (
-                    <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-3">
+                    <div className="bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
                       <div className="flex justify-between items-center border-b pb-2">
-                        <span className="font-bold text-slate-800 text-[11px]">پلاس لغات تطبیقی وصل‌کردنی</span>
+                        <span className="font-bold text-[var(--color-text-primary)] text-[11px]">پلاس لغات تطبیقی وصل‌کردنی</span>
                         <button
                           type="button"
                           onClick={() => setFormMatchingPairs([...formMatchingPairs, { left: '', right: '' }])}
-                          className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold cursor-pointer"
+                          className="px-2.5 py-1 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-[10px] font-bold cursor-pointer"
                         >
                           + درج جفت جدید
                         </button>
@@ -1453,16 +1453,16 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formMatchingPairs.map((pair, idx) => (
-                          <div key={idx} className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200 relative">
+                          <div key={idx} className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-[var(--color-glass-light-stroke)] relative">
                             <button
                               type="button"
                               onClick={() => setFormMatchingPairs(formMatchingPairs.filter((_, i) => i !== idx))}
-                              className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center font-bold"
+                              className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-rose-50 text-[var(--color-danger)] rounded-full flex items-center justify-center font-bold"
                             >
                               &times;
                             </button>
                             <div className="space-y-1">
-                              <span className="text-[9px] text-slate-400 block">سطر چپ (هدف):</span>
+                              <span className="text-[9px] text-[var(--color-text-tertiary)] block">سطر چپ (هدف):</span>
                               <input
                                 type="text"
                                 required
@@ -1472,11 +1472,11 @@ export default function Questions() {
                                   updated[idx].left = e.target.value;
                                   setFormMatchingPairs(updated);
                                 }}
-                                className="w-full bg-slate-50 px-2 py-1.5 rounded-md"
+                                className="w-full bg-white/3 px-2 py-1.5 rounded-md"
                               />
                             </div>
                             <div className="space-y-1">
-                              <span className="text-[9px] text-slate-400 block">سطر راست (مبدا):</span>
+                              <span className="text-[9px] text-[var(--color-text-tertiary)] block">سطر راست (مبدا):</span>
                               <input
                                 type="text"
                                 required
@@ -1486,7 +1486,7 @@ export default function Questions() {
                                   updated[idx].right = e.target.value;
                                   setFormMatchingPairs(updated);
                                 }}
-                                className="w-full bg-slate-50 px-2 py-1.5 rounded-md"
+                                className="w-full bg-white/3 px-2 py-1.5 rounded-md"
                               />
                             </div>
                           </div>
@@ -1497,13 +1497,13 @@ export default function Questions() {
 
                   {/* Ordering lists builder */}
                   {formType === 'ordering' && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <div className="bg-white/3 p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-3">
                       <div className="flex justify-between items-center pb-2 border-b">
-                        <span className="font-bold text-[11px] text-slate-800">سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)</span>
+                        <span className="font-bold text-[11px] text-[var(--color-text-primary)]">سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)</span>
                         <button
                           type="button"
                           onClick={() => setFormOrderingItems([...formOrderingItems, ''])}
-                          className="px-2 py-0.5 bg-indigo-600 text-white rounded text-[10px] font-bold"
+                          className="px-2 py-0.5 bg-[var(--color-accent)] text-white rounded text-[10px] font-bold"
                         >
                           + گام جدید
                         </button>
@@ -1512,7 +1512,7 @@ export default function Questions() {
                       <div className="space-y-2">
                         {formOrderingItems.map((item, idx) => (
                           <div key={idx} className="flex gap-2 items-center bg-white p-2 rounded-lg border">
-                            <span className="text-[10px] font-bold text-slate-400 w-12 shrink-0">رتبه {idx + 1}:</span>
+                            <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] w-12 shrink-0">رتبه {idx + 1}:</span>
                             <input
                               type="text"
                               required
@@ -1522,13 +1522,13 @@ export default function Questions() {
                                 updated[idx] = e.target.value;
                                 setFormOrderingItems(updated);
                               }}
-                              className="w-full bg-slate-50 px-2 py-1.5 rounded-md text-[11px]"
+                              className="w-full bg-white/3 px-2 py-1.5 rounded-md text-[11px]"
                             />
                             {formOrderingItems.length > 2 && (
                               <button
                                 type="button"
                                 onClick={() => setFormOrderingItems(formOrderingItems.filter((_, i) => i !== idx))}
-                                className="text-rose-500 font-bold"
+                                className="text-[var(--color-danger)] font-bold"
                               >
                                 &times;
                               </button>
@@ -1544,24 +1544,24 @@ export default function Questions() {
                     <div className="space-y-4">
                       {/* Sample answer */}
                       <div className="space-y-1">
-                        <span className="text-[10px] text-slate-400 font-bold block">پاسخ تشریحی استاندارد نمونه (برای تصحیح و مقایسه هوشمند):</span>
+                        <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">پاسخ تشریحی استاندارد نمونه (برای تصحیح و مقایسه هوشمند):</span>
                         <textarea
                           rows={3}
                           value={formSampleAnswer}
                           onChange={(e) => setFormSampleAnswer(e.target.value)}
                           placeholder="نمونه پاسخ ایده‌آل بنویسید..."
-                          className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl"
+                          className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl"
                         />
                       </div>
 
                       {/* Rubric Criteria dynamic builder */}
-                      <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100 space-y-3">
-                        <div className="flex justify-between items-center border-b border-rose-100 pb-2">
+                      <div className="bg-rose-50/50 p-4 rounded-2xl border border-[var(--color-danger)]/10 space-y-3">
+                        <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-2">
                           <span className="font-bold text-rose-950 text-[11px]">معیارهای خرد بارم‌بندی پاسخ تشریحی (Rubrics Builder)</span>
                           <button
                             type="button"
                             onClick={addRubricRow}
-                            className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                            className="px-3 py-1 bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90 text-white rounded-lg text-[10px] font-bold transition-all cursor-pointer"
                           >
                             + معیار جدید
                           </button>
@@ -1569,18 +1569,18 @@ export default function Questions() {
 
                         <div className="space-y-2">
                           {formRubrics.map((rub) => (
-                            <div key={rub.id} className="bg-white p-3 rounded-xl border border-rose-100 space-y-2 relative">
+                            <div key={rub.id} className="bg-white p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2 relative">
                               <button
                                 type="button"
                                 onClick={() => removeRubricRow(rub.id)}
-                                className="absolute top-2 left-2 text-rose-500 font-bold text-sm"
+                                className="absolute top-2 left-2 text-[var(--color-danger)] font-bold text-sm"
                               >
                                 &times;
                               </button>
 
                               <div className="grid grid-cols-3 gap-2">
                                 <div className="col-span-2 space-y-1">
-                                  <span className="text-[9px] text-slate-400 block">عنوان معیار:</span>
+                                  <span className="text-[9px] text-[var(--color-text-tertiary)] block">عنوان معیار:</span>
                                   <input
                                     type="text"
                                     required
@@ -1589,11 +1589,11 @@ export default function Questions() {
                                       const updated = formRubrics.map(r => r.id === rub.id ? { ...r, title: e.target.value } : r);
                                       setFormRubrics(updated);
                                     }}
-                                    className="w-full bg-slate-50 px-2 py-1 rounded text-[11px]"
+                                    className="w-full bg-white/3 px-2 py-1 rounded text-[11px]"
                                   />
                                 </div>
                                 <div className="space-y-1">
-                                  <span className="text-[9px] text-slate-400 block">سقف نمره:</span>
+                                  <span className="text-[9px] text-[var(--color-text-tertiary)] block">سقف نمره:</span>
                                   <input
                                     type="number"
                                     required
@@ -1603,12 +1603,12 @@ export default function Questions() {
                                       const updated = formRubrics.map(r => r.id === rub.id ? { ...r, maxPoints: Number(e.target.value) } : r);
                                       setFormRubrics(updated);
                                     }}
-                                    className="w-full bg-slate-50 p-1 text-center rounded text-[11px]"
+                                    className="w-full bg-white/3 p-1 text-center rounded text-[11px]"
                                   />
                                 </div>
                               </div>
                               <div className="space-y-1">
-                                <span className="text-[9px] text-slate-400 block">توضیح ملاک نمره‌دهی:</span>
+                                <span className="text-[9px] text-[var(--color-text-tertiary)] block">توضیح ملاک نمره‌دهی:</span>
                                 <input
                                   type="text"
                                   value={rub.description}
@@ -1617,7 +1617,7 @@ export default function Questions() {
                                     setFormRubrics(updated);
                                   }}
                                   placeholder="ملاک نیم‌نمره چیست..."
-                                  className="w-full bg-slate-50 px-2 py-1 rounded text-[10px] text-slate-500"
+                                  className="w-full bg-white/3 px-2 py-1 rounded text-[10px] text-[var(--color-text-tertiary)]"
                                 />
                               </div>
                             </div>
@@ -1626,8 +1626,8 @@ export default function Questions() {
                       </div>
 
                       {/* Manual correct warning representation in drawer */}
-                      <div className="bg-amber-50 border border-amber-200.5 rounded-xl p-3 text-[10px] text-amber-800 flex items-start gap-1.5 leading-relaxed">
-                        <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/20.5 rounded-xl p-3 text-[10px] text-[var(--color-warning)]/80 flex items-start gap-1.5 leading-relaxed">
+                        <Info className="w-4 h-4 text-[var(--color-warning)] shrink-0 mt-0.5" />
                         <div>
                           <strong>توجه تصحیح آزمون:</strong>
                           <p>تصحیح سوالات تشریحی به صورت دستی انجام می‌شود. در آینده می‌توان پیشنهاد نمره با هوش مصنوعی اضافه کرد.</p>
@@ -1639,13 +1639,13 @@ export default function Questions() {
 
                   {/* Reading comprehension & Cloze parts dynamic details */}
                   {(formType === 'reading_comprehension' || formType === 'cloze') && (
-                    <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-3">
+                    <div className="bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
                       <div className="flex justify-between items-center border-b pb-2">
-                        <span className="font-bold text-slate-800 text-[11px]">بخش‌ها و زیرسوالات تابعه ({formParts.length} مینی‌سوال)</span>
+                        <span className="font-bold text-[var(--color-text-primary)] text-[11px]">بخش‌ها و زیرسوالات تابعه ({formParts.length} مینی‌سوال)</span>
                         <button
                           type="button"
                           onClick={addPartRow}
-                          className="px-2.5 py-1 bg-indigo-600 text-white rounded text-[10px] font-bold"
+                          className="px-2.5 py-1 bg-[var(--color-accent)] text-white rounded text-[10px] font-bold"
                         >
                           + افزودن زیرسوال تابعه
                         </button>
@@ -1653,18 +1653,18 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formParts.map((part, idx) => (
-                          <div key={part.id} className="bg-white p-3 rounded-xl border border-slate-200 relative space-y-2">
+                          <div key={part.id} className="bg-white p-3 rounded-xl border border-[var(--color-glass-light-stroke)] relative space-y-2">
                             <button
                               type="button"
                               onClick={() => removePartRow(idx)}
-                              className="absolute top-2 left-2 text-rose-500 font-bold"
+                              className="absolute top-2 left-2 text-[var(--color-danger)] font-bold"
                             >
                               &times;
                             </button>
-                            <span className="bg-slate-100 rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-700 block w-20 text-center">بخش شماره {idx + 1}</span>
+                            <span className="bg-white/4 rounded px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-text-secondary)] block w-20 text-center">بخش شماره {idx + 1}</span>
 
                             <div className="space-y-1">
-                              <span className="text-[9px] text-slate-400 block">صورت مینی‌سوال:</span>
+                              <span className="text-[9px] text-[var(--color-text-tertiary)] block">صورت مینی‌سوال:</span>
                               <input
                                 type="text"
                                 required
@@ -1674,12 +1674,12 @@ export default function Questions() {
                                   updated[idx].text = e.target.value;
                                   setFormParts(updated);
                                 }}
-                                className="w-full bg-slate-50 px-2 py-1 rounded text-[11px]"
+                                className="w-full bg-white/3 px-2 py-1 rounded text-[11px]"
                               />
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[9px] text-slate-400 block">پاسخ صحیح مینی سوال:</span>
+                              <span className="text-[9px] text-[var(--color-text-tertiary)] block">پاسخ صحیح مینی سوال:</span>
                               <input
                                 type="text"
                                 required
@@ -1690,7 +1690,7 @@ export default function Questions() {
                                   setFormParts(updated);
                                 }}
                                 placeholder="گزینه یا عبارت کلید مینی‌سوال"
-                                className="w-full bg-slate-50 px-2 py-1 rounded text-[11px] font-mono"
+                                className="w-full bg-white/3 px-2 py-1 rounded text-[11px] font-mono"
                               />
                             </div>
                           </div>
@@ -1700,29 +1700,29 @@ export default function Questions() {
                   )}
 
                   {/* 6. General explanation (teacher comments / solutions) */}
-                  <div className="space-y-1 pt-3.5 border-t border-slate-100">
-                    <label className="text-[10px] text-slate-400 font-bold block">توضیح پاسخ تشریحی / راهنمای نمره‌دهی متفرقه (اختیاری):</label>
+                  <div className="space-y-1 pt-3.5 border-t border-[var(--color-glass-light-stroke)]">
+                    <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">توضیح پاسخ تشریحی / راهنمای نمره‌دهی متفرقه (اختیاری):</label>
                     <textarea
                       rows={2}
                       value={formExplanation}
                       onChange={(e) => setFormExplanation(e.target.value)}
                       placeholder="این یادداشت به دانش‌آموزان در قالب پاسخ‌برگ تشریحی سیستم نشان داده خواهد گردید..."
-                      className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2.5 rounded-xl text-[11px] leading-relaxed"
+                      className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl text-[11px] leading-relaxed"
                     />
                   </div>
 
                   {/* Submission triggers */}
-                  <div className="pt-4 border-t border-slate-100 flex gap-3 justify-end">
+                  <div className="pt-4 border-t border-[var(--color-glass-light-stroke)] flex gap-3 justify-end">
                     <button
                       type="button"
                       onClick={() => setShowAddEditDrawer(false)}
-                      className="px-4.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl cursor-pointer"
+                      className="px-4.5 py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] font-semibold rounded-xl cursor-pointer"
                     >
                       انصراف
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm cursor-pointer"
+                      className="px-5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl shadow-sm cursor-pointer"
                     >
                       {drawerMode === 'add' ? 'ثبت و الحاق به بانک سوالات ملی' : 'ذخیره دگرگونی ها'}
                     </button>
