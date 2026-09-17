@@ -184,7 +184,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-[var(--color-accent)]/8 rounded-full blur-[80px] filter" />
         <div className="absolute right-4 bottom-4 opacity-[0.05] pointer-events-none hidden xl:block">
-          <TheMark variant="logo" size={120} animated={false} />
+          <TheMark variant="core" size={120} animated={false} />
         </div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
