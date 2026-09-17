@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, ArrowLeft, CheckCircle2, Award, Clock, FileText, Check, CheckSquare, Plus, Layers, ShieldAlert } from 'lucide-react';
 import { logger } from '../../lib/logger';
+import { useToast } from '../../hooks/useToast';
 import { Exam, ExamSection, Question, ClassGroup } from '../../types';
 import { examService, questionService, classService } from '../../services/api';
 
@@ -17,6 +18,7 @@ interface NewExamProps {
 
 export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   const [step, setStep] = useState(1);
+  const { showToast, toastElement } = useToast();
 
   // Step 1 states
   const [title, setTitle] = useState('');
@@ -93,13 +95,13 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
   const handlePublish = async () => {
     if (!title) {
-      alert('لطفاً عنوان آزمون را وارد نمایید.');
+      showToast('لطفاً عنوان آزمون را وارد نمایید.', 'warning');
       setStep(1);
       return;
     }
 
     if (selectedQuestionIds.length === 0) {
-      alert('لطفاً حداقل یک سوال برای آزمون خود برگزینید.');
+      showToast('لطفاً حداقل یک سوال برای آزمون خود برگزینید.', 'warning');
       setStep(2);
       return;
     }
@@ -140,11 +142,11 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       if (onAddExam) {
         onAddExam(createdExam);
       } else {
-        alert('آزمون جدید با موفقیت ایجاد و کدهای ورود به دانش‌آموزان تخصیص داده شد.');
+        showToast('آزمون جدید با موفقیت ایجاد شد.', 'success');
         onBack();
       }
     } catch (err: any) {
-      alert(`خطا در ایجاد آزمون: ${err?.message || err}`);
+      showToast(`خطا در ایجاد آزمون: ${err?.message || err}`, 'error');
     } finally {
       setPublishing(false);
     }
@@ -508,11 +510,11 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               id="wizard-btn-next"
               onClick={() => {
                 if (step === 1 && !title) {
-                  alert('لطفاً عنوان آزمون را برای پیشروی وارد نمایید.');
+                  showToast('لطفاً عنوان آزمون را برای پیشروی وارد نمایید.', 'warning');
                   return;
                 }
                 if (step === 2 && selectedQuestionIds.length === 0) {
-                  alert('لطفاً حداقل یک سوال برگزینید تا توازن ورقه صورت گیرد.');
+                  showToast('لطفاً حداقل یک سوال برگزینید.', 'warning');
                   return;
                 }
                 setStep(step + 1);
@@ -534,6 +536,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           )}
         </div>
       </div>
+      {toastElement}
     </div>
   );
 }
