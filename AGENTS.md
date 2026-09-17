@@ -95,6 +95,39 @@ Teacher routes use `requireTeacher()` for Supabase Auth verification. Student ro
 - Tailwind v4 — uses `@tailwindcss/vite` plugin, not the PostCSS plugin. No `tailwind.config.js` needed.
 - Icons from `lucide-react`, animations from `motion` (framer-motion successor)
 
+## Design System — Liquid Glass + The Mark
+
+Reference spec: `docs/brand-the-mark.md`. Tokens defined in `src/index.css` `@theme`.
+
+### Brand
+- **The Mark (علامت)**: four answer bubbles, one gold-filled. Logo = product action. Use `<TheMark variant="row|grid|palette|core" />` from `src/components/TheMark.tsx`.
+- **Never**: gold rings (gold is always filled), two golds in a row, rotation, mixed stroke widths, non-gold fill colors.
+
+### Color tokens (use these, not raw hex)
+- `--color-ink` #221E4A — dark surfaces, sidebar, hero
+- `--color-gold` #F5B301 — answered state, active indicators only
+- `--color-accent` #4F46E5 — primary actions (indigo)
+- `--color-success/warning/danger` + `-soft` variants — status
+- `--color-text-primary/secondary/tertiary` — text hierarchy
+
+### Glass surfaces (CSS classes, not utilities)
+- `glass-1` — cards, panels (blur 20px, white 72%)
+- `glass-2` — modals, dropdowns (blur 40px)
+- `glass-3` — dark sidebar (ink-tinted, blur 24px)
+
+### Components
+- Cards/modals/buttons/badges: `src/components/UIComponents.tsx` — extend, don't recreate
+- **Toasts**: `useToast()` hook → `showToast(msg, 'success'|'error'|'warning'|'info')` + render `{toastElement}`. Never use `alert()`.
+- **Confirmations**: `<ConfirmDialog isOpen title message confirmText onConfirm onCancel />`. Never use `window.confirm()`.
+- **Loading**: Skeleton components from `src/components/Skeleton.tsx`
+- **Teacher data**: `useTeacher()` from `src/contexts/TeacherContext.tsx` — single fetch, don't call `authService.getCurrentTeacher()` directly in components.
+
+### Layout
+- Sidebar: fixed right, `w-60` desktop, slide-in overlay on mobile (`lg:mr-60` on main container)
+- Content padding: `p-4 lg:p-8`
+- Radius: `rounded-xl` (components), `rounded-2xl` (sections), `rounded-3xl` (modals only)
+- Mobile-first required — test every component at 375px width before shipping
+
 ## Supabase Migrations
 
 Located in `supabase/migrations/`. Schema draft in `supabase/schema-security-draft.sql`. Read `docs/supabase-hardening.md` and `docs/supabase-first-run.md` before working with the database.
