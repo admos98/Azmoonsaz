@@ -151,7 +151,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300" id="new-exam-wizard-wrapper">
+    <div className="glass-1 rounded-2xl overflow-hidden animate-in fade-in duration-300" id="new-exam-wizard-wrapper">
       {/* Header and Back Button */}
       <div className="px-6 py-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
         <div className="flex items-center gap-3">

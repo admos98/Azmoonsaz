@@ -476,7 +476,7 @@ export default function Students() {
       </div>
 
       {/* Primary Tab Headers */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm" id="students-control-board">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-1 p-6 rounded-2xl" id="students-control-board">
         <div>
           <h2 className="text-md font-bold text-slate-800 flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-500" />
@@ -512,7 +512,7 @@ export default function Students() {
       </div>
 
       {/* Multi-Filter Panel: Search, Grade, Class Group, and Status! */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center" id="multi-filter-wrapper">
+      <div className="glass-1 p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center" id="multi-filter-wrapper">
         
         {/* Real-time search by name/nationalId */}
         <div className="relative flex-1 max-w-md">
@@ -599,7 +599,7 @@ export default function Students() {
       </div>
 
       {/* Main Student Representation Area (Responsive Table vs Mobile Cards) */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden" id="students-grid-box">
+      <div className="glass-1 rounded-2xl overflow-hidden" id="students-grid-box">
         
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
@@ -838,7 +838,7 @@ export default function Students() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-100"
+            className="glass-2 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
             id="add-edit-student-box"
           >
             {/* Modal Header */}
@@ -1016,7 +1016,7 @@ export default function Students() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-200/90 text-xs"
+            className="glass-2 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl text-xs"
             id="wizard-container"
           >
             {/* Header with Close */}
@@ -1337,14 +1337,14 @@ export default function Students() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100"
+            className="glass-2 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
             id="exam-logs-box"
           >
             {/* Header */}
             <div className="px-6 py-5 bg-indigo-50/70 border-b border-indigo-100 flex items-center justify-between">
               <button 
                 onClick={() => setShowExamLogsModal(false)}
-                className="text-slate-500 hover:text-slate-800 font-extrabold text-xs bg-white px-2.5 py-1.5 rounded-xl shadow-3xs cursor-pointer"
+                className="text-slate-500 hover:text-slate-800 font-extrabold text-xs bg-white px-2.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
               >
                 بستن سوابق
               </button>

@@ -174,7 +174,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
   return (
     <div className="space-y-6 animate-in fade-in duration-300" id="exams-tab-view">
       {/* Upper Panel Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-1 p-6 rounded-2xl">
         <div>
           <h2 className="text-md font-bold text-slate-800 flex items-center gap-2">
             <FileText className="w-5 h-5 text-indigo-500" />
@@ -232,7 +232,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
+                className="glass-1 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
                 id={`exam-box-${ex.id}`}
               >
                 {/* Visual Status Indicator Strip on Top */}
@@ -334,7 +334,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
               </motion.div>
             ))
           ) : (
-            <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-100 shadow-sm text-slate-400">
+            <div className="col-span-full py-16 text-center glass-1 rounded-2xl text-slate-400">
               هیچ آزمونی با ویژگی‌های بالا یافت نشد. می‌توانید با «طراحی آزمون نو» اولین سنجش خود را راه‌اندازی کنید.
             </div>
           )}

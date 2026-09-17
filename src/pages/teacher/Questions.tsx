@@ -492,7 +492,7 @@ export default function Questions() {
             <button
               onClick={() => setViewMode('card')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'card' ? 'bg-white text-indigo-600 shadow-3xs' : 'text-slate-400 hover:text-slate-700'
+                viewMode === 'card' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'
               }`}
               title="نمایش کارتی بخر"
             >
@@ -501,7 +501,7 @@ export default function Questions() {
             <button
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'table' ? 'bg-white text-indigo-600 shadow-3xs' : 'text-slate-400 hover:text-slate-700'
+                viewMode === 'table' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-400 hover:text-slate-700'
               }`}
               title="نمایش جدولی منظم"
             >
@@ -817,7 +817,7 @@ export default function Questions() {
               </div>
             ) : (
               /* TABLE ROW VIEW MODE */
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-3xs overflow-hidden" id="questions-table-view-box">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden" id="questions-table-view-box">
                 <div className="overflow-x-auto text-right">
                   <table className="w-full text-xs text-slate-700" id="questions-table">
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
@@ -889,7 +889,7 @@ export default function Questions() {
 
                             {/* Has image? */}
                             <td className="p-4 text-center">
-                              <span className={`inline-block w-2.5 h-2.5 rounded-full ${hasImage ? 'bg-purple-505 border border-purple-500 bg-purple-500 shadow-3xs' : 'bg-slate-200'}`} title={hasImage ? 'دارای تصویر ضمیمه' : 'فاقد تصویر'}></span>
+                              <span className={`inline-block w-2.5 h-2.5 rounded-full ${hasImage ? 'bg-purple-505 border border-purple-500 bg-purple-500 shadow-xs' : 'bg-slate-200'}`} title={hasImage ? 'دارای تصویر ضمیمه' : 'فاقد تصویر'}></span>
                             </td>
 
                             {/* Row Actions */}
@@ -930,7 +930,7 @@ export default function Questions() {
           ) : (
             /* EMPTY FILTERED QUESTIONS STATE */
             <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center text-slate-400 select-none space-y-3" id="empty-questions">
-              <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 mx-auto flex items-center justify-center text-slate-300 shadow-3xs">
+              <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 mx-auto flex items-center justify-center text-slate-300 shadow-xs">
                 <HelpCircle className="w-8 h-8" />
               </div>
               <h4 className="font-bold text-slate-700 text-xs">هیچ سوالی با فیلترهای بالا همخوانی ندارد</h4>
@@ -1048,7 +1048,7 @@ export default function Questions() {
                     showCorrectAnswers={true}
                   />
 
-                  <div className="bg-white/80 border border-slate-200 p-3.5 rounded-2xl text-[9.5px] leading-relaxed text-slate-500 flex items-start gap-1.5 shadow-3xs">
+                  <div className="bg-white/80 border border-slate-200 p-3.5 rounded-2xl text-[9.5px] leading-relaxed text-slate-500 flex items-start gap-1.5 shadow-xs">
                     <Info className="w-3.5 h-3.5 shrink-0 text-slate-400 mt-0.5" />
                     <span>تغیرات بالا بلافاصله با تایپ کردن فرم زیر، به‌روزرسانی می‌شوند تا ساختار نهایی را بررسی نمایید.</span>
                   </div>
