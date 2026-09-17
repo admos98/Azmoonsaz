@@ -281,7 +281,14 @@ export default function App() {
     <TeacherProvider>
       <GlassFilters />
       <div className="min-h-screen bg-[var(--color-page-bg)] flex" dir="rtl" id="app-teacher-shell">
-        {/* Sidebar */}
+        {/* Background depth layer — stage surface that main panel floats above */}
+        <div className="fixed inset-0 z-0 pointer-events-none" id="app-bg-stage">
+          <div className="absolute inset-0 bg-[var(--color-surface-secondary)]" />
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[42rem] h-[42rem] bg-[var(--color-accent)]/2 rounded-full blur-[140px]" />
+          <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-[var(--color-gold)]/4 rounded-full blur-[120px]" />
+        </div>
+
+        {/* Sidebar — layer 30 */}
         <Sidebar
           currentTab={currentTab}
           onTabChange={(tab) => {
@@ -293,8 +300,8 @@ export default function App() {
           onSwitchRole={handleSwitchUserRole}
         />
 
-        {/* Main Container */}
-        <div className="flex-1 lg:mr-60 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
+        {/* Main Container — layer 10 (floats above bg stage) */}
+        <div className="relative z-10 flex-1 lg:mr-60 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
           <Topbar
             currentTab={currentTab}
             onSwitchRole={handleSwitchUserRole}
@@ -302,8 +309,8 @@ export default function App() {
             onSelectExamForResults={handleSelectExamForResults}
           />
 
-          {/* Dynamic Page Router */}
-          <div className="p-4 lg:p-8 flex-1" id="router-view-box">
+          {/* Dynamic Page Router — floats above bg stage on a glx surface */}
+          <div className="p-4 lg:p-8 flex-1 glx" id="router-view-box">
             <Suspense fallback={
               <div className="space-y-6" id="page-skeleton">
                 <div className="h-8 w-48 bg-slate-300 skeleton rounded-xl" />

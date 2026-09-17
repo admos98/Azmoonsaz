@@ -153,11 +153,11 @@ body {
 
 /* Dark glass — sidebar (ink field) */
 @utility glx-dark {
-  background: var(--color-glass-dark-fill);
+  background: #221E4A;
   border-right: 1px solid var(--color-glass-dark-stroke);
   border-left: 1px solid var(--color-glass-dark-stroke);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-shadow:
     inset 0 1px 0 var(--color-glass-dark-sheen),
     inset 0 -1px 1px var(--color-glass-dark-bottom),

@@ -202,7 +202,7 @@ export default function Topbar({
 
           {showNotifications && (
             <div
-              className="absolute left-0 mt-2 w-80 glx-strong rounded-2xl shadow-2xl z-40 overflow-hidden glx-sheen"
+              className="absolute right-0 top-full mt-3 w-80 glx-strong rounded-2xl shadow-2xl z-[60] overflow-y-auto glx-sheen"
               id="notification-dropdown"
             >
               <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
@@ -227,7 +227,7 @@ export default function Topbar({
                   notifications.map((n) => (
                     <div
                       key={n.id}
-                      className="p-3 hover:bg-white/8 transition-colors cursor-pointer"
+                      className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
                       onClick={() => {
                         if (n.onClick) n.onClick();
                         setShowNotifications(false);
