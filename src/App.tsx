@@ -316,7 +316,7 @@ export default function App() {
                 <div className="h-60 bg-slate-300 skeleton rounded-3xl" />
               </div>
             }>
-              {GlassSheen({ children: renderTeacherContent() })}
+              <GlassSheen>{renderTeacherContent()}</GlassSheen>
             </Suspense>
           </div>
         </div>
