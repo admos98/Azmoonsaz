@@ -845,7 +845,7 @@ export default function Students() {
 
       {/* Manual Add / Edit Modal Dialouge Room */}
       {showAddEditModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="add-edit-modal-backdrop">
+        <div className="fixed inset-0 z-[60] bg-black/20 backdrop-blur-[3px] flex items-center justify-center p-4 text-right" id="add-edit-modal-backdrop">
           <motion.div 
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

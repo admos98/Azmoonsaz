@@ -118,7 +118,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative cursor-pointer ${
                       active
                         ? 'bg-white/12 text-white shadow-sm'
-                        : 'text-[var(--color-text-on-dark-secondary)] hover:bg-white/6 hover:text-[var(--color-text-on-dark)]'
+                        : 'text-[var(--color-text-on-dark-secondary)] hover:bg-white/4 hover:text-white'
                     }`}
                   >
                     <Icon className={`w-4 h-4 transition-transform ${active ? 'text-[var(--color-gold)]' : ''}`} />

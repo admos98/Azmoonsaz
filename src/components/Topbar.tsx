@@ -202,7 +202,7 @@ export default function Topbar({
 
           {showNotifications && (
             <div
-              className="absolute right-0 top-full mt-3 w-80 glx-strong rounded-2xl shadow-2xl z-[60] overflow-y-auto glx-sheen"
+              className="absolute right-0 top-full mt-3 w-80 max-w-[20rem] glx-strong rounded-2xl shadow-2xl z-[60] overflow-y-auto glx-sheen"
               id="notification-dropdown"
             >
               <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
