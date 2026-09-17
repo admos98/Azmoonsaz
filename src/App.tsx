@@ -83,7 +83,7 @@ export default function App() {
     setCustomExams([newExam, ...customExams]);
     setCurrentTab('exams');
     setExamSubView('list');
-    alert(`آزمون « ${newExam.title} » با موفقیت طراحی شد و کد ورود ${newExam.examCode} به دانش‌آموزان اختصاص یافت.`);
+    // Success toast is shown by NewExam page itself
   };
 
   const handleSelectExamForResults = (examId: string) => {

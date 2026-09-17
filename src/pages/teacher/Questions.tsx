@@ -893,7 +893,7 @@ export default function Questions() {
 
                             {/* Subquestions count */}
                             <td className="p-4 text-center">
-                              <span className={`font-semibold ${subquestionsCount > 0 ? 'text-teal-600' : 'text-slate-350'}`}>
+                              <span className={`font-semibold ${subquestionsCount > 0 ? 'text-teal-600' : 'text-slate-400'}`}>
                                 {subquestionsCount > 0 ? toPersianDigits(subquestionsCount) : '—'}
                               </span>
                             </td>
@@ -1347,7 +1347,7 @@ export default function Questions() {
                                       }} className="text-rose-500 text-[9px]">حذف</button>
                                     </div>
                                   ) : (
-                                    <span className="text-[9px] text-slate-350 italic">عکسی نیست</span>
+                                    <span className="text-[9px] text-slate-400 italic">عکسی نیست</span>
                                   )}
                                 </div>
                               </div>

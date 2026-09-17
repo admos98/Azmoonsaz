@@ -1039,7 +1039,7 @@ export default function Students() {
                   setUploadedFileName('');
                   setWizardRawData([]);
                 }}
-                className="px-2.5 py-1 bg-slate-250/60 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all font-bold rounded-xl cursor-pointer"
+                className="px-2.5 py-1 bg-slate-100/60 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all font-bold rounded-xl cursor-pointer"
               >
                 بستن راهنما ×
               </button>
@@ -1088,7 +1088,7 @@ export default function Students() {
                       فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با <strong className="font-bold text-slate-700">name</strong> (نام و نام خانوادگی)، <strong className="font-bold text-slate-700">national_id</strong> (کدملی)، <strong className="font-bold text-slate-700 text-indigo-600">class</strong> (نام کلاس) و <strong className="font-bold text-slate-700">grade</strong> (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
                     </p>
                     <p className="text-amber-700 font-bold text-[10.5px] mt-1 bg-amber-50 border border-amber-100 p-2 rounded-xl text-center">
-                      ⚠️ در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
+                      در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
                     </p>
                     <span className="text-[11px] block mt-1 bg-indigo-50/70 border border-indigo-100/40 text-indigo-800 p-2 rounded-xl text-center font-bold">
                       "فایل شما باید شامل ستون‌های name، national_id، class و grade باشد."
@@ -1150,7 +1150,7 @@ export default function Students() {
               {wizardStep === 2 && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                    <span className="text-slate-500 font-semibold">فایل دریافتی: <strong className="text-slate-850">{uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}</strong></span>
+                    <span className="text-slate-500 font-semibold">فایل دریافتی: <strong className="text-slate-900">{uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}</strong></span>
                     <span className="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">{toPersianDigits(wizardRawData.length)} ردیف یافت شد</span>
                   </div>
 
@@ -1413,7 +1413,7 @@ export default function Students() {
                   </div>
                 ) : (
                   <div className="p-8 text-center bg-slate-50/45 rounded-2xl border border-dashed border-slate-200 select-none">
-                    <Info className="w-8 h-8 text-slate-350 mx-auto mb-2" />
+                    <Info className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                     <p className="text-[10px] text-slate-400">هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت نگردیده است.</p>
                   </div>
                 )}

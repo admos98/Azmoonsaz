@@ -677,7 +677,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   onClick={() => onNavigate('questions')}
                   className="text-[9px] font-black text-indigo-600 hover:text-indigo-800 hover:underline block pt-1 cursor-pointer"
                 >
-                  بهبود سوالات و خروج از بحران 🚀
+                  بهبود بانک سوالات
                 </button>
               </div>
             </div>
@@ -780,7 +780,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     برای ورود فله‌ای مشخصات دانش‌آموزان و قراردهی آن‌ها در کلاس‌ها، می‌توانید فایل خروجی سناد یا فایل دستی اکسل با پسوندهای <strong className="font-semibold text-slate-700">.xlsx</strong> یا <strong className="font-semibold text-slate-700">.csv</strong> را بارگذاری کنید.
                   </p>
                   <p className="text-amber-700 font-bold text-[10.5px] bg-amber-50 border border-amber-100 p-2 rounded-xl text-center">
-                    ⚠️ در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
+                    در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
                   </p>
 
                   <div
@@ -810,7 +810,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   </div>
 
                   <div className="p-3.5 bg-indigo-50/50 border border-indigo-100/40 rounded-xl text-indigo-800 flex items-start gap-2 text-[10px]">
-                    <span className="font-bold">💡 نکته راهنما:</span>
+                    <span className="font-bold">نکته راهنما:</span>
                     <span>ستون‌های الزامی در فایل اکسل باید شامل «نام و نام خانوادگی»، «کد ملی» و «پایه تحصیلی» باشد.</span>
                   </div>
                 </div>

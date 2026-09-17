@@ -199,10 +199,10 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       <div className="flex items-center space-x-2 space-x-reverse border-b border-slate-200/80 pb-1" id="exam-status-tabs">
         {[
           { id: 'all', label: 'همه آزمون‌ها' },
-          { id: 'active', label: '🔴 در حال برگزاری (زنده)' },
-          { id: 'scheduled', label: '🗓️ برنامه‌ریزی شده' },
-          { id: 'draft', label: '✒️ پیش‌نویس‌ها' },
-          { id: 'completed', label: '✅ برگزار شده' },
+          { id: 'active', label: 'در حال برگزاری (زنده)' },
+          { id: 'scheduled', label: 'برنامه‌ریزی شده' },
+          { id: 'draft', label: 'پیش‌نویس‌ها' },
+          { id: 'completed', label: 'برگزار شده' },
         ].map(tab => (
           <button
             key={tab.id}
