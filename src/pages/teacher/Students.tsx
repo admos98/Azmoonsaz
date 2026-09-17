@@ -34,8 +34,10 @@ import {
 import { logger } from '../../lib/logger';
 import { Student, Submission, ClassGroup, Exam } from '../../types';
 import { studentService, classService, gradingService, examService } from '../../services/api';
+import { useToast } from '../../hooks/useToast';
 
 export default function Students() {
+  const { showToast, toastElement } = useToast();
   // State management
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,7 +170,7 @@ export default function Students() {
 
     const validationResult = validateIranianNationalId(formNationalId);
     if (!validationResult.isValid) {
-      alert(`خطای کدملی: ${validationResult.message}`);
+      showToast(`خطای کدملی: ${validationResult.message}`, 'error');
       return;
     }
 
@@ -177,7 +179,7 @@ export default function Students() {
         // Check for duplicated National ID
         const isDuplicate = students.some(s => s.nationalId === formNationalId);
         if (isDuplicate) {
-          alert('خطا: دانش‌آموزی با این کد ملی پیش از این در سیستم ثبت شده است.');
+          showToast('دانش‌آموزی با این کد ملی قبلاً ثبت شده است.', 'error');
           return;
         }
 
@@ -220,7 +222,7 @@ export default function Students() {
       }
       setShowAddEditModal(false);
     } catch (err: any) {
-      alert(`خطا در ذخیره‌سازی: ${err?.message || err}`);
+      showToast(`خطا در ذخیره‌سازی: ${err?.message || err}`, 'error');
     }
   };
 
@@ -232,7 +234,7 @@ export default function Students() {
         await studentService.deleteStudent(id);
         setStudents(students.filter(s => s.id !== id));
       } catch (err: any) {
-        alert(`خطا در حذف: ${err?.message || err}`);
+        showToast(`خطا در حذف: ${err?.message || err}`, 'error');
       }
     }
   };
@@ -303,7 +305,7 @@ export default function Students() {
   const parseCSVText = (text: string) => {
     const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
     if (lines.length < 2) {
-      alert('خطا: فایل ارسالی خالی است یا ساختار صحیحی ندارد.');
+      showToast('فایل ارسالی خالی است یا ساختار صحیحی ندارد.', 'error');
       return;
     }
 
@@ -442,7 +444,7 @@ export default function Students() {
         setWizardRawData([]);
       }, 2200);
     } catch (err) {
-      alert('خطا در بارگذاری گروهی دانش‌آموزان');
+      showToast('خطا در بارگذاری گروهی دانش‌آموزان', 'error');
     }
   };
 
@@ -463,6 +465,7 @@ export default function Students() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300" id="students-tab-view">
+      {toastElement}
       
       {/* Privacy Warning Card (Critical Safeguard) */}
       <div className="bg-amber-50 border border-amber-200 p-4.5 rounded-2xl flex items-start gap-3 shadow-sm" id="privacy-warning-banner">

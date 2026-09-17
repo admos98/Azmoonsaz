@@ -40,6 +40,7 @@ import { logger } from '../../lib/logger';
 import { Question, QuestionType, QuestionOption, QuestionPart, RubricCriterion } from '../../types';
 import QuestionRenderer from '../../components/QuestionRenderer';
 import { questionService } from '../../services/api';
+import { useToast } from '../../hooks/useToast';
 import { uploadQuestionImage } from '../../services/storageService';
 
 // Local enhanced interface to handle optional tags, chapters, difficulty, and completeness statuses
@@ -53,6 +54,7 @@ interface RichQuestion extends Question {
 }
 
 export default function Questions() {
+  const { showToast, toastElement } = useToast();
   // Rich list state
   const [questions, setQuestions] = useState<RichQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -217,7 +219,7 @@ export default function Questions() {
           setFormOptions(updated);
         } else if ('partIndex' in target) {
           // Additional mock mapping
-          alert('تصویر به بخش زیرسوال الحاق گردید.');
+          showToast('تصویر با موفقیت الحاق شد.', 'success');
         }
       };
       reader.readAsDataURL(file);
@@ -232,7 +234,7 @@ export default function Questions() {
 
   const removeOptionRow = (idx: number) => {
     if (formOptions.length <= 2) {
-      alert('خطا: سوال چند گزینه‌ای حداقل نیازمند وجود دو گزینه است.');
+      showToast('سوال چندگزینه‌ای حداقل دو گزینه لازم دارد.', 'warning');
       return;
     }
     setFormOptions(formOptions.filter((_, i) => i !== idx));
@@ -362,7 +364,7 @@ export default function Questions() {
   const handleSaveQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle || !formText) {
-      alert('لطفاً عنوان سوال و متن اصلی را وارد نمایید.');
+      showToast('عنوان و متن اصلی سوال الزامی است.', 'warning');
       return;
     }
 
@@ -428,7 +430,7 @@ export default function Questions() {
       }
       setShowAddEditDrawer(false);
     } catch (err) {
-      alert('خطا در ذخیره‌سازی سوال');
+      showToast('خطا در ذخیره‌سازی سوال', 'error');
     }
   };
 
@@ -440,7 +442,7 @@ export default function Questions() {
         await questionService.deleteQuestion(id);
         setQuestions(questions.filter(q => q.id !== id));
       } catch (err) {
-        alert('خطا در پاک کردن سوال');
+        showToast('خطا در پاک کردن سوال', 'error');
       }
     }
   };
@@ -475,6 +477,7 @@ export default function Questions() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 text-right font-sans mb-12" dir="rtl" id="questions-tab-view">
+      {toastElement}
 
       {/* Page Title Board */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs" id="questions-title-plate">
