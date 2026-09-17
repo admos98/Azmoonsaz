@@ -9,6 +9,7 @@ import { FileText, Plus, Eye, Settings as SettingsIcon, Award, Clock, ArrowLeft,
 import { logger } from '../../lib/logger';
 import { Exam, ClassGroup, Question, Teacher } from '../../types';
 import { classService, examService } from '../../services/api';
+import { useToast } from '../../hooks/useToast';
 
 // Import subviews
 import ExamSettings from './ExamSettings';
@@ -23,6 +24,7 @@ interface ExamsProps {
 }
 
 export default function Exams({ onNavigate, selectedExamId: propExamId, subView: propSubView = 'list', onSubViewChange }: ExamsProps) {
+  const { showToast, toastElement } = useToast();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
@@ -60,7 +62,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       const updated = await examService.updateExam(examId, { status: newStatus });
       setExams(exams.map(e => e.id === examId ? { ...e, ...updated } : e));
     } catch (err) {
-      alert('خطا در تغییر وضعیت آزمون');
+      showToast('خطا در تغییر وضعیت آزمون', 'error');
     }
   };
 
@@ -68,11 +70,11 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
     try {
       const updated = await examService.updateExam(updatedExam.id, updatedExam);
       setExams(exams.map(e => e.id === updatedExam.id ? { ...e, ...updated } : e));
-      alert('تنظیمات آزمون با موفقیت ذخیره گردید.');
+      showToast('تنظیمات آزمون ذخیره شد.', 'success');
       setLocalSubView('list');
       if (onSubViewChange) onSubViewChange('list');
     } catch (err) {
-      alert('خطا در بروزرسانی آزمون');
+      showToast('خطا در بروزرسانی آزمون', 'error');
     }
   };
 
@@ -81,7 +83,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       await examService.deleteExam(examId);
       setExams(exams.filter(e => e.id !== examId));
     } catch (err) {
-      alert('خطا در حذف آزمون');
+      showToast('خطا در حذف آزمون', 'error');
     }
   };
 
@@ -148,7 +150,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
         }}
         onSave={(updatedExam) => {
           setExams(prev => prev.map(e => e.id === updatedExam.id ? updatedExam : e));
-          alert('تغییرات پیش‌نویس آزمون با موفقیت ذخیره گردید.');
+          showToast('تغییرات پیش‌نویس ذخیره شد.', 'success');
         }}
         onNavigateToSettings={(updatedExam) => {
           setExams(prev => prev.map(e => e.id === updatedExam.id ? updatedExam : e));
@@ -173,6 +175,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300" id="exams-tab-view">
+      {toastElement}
       {/* Upper Panel Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-1 p-6 rounded-2xl">
         <div>

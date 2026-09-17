@@ -35,6 +35,7 @@ import { TheMark } from '../../components/TheMark';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
 import { studentService, examService, gradingService, classService, questionService } from '../../services/api';
 import { useTeacher } from '../../contexts/TeacherContext';
+import { useToast } from '../../hooks/useToast';
 
 interface DashboardProps {
   onNavigate: (tab: string) => void;
@@ -43,6 +44,7 @@ interface DashboardProps {
 
 export default function Dashboard({ onNavigate, onSelectExamForResults }: DashboardProps) {
   const { teacher } = useTeacher();
+  const { showToast, toastElement } = useToast();
   // Setup local state to support real-time user mutations
   const [localStudents, setLocalStudents] = useState<Student[]>([]);
   const [localExams, setLocalExams] = useState<Exam[]>([]);
@@ -144,7 +146,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
   const handleConfirmImport = () => {
     // TODO: Implement real Excel parsing with papaparse/xlsx
-    alert('ورود اکسل هنوز پیاده‌سازی نشده است.');
+    showToast('ورود اکسل هنوز پیاده‌سازی نشده است.', 'warning');
     setIsExcelModalOpen(false);
     setImportStep('idle');
     setExcelFile(null);
@@ -175,6 +177,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
   return (
     <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
+      {toastElement}
 
       {/* 1. Welcome Card Hero — ink glass with The Mark */}
       <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl bg-[var(--color-ink)] text-white shadow-lg" id="dashboard-hero-banner">
