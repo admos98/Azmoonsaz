@@ -465,7 +465,7 @@ export default function Students() {
     <div className="space-y-6 animate-in fade-in duration-300" id="students-tab-view">
       
       {/* Privacy Warning Card (Critical Safeguard) */}
-      <div className="bg-amber-50 border border-amber-200 p-4.5 rounded-2xl flex items-start gap-3 shadow-2xs" id="privacy-warning-banner">
+      <div className="bg-amber-50 border border-amber-200 p-4.5 rounded-2xl flex items-start gap-3 shadow-sm" id="privacy-warning-banner">
         <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div className="space-y-1 text-right">
           <h4 className="text-xs font-bold text-amber-800">هشدار صیانت از اطلاعات حساس سجلی دانش‌آموزان</h4>
@@ -522,7 +522,7 @@ export default function Students() {
             placeholder="جستجوی دانش‌آموز با نام و کد ملی..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-50/70 border border-slate-150 text-xs text-slate-750 pr-9.5 pl-4 py-2.5 rounded-xl focus:outline-hidden focus:border-indigo-400 focus:bg-white transition-all text-right"
+            className="w-full bg-slate-50/70 border border-slate-200 text-xs text-slate-750 pr-9.5 pl-4 py-2.5 rounded-xl focus:outline-hidden focus:border-indigo-400 focus:bg-white transition-all text-right"
           />
         </div>
 
@@ -604,7 +604,7 @@ export default function Students() {
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
           <table className="w-full text-xs" id="students-desk-table">
-            <thead className="bg-slate-50/75 border-b border-slate-150 text-slate-550">
+            <thead className="bg-slate-50/75 border-b border-slate-200 text-slate-550">
               <tr>
                 <th className="p-4 font-bold text-right">نام و نام خانوادگی</th>
                 <th className="p-4 font-bold text-right">کد ملی (ماسک زنده)</th>
@@ -651,7 +651,7 @@ export default function Students() {
                         </td>
 
                         {/* Grade */}
-                        <td className="p-4 text-slate-650 font-medium">پایه {student.grade}</td>
+                        <td className="p-4 text-slate-700 font-medium">پایه {student.grade}</td>
 
                         {/* Class */}
                         <td className="p-4 text-slate-700 font-bold">
@@ -757,7 +757,7 @@ export default function Students() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="bg-slate-50/70 border border-slate-150 p-4.5 rounded-2xl flex flex-col gap-3 text-right text-xs"
+                    className="bg-slate-50/70 border border-slate-200 p-4.5 rounded-2xl flex flex-col gap-3 text-right text-xs"
                     id={`stud-card-${student.id}`}
                   >
                     <div className="flex justify-between items-start">
@@ -834,7 +834,7 @@ export default function Students() {
 
       {/* Manual Add / Edit Modal Dialouge Room */}
       {showAddEditModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 text-right" id="add-edit-modal-backdrop">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="add-edit-modal-backdrop">
           <motion.div 
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -945,7 +945,7 @@ export default function Students() {
                       onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
                       className={`py-2 text-[10px] rounded-xl border font-bold transition-all cursor-pointer ${
                         formStatus === s.val 
-                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs' 
+                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' 
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -1012,7 +1012,7 @@ export default function Students() {
 
       {/* 4-Step Excel / CSV Import Wizard Modal! */}
       {showImportWizard && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 text-right" id="wizard-backdrop">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="wizard-backdrop">
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1039,7 +1039,7 @@ export default function Students() {
             </div>
 
             {/* Step Wizard visual track bar! */}
-            <div className="bg-slate-50 border-b border-slate-150 px-6 py-3.5 flex items-center justify-around gap-2 select-none">
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-3.5 flex items-center justify-around gap-2 select-none">
               {[
                 { s: 1, label: 'مرحله ۱: انتخاب فایل' },
                 { s: 2, label: 'مرحله ۲: پیش‌نمایش اطلاعات' },
@@ -1049,10 +1049,10 @@ export default function Students() {
                 <div key={stepObj.s} className="flex items-center gap-2">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
                     wizardStep === stepObj.s 
-                      ? 'bg-indigo-600 text-white shadow-2xs' 
+                      ? 'bg-indigo-600 text-white shadow-sm' 
                       : wizardStep > stepObj.s 
                       ? 'bg-emerald-500 text-white' 
-                      : 'bg-slate-200 text-slate-450'
+                      : 'bg-slate-200 text-slate-400'
                   }`}>
                     {wizardStep > stepObj.s ? '✓' : toPersianDigits(stepObj.s)}
                   </div>
@@ -1091,7 +1091,7 @@ export default function Students() {
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center gap-3 transition-colors ${
-                      dragActive ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-250 bg-slate-50 hover:bg-slate-100/50'
+                      dragActive ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300 bg-slate-50 hover:bg-slate-100/50'
                     }`}
                   >
                     <Upload className="w-12 h-12 text-slate-400 animate-pulse" />
@@ -1125,7 +1125,7 @@ export default function Students() {
                       <button
                         type="button"
                         onClick={loadErrorSampleTemplate}
-                        className="flex-1 py-2 bg-rose-50 hover:bg-rose-100/80 border border-rose-150 text-rose-800 rounded-xl font-bold cursor-pointer"
+                        className="flex-1 py-2 bg-rose-50 hover:bg-rose-100/80 border border-rose-100 text-rose-800 rounded-xl font-bold cursor-pointer"
                       >
                         بارگذاری رکوردهای دارای خطا و کد تکراری دمو
                       </button>
@@ -1145,7 +1145,7 @@ export default function Students() {
 
                   <p className="text-slate-400 text-[10px]">لیست سطور خام خوانده‌شده از فایل قبل از اعتبارسنجی:</p>
 
-                  <div className="border border-slate-150 rounded-xl overflow-hidden shadow-2xs max-h-60 overflow-y-auto">
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm max-h-60 overflow-y-auto">
                     <table className="w-full text-right text-[11px]">
                       <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 sticky top-0">
                         <tr>
@@ -1162,7 +1162,7 @@ export default function Students() {
                             <td className="p-3 text-center text-slate-400 font-bold">{toPersianDigits(row.row)}</td>
                             <td className="p-3 font-bold text-slate-800">{row.name || <span className="text-rose-500 italic">خالی</span>}</td>
                             <td className="p-3 font-mono text-slate-600">{toPersianDigits(row.national_id) || <span className="text-rose-500 italic">خالی</span>}</td>
-                            <td className="p-3 text-slate-650">{row.grade || <span className="text-rose-500 italic">خالی</span>}</td>
+                            <td className="p-3 text-slate-700">{row.grade || <span className="text-rose-500 italic">خالی</span>}</td>
                             <td className="p-3 text-slate-700 font-semibold">{row.class || <span className="text-rose-500 italic">خالی</span>}</td>
                           </tr>
                         ))}
@@ -1282,7 +1282,7 @@ export default function Students() {
                   )}
 
                   {/* Wizard Step Action triggers */}
-                  <div className="flex justify-between gap-2.5 pt-3.5 border-t border-slate-150">
+                  <div className="flex justify-between gap-2.5 pt-3.5 border-t border-slate-200">
                     <button
                       onClick={() => setWizardStep(2)}
                       className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold cursor-pointer"
@@ -1333,7 +1333,7 @@ export default function Students() {
 
       {/* Submodal: Detailed Student Exam Participation logs */}
       {showExamLogsModal && activeLogStudent && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 text-right" id="exam-logs-modal-backdrop">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="exam-logs-modal-backdrop">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1393,7 +1393,7 @@ export default function Students() {
                               {sub.status === 'graded' ? 'تصحیح نهایی شده' : 'در حال سنجش یا نیازمند تصحیح'}
                             </span>
                             <span className="text-[11px] font-bold text-slate-800">
-                              نمره: <strong className="text-xs font-black text-indigo-650">{toPersianDigits(sub.score)}</strong> از {toPersianDigits(sub.maxScore)}
+                              نمره: <strong className="text-xs font-black text-indigo-600">{toPersianDigits(sub.score)}</strong> از {toPersianDigits(sub.maxScore)}
                             </span>
                           </div>
                         </div>

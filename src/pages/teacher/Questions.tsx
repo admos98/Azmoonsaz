@@ -198,7 +198,7 @@ export default function Questions() {
 
   const getDifficultyBadgeColor = (diff: string | undefined): string => {
     if (diff === 'easy') return 'bg-emerald-50 text-emerald-700 border-emerald-150';
-    if (diff === 'hard') return 'bg-rose-50 text-rose-700 border-rose-150';
+    if (diff === 'hard') return 'bg-rose-50 text-rose-700 border-rose-100';
     return 'bg-amber-50 text-amber-700 border-amber-150';
   };
 
@@ -477,7 +477,7 @@ export default function Questions() {
     <div className="space-y-6 animate-in fade-in duration-300 text-right font-sans mb-12" dir="rtl" id="questions-tab-view">
 
       {/* Page Title Board */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-150 shadow-xs" id="questions-title-plate">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs" id="questions-title-plate">
         <div className="space-y-1">
           <h2 className="text-md font-bold text-slate-800 flex items-center gap-2">
             <HelpCircle className="w-5 h-5 text-indigo-600" />
@@ -513,7 +513,7 @@ export default function Questions() {
           <button
             id="btn-add-question-trigger"
             onClick={openCreateDrawer}
-            className="flex-1 md:flex-none px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.01] active:scale-[0.99] text-white rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 md:flex-none px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 hover:scale-[1.01] active:scale-[0.99] text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>افزودن سوال جدید</span>
@@ -522,7 +522,7 @@ export default function Questions() {
       </div>
 
       {/* COMPREHENSIVE MULTI-FILTER PANEL */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-150 shadow-2xs space-y-4" id="filters-container">
+      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4" id="filters-container">
         <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5 mb-2">
           <Sliders className="w-4 h-4 text-indigo-500" />
           <h4 className="text-xs font-bold text-slate-700">جستجوی موضوعی و پالایش هوشمند سوالات</h4>
@@ -540,7 +540,7 @@ export default function Questions() {
                 placeholder="کلمه کلیدی، عنوان، هشتگ یا درس..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 pr-9 pl-3.5 py-2 rounded-xl focus:outline-hidden focus:border-indigo-400 focus:bg-white transition-all text-right"
+                className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 pr-9 pl-3.5 py-2 rounded-xl focus:outline-hidden focus:border-indigo-400 focus:bg-white transition-all text-right"
               />
             </div>
           </div>
@@ -551,7 +551,7 @@ export default function Questions() {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه قالب‌ها (۱۱ نوع)</option>
               <option value="single_choice">چهارگزینه‌ای تک‌پاسخ</option>
@@ -574,7 +574,7 @@ export default function Questions() {
             <select
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه پایه‌ها</option>
               <optgroup label="دبستان">
@@ -604,7 +604,7 @@ export default function Questions() {
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه درس‌ها</option>
               {uniqueSubjects.map(sub => (
@@ -619,7 +619,7 @@ export default function Questions() {
             <select
               value={selectedSection}
               onChange={(e) => setSelectedSection(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه فصل‌ها</option>
               {uniqueSections.map(s => (
@@ -634,7 +634,7 @@ export default function Questions() {
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه سطوح</option>
               <option value="easy">آسان</option>
@@ -649,7 +649,7 @@ export default function Questions() {
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه برچسب‌ها</option>
               {uniqueTags.map(t => (
@@ -664,7 +664,7 @@ export default function Questions() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-150 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200 text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه وضعیت‌ها</option>
               <option value="complete">کامل (دارای جواب معتبر)</option>
@@ -714,7 +714,7 @@ export default function Questions() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
-                      className="bg-white rounded-3xl p-5 border border-slate-150 hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
+                      className="bg-white rounded-3xl p-5 border border-slate-200 hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
                       id={`card-q-${q.id}`}
                     >
                       <div className="space-y-3.5">
@@ -745,7 +745,7 @@ export default function Questions() {
 
                         {/* Middle specific indicators badges */}
                         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
-                          <span className="bg-slate-50 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-150/60">
+                          <span className="bg-slate-50 text-slate-600 rounded-md px-2 py-0.5 text-[10px] font-semibold border border-slate-200/60">
                             {getTypeNameInPersian(q.type)}
                           </span>
 
@@ -796,7 +796,7 @@ export default function Questions() {
                           </button>
                           <button
                             onClick={() => openEditDrawer(q)}
-                            className="p-1.5 text-slate-650 hover:bg-slate-100 hover:text-slate-800 rounded-lg transition-all cursor-pointer"
+                            className="p-1.5 text-slate-700 hover:bg-slate-100 hover:text-slate-800 rounded-lg transition-all cursor-pointer"
                             title="ویرایش سوال"
                           >
                             <Edit className="w-4 h-4" />
@@ -817,10 +817,10 @@ export default function Questions() {
               </div>
             ) : (
               /* TABLE ROW VIEW MODE */
-              <div className="bg-white rounded-3xl border border-slate-150 shadow-3xs overflow-hidden" id="questions-table-view-box">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-3xs overflow-hidden" id="questions-table-view-box">
                 <div className="overflow-x-auto text-right">
                   <table className="w-full text-xs text-slate-700" id="questions-table">
-                    <thead className="bg-slate-50 border-b border-slate-150 text-slate-500">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                       <tr>
                         <th className="p-4 font-bold text-right">خلاصه متن سوال</th>
                         <th className="p-4 font-bold text-right">پایه</th>
@@ -856,7 +856,7 @@ export default function Questions() {
                             <td className="p-4 text-slate-600 font-medium">پایه {q.grade}</td>
 
                             {/* Subject & Section */}
-                            <td className="p-4 text-slate-650">
+                            <td className="p-4 text-slate-700">
                               <span className="font-semibold block">{q.category}</span>
                               <span className="text-[10px] text-slate-400 block mt-0.5">{q.section || 'فصل کلی'}</span>
                             </td>
@@ -930,7 +930,7 @@ export default function Questions() {
           ) : (
             /* EMPTY FILTERED QUESTIONS STATE */
             <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center text-slate-400 select-none space-y-3" id="empty-questions">
-              <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-150 mx-auto flex items-center justify-center text-slate-300 shadow-3xs">
+              <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 mx-auto flex items-center justify-center text-slate-300 shadow-3xs">
                 <HelpCircle className="w-8 h-8" />
               </div>
               <h4 className="font-bold text-slate-700 text-xs">هیچ سوالی با فیلترهای بالا همخوانی ندارد</h4>
@@ -942,15 +942,15 @@ export default function Questions() {
 
       {/* REUSABLE live preview question modal overlay */}
       {previewQuestion && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" id="live-preview-overlay">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" id="live-preview-overlay">
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-50 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-250 flex flex-col max-h-[90vh]"
+            className="bg-slate-50 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-300 flex flex-col max-h-[90vh]"
             id="preview-box"
           >
             {/* Header */}
-            <div className="px-6 py-4.5 bg-white border-b border-slate-150 flex items-center justify-between">
+            <div className="px-6 py-4.5 bg-white border-b border-slate-200 flex items-center justify-between">
               <button
                 onClick={() => setPreviewQuestion(null)}
                 className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 transition-all font-bold rounded-xl text-[10px] cursor-pointer"
@@ -972,7 +972,7 @@ export default function Questions() {
             </div>
 
             {/* Footer comments */}
-            <div className="bg-white border-t border-slate-150 p-4 flex justify-between items-center text-[10px] text-slate-400 font-medium">
+            <div className="bg-white border-t border-slate-200 p-4 flex justify-between items-center text-[10px] text-slate-400 font-medium">
               <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
               <span>بروزرسانی شده در: {toPersianDigits(new Date(previewQuestion.createdAt).toLocaleDateString('fa-IR'))}</span>
             </div>
@@ -982,7 +982,7 @@ export default function Questions() {
 
       {/* MEGA ADD / EDIT DRAWER (Saves into state cleanly with live options form build!) */}
       {showAddEditDrawer && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex justify-end" id="add-edit-drawer-overlay">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex justify-end" id="add-edit-drawer-overlay">
           <div className="fixed inset-0" onClick={() => setShowAddEditDrawer(false)} />
 
           <motion.div
@@ -994,7 +994,7 @@ export default function Questions() {
             id="add-edit-drawer"
           >
             {/* Drawer Header */}
-            <div className="px-6 py-5 bg-white border-b border-slate-150 flex items-center justify-between">
+            <div className="px-6 py-5 bg-white border-b border-slate-200 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setShowAddEditDrawer(false)}
@@ -1060,7 +1060,7 @@ export default function Questions() {
                 <form onSubmit={handleSaveQuestion} className="space-y-4">
 
                   {/* 1. Grade, Subject, Section, Difficulty */}
-                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-150 space-y-3">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                     <span className="font-bold text-slate-800 text-[11px] block border-r-2 border-indigo-500 pr-2 mb-2">شناسنامه علمی سوال</span>
 
                     <div className="grid grid-cols-2 gap-3.5">
@@ -1212,12 +1212,12 @@ export default function Questions() {
                   </div>
 
                   {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
                     <span className="text-[10px] text-slate-550 font-bold block">الصاق پرونده تصویر برای کل سوال (اختیاری):</span>
 
                     <div className="flex items-center gap-3">
                       {/* Hidden manual selector */}
-                      <label className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-250 text-slate-700 text-[11px] rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
+                      <label className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-[11px] rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
                         <ImageIcon className="w-3.5 h-3.5" />
                         <span>انتخاب فایل تصویر</span>
                         <input
@@ -1233,7 +1233,7 @@ export default function Questions() {
                           <img
                             src={formImageUrl}
                             alt="تصویر بارگذاری شده در فرم"
-                            className="w-12 h-12 rounded-lg object-cover border border-slate-250 bg-white"
+                            className="w-12 h-12 rounded-lg object-cover border border-slate-300 bg-white"
                           />
                           <button
                             type="button"
@@ -1258,7 +1258,7 @@ export default function Questions() {
                   {/* Choice builder (single_choice, multiple_choice, image_based) */}
                   {(formType === 'single_choice' || formType === 'multiple_choice' || formType === 'image_based') && (
                     <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-4">
-                      <div className="flex justify-between items-center border-b border-slate-150 pb-2 mb-1">
+                      <div className="flex justify-between items-center border-b border-slate-200 pb-2 mb-1">
                         <span className="font-bold text-slate-800 text-[11px]">سازنده گزینه‌های آزمون (تعداد کلید گزینه‌ها)</span>
                         <button
                           type="button"
@@ -1271,16 +1271,16 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formOptions.map((opt, oIdx) => (
-                          <div key={opt.id} className="bg-white p-3 rounded-xl border border-slate-150 space-y-2 text-right">
+                          <div key={opt.id} className="bg-white p-3 rounded-xl border border-slate-200 space-y-2 text-right">
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Is correct tick check */}
-                              <label className="flex items-center gap-1 text-[10px] font-bold text-slate-650 cursor-pointer">
+                              <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
                                 <input
                                   type={formType === 'multiple_choice' ? 'checkbox' : 'radio'}
                                   name="drawer-opt-correct"
                                   checked={opt.isCorrect}
                                   onChange={() => handleOptionCorrectChange(oIdx)}
-                                  className="w-4 h-4 text-emerald-600 border-slate-250 cursor-pointer accent-emerald-500"
+                                  className="w-4 h-4 text-emerald-600 border-slate-300 cursor-pointer accent-emerald-500"
                                 />
                                 <span className={opt.isCorrect ? 'text-emerald-700 font-black' : ''}>پاسخ صحیح</span>
                               </label>
@@ -1317,7 +1317,7 @@ export default function Questions() {
                               <div className="space-y-1">
                                 <span className="text-[9px] text-slate-400 block">پیوست عکس گزینه (الزامی برای سوال تصویری):</span>
                                 <div className="flex items-center gap-2">
-                                  <label className="px-2 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-650 rounded-md text-[9px] font-bold cursor-pointer shrink-0">
+                                  <label className="px-2 py-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-md text-[9px] font-bold cursor-pointer shrink-0">
                                     <span>الحاق تصویر</span>
                                     <input
                                       type="file"
@@ -1349,7 +1349,7 @@ export default function Questions() {
 
                   {/* True / False picker builder */}
                   {formType === 'true_false' && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-2">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
                       <span className="font-bold text-slate-700 text-[11px] block">انتخاب گزینه پاسخ درست:</span>
                       <div className="flex gap-4">
                         <label className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
@@ -1383,7 +1383,7 @@ export default function Questions() {
 
                   {/* Fill blank builder */}
                   {formType === 'fill_blank' && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-3">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                       <div className="flex justify-between items-center mb-1 bg-white p-2 rounded-lg border">
                         <strong className="text-slate-800 text-[11px]">کلید واژه‌های صحیح برای جاهای خالی:</strong>
                         <button
@@ -1409,7 +1409,7 @@ export default function Questions() {
                                 setFormFillBlanks(updated);
                               }}
                               placeholder="کلمه کلید صحیح"
-                              className="w-full bg-white border border-slate-250 px-2.5 py-1.5 rounded-md text-[11px]"
+                              className="w-full bg-white border border-slate-300 px-2.5 py-1.5 rounded-md text-[11px]"
                             />
                             {formFillBlanks.length > 1 && (
                               <button
@@ -1428,7 +1428,7 @@ export default function Questions() {
 
                   {/* Matching matchingPairs builder */}
                   {formType === 'matching' && (
-                    <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-150 space-y-3">
+                    <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-3">
                       <div className="flex justify-between items-center border-b pb-2">
                         <span className="font-bold text-slate-800 text-[11px]">پلاس لغات تطبیقی وصل‌کردنی</span>
                         <button
@@ -1442,7 +1442,7 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formMatchingPairs.map((pair, idx) => (
-                          <div key={idx} className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-150 relative">
+                          <div key={idx} className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200 relative">
                             <button
                               type="button"
                               onClick={() => setFormMatchingPairs(formMatchingPairs.filter((_, i) => i !== idx))}
@@ -1486,7 +1486,7 @@ export default function Questions() {
 
                   {/* Ordering lists builder */}
                   {formType === 'ordering' && (
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 space-y-3">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                       <div className="flex justify-between items-center pb-2 border-b">
                         <span className="font-bold text-[11px] text-slate-800">سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)</span>
                         <button
@@ -1501,7 +1501,7 @@ export default function Questions() {
                       <div className="space-y-2">
                         {formOrderingItems.map((item, idx) => (
                           <div key={idx} className="flex gap-2 items-center bg-white p-2 rounded-lg border">
-                            <span className="text-[10px] font-bold text-slate-450 w-12 shrink-0">رتبه {idx + 1}:</span>
+                            <span className="text-[10px] font-bold text-slate-400 w-12 shrink-0">رتبه {idx + 1}:</span>
                             <input
                               type="text"
                               required
@@ -1544,7 +1544,7 @@ export default function Questions() {
                       </div>
 
                       {/* Rubric Criteria dynamic builder */}
-                      <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-150 space-y-3">
+                      <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100 space-y-3">
                         <div className="flex justify-between items-center border-b border-rose-100 pb-2">
                           <span className="font-bold text-rose-950 text-[11px]">معیارهای خرد بارم‌بندی پاسخ تشریحی (Rubrics Builder)</span>
                           <button
@@ -1642,7 +1642,7 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formParts.map((part, idx) => (
-                          <div key={part.id} className="bg-white p-3 rounded-xl border border-slate-150 relative space-y-2">
+                          <div key={part.id} className="bg-white p-3 rounded-xl border border-slate-200 relative space-y-2">
                             <button
                               type="button"
                               onClick={() => removePartRow(idx)}
@@ -1650,7 +1650,7 @@ export default function Questions() {
                             >
                               &times;
                             </button>
-                            <span className="bg-slate-100 rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-650 block w-20 text-center">بخش شماره {idx + 1}</span>
+                            <span className="bg-slate-100 rounded px-1.5 py-0.5 text-[9px] font-bold text-slate-700 block w-20 text-center">بخش شماره {idx + 1}</span>
 
                             <div className="space-y-1">
                               <span className="text-[9px] text-slate-400 block">صورت مینی‌سوال:</span>
@@ -1711,7 +1711,7 @@ export default function Questions() {
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-2xs cursor-pointer"
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm cursor-pointer"
                     >
                       {drawerMode === 'add' ? 'ثبت و الحاق به بانک سوالات ملی' : 'ذخیره دگرگونی ها'}
                     </button>

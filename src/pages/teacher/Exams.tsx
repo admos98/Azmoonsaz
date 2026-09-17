@@ -108,7 +108,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       active: 'bg-orange-500/10 text-orange-600 border-orange-500/20 animate-pulse',
       completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     };
-    return styles[status] || 'bg-slate-150 text-slate-600';
+    return styles[status] || 'bg-slate-100 text-slate-600';
   };
 
   const getClassNamesForExam = (classGroupIds: string[]) => {
@@ -248,7 +248,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${getStatusBadgeStyles(ex.status)}`}>
                       {getStatusLabelInPersian(ex.status)}
                     </span>
-                    <span className="text-[10px] text-slate-450 font-mono font-bold select-all bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                    <span className="text-[10px] text-slate-400 font-mono font-bold select-all bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
                       کد ورود: {ex.examCode}
                     </span>
                   </div>
@@ -276,7 +276,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-pre-${ex.id}`}
                       onClick={() => navigateToSubView('preview', ex.id)}
-                      className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-colors border border-slate-150 cursor-pointer"
+                      className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-colors border border-slate-200 cursor-pointer"
                       title="پیش‌نمایش آزمون"
                     >
                       <Eye className="w-4 h-4" />
@@ -286,7 +286,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-set-${ex.id}`}
                       onClick={() => navigateToSubView('settings', ex.id)}
-                      className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-colors border border-slate-150 cursor-pointer"
+                      className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl transition-colors border border-slate-200 cursor-pointer"
                       title="تنظیمات فنی آزمون"
                     >
                       <SettingsIcon className="w-4 h-4" />

@@ -399,17 +399,17 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl border border-slate-150">
+            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl border border-slate-200">
               <input type="checkbox" id="sh-q" checked={shuffleQuestions} onChange={(e) => setShuffleQuestions(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer" />
               <label htmlFor="sh-q" className="text-xs font-bold text-slate-700 cursor-pointer">ترتیب سوال تصادفی برای دانش‌آموزان</label>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl border border-slate-150">
+            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl border border-slate-200">
               <input type="checkbox" id="sh-opt" checked={shuffleOptions} onChange={(e) => setShuffleOptions(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer" />
               <label htmlFor="sh-opt" className="text-xs font-bold text-slate-700 cursor-pointer">ترتیب گزینه‌های تستی تصادفی</label>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl border border-slate-150">
+            <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl border border-slate-200">
               <input type="checkbox" id="btr" checked={allowBacktrack} onChange={(e) => setAllowBacktrack(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer" />
               <label htmlFor="btr" className="text-xs font-bold text-slate-700 cursor-pointer">اجازه تصحیح مجدد سوال رد شده</label>
             </div>
@@ -435,7 +435,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
             </span>
           </div>
 
-          <div className="p-5 rounded-2xl border border-slate-150 bg-slate-50/40 space-y-4 max-w-2xl text-xs text-slate-700 leading-relaxed">
+          <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/40 space-y-4 max-w-2xl text-xs text-slate-700 leading-relaxed">
             <div>
               <span className="text-slate-400 block mb-1">عنوان آزمون:</span>
               <p className="font-bold text-slate-900 text-sm">{title || 'امتحان معرفی نشده'}</p>
@@ -486,7 +486,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
             <button
               id="wizard-btn-prev"
               onClick={() => setStep(step - 1)}
-              className="px-4 py-2 bg-white hover:bg-slate-150 text-slate-700 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowRight className="w-4 h-4" />
               <span>مرحله قبلی</span>
