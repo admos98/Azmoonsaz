@@ -40,6 +40,7 @@ import { logger } from '../../lib/logger';
 import { Question, QuestionType, QuestionOption, QuestionPart, RubricCriterion } from '../../types';
 import QuestionRenderer from '../../components/QuestionRenderer';
 import { questionService } from '../../services/api';
+import { ConfirmDialog } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 import { uploadQuestionImage } from '../../services/storageService';
 
@@ -434,16 +435,23 @@ export default function Questions() {
     }
   };
 
-  // Handle Delete Question File entry
-  const handleDeleteQuestion = async (id: string, name: string) => {
-    const confirmDelete = window.confirm(`آیا از پاک کردن سوال «${name}» از بانک تخصصی مطمئن هستید؟ این کنش غیرقابل بازگشت است.`);
-    if (confirmDelete) {
-      try {
-        await questionService.deleteQuestion(id);
-        setQuestions(questions.filter(q => q.id !== id));
-      } catch (err) {
-        showToast('خطا در پاک کردن سوال', 'error');
-      }
+  // ConfirmDialog state for question deletion
+  const [questionToDelete, setQuestionToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDeleteQuestion = (id: string, name: string) => {
+    setQuestionToDelete({ id, name });
+  };
+
+  const confirmDeleteQuestion = async () => {
+    if (!questionToDelete) return;
+    try {
+      await questionService.deleteQuestion(questionToDelete.id);
+      setQuestions(questions.filter(q => q.id !== questionToDelete.id));
+      showToast('سوال حذف شد.', 'success');
+    } catch (err) {
+      showToast('خطا در پاک کردن سوال', 'error');
+    } finally {
+      setQuestionToDelete(null);
     }
   };
 
@@ -1728,6 +1736,17 @@ export default function Questions() {
           </motion.div>
         </div>
       )}
+
+      {/* Delete Question Confirmation */}
+      <ConfirmDialog
+        isOpen={questionToDelete !== null}
+        title="حذف سوال"
+        message={`آیا از پاک کردن سوال «${questionToDelete?.name}» از بانک تخصصی مطمئن هستید؟ این کنش غیرقابل بازگشت است.`}
+        confirmText="حذف قطعی"
+        variant="danger"
+        onConfirm={confirmDeleteQuestion}
+        onCancel={() => setQuestionToDelete(null)}
+      />
 
     </div>
   );

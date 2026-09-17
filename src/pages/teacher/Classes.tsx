@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Plus, Trash2, Edit3, Users, GraduationCap, AlertCircle } from 'lucide-react';
-import { Button, Card, Modal, Table, Badge } from '../../components/UIComponents';
+import { Button, Card, Modal, Table, Badge, ConfirmDialog } from '../../components/UIComponents';
 import { classService } from '../../services/api';
 import { ClassGroup } from '../../types';
 import { formatPersianNumber } from '../../services/persianHelpers';
@@ -66,13 +66,21 @@ export default function Classes() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('آیا از حذف این کلاس و تمامی ارتباطات آن با دانش‌آموزان مطمئن هستید؟')) return;
+  const [classToDelete, setClassToDelete] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    setClassToDelete(id);
+  };
+
+  const confirmDeleteClass = async () => {
+    if (!classToDelete) return;
     try {
-      await classService.deleteClassGroup(id);
+      await classService.deleteClassGroup(classToDelete);
       await loadClasses();
     } catch (err) {
       setError('خطا در حذف کلاس.');
+    } finally {
+      setClassToDelete(null);
     }
   };
 
@@ -213,6 +221,17 @@ export default function Classes() {
           </div>
         </div>
       </Modal>
+
+      {/* Delete Class Confirmation */}
+      <ConfirmDialog
+        isOpen={classToDelete !== null}
+        title="حذف کلاس"
+        message="آیا از حذف این کلاس و تمامی ارتباطات آن با دانش‌آموزان مطمئن هستید؟"
+        confirmText="حذف قطعی"
+        variant="danger"
+        onConfirm={confirmDeleteClass}
+        onCancel={() => setClassToDelete(null)}
+      />
     </div>
   );
 }

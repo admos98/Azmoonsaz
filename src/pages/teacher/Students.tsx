@@ -34,6 +34,7 @@ import {
 import { logger } from '../../lib/logger';
 import { Student, Submission, ClassGroup, Exam } from '../../types';
 import { studentService, classService, gradingService, examService } from '../../services/api';
+import { ConfirmDialog } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 
 export default function Students() {
@@ -226,16 +227,23 @@ export default function Students() {
     }
   };
 
-  const handleDeleteStudent = async (id: string, name: string) => {
-    const pName = toPersianDigits(name);
-    const confirmDelete = window.confirm(`آیا از حذف پرونده تحصیلی دانش‌آموز «${pName}» و لغو تمامی دسترسی‌های آزمون او مطمئن هستید؟`);
-    if (confirmDelete) {
-      try {
-        await studentService.deleteStudent(id);
-        setStudents(students.filter(s => s.id !== id));
-      } catch (err: any) {
-        showToast(`خطا در حذف: ${err?.message || err}`, 'error');
-      }
+  // ConfirmDialog state for student deletion
+  const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDeleteStudent = (id: string, name: string) => {
+    setStudentToDelete({ id, name });
+  };
+
+  const confirmDeleteStudent = async () => {
+    if (!studentToDelete) return;
+    try {
+      await studentService.deleteStudent(studentToDelete.id);
+      setStudents(students.filter(s => s.id !== studentToDelete.id));
+      showToast('دانش‌آموز حذف شد.', 'success');
+    } catch (err: any) {
+      showToast(`خطا در حذف: ${err?.message || err}`, 'error');
+    } finally {
+      setStudentToDelete(null);
     }
   };
 
@@ -1415,6 +1423,17 @@ export default function Students() {
           </motion.div>
         </div>
       )}
+
+      {/* Delete Student Confirmation */}
+      <ConfirmDialog
+        isOpen={studentToDelete !== null}
+        title="حذف پرونده دانش‌آموز"
+        message={`آیا از حذف پرونده تحصیلی دانش‌آموز «${studentToDelete?.name}» و لغو تمامی دسترسی‌های آزمون او مطمئن هستید؟ این کنش غیرقابل بازگشت است.`}
+        confirmText="حذف قطعی"
+        variant="danger"
+        onConfirm={confirmDeleteStudent}
+        onCancel={() => setStudentToDelete(null)}
+      />
 
     </div>
   );
