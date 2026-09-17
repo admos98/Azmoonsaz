@@ -31,6 +31,7 @@ import {
 import { logger } from '../../lib/logger';
 import { Student, Exam, Submission, Question, Teacher, ClassGroup } from '../../types';
 import { Button, Card, Badge, StatusBadge, Modal, EmptyState, FileDropzone, Table } from '../../components/UIComponents';
+import { TheMark } from '../../components/TheMark';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
 import { studentService, examService, gradingService, classService, questionService } from '../../services/api';
 import { useTeacher } from '../../contexts/TeacherContext';
@@ -175,26 +176,29 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   return (
     <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
 
-      {/* 1. Welcome Card Hero */}
-      <div className="relative overflow-hidden p-6 md:p-8 rounded-3xl bg-slate-900 text-white shadow-md" id="dashboard-hero-banner">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+      {/* 1. Welcome Card Hero — ink glass with The Mark */}
+      <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl bg-[var(--color-ink)] text-white shadow-lg" id="dashboard-hero-banner">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[var(--color-accent)]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-72 h-72 bg-[var(--color-gold)]/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute left-8 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none hidden md:block">
+          <TheMark variant="row" size={200} animated={false} />
+        </div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="text-right">
-            <span className="bg-indigo-500/20 text-indigo-300 text-[11px] font-bold px-3 py-1 rounded-full border border-indigo-400/20">
-              {formatPersianDate(new Date().toISOString())} - پنل مدیریت هوشمند
+            <span className="bg-white/10 text-white/80 text-[11px] font-bold px-3 py-1 rounded-full border border-white/15">
+              {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
             <h2 className="text-xl md:text-2xl font-black mt-3 leading-snug">سلام، استاد {teacher?.name || 'گرامی'} عزیز</h2>
-            <p className="text-xs md:text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
-              خلاصه وضعیت امروز: سیستم هوشمند آماده پذیرش پاسخ‌برگ‌هاست. در حال حاضر {totalExams} آزمون جاری در کلاس‌ها فعال بوده و تعداد {pendingGradings} ورقه‌ پاسخ‌برگ تستی/تشریحی ارسالی دانش‌آموزان در صف بررسی نهایی و تصحیح معلم قرار گرفته است.
+            <p className="text-xs md:text-sm text-white/70 mt-2 max-w-2xl leading-relaxed">
+              {formatPersianNumber(totalExams)} آزمون جاری فعال و {formatPersianNumber(pendingGradings)} پاسخ‌برگ در صف تصحیح.
             </p>
           </div>
           <div className="flex gap-3 shrink-0 self-start md:self-auto">
             <button
               id="hero-btn-new-exam"
               onClick={() => onNavigate('exams/new')}
-              className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
+              className="px-5 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>طراحی آزمون نو</span>
@@ -202,7 +206,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <button
               id="hero-btn-questions"
               onClick={() => onNavigate('questions')}
-              className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+              className="px-5 py-3 bg-white/10 hover:bg-white/15 text-white border border-white/15 rounded-xl text-xs font-semibold transition-all cursor-pointer"
             >
               افزودن سوال جدید
             </button>
@@ -240,7 +244,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <span className="text-2xl font-black text-slate-800 tracking-tight block">
               {formatPersianNumber(qBankTotal)} <span className="text-xs font-normal text-slate-400">سوال</span>
             </span>
-            <span className="text-[10px] text-slate-450 mt-1.5 block">
+            <span className="text-[10px] text-[var(--color-text-tertiary)] mt-1.5 block">
               منطبق با کتب درسی جدید
             </span>
           </div>
@@ -250,7 +254,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <Card hoverable className="flex flex-col justify-between" id="stat-card-active-exams">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500">آزمون‌های فعال در کلاس</span>
-            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
+            <div className="p-2.5 rounded-xl bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
               <Clock className="w-4 h-4" />
             </div>
           </div>
@@ -268,7 +272,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <Card hoverable className="flex flex-col justify-between" id="stat-card-pending-reviews">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500">نیازمند تصحیح تشریحی</span>
-            <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600">
+            <div className="p-2.5 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
               <CheckSquare className="w-4 h-4" />
             </div>
           </div>
@@ -286,7 +290,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <Card hoverable className="flex flex-col justify-between" id="stat-card-scheduled-exams">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-500">آزمون‌های زمان‌بندی‌شده</span>
-            <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-650">
+            <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
               <CalendarIcon className="w-4 h-4" />
             </div>
           </div>
@@ -294,7 +298,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <span className="text-2xl font-black text-slate-800 tracking-tight block">
               {formatPersianNumber(scheduledExams)} <span className="text-xs font-normal text-slate-400">مورد</span>
             </span>
-            <span className="text-[10px] text-slate-450 mt-1.5 block">
+            <span className="text-[10px] text-[var(--color-text-tertiary)] mt-1.5 block">
               برنامه‌ریزی آغاز در روزهای آتی
             </span>
           </div>
@@ -303,9 +307,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       </div>
 
       {/* 3. Quick Actions Row */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-right" id="quick-actions-section">
-        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <span>⚡ اقدامات و دسترسی‌های سریع معلم</span>
+      <div className="glass-1 p-6 rounded-2xl text-right" id="quick-actions-section">
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+          <span>اقدامات سریع</span>
         </h3>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5" id="quick-action-btns">
@@ -313,56 +317,56 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <button
             id="qa-btn-import-excel"
             onClick={() => setIsExcelModalOpen(true)}
-            className="p-4 bg-slate-50 hover:bg-slate-100 active:bg-slate-150 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            className="p-4 bg-slate-50/80 hover:bg-slate-100 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-105 transition-transform">
+            <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
               <Upload className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-slate-700">ورود دانش‌آموزان از اکسل</span>
+            <span className="text-xs font-bold text-slate-700">ورود از اکسل</span>
           </button>
 
           <button
             id="qa-btn-add-question"
             onClick={() => onNavigate('questions')}
-            className="p-4 bg-slate-50 hover:bg-slate-100 active:bg-slate-150 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            className="p-4 bg-slate-50/80 hover:bg-slate-100 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-105 transition-transform">
+            <div className="p-2.5 bg-[var(--color-success-soft)] text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
               <Plus className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-slate-700">افزودن سوال جدید</span>
+            <span className="text-xs font-bold text-slate-700">سوال جدید</span>
           </button>
 
           <button
             id="qa-btn-new-exam"
             onClick={() => onNavigate('exams/new')}
-            className="p-4 bg-slate-50 hover:bg-slate-100 active:bg-slate-150 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            className="p-4 bg-slate-50/80 hover:bg-slate-100 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl group-hover:scale-105 transition-transform">
+            <div className="p-2.5 bg-[var(--color-warning-soft)] text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
               <FileText className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-slate-700">ساخت آزمون جدید</span>
+            <span className="text-xs font-bold text-slate-700">آزمون جدید</span>
           </button>
 
           <button
             id="qa-btn-view-results"
             onClick={() => onNavigate('results')}
-            className="p-4 bg-slate-50 hover:bg-slate-100 active:bg-slate-150 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            className="p-4 bg-slate-50/80 hover:bg-slate-100 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-105 transition-transform">
+            <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
               <Eye className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-slate-700">مشاهده نتایج کل</span>
+            <span className="text-xs font-bold text-slate-700">مشاهده نتایج</span>
           </button>
 
           <button
             id="qa-btn-correct-essays"
             onClick={() => onNavigate('results')}
-            className="p-4 bg-rose-50/70 hover:bg-rose-50 hover:border-rose-150 border border-rose-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 md:col-span-1 group cursor-pointer"
+            className="p-4 bg-[var(--color-danger-soft)]/70 hover:bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 md:col-span-1 group cursor-pointer"
           >
-            <div className="p-2.5 bg-rose-100 text-rose-700 rounded-xl group-hover:scale-105 transition-transform animate-pulse">
+            <div className="p-2.5 bg-[var(--color-danger)]/10 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
               <CheckSquare className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-rose-800">تصحیح پاسخ‌های تشریحی</span>
+            <span className="text-xs font-bold text-[var(--color-danger)]">تصحیح تشریحی</span>
           </button>
 
         </div>
@@ -375,7 +379,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="lg:col-span-2 space-y-6">
 
           {/* 4. Upcoming and Active Exams Section */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm" id="section-upcoming-exams">
+          <div className="glass-1 p-6 rounded-2xl" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">آزمون‌های زمان‌بندی‌شده مابعد و پیش‌رو</h3>
@@ -407,7 +411,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                             {ex.settings.mode === 'official' ? 'رسمی' : 'تمرینی'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-slate-450">
+                        <div className="flex items-center gap-3 text-[10px] text-[var(--color-text-tertiary)]">
                           <span>پایه: {ex.grade}</span>
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                           <span>کلاس: {ex.classGroupIds.map(cid => classGroups.find(c => c.id === cid)?.name).filter(Boolean).join(' و ')}</span>
@@ -452,7 +456,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
 
           {/* 5. Recent Submissions Section */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden" id="section-recent-submissions">
+          <div className="glass-1 rounded-2xl overflow-hidden" id="section-recent-submissions">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">آخرین پاسخ‌برگ‌های ارسال شده دانش‌آموزان</h3>
@@ -489,14 +493,14 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                         <tr key={sub.id} className="hover:bg-slate-50/50 transition-colors text-xs md:text-sm">
                           <td className="p-4 font-bold text-slate-700">{sub.studentName}</td>
                           <td className="p-4 text-slate-500 font-semibold">{getStudentClassLabel(sub.studentId)}</td>
-                          <td className="p-4 font-medium text-slate-650 max-w-xs truncate">{getExamTitle(sub.examId)}</td>
+                          <td className="p-4 font-medium text-[var(--color-text-secondary)] max-w-xs truncate">{getExamTitle(sub.examId)}</td>
                           <td className="p-4 text-center text-slate-400 font-medium">
                             {sub.submittedAt ? new Date(sub.submittedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'درجریان'}
                           </td>
                           <td className="p-4 text-center">
                             <StatusBadge status={sub.status} />
                           </td>
-                          <td className="p-4 text-center font-bold text-slate-705">
+                          <td className="p-4 text-center font-bold text-[var(--color-text-primary)]">
                             {isOngoing ? '-' : `${formatPersianNumber(sub.score)} / ${formatPersianNumber(sub.maxScore)}`}
                           </td>
                           <td className="p-4 text-center">
@@ -582,9 +586,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="space-y-6" id="dashboard-right-sidebar">
 
           {/* 6. Question Bank Health Section */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-right" id="section-q-bank-health">
+          <div className="glass-1 p-6 rounded-2xl text-right" id="section-q-bank-health">
             <h3 className="text-xs font-black text-slate-800 mb-4 flex items-center gap-2">
-              <span>📊 وضعیت سلامت بانک سوالات چندگزینه‌ای و تشریحی</span>
+              <span>وضعیت بانک سوالات</span>
             </h3>
 
             {/* CSS-Only Visual Stacked Health Charts */}
@@ -663,7 +667,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <h5 className="text-[11px] font-bold text-orange-800">کمبود جدی بانک سوالات</h5>
-                <p className="text-[10px] text-orange-705 leading-relaxed">
+                <p className="text-[10px] text-[var(--color-warning)] leading-relaxed">
                   برای حالت Beast Mode سوالات کافی نیست.
                 </p>
                 <button
@@ -678,11 +682,11 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
 
           {/* Active Class Groups List */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm" id="section-class-groups-list">
+          <div className="glass-1 p-6 rounded-2xl" id="section-class-groups-list">
             <h3 className="text-xs font-black text-slate-800 mb-4">آمار کلاس‌های تحت پوشش پایه‌ها</h3>
             <div className="space-y-3">
               {classGroups.map((cg) => (
-                <div key={cg.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-center hover:bg-white hover:border-slate-300 hover:shadow-2xs transition-all">
+                <div key={cg.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex justify-between items-center hover:bg-white hover:border-slate-300 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 text-xs font-bold">
                       {cg.grade.slice(0, 2)}
@@ -710,9 +714,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
 
           {/* Quick Security Checklist / Protip */}
-          <div className="bg-gradient-to-tr from-indigo-50/50 to-violet-50/50 p-6 rounded-3xl border border-indigo-100/50 shadow-2xs">
+          <div className="glass-1 p-6 rounded-2xl">
             <div className="flex items-start gap-4">
-              <div className="p-2.5 bg-white text-indigo-600 rounded-xl shadow-2xs">
+              <div className="p-2.5 bg-white text-[var(--color-accent)] rounded-xl">
                 <Award className="w-5 h-5" />
               </div>
               <div className="space-y-1.5 flex-1">
@@ -738,12 +742,12 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
       {/* 8. Interactively Functional Excel Import Modal Component */}
       {isExcelModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4" id="excel-import-modal-backdrop">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" id="excel-import-modal-backdrop">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-150 text-right text-xs"
+            className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 text-right text-xs"
             id="excel-import-dialog"
           >
             {/* Modal Header */}
@@ -782,7 +786,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all ${
-                      dragActive ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-250 bg-slate-50 hover:bg-slate-100/50'
+                      dragActive ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100/50'
                     }`}
                   >
                     <Upload className="w-10 h-10 text-slate-400 animate-bounce" />
