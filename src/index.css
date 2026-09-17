@@ -8,9 +8,9 @@
   /* Spacing (4px base) */
   --spacing-px: 1px;
   --spacing-0: 0px;
-  --spacing-0\.5: 2px;
+  --spacing-0.5: 2px;
   --spacing-1: 4px;
-  --spacing-1\.5: 6px;
+  --spacing-1.5: 6px;
   --spacing-2: 8px;
   --spacing-3: 12px;
   --spacing-4: 16px;
@@ -27,21 +27,28 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-2xl: 24px;
+  --radius-3xl: 32px;
   --radius-full: 9999px;
 
-  /* Surfaces */
-  --color-surface-primary: #FFFFFF;
+  /* Color — Surfaces (page shell) */
+  --color-page-bg: #F7F1E4;
   --color-surface-secondary: #F7F1E4;
   --color-surface-tertiary: #F1F5F9;
 
-  /* Glass */
-  --color-glass-surface: rgba(255, 255, 255, 0.72);
-  --color-glass-surface-dim: rgba(255, 255, 255, 0.45);
-  --color-glass-border: rgba(255, 255, 255, 0.40);
-  --color-glass-highlight: rgba(255, 255, 255, 0.60);
-  --color-glass-dark: rgba(34, 30, 74, 0.88);
-  --color-glass-dark-border: rgba(255, 255, 255, 0.08);
-  --color-glass-dark-highlight: rgba(255, 255, 255, 0.06);
+  /* ─── Liquid Glass System v2 ─── */
+  /* Light glass — panels, cards, topbar, dropdowns */
+  --color-glass-light-fill: rgba(252, 252, 252, 0.32);
+  --color-glass-light-stroke: rgba(255, 255, 255, 0.45);
+  --color-glass-light-sheen: rgba(255, 255, 255, 0.60);
+  --color-glass-light-bottom: rgba(0, 0, 0, 0.035);
+  /* Dark glass — sidebar */
+  --color-glass-dark-fill: rgba(34, 30, 74, 0.65);
+  --color-glass-dark-stroke: rgba(70, 66, 120, 0.30);
+  --color-glass-dark-sheen: rgba(255, 255, 255, 0.055);
+  --color-glass-dark-bottom: rgba(0, 0, 0, 0.18);
+  /* Shared */
+  --color-glass-shadow: rgba(34, 30, 74, 0.10);
+  --color-glass-shadow-strong: rgba(34, 30, 74, 0.14);
 
   /* Brand — The Mark */
   --color-ink: #221E4A;
@@ -67,7 +74,7 @@
   --color-text-secondary: #6B6489;
   --color-text-tertiary: #94A3B8;
   --color-text-on-dark: #F8FAFC;
-  --color-text-on-dark-secondary: #94A3B8;
+  --color-text-on-dark-secondary: #CBD5E1;
 }
 
 /* ─── Base ─── */
@@ -76,7 +83,11 @@ body {
   font-family: var(--font-sans);
   direction: rtl;
   text-align: right;
-  background: var(--color-surface-secondary);
+  background: var(--color-page-bg);
+  background-image:
+    radial-gradient(circle at 15% 25%, color-mix(in srgb, var(--color-ink) 2%, transparent) 0%, transparent 35%),
+    radial-gradient(circle at 85% 75%, color-mix(in srgb, var(--color-ink) 1.5%, transparent) 0%, transparent 30%);
+  background-size: 120% 120%;
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -87,50 +98,155 @@ body {
   color: var(--color-accent);
 }
 
-/* ─── Scrollbar ─── */
-
-::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
 
-/* ─── Glass Surfaces ─── */
+/* ─── SVG Displacement Filter ─── */
+/* Defined once at app root via <GlassFilters /> component.
+   Uses url(#lg-displace) in backdrop-filter on .glx-strong. */
 
-.glass-1 {
-  background: var(--color-glass-surface);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border: 1px solid var(--color-glass-border);
+/* ─── Liquid Glass surfaces ─── */
+
+/* Light glass — standard cards, topbar, dropdowns.
+   4 layers: refraction(bail) + blur + specular + bezel.
+   No displacement = cheap, works everywhere. */
+@utility glx {
+  background: var(--color-glass-light-fill);
+  border: 1px solid var(--color-glass-light-stroke);
+  backdrop-filter: blur(20px) saturate(1.5) brightness(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) brightness(1.05);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 var(--color-glass-highlight);
+    inset 0 1px 0 var(--color-glass-light-sheen),
+    inset 0 -1px 1px var(--color-glass-light-bottom),
+    inset 1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 75%, transparent),
+    inset -1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 40%, transparent),
+    0 10px 40px var(--color-glass-shadow);
 }
 
-.glass-2 {
-  background: var(--color-glass-surface);
-  backdrop-filter: blur(40px) saturate(1.8);
-  -webkit-backdrop-filter: blur(40px) saturate(1.8);
-  border: 1px solid var(--color-glass-border);
+/* Strong glass — modals, drawers.
+   Adds refraction via SVG displacement filter (Chromium). */
+@utility glx-strong {
+  background: color-mix(in srgb, var(--color-glass-light-fill) 110%, transparent);
+  border: 1px solid var(--color-glass-light-stroke);
+  backdrop-filter:
+    url(#lg-displace)
+    blur(40px)
+    saturate(1.6);
+  -webkit-backdrop-filter:
+    url(#lg-displace)
+    blur(40px)
+    saturate(1.6);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 var(--color-glass-highlight);
+    inset 0 1px 0 var(--color-glass-light-sheen),
+    inset 0 -1px 1px var(--color-glass-light-bottom),
+    inset 2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 40%, transparent),
+    inset -2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 25%, transparent),
+    0 30px 80px var(--color-glass-shadow-strong);
 }
 
-.glass-3 {
-  background: var(--color-glass-dark);
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  border-left: 1px solid var(--color-glass-dark-border);
-  box-shadow: inset 0 1px 0 var(--color-glass-dark-highlight);
+/* Dark glass — sidebar (ink field) */
+@utility glx-dark {
+  background: var(--color-glass-dark-fill);
+  border-right: 1px solid var(--color-glass-dark-stroke);
+  border-left: 1px solid var(--color-glass-dark-stroke);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 var(--color-glass-dark-sheen),
+    inset 0 -1px 1px var(--color-glass-dark-bottom),
+    0 10px 40px var(--color-glass-shadow);
 }
 
-/* ─── Skeleton Shimmer ─── */
+/* Inset/concave glass — inputs, wells */
+@utility glx-inset {
+  background: color-mix(in srgb, var(--color-page-bg) 35%, var(--color-glass-light-fill) 65%);
+  border: 1px solid var(--color-glass-light-stroke);
+  backdrop-filter: blur(6px) brightness(1.04);
+  -webkit-backdrop-filter: blur(6px) brightness(1.04);
+  box-shadow:
+    inset 0 1px 0 var(--color-glass-light-sheen),
+    inset 0 -1px 1px var(--color-glass-light-bottom),
+    inset 2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 20%, transparent),
+    inset -2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 12%, transparent);
+}
 
+/* Legacy aliases — backward compat so old classes still upgrade */
+@utility glass-1 {
+  background: var(--color-glass-light-fill);
+  backdrop-filter: blur(20px) saturate(1.5) brightness(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) brightness(1.05);
+  border: 1px solid var(--color-glass-light-stroke);
+  box-shadow:
+    inset 0 1px 0 var(--color-glass-light-sheen),
+    inset 0 -1px 1px var(--color-glass-light-bottom),
+    inset 1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 75%, transparent),
+    inset -1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 40%, transparent),
+    0 10px 40px var(--color-glass-shadow);
+}
+@utility glass-2 {
+  background: color-mix(in srgb, var(--color-glass-light-fill) 110%, transparent);
+  border: 1px solid var(--color-glass-light-stroke);
+  backdrop-filter:
+    url(#lg-displace)
+    blur(40px)
+    saturate(1.6);
+  -webkit-backdrop-filter:
+    url(#lg-displace)
+    blur(40px)
+    saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 var(--color-glass-light-sheen),
+    inset 0 -1px 1px var(--color-glass-light-bottom),
+    inset 2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 40%, transparent),
+    inset -2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 25%, transparent),
+    0 30px 80px var(--color-glass-shadow-strong);
+}
+@utility glass-3 {
+  background: var(--color-glass-dark-fill);
+  border-right: 1px solid var(--color-glass-dark-stroke);
+  border-left: 1px solid var(--color-glass-dark-stroke);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 var(--color-glass-dark-sheen),
+    inset 0 -1px 1px var(--color-glass-dark-bottom),
+    0 10px 40px var(--color-glass-shadow);
+}
+
+/* ─── Sheen overlay ─── */
+.glx-sheen {
+  position: relative;
+  isolation: isolate;
+}
+.glx-sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--lg-sheen-x, 90%) var(--lg-sheen-y, 0%),
+    rgba(255, 255, 255, 0.14) 0%,
+    transparent 45%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.glx-sheen:hover::before { opacity: 1; }
+
+/* ─── Skeleton shimmer ─── */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
 .skeleton {
   background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
   background-size: 200% 100%;
@@ -138,25 +254,22 @@ body {
   border-radius: var(--radius-sm);
 }
 
-/* ─── The Mark — Gold Pop Animation ─── */
-
+/* ─── The Mark gold pop ─── */
 .goldpop {
-  transform-box: fill-box;
   transform-origin: center;
   animation: mark-pop 0.55s cubic-bezier(0.25, 1.6, 0.45, 1) both;
 }
-
 @keyframes mark-pop {
   from { transform: scale(0); }
   70% { transform: scale(1.15); }
   to { transform: scale(1); }
 }
 
-/* ─── Reduced Motion ─── */
-
+/* ─── Reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .goldpop { animation: none; }
   .skeleton { animation: none; }
+  .glx-sheen:hover::before { opacity: 0; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

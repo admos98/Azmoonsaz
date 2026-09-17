@@ -7,11 +7,13 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { TeacherProvider } from './contexts/TeacherContext';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import { GlassFilters, GlassSheen } from './components/GlassSystem';
 import Login from './pages/teacher/Login';
 import Onboarding from './pages/teacher/Onboarding';
 import ResetPassword from './pages/teacher/ResetPassword';
 import ExamPortal from './pages/student/ExamPortal';
 import SecureExamPortal from './pages/student/SecureExamPortal';
+import { Toast } from './components/UIComponents';
 import { Exam, Teacher } from './types';
 
 // Lazy-loaded teacher pages (code-split)
@@ -23,11 +25,36 @@ const Exams = lazy(() => import('./pages/teacher/Exams'));
 const NewExam = lazy(() => import('./pages/teacher/NewExam'));
 const Settings = lazy(() => import('./pages/teacher/Settings'));
 
+// Toast state shared via simple emitter for App-level toasts
+const toastQueue: Array<{ id: number; message: string; type: 'success' | 'error' | 'warning' | 'info' }> = [];
+let toastNextId = 0;
+const toastListeners: Array<() => void> = [];
+export const showAppToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+  const id = ++toastNextId;
+  toastQueue.push({ id, message, type });
+  toastListeners.forEach((l) => l());
+  setTimeout(() => {
+    toastQueue.splice(toastQueue.findIndex((t) => t.id === id), 1);
+    toastListeners.forEach((l) => l());
+  }, 4000);
+};
+
 export default function App() {
   const [userRole, setUserRole] = useState<'teacher' | 'student'>('teacher');
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
-  const [isOnboarded, setIsOnboarded] = useState(true); // assume onboarded until checked
+  const [isOnboarded, setIsOnboarded] = useState(true);
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const [toastSnapshot, setToastSnapshot] = useState<Array<typeof toastQueue[0]>>([]);
+
+  const flushToasts = () => setToastSnapshot([...toastQueue]);
+  useEffect(() => {
+    flushToasts();
+    toastListeners.push(flushToasts);
+    return () => {
+      const idx = toastListeners.indexOf(flushToasts);
+      if (idx > -1) toastListeners.splice(idx, 1);
+    };
+  }, []);
 
   // Detect password reset link in URL hash
   const [isPasswordReset, setIsPasswordReset] = useState(() => {
@@ -83,7 +110,7 @@ export default function App() {
     setCustomExams([newExam, ...customExams]);
     setCurrentTab('exams');
     setExamSubView('list');
-    // Success toast is shown by NewExam page itself
+    showAppToast('آزمون جدید با موفقیت ایجاد شد.', 'success');
   };
 
   const handleSelectExamForResults = (examId: string) => {
@@ -151,7 +178,6 @@ export default function App() {
           />
         );
       case 'results':
-        // Drill down to the first active exam results for demonstration if no specific id chosen
         const firstExam = customExams[0];
         return (
           <Exams
@@ -194,15 +220,10 @@ export default function App() {
     );
   }
 
-  // ROUTE INTERCEPTION:
-  // Check if current URL matches public student exam subroutes:
-  // /exam/:examCode
-  // /exam/:examCode/start | take | submitted
   const examRouteMatch = currentPath.match(/^\/exam\/([^/]+)(?:\/(start|take|submitted))?$/);
 
   if (examRouteMatch) {
     const code = examRouteMatch[1];
-
     return (
       <SecureExamPortal
         presetExamCode={code}
@@ -214,7 +235,6 @@ export default function App() {
     );
   }
 
-  // 1. If we are in STUDENT mode, render the Student exam portal instantly to standard code
   if (userRole === 'student') {
     return (
       <ExamPortal
@@ -229,9 +249,7 @@ export default function App() {
     );
   }
 
-  // 2. If we are in TEACHER mode but not logged in, show the Login Page
   if (userRole === 'teacher' && !isTeacherLoggedIn) {
-    // Password reset link detected
     if (isPasswordReset) {
       return (
         <ResetPassword
@@ -253,57 +271,71 @@ export default function App() {
     );
   }
 
-  // 2.5. If logged in but not onboarded, show onboarding
   if (userRole === 'teacher' && isTeacherLoggedIn && !isOnboarded) {
     return (
       <Onboarding onComplete={() => setIsOnboarded(true)} />
     );
   }
 
-  // 3. Otherwise, render the complete gorgeous Teacher Dashboard Shell
   return (
     <TeacherProvider>
-    <div className="min-h-screen bg-[var(--color-surface-secondary)] flex" dir="rtl" id="app-teacher-shell">
-      {/* Sidebar - fixed on the right */}
-      <Sidebar
-        currentTab={currentTab}
-        onTabChange={(tab) => {
-          setCurrentTab(tab);
-          // Reset subrouting when shifting tabs
-          setExamSubView('list');
-          setSelectedExamId(undefined);
-        }}
-        onLogout={() => setIsTeacherLoggedIn(false)}
-        onSwitchRole={handleSwitchUserRole}
-      />
-
-      {/* Main Container - offset by sidebar width (240px / w-60 on desktop, padding on mobile) */}
-      <div className="flex-1 lg:mr-60 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
-        {/* Topbar */}
-        <Topbar
+      <GlassFilters />
+      <div className="min-h-screen bg-[var(--color-page-bg)] flex" dir="rtl" id="app-teacher-shell">
+        {/* Sidebar */}
+        <Sidebar
           currentTab={currentTab}
-          onSwitchRole={handleSwitchUserRole}
+          onTabChange={(tab) => {
+            setCurrentTab(tab);
+            setExamSubView('list');
+            setSelectedExamId(undefined);
+          }}
           onLogout={() => setIsTeacherLoggedIn(false)}
+          onSwitchRole={handleSwitchUserRole}
         />
 
-        {/* Dynamic Page Router */}
-        <div className="p-4 lg:p-8 flex-1" id="router-view-box">
-          <Suspense fallback={
-            <div className="space-y-6 animate-pulse">
-              <div className="h-8 w-48 bg-slate-200 rounded-xl" />
-              <div className="h-40 bg-slate-100 rounded-2xl" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-32 bg-slate-100 rounded-2xl" />
-                ))}
+        {/* Main Container */}
+        <div className="flex-1 lg:mr-60 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
+          <Topbar
+            currentTab={currentTab}
+            onSwitchRole={handleSwitchUserRole}
+            onLogout={() => setIsTeacherLoggedIn(false)}
+            onSelectExamForResults={handleSelectExamForResults}
+          />
+
+          {/* Dynamic Page Router */}
+          <div className="p-4 lg:p-8 flex-1" id="router-view-box">
+            <Suspense fallback={
+              <div className="space-y-6" id="page-skeleton">
+                <div className="h-8 w-48 bg-slate-300 skeleton rounded-xl" />
+                <div className="h-40 bg-slate-300 skeleton rounded-3xl" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-32 bg-slate-300 skeleton rounded-3xl" />
+                  ))}
+                </div>
+                <div className="h-60 bg-slate-300 skeleton rounded-3xl" />
               </div>
-            </div>
-          }>
-            {renderTeacherContent()}
-          </Suspense>
+            }>
+              {GlassSheen({ children: renderTeacherContent() })}
+            </Suspense>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* App-level Toast container */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2" id="app-toasts">
+        {toastSnapshot.map((t) => (
+          <Toast
+            key={t.id}
+            message={t.message}
+            type={t.type}
+            onClose={() => {
+              toastQueue.splice(toastQueue.findIndex((q) => q.id === t.id), 1);
+              setToastSnapshot([...toastQueue]);
+            }}
+          />
+        ))}
+      </div>
     </TeacherProvider>
   );
 }

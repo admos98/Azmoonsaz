@@ -189,8 +189,8 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
 
       {/* Desktop Sidebar */}
       <aside
-        className="hidden lg:flex fixed inset-y-0 right-0 z-30 w-60 flex-col glass-3 text-[var(--color-text-on-dark)] select-none"
-        id="sidebar-container"
+        className="hidden lg:flex fixed inset-y-0 right-0 z-30 w-60 flex-col lg-dark text-[var(--color-text-on-dark)] select-none"
+                id="sidebar-container"
       >
         {navContent}
         {footerContent}
@@ -204,8 +204,8 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="lg:hidden fixed inset-y-0 right-0 z-50 w-72 flex flex-col glass-3 text-[var(--color-text-on-dark)] select-none"
-            id="sidebar-container-mobile"
+            className="lg:hidden fixed inset-y-0 right-0 z-50 w-72 flex flex-col lg-strong text-[var(--color-text-on-dark)] select-none"
+                        id="sidebar-container-mobile"
           >
             {/* Close button */}
             <button

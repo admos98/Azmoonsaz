@@ -26,7 +26,7 @@ import { formatPersianNumber } from '../services/persianHelpers';
    ========================================== */
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'indigo';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'glx';
   isLoading?: boolean;
   icon?: React.ReactNode;
   iconPosition?: 'start' | 'end';
@@ -339,7 +339,7 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  maxWidth?: 'sm' | 'md' | 'glx' | 'xl';
 }
 
 export const Modal = ({
@@ -377,7 +377,7 @@ export const Modal = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className={`relative glass-2 w-full ${widthStyles[maxWidth]} rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10`}
+            className={`relative glx-strong w-full ${widthStyles[maxWidth]} rounded-3xl shadow-2xl flex flex-col max-h-[90vh] z-10`}
             role="dialog"
             aria-modal="true"
             aria-label={title}
@@ -451,7 +451,7 @@ export const Drawer = ({
               animate={{ x: 0 }}
               exit={{ x: placement === 'right' ? '100%' : '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className="w-screen max-w-md glass-1 shadow-2xl flex flex-col divide-y divide-slate-200"
+              className="w-screen max-w-md glx-strong shadow-2xl flex flex-col divide-y divide-slate-200"
             >
               {/* Head */}
               <div className="p-6 flex items-center justify-between">

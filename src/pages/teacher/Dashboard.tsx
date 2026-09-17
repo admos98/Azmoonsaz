@@ -179,12 +179,12 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
       {toastElement}
 
-      {/* 1. Welcome Card Hero — ink glass with The Mark */}
-      <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl bg-[var(--color-ink)] text-white shadow-lg" id="dashboard-hero-banner">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-[var(--color-accent)]/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-[var(--color-gold)]/8 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-8 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none hidden md:block">
-          <TheMark variant="row" size={200} animated={false} />
+      {/* 1. Welcome Card Hero — ink liquid glass with The Mark watermark */}
+      <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx-strong text-white shadow-2xl" id="dashboard-hero-banner">
+        <div className="absolute top-0 left-0 w-[28rem] h-[28rem] bg-[var(--color-accent)]/18 rounded-full blur-[100px] filter" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[var(--color-gold)]/10 rounded-full blur-[90px] filter" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-8 opacity-[0.05] pointer-events-none hidden md:block">
+          <TheMark variant="row" size={240} animated={false} />
         </div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -192,8 +192,8 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <span className="bg-white/10 text-white/80 text-[11px] font-bold px-3 py-1 rounded-full border border-white/15">
               {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
-            <h2 className="text-xl md:text-2xl font-black mt-3 leading-snug">سلام، استاد {teacher?.name || 'گرامی'} عزیز</h2>
-            <p className="text-xs md:text-sm text-white/70 mt-2 max-w-2xl leading-relaxed">
+            <h2 className="text-xl md:text-2xl font-black mt-3 leading-snug drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">سلام، استاد {teacher?.name || 'گرامی'} عزیز</h2>
+            <p className="text-xs md:text-sm mt-2 max-w-2xl leading-relaxed text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
               {formatPersianNumber(totalExams)} آزمون جاری فعال و {formatPersianNumber(pendingGradings)} پاسخ‌برگ در صف تصحیح.
             </p>
           </div>
@@ -229,7 +229,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+            <span className="text-2xl font-black text-slate-800 tracking-tight leading-tight block">
               {formatPersianNumber(totalStudents)} <span className="text-xs font-normal text-slate-400">نفر</span>
             </span>
           </div>
@@ -244,7 +244,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+            <span className="text-2xl font-black text-slate-800 tracking-tight leading-tight block">
               {formatPersianNumber(qBankTotal)} <span className="text-xs font-normal text-slate-400">سوال</span>
             </span>
             <span className="text-[10px] text-[var(--color-text-tertiary)] mt-1.5 block">
@@ -262,7 +262,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+            <span className="text-2xl font-black text-slate-800 tracking-tight leading-tight block">
               {formatPersianNumber(activeExams)} <span className="text-xs font-normal text-slate-400">آزمون</span>
             </span>
             <span className={`text-[10px] font-bold mt-1.5 block ${activeExams > 0 ? 'text-amber-600 animate-pulse' : 'text-slate-400'}`}>
@@ -280,7 +280,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+            <span className="text-2xl font-black text-slate-800 tracking-tight leading-tight block">
               {formatPersianNumber(pendingGradings)} <span className="text-xs font-normal text-slate-400">برگه</span>
             </span>
             <span className="text-[10px] text-rose-600 font-bold mt-1.5 block">
@@ -298,7 +298,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-slate-800 tracking-tight block">
+            <span className="text-2xl font-black text-slate-800 tracking-tight leading-tight block">
               {formatPersianNumber(scheduledExams)} <span className="text-xs font-normal text-slate-400">مورد</span>
             </span>
             <span className="text-[10px] text-[var(--color-text-tertiary)] mt-1.5 block">
@@ -310,7 +310,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       </div>
 
       {/* 3. Quick Actions Row */}
-      <div className="glass-1 p-6 rounded-2xl text-right" id="quick-actions-section">
+      <div className="glx p-6 rounded-2xl text-right" id="quick-actions-section">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
           <span>اقدامات سریع</span>
         </h3>
@@ -320,7 +320,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <button
             id="qa-btn-import-excel"
             onClick={() => setIsExcelModalOpen(true)}
-            className="p-4 bg-slate-50/80 hover:bg-slate-100 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
             <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
               <Upload className="w-5 h-5" />
@@ -331,7 +331,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <button
             id="qa-btn-add-question"
             onClick={() => onNavigate('questions')}
-            className="p-4 bg-slate-50/80 hover:bg-slate-100 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
             <div className="p-2.5 bg-[var(--color-success-soft)] text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
               <Plus className="w-5 h-5" />
@@ -342,7 +342,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <button
             id="qa-btn-new-exam"
             onClick={() => onNavigate('exams/new')}
-            className="p-4 bg-slate-50/80 hover:bg-slate-100 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
             <div className="p-2.5 bg-[var(--color-warning-soft)] text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
               <FileText className="w-5 h-5" />
@@ -353,7 +353,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <button
             id="qa-btn-view-results"
             onClick={() => onNavigate('results')}
-            className="p-4 bg-slate-50/80 hover:bg-slate-100 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
             <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
               <Eye className="w-5 h-5" />
@@ -382,7 +382,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="lg:col-span-2 space-y-6">
 
           {/* 4. Upcoming and Active Exams Section */}
-          <div className="glass-1 p-6 rounded-2xl" id="section-upcoming-exams">
+          <div className="glx p-6 rounded-2xl" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">آزمون‌های زمان‌بندی‌شده مابعد و پیش‌رو</h3>
@@ -459,7 +459,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
 
           {/* 5. Recent Submissions Section */}
-          <div className="glass-1 rounded-2xl overflow-hidden" id="section-recent-submissions">
+          <div className="glx rounded-2xl overflow-hidden" id="section-recent-submissions">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h3 className="text-sm font-bold text-slate-800">آخرین پاسخ‌برگ‌های ارسال شده دانش‌آموزان</h3>
@@ -589,7 +589,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="space-y-6" id="dashboard-right-sidebar">
 
           {/* 6. Question Bank Health Section */}
-          <div className="glass-1 p-6 rounded-2xl text-right" id="section-q-bank-health">
+          <div className="glx p-6 rounded-2xl text-right" id="section-q-bank-health">
             <h3 className="text-xs font-black text-slate-800 mb-4 flex items-center gap-2">
               <span>وضعیت بانک سوالات</span>
             </h3>
@@ -685,7 +685,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
 
           {/* Active Class Groups List */}
-          <div className="glass-1 p-6 rounded-2xl" id="section-class-groups-list">
+          <div className="glx p-6 rounded-2xl" id="section-class-groups-list">
             <h3 className="text-xs font-black text-slate-800 mb-4">آمار کلاس‌های تحت پوشش پایه‌ها</h3>
             <div className="space-y-3">
               {classGroups.map((cg) => (
@@ -717,7 +717,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
 
           {/* Quick Security Checklist / Protip */}
-          <div className="glass-1 p-6 rounded-2xl">
+          <div className="glx p-6 rounded-2xl">
             <div className="flex items-start gap-4">
               <div className="p-2.5 bg-white text-[var(--color-accent)] rounded-xl">
                 <Award className="w-5 h-5" />
@@ -750,7 +750,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 text-right text-xs"
+            className="glx-strong w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl text-right text-xs glx-sheen"
             id="excel-import-dialog"
           >
             {/* Modal Header */}

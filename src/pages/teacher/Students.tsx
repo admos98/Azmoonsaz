@@ -849,7 +849,7 @@ export default function Students() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="glass-2 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
+            className="glx-strong glx-sheen rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
             id="add-edit-student-box"
           >
             {/* Modal Header */}
@@ -1027,7 +1027,7 @@ export default function Students() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-2 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl text-xs"
+            className="glx-strong glx-sheen rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl text-xs"
             id="wizard-container"
           >
             {/* Header with Close */}
@@ -1348,7 +1348,7 @@ export default function Students() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-2 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
+            className="glx-strong rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
             id="exam-logs-box"
           >
             {/* Header */}
