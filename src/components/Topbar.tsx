@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Bell, ArrowLeftRight } from 'lucide-react';
 import BackendModeBadge from './BackendModeBadge';
 import { useTeacher } from '../contexts/TeacherContext';
@@ -39,6 +39,8 @@ export default function Topbar({
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
+  const [bellRect, setBellRect] = useState<DOMRect | null>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
   // Fetch real notifications from grading + exam services
@@ -47,9 +49,7 @@ export default function Topbar({
     const fetchNotifications = async () => {
       setLoadingNotifs(true);
       try {
-        // 1. Ungraded submissions = "needs teacher attention"
         const submissions: Submission[] = await gradingService.getSubmissions();
-        // 2. Active exams = "happening now"
         const exams: Exam[] = await examService.getExams();
         const activeExams = exams.filter((e) => e.status === 'active');
         const now = new Date();
@@ -99,24 +99,51 @@ export default function Topbar({
     };
 
     fetchNotifications();
-    // Refresh every 60s while panel open or not at all if closed
     if (showNotifications) {
       const timer = setInterval(fetchNotifications, 60000);
       return () => clearInterval(timer);
     }
   }, [onSelectExamForResults, showNotifications]);
 
+  // Measure bell button position when notifications open
+  const openNotifications = useCallback(() => {
+    if (bellRef.current) {
+      setBellRect(bellRef.current.getBoundingClientRect());
+    }
+    setShowNotifications(true);
+  }, []);
+
+  const closeNotifications = useCallback(() => {
+    setShowNotifications(false);
+    setBellRect(null);
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!showNotifications) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeNotifications();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showNotifications]);
+
   // Close on outside click
   useEffect(() => {
+    if (!showNotifications) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setShowNotifications(false);
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(e.target as Node) &&
+        bellRef.current &&
+        !bellRef.current.contains(e.target as Node)
+      ) {
+        closeNotifications();
       }
     };
-    if (showNotifications) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+    // Use pointerdown for better mobile support
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [showNotifications]);
 
   const getTabTitle = () => {
@@ -134,8 +161,21 @@ export default function Topbar({
   };
 
   const getPersianDateString = () => formatPersianDate(new Date().toISOString());
-
   const unreadCount = notifications.length;
+
+  // Compute dropdown position: fixed relative to viewport, anchored to bell
+  // This avoids flex-container positioning bugs and z-index conflicts
+  const dropdownStyle: React.CSSProperties = {};
+  if (bellRect) {
+    const dropdownWidth = 320; // w-80 = 20rem
+    const gap = 12; // mt-3 = 12px
+    // Position dropdown below bell, right-aligned with bell's right edge
+    const left = Math.max(16, bellRect.right - dropdownWidth);
+    const top = bellRect.bottom + gap;
+    dropdownStyle.left = `${left}px`;
+    dropdownStyle.top = `${top}px`;
+    dropdownStyle.width = `${dropdownWidth}px`;
+  }
 
   return (
     <header
@@ -179,11 +219,12 @@ export default function Topbar({
         </button>
 
         {/* Notifications — REAL DATA */}
-        <div className="relative" ref={notifRef}>
+        <div className="relative">
           <button
             id="notifications-bell-btn"
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-dark-border)] rounded-xl relative transition-all cursor-pointer"
+            ref={bellRef}
+            onClick={openNotifications}
+            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative transition-all cursor-pointer"
             aria-label="اعلان‌ها"
             aria-expanded={showNotifications}
             aria-haspopup="true"
@@ -202,7 +243,9 @@ export default function Topbar({
 
           {showNotifications && (
             <div
-              className="absolute right-0 top-full mt-3 w-80 max-w-[20rem] glx-strong rounded-2xl shadow-2xl z-[60] overflow-y-auto glx-sheen"
+              ref={notifRef}
+              className="fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden glx-sheen"
+              style={dropdownStyle}
               id="notification-dropdown"
             >
               <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
@@ -230,7 +273,7 @@ export default function Topbar({
                       className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
                       onClick={() => {
                         if (n.onClick) n.onClick();
-                        setShowNotifications(false);
+                        closeNotifications();
                       }}
                     >
                       <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
@@ -243,7 +286,7 @@ export default function Topbar({
 
               <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
                 <button
-                  onClick={() => setShowNotifications(false)}
+                  onClick={closeNotifications}
                   className="text-[11px] text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
                 >
                   بستن
