@@ -246,14 +246,13 @@ export default function Topbar({
 
   const unreadCount = notifications.length;
 
-  // Notification dropdown position (fixed, anchored to bell)
+  // Notification dropdown position (fixed, anchored to bell — on left side, so use left)
   const notificationStyle: React.CSSProperties = { position: 'fixed' };
   if (bellRect) {
     const dropdownWidth = 320;
     const gap = 12;
     const top = bellRect.bottom + gap;
-    const viewportRight = window.innerWidth - bellRect.right;
-    notificationStyle.right = `${viewportRight}px`;
+    notificationStyle.left = `${bellRect.left + window.scrollX}px`;
     notificationStyle.top = `${top}px`;
     notificationStyle.width = `${dropdownWidth}px`;
   }
@@ -287,13 +286,9 @@ export default function Topbar({
     >
       {/* LEFT SIDE: Avatar + Bell cluster */ }
       <div className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`} id="topbar-left-group">
-        {/* Avatar pill — expands to show name, pushing bell right */ }
-        <div
-          className="relative flex items-center"
-          onMouseEnter={() => !showHamburgerMenu && setAvatarExpanded(true)}
-          onMouseLeave={() => !showHamburgerMenu && setAvatarExpanded(false)}
-        >
-          {/* The pill container — avatar on left, name extends right */ }
+        {/* Avatar pill — expands to show name */ }
+        <div className="relative flex items-center">
+          {/* The pill container — avatar on left, name extends right, hover trigger */ }
           <div
             className={`relative flex items-center gap-2 rounded-full glx-strong transition-all duration-300 ease-out overflow-hidden ${
               avatarExpanded
@@ -303,6 +298,12 @@ export default function Topbar({
             style={{
               direction: 'ltr',
               justifyContent: avatarExpanded ? 'flex-start' : 'center',
+            }}
+            onMouseEnter={() => !showHamburgerMenu && setAvatarExpanded(true)}
+            onMouseLeave={() => {
+              setTimeout(() => {
+                if (!showHamburgerMenu) setAvatarExpanded(false);
+              }, 150);
             }}
           >
             {/* Avatar circle — always visible, inside the pill */ }
@@ -349,13 +350,8 @@ export default function Topbar({
             </div>
           </div>
 
-          {/* Bell — slides right when avatar expands (pushed by pill width) */ }
-          <div
-            className="transition-all duration-300 ease-out"
-            style={{
-              transform: avatarExpanded ? 'translateX(180px)' : 'translateX(0)',
-            }}
-          >
+          {/* Bell — naturally pushed right by pill expansion */ }
+          <div className="transition-all duration-300 ease-out">
             <button
               ref={bellRef}
               id="notifications-bell-btn"
@@ -376,33 +372,6 @@ export default function Topbar({
                 </span>
               )}
             </button>
-          </div>
-
-          {/* Avatar circle */}
-          <div
-            className="w-9 h-9 rounded-full bg-[var(--color-accent)]/10 border-2 border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer transition-all duration-300 ease-out"
-            onClick={() => setAvatarExpanded(!avatarExpanded)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                setAvatarExpanded(!avatarExpanded);
-              }
-            }}
-            aria-label={teacher?.name || 'پروفایل'}
-          >
-            {teacher?.avatarUrl ? (
-              <img
-                src={teacher.avatarUrl}
-                alt={teacher.name}
-                referrerPolicy="no-referrer"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-xs">
-                {teacher?.name?.[0] || '?'}
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -463,7 +432,9 @@ export default function Topbar({
         <>
           {/* Backdrop — blocks interaction with underlying UI */ }
           <div
-            className="fixed inset-0 z-[55] bg-black/10 backdrop-blur-[2px] transition-all duration-500"
+            className={`fixed inset-0 z-[55] bg-black/10 backdrop-blur-[2px] transition-all duration-500 ${
+              showHamburgerMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
             onClick={() => setShowHamburgerMenu(false)}
           />
 
