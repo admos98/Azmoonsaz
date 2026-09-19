@@ -232,10 +232,19 @@ body {
   to { transform: scale(1); }
 }
 
-/* ─── Panel drop-in animation ─── */
+/* ─── Panel drop-in animation (open) ─── */
 @keyframes dropIn {
   0% { opacity: 0; transform: translateY(12px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Panel drop-out animation (close) — opposite of dropIn */
+@keyframes dropOut {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(12px); }
+}
+.panel-drop-out {
+  animation: dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) both;
 }
 
 /* ─── Reduced motion ─── */

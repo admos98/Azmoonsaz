@@ -284,33 +284,55 @@ export default function Topbar({
       className="sticky top-0 z-30 h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent"
       id="topbar-wrapper"
     >
-      {/* LEFT SIDE: Avatar + Bell cluster */ }
+      {/* LEFT SIDE: Bell then Avatar (reversed for flex-row-reverse = visually Profile|Bell) */ }
       <div className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`} id="topbar-left-group">
+        {/* Bell — on the right side in RTL flex, pushed left as avatar expands */ }
+        <div className="transition-all duration-500 ease-out">
+          <button
+            ref={bellRef}
+            id="notifications-bell-btn"
+            onClick={() => !showHamburgerMenu && openNotifications()}
+            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative transition-all cursor-pointer"
+            aria-label="اعلان‌ها"
+            aria-expanded={showNotifications}
+            aria-haspopup="true"
+          >
+            <Bell className="w-4.5 h-4.5" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute top-1.5 right-1.5 flex items-center justify-center text-[9px] font-bold text-white bg-[var(--color-danger)] rounded-full ring-2 ring-white"
+                style={{ width: '18px', height: '18px' }}
+                aria-label={`${unreadCount} اعلان خوانه‌نشده`}
+              >
+                {formatPersianNumber(unreadCount > 9 ? '9+' : unreadCount.toString())}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Avatar pill — expands to show name */ }
         <div className="relative flex items-center">
-          {/* The pill container — avatar on left, name extends right, hover trigger */ }
+          {/* The pill container — avatar on right, name extends left */ }
           <div
-            className={`relative flex items-center gap-2 rounded-full glx-strong transition-all duration-300 ease-out overflow-hidden ${
+            className={`relative flex items-center overflow-hidden rounded-full glx-strong transition-all duration-500 ease-out ${
               avatarExpanded
-                ? 'w-[170px] pl-3 pr-3 py-2'
-                : 'w-10 h-10 p-0 pl-0.5 pr-0.5'
+                ? 'w-[200px] pl-3 pr-3 py-2'
+                : 'w-10 h-10'
             }`}
             style={{
-              direction: 'ltr',
-              justifyContent: avatarExpanded ? 'flex-start' : 'center',
+              direction: 'rtl',
+              justifyContent: 'flex-end',
             }}
             onMouseEnter={() => !showHamburgerMenu && setAvatarExpanded(true)}
             onMouseLeave={() => {
               setTimeout(() => {
                 if (!showHamburgerMenu) setAvatarExpanded(false);
-              }, 150);
+              }, 200);
             }}
           >
-            {/* Avatar circle — always visible, inside the pill */ }
+            {/* Avatar circle — fixed, pill expands from its right edge */ }
             <div
-              className={`rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer transition-all ${
-                avatarExpanded ? 'w-7 h-7' : 'w-full h-full'
-              }`}
+              className={`rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer w-8 h-8`}
               onClick={() => setAvatarExpanded(!avatarExpanded)}
               role="button"
               tabIndex={0}
@@ -335,9 +357,9 @@ export default function Topbar({
               )}
             </div>
 
-            {/* Name panel — slides in from right when expanded */ }
+            {/* Name panel — extends from avatar leftward */ }
             <div
-              className={`whitespace-nowrap transition-all duration-300 ease-out ${
+              className={`whitespace-nowrap transition-all duration-500 ease-out ${
                 avatarExpanded
                   ? 'opacity-100 w-auto max-w-[120px] mr-1'
                   : 'opacity-0 w-0 mr-0 pointer-events-none'
@@ -348,30 +370,6 @@ export default function Topbar({
                 {teacher?.name || '...'}
               </p>
             </div>
-          </div>
-
-          {/* Bell — naturally pushed right by pill expansion */ }
-          <div className="transition-all duration-300 ease-out">
-            <button
-              ref={bellRef}
-              id="notifications-bell-btn"
-              onClick={() => !showHamburgerMenu && openNotifications()}
-              className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative transition-all cursor-pointer"
-              aria-label="اعلان‌ها"
-              aria-expanded={showNotifications}
-              aria-haspopup="true"
-            >
-              <Bell className="w-4.5 h-4.5" />
-              {unreadCount > 0 && (
-                <span
-                  className="absolute top-1.5 right-1.5 flex items-center justify-center text-[9px] font-bold text-white bg-[var(--color-danger)] rounded-full ring-2 ring-white"
-                  style={{ width: '18px', height: '18px' }}
-                  aria-label={`${unreadCount} اعلان خوانه‌نشده`}
-                >
-                  {formatPersianNumber(unreadCount > 9 ? '9+' : unreadCount.toString())}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </div>
@@ -396,7 +394,7 @@ export default function Topbar({
         {/* Search — smooth pill expand from icon */ }
         <div
           ref={searchRef}
-          className={`relative flex items-center overflow-hidden rounded-full transition-all duration-300 ease-out ${
+          className={`relative flex items-center overflow-hidden rounded-full transition-all duration-500 ease-out ${
             showSearch
               ? 'w-[200px] glx-inset'
               : 'w-11 glx-inset'
@@ -430,11 +428,9 @@ export default function Topbar({
       {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */ }
       {showHamburgerMenu && (
         <>
-          {/* Backdrop — blocks interaction with underlying UI */ }
+          {/* Backdrop — blocks interaction with underlying UI, full blur */ }
           <div
-            className={`fixed inset-0 z-[55] bg-black/10 backdrop-blur-[2px] transition-all duration-500 ${
-              showHamburgerMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
+            className="fixed inset-0 z-[55] bg-black/10 backdrop-blur-sm"
             onClick={() => setShowHamburgerMenu(false)}
           />
 
@@ -446,7 +442,7 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(0),
-              animation: 'dropIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
+              animation: 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
             }}
             id="hamburger-panel-1"
           >
@@ -470,7 +466,7 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(1),
-              animation: 'dropIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
+              animation: 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
             }}
             id="hamburger-panel-2"
           >
@@ -508,7 +504,7 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(2),
-              animation: 'dropIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
+              animation: 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
             }}
             id="hamburger-panel-3"
           >
@@ -568,7 +564,7 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(3),
-              animation: 'dropIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
+              animation: 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
             }}
             id="hamburger-panel-4"
           >
