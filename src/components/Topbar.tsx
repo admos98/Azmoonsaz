@@ -4,16 +4,16 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Bell, ArrowLeftRight } from 'lucide-react';
-import BackendModeBadge from './BackendModeBadge';
+import { Search, Bell } from 'lucide-react';
 import { useTeacher } from '../contexts/TeacherContext';
 import { formatPersianDate, formatPersianNumber } from '../services/persianHelpers';
 import { gradingService, examService } from '../services/api';
 import { Exam, Submission } from '../types';
 import { logger } from '../lib/logger';
+import { TheMark } from './TheMark';
 
 interface TopbarProps {
-  currentTab: string;
+  onTabChange: (tab: string) => void;
   onSwitchRole: () => void;
   onLogout: () => void;
   onSelectExamForResults?: (examId: string) => void;
@@ -28,22 +28,55 @@ export interface NotificationItem {
   onClick?: () => void;
 }
 
+// TheMark Hamburger — four pills in a row, 3rd gold-filled
+function TheMarkHamburger({ size = 44 }: { size?: number }) {
+  const ink = 'var(--color-ink, #221E4A)';
+  const gold = 'var(--color-gold, #F5B301)';
+  // Each pill is 1/4 of total width, centered vertically
+  const r = size * 0.18; // radius
+  const strokeWidth = size * 0.07;
+  const cx = [size * 0.19, size * 0.42, size * 0.65, size * 0.88];
+  const cy = size * 0.5;
+  return (
+    <svg
+      width={size}
+      height={size * 0.5}
+      viewBox={`0 0 ${size} ${size * 0.5}`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="cursor-pointer"
+      aria-hidden="true"
+    >
+      <circle cx={cx[0]} cy={cy} r={r} stroke={ink} strokeWidth={strokeWidth} />
+      <circle cx={cx[1]} cy={cy} r={r} stroke={ink} strokeWidth={strokeWidth} />
+      <circle cx={cx[2]} cy={cy} r={r} fill={gold} />
+      <circle cx={cx[3]} cy={cy} r={r} stroke={ink} strokeWidth={strokeWidth} />
+    </svg>
+  );
+}
+
 export default function Topbar({
-  currentTab,
+  onTabChange,
   onSwitchRole,
   onLogout,
   onSelectExamForResults,
 }: TopbarProps) {
   const { teacher } = useTeacher();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [avatarExpanded, setAvatarExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
   const [bellRect, setBellRect] = useState<DOMRect | null>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const avatarRef = useRef<HTMLDivElement>(null);
 
-  // Fetch real notifications from grading + exam services
+  // Fetch real notifications
   useEffect(() => {
     const cancelled = false;
     const fetchNotifications = async () => {
@@ -56,7 +89,6 @@ export default function Topbar({
 
         const items: NotificationItem[] = [];
 
-        // Submission notifications (most recent first)
         const ungraded = submissions
           .filter((s) => s.status === 'submitted' || s.status === 'ongoing')
           .sort((a, b) => new Date(b.submittedAt || b.startedAt).getTime() - new Date(a.submittedAt || a.startedAt).getTime());
@@ -77,7 +109,6 @@ export default function Topbar({
           });
         });
 
-        // Active exam notifications
         activeExams.slice(0, 3).forEach((e) => {
           items.push({
             id: `exam-${e.id}`,
@@ -105,11 +136,33 @@ export default function Topbar({
     }
   }, [onSelectExamForResults, showNotifications]);
 
-  // Measure bell button position when notifications open
+  // Close hamburger menu on outside click / Escape
+  useEffect(() => {
+    if (!showHamburgerMenu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowHamburgerMenu(false);
+    };
+    const onClick = (e: MouseEvent) => {
+      if (
+        hamburgerRef.current && !hamburgerRef.current.contains(e.target as Node)
+      ) {
+        setShowHamburgerMenu(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onClick);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onClick);
+    };
+  }, [showHamburgerMenu]);
+
+  // Close notifications on Escape / outside click
   const openNotifications = useCallback(() => {
     if (bellRef.current) {
       setBellRect(bellRef.current.getBoundingClientRect());
     }
+    setShowHamburgerMenu(false);
     setShowNotifications(true);
   }, []);
 
@@ -118,7 +171,6 @@ export default function Topbar({
     setBellRect(null);
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     if (!showNotifications) return;
     const onKey = (e: KeyboardEvent) => {
@@ -126,9 +178,8 @@ export default function Topbar({
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [showNotifications]);
+  }, [showNotifications, closeNotifications]);
 
-  // Close on outside click
   useEffect(() => {
     if (!showNotifications) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -141,38 +192,17 @@ export default function Topbar({
         closeNotifications();
       }
     };
-    // Use pointerdown for better mobile support
     document.addEventListener('pointerdown', handleClickOutside);
     return () => document.removeEventListener('pointerdown', handleClickOutside);
-  }, [showNotifications]);
+  }, [showNotifications, closeNotifications]);
 
-  const getTabTitle = () => {
-    if (currentTab === 'dashboard') return 'داشبورد مدیریتی';
-    if (currentTab === 'students') return 'دانش‌آموزان';
-    if (currentTab === 'questions') return 'بانک سوالات';
-    if (currentTab.startsWith('exams/new')) return 'آزمون جدید';
-    if (currentTab.startsWith('exams') && currentTab.includes('/settings')) return 'تنظیمات آزمون';
-    if (currentTab.startsWith('exams') && currentTab.includes('/preview')) return 'پیش‌نمایش';
-    if (currentTab.startsWith('exams') && currentTab.includes('/results')) return 'نتایج';
-    if (currentTab === 'exams') return 'آزمون‌ها';
-    if (currentTab === 'results') return 'نتایج';
-    if (currentTab === 'settings') return 'تنظیمات';
-    return 'آزمون‌ساز';
-  };
-
-  const getPersianDateString = () => formatPersianDate(new Date().toISOString());
   const unreadCount = notifications.length;
 
-  // Compute dropdown position: fixed relative to viewport, anchored to bell.
-  // We set position in the inline style to guarantee it isn't overridden by
-  // the glx-sheen class (position: relative) that shares the same specificity
-  // as the Tailwind `fixed` utility — .glx-sheen is declared later in index.css
-  // and would otherwise win the cascade.
+  // Dropdown position for notifications
   const dropdownStyle: React.CSSProperties = { position: 'fixed' };
   if (bellRect) {
-    const dropdownWidth = 320; // w-80 = 20rem
-    const gap = 12; // mt-3 = 12px
-    // Position dropdown below bell, right-aligned with bell's right edge
+    const dropdownWidth = 320;
+    const gap = 12;
     const left = Math.max(16, bellRect.right - dropdownWidth);
     const top = bellRect.bottom + gap;
     dropdownStyle.left = `${left}px`;
@@ -180,143 +210,376 @@ export default function Topbar({
     dropdownStyle.width = `${dropdownWidth}px`;
   }
 
+  // Hamburger menu anchor rect
+  const [hamburgerRect, setHamburgerRect] = useState<DOMRect | null>(null);
+  const openHamburgerMenu = useCallback(() => {
+    if (hamburgerRef.current) {
+      setHamburgerRect(hamburgerRef.current.getBoundingClientRect());
+    }
+    setShowHamburgerMenu(true);
+  }, []);
+
+  const hamburgerStyle: React.CSSProperties = { position: 'fixed' };
+  if (hamburgerRect) {
+    const menuWidth = 260;
+    const gap = 12;
+    const left = Math.max(16, hamburgerRect.left);
+    const top = hamburgerRect.bottom + gap;
+    hamburgerStyle.left = `${left}px`;
+    hamburgerStyle.top = `${top}px`;
+    hamburgerStyle.width = `${menuWidth}px`;
+  }
+
   return (
     <header
       className="sticky top-0 z-30 h-16 glx px-4 lg:px-8 flex items-center justify-between select-none"
       id="topbar-wrapper"
     >
-      {/* Title & Search */}
-      <div className="flex items-center gap-6" id="topbar-left-side">
-        <div className="hidden lg:block">
-          <h2 className="text-sm font-bold text-[var(--color-text-primary)]">{getTabTitle()}</h2>
-          <p className="text-[10px] text-[var(--color-text-secondary)] mt-0.5">{getPersianDateString()}</p>
-        </div>
-
-        {/* Search */}
-        <div className="relative w-56 lg:w-72 max-sm:hidden">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)] transition-colors pointer-events-none" />
-          <input
-            type="text"
-            id="global-search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="جستجو..."
-            className="w-full text-xs md:text-sm pr-9 pl-4 py-2.5 rounded-full glx-inset focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:brightness-110 transition-all placeholder-[var(--color-text-tertiary)]"
-          />
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2 lg:gap-3" id="topbar-actions-right">
-        <div className="max-lg:hidden"><BackendModeBadge /></div>
-
-        {/* Quick Role Switch */}
+      {/* LEFT SIDE: Hamburger + Avatar/Bell cluster */}
+      <div className="flex items-center gap-3" id="topbar-left">
+        {/* TheMark Hamburger */ }
         <button
-          id="quick-role-switch"
-          onClick={onSwitchRole}
-          className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border border-[var(--color-accent)]/20 text-[var(--color-accent)] bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent)]/10 transition-all cursor-pointer"
-          title="سوییچ به آزمون دانش‌آموز"
+          ref={hamburgerRef}
+          id="hamburger-menu-btn"
+          onClick={openHamburgerMenu}
+          className="p-1 rounded-xl hover:bg-white/5 transition-all cursor-pointer flex items-center justify-center w-12 h-12"
+          aria-label="منوی اصلی"
+          aria-expanded={showHamburgerMenu}
+          aria-haspopup="true"
         >
-          <ArrowLeftRight className="w-3.5 h-3.5" />
-          <span className="max-md:hidden">شبیه‌ساز</span>
+          <TheMarkHamburger size={32} />
         </button>
 
-        {/* Notifications — REAL DATA */}
-        <div className="relative">
-          <button
-            id="notifications-bell-btn"
-            ref={bellRef}
-            onClick={openNotifications}
-            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative transition-all cursor-pointer"
-            aria-label="اعلان‌ها"
-            aria-expanded={showNotifications}
-            aria-haspopup="true"
-          >
-            <Bell className="w-4.5 h-4.5" />
-            {unreadCount > 0 && (
-              <span
-                className="absolute top-1.5 right-1.5 flex items-center justify-center text-[9px] font-bold text-white bg-[var(--color-danger)] rounded-full ring-2 ring-white"
-                style={{ width: '18px', height: '18px' }}
-                aria-label={`${unreadCount} اعلان خوانده‌نشده`}
-              >
-                {formatPersianNumber(unreadCount > 9 ? '9+' : unreadCount.toString())}
-              </span>
-            )}
-          </button>
-
-          {showNotifications && (
+        {/* Avatar with expandable teacher name */ }
+        <div
+          ref={avatarRef}
+          className="relative flex items-center"
+          onMouseEnter={() => setAvatarExpanded(true)}
+          onMouseLeave={() => setAvatarExpanded(false)}
+        >
+          {avatarExpanded && (
             <div
-              ref={notifRef}
-              className="fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden glx-sheen"
-              style={dropdownStyle}
-              id="notification-dropdown"
+              className="absolute right-full mr-3 max-sm:absolute max-sm:static max-sm:mr-0 max-sm:relative"
+              style={{ direction: 'rtl', textAlign: 'right' }}
             >
-              <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
-                <span className="text-xs font-bold text-[var(--color-text-primary)]">اعلان‌ها</span>
-                {unreadCount > 0 && (
-                  <span className="text-[10px] bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
-                    {formatPersianNumber(unreadCount.toString())} جدید
-                  </span>
+              <div
+                className="px-3 py-1.5 rounded-xl glx-strong whitespace-nowrap shadow-lg"
+                style={{ marginRight: 0 }}
+              >
+                <p className="text-xs font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
+                  {teacher?.name || '...'}
+                </p>
+                {teacher?.schoolName && (
+                  <p className="text-[9px] text-[var(--color-text-secondary)] truncate max-w-[140px]">
+                    {teacher.schoolName}
+                  </p>
                 )}
-              </div>
-
-              <div className="max-h-60 overflow-y-auto text-xs divide-y divide-[var(--color-glass-light-stroke)]">
-                {loadingNotifs ? (
-                  <div className="p-4 text-center text-[var(--color-text-tertiary)]">
-                    در حال بارگذاری...
-                  </div>
-                ) : notifications.length === 0 ? (
-                  <div className="p-6 text-center text-[var(--color-text-tertiary)]">
-                    هیچ اعلانی نیست.
-                  </div>
-                ) : (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
-                      onClick={() => {
-                        if (n.onClick) n.onClick();
-                        closeNotifications();
-                      }}
-                    >
-                      <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
-                      <p className="text-[11px] text-[var(--color-text-secondary)] mt-1">{n.description}</p>
-                      <span className="text-[9px] text-[var(--color-text-tertiary)] mt-2 block">{n.timeAgo}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
-                <button
-                  onClick={closeNotifications}
-                  className="text-[11px] text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
-                >
-                  بستن
-                </button>
               </div>
             </div>
           )}
-        </div>
-
-        {/* Separator */}
-        <span className="w-px h-7 bg-[var(--color-glass-light-stroke)] max-sm:hidden" />
-
-        {/* Teacher Avatar */}
-        <div className="flex items-center gap-2 cursor-pointer">
-          <div className="text-right max-md:hidden">
-            <p className="text-xs font-bold text-[var(--color-text-primary)] leading-tight">{teacher?.name || '...'}</p>
-            <p className="text-[10px] text-[var(--color-text-secondary)] mt-0.5">{teacher?.schoolName || ''}</p>
+          {/* Bell pushes aside when avatar expanded */ }
+          <div
+            className="transition-all duration-200"
+            style={{
+              transform: avatarExpanded ? 'translateX(-60px)' : 'translateX(0)',
+            }}
+          >
+            <button
+              ref={bellRef}
+              id="notifications-bell-btn"
+              onClick={openNotifications}
+              className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative transition-all cursor-pointer"
+              aria-label="اعلان‌ها"
+              aria-expanded={showNotifications}
+              aria-haspopup="true"
+            >
+              <Bell className="w-4.5 h-4.5" />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute top-1.5 right-1.5 flex items-center justify-center text-[9px] font-bold text-white bg-[var(--color-danger)] rounded-full ring-2 ring-white"
+                  style={{ width: '18px', height: '18px' }}
+                  aria-label={`${unreadCount} اعلان خوانه‌نشده`}
+                >
+                  {formatPersianNumber(unreadCount > 9 ? '9+' : unreadCount.toString())}
+                </span>
+              )}
+            </button>
           </div>
-          <div className="w-9 h-9 rounded-full bg-[var(--color-accent)]/10 border-2 border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden">
+          {/* Avatar circle */ }
+          <div
+            className="w-9 h-9 rounded-full bg-[var(--color-accent)]/10 border-2 border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer transition-all"
+            onClick={() => setAvatarExpanded(!avatarExpanded)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setAvatarExpanded(!avatarExpanded);
+              }
+            }}
+            aria-label={teacher?.name || 'پروفایل'}
+          >
             {teacher?.avatarUrl ? (
-              <img src={teacher.avatarUrl} alt={teacher.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+              <img
+                src={teacher.avatarUrl}
+                alt={teacher.name}
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover"
+              />
             ) : (
-              <span className="text-xs">{teacher?.name?.[0] || '?'}</span>
+              <span className="text-xs">
+                {teacher?.name?.[0] || '?'}
+              </span>
             )}
           </div>
         </div>
       </div>
+
+      {/* RIGHT SIDE: Search (collapsed/expanded) */ }
+      <div
+        ref={searchRef}
+        className="flex items-center"
+        onMouseEnter={() => setShowSearch(true)}
+        onMouseLeave={() => setShowSearch(false)}
+      >
+        {showSearch ? (
+          <div className="flex items-center gap-2 glx-inset rounded-full px-3 py-2 transition-all overflow-hidden">
+            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] pointer-events-none" />
+            <input
+              type="text"
+              id="global-search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="جستجو..."
+              className="outline-none bg-transparent text-xs md:text-sm w-[160px] text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)]"
+            />
+          </div>
+        ) : (
+          <button
+            id="search-toggle-btn"
+            onClick={() => setShowSearch(true)}
+            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-xl hover:bg-[var(--color-glass-light-stroke)]/20 transition-all cursor-pointer"
+            aria-label="جستجو"
+            aria-expanded={showSearch}
+          >
+            <Search className="w-4.5 h-4.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Hamburger Dropdown — individual glass panels */ }
+      {showHamburgerMenu && (
+        <div
+          ref={notifRef}
+          className="fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden"
+          style={hamburgerStyle}
+          id="hamburger-dropdown"
+        >
+          <div className="p-2 min-w-[240px]">
+            {/* Panel 1: App info + date */ }
+            <div className="p-3 mb-2 rounded-xl glx-sheen cursor-pointer hover:bg-white/3">
+              <div className="flex items-center gap-3">
+                <TheMark variant="row" size={36} animated={false} />
+                <div>
+                  <p className="text-xs font-bold text-[var(--color-text-primary)]">آزمون‌ساز</p>
+                  <p className="text-[9px] text-[var(--color-text-secondary)]">پنل مدیریت دبیران</p>
+                </div>
+              </div>
+              <div className="mt-2 text-[10px] text-[var(--color-text-tertiary)]">
+                {formatPersianDate(new Date().toISOString())}
+              </div>
+            </div>
+
+            {/* Panel 2: Teacher profile */ }
+            <div className="p-3 mb-2 rounded-xl glx-sheen cursor-pointer hover:bg-white/3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center overflow-hidden">
+                  {teacher?.avatarUrl ? (
+                    <img
+                      src={teacher.avatarUrl}
+                      alt={teacher.name}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[10px] text-[var(--color-accent)] font-bold">
+                      {teacher?.name?.[0] || '?'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                    {teacher?.name || '...'}
+                  </p>
+                  <p className="text-[9px] text-[var(--color-text-secondary)] truncate">
+                    {teacher?.schoolName || ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Panel 3: Management options */ }
+            <div className="p-3 mb-2 rounded-xl glx-sheen">
+              <div
+                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-primary)] hover:bg-white/3 cursor-pointer transition-all"
+                onClick={() => { onTabChange('dashboard'); setShowHamburgerMenu(false); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onTabChange('dashboard');
+                    setShowHamburgerMenu(false);
+                  }
+                }}
+              >
+                <span>داشبورد مدیریتی</span>
+              </div>
+              <div
+                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                onClick={() => { onTabChange('students'); setShowHamburgerMenu(false); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onTabChange('students');
+                    setShowHamburgerMenu(false);
+                  }
+                }}
+              >
+                <span>دانش‌آموزان</span>
+              </div>
+              <div
+                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                onClick={() => { onTabChange('classes'); setShowHamburgerMenu(false); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onTabChange('classes');
+                    setShowHamburgerMenu(false);
+                  }
+                }}
+              >
+                <span>کلاس‌ها</span>
+              </div>
+            </div>
+
+            {/* Panel 4: Exam panel + settings */ }
+            <div className="p-3 rounded-xl glx-sheen">
+              <div
+                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                onClick={() => { onTabChange('questions'); setShowHamburgerMenu(false); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onTabChange('questions');
+                    setShowHamburgerMenu(false);
+                  }
+                }}
+              >
+                <span>بانک سوالات</span>
+              </div>
+              <div
+                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                onClick={() => { onTabChange('exams'); setShowHamburgerMenu(false); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onTabChange('exams');
+                    setShowHamburgerMenu(false);
+                  }
+                }}
+              >
+                <span>آزمون‌ها</span>
+              </div>
+              <div
+                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                onClick={() => { onSwitchRole(); setShowHamburgerMenu(false); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onSwitchRole();
+                    setShowHamburgerMenu(false);
+                  }
+                }}
+              >
+                <span>بخش دانش‌آموزی</span>
+              </div>
+              <div
+                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 cursor-pointer transition-all"
+                onClick={() => { onLogout(); setShowHamburgerMenu(false); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onLogout();
+                    setShowHamburgerMenu(false);
+                  }
+                }}
+              >
+                <span>خروج از سامانه</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications Dropdown */ }
+      {showNotifications && (
+        <div
+          ref={notifRef}
+          className="fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden glx-sheen"
+          style={dropdownStyle}
+          id="notification-dropdown"
+        >
+          <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
+            <span className="text-xs font-bold text-[var(--color-text-primary)]">اعلان‌ها</span>
+            {unreadCount > 0 && (
+              <span className="text-[10px] bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
+                {formatPersianNumber(unreadCount.toString())} جدید
+              </span>
+            )}
+          </div>
+
+          <div className="max-h-60 overflow-y-auto text-xs divide-y divide-[var(--color-glass-light-stroke)]">
+            {loadingNotifs ? (
+              <div className="p-4 text-center text-[var(--color-text-tertiary)]">
+                در حال بارگذاری...
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="p-6 text-center text-[var(--color-text-tertiary)]">
+                هیچ اعلانی نیست.
+              </div>
+            ) : (
+              notifications.map((n) => (
+                <div
+                  key={n.id}
+                  className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
+                  onClick={() => {
+                    if (n.onClick) n.onClick();
+                    closeNotifications();
+                  }}
+                >
+                  <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
+                  <p className="text-[11px] text-[var(--color-text-secondary)] mt-1">{n.description}</p>
+                  <span className="text-[9px] text-[var(--color-text-tertiary)] mt-2 block">{n.timeAgo}</span>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
+            <button
+              onClick={closeNotifications}
+              className="text-[11px] text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
+            >
+              بستن
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

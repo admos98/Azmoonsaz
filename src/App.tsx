@@ -303,7 +303,12 @@ export default function App() {
         {/* Main Container — layer 10 (floats above bg stage) */}
         <div className="relative z-10 flex-1 lg:mr-60 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
           <Topbar
-            currentTab={currentTab}
+            onTabChange={(tab) => {
+              setCurrentTab(tab);
+              setExamSubView('list');
+              setSelectedExamId(undefined);
+              navigateToLocalPath('/');
+            }}
             onSwitchRole={handleSwitchUserRole}
             onLogout={() => setIsTeacherLoggedIn(false)}
             onSelectExamForResults={handleSelectExamForResults}
