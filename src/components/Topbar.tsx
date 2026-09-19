@@ -45,7 +45,7 @@ export default function Topbar({
 
   // Fetch real notifications from grading + exam services
   useEffect(() => {
-    let cancelled = false;
+    const cancelled = false;
     const fetchNotifications = async () => {
       setLoadingNotifs(true);
       try {
@@ -163,9 +163,12 @@ export default function Topbar({
   const getPersianDateString = () => formatPersianDate(new Date().toISOString());
   const unreadCount = notifications.length;
 
-  // Compute dropdown position: fixed relative to viewport, anchored to bell
-  // This avoids flex-container positioning bugs and z-index conflicts
-  const dropdownStyle: React.CSSProperties = {};
+  // Compute dropdown position: fixed relative to viewport, anchored to bell.
+  // We set position in the inline style to guarantee it isn't overridden by
+  // the glx-sheen class (position: relative) that shares the same specificity
+  // as the Tailwind `fixed` utility — .glx-sheen is declared later in index.css
+  // and would otherwise win the cascade.
+  const dropdownStyle: React.CSSProperties = { position: 'fixed' };
   if (bellRect) {
     const dropdownWidth = 320; // w-80 = 20rem
     const gap = 12; // mt-3 = 12px

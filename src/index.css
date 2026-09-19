@@ -41,10 +41,10 @@
   --color-ink-field: #1A1A2E;
   --color-ink-stroke: #374151;
 
-  /* Glass fills — very light, grounded over cool-warm paper */
-  --color-glass-light-fill: rgba(255, 255, 255, 0.09);
-  --color-glass-light-stroke: rgba(255, 255, 255, 0.22);
-  --color-glass-light-sheen: rgba(255, 255, 255, 0.35);
+  /* Glass fills — balanced liquid glass: subtle, readable, not overpowering */
+  --color-glass-light-fill: rgba(255, 255, 255, 0.02);
+  --color-glass-light-stroke: rgba(255, 255, 255, 0.05);
+  --color-glass-light-sheen: rgba(255, 255, 255, 0.12);
   --color-glass-light-bottom: rgba(0, 0, 0, 0.035);
 
   --color-glass-ink-fill: rgba(255, 255, 255, 0.035);
@@ -52,9 +52,9 @@
   --color-glass-ink-sheen: rgba(255, 255, 255, 0.12);
   --color-glass-ink-bottom: rgba(0, 0, 0, 0.20);
 
-  /* Shared shadow — cool gray for neutral depth */
-  --color-glass-shadow: rgba(26, 26, 46, 0.05);
-  --color-glass-shadow-strong: rgba(26, 26, 46, 0.10);
+  /* Shared shadow — balanced for the new lighter glass */
+  --color-glass-shadow: rgba(26, 26, 46, 0.2);
+  --color-glass-shadow-strong: rgba(26, 26, 46, 0.2);
 
   /* Brand — The Mark */
   --color-ink: #1A1A2E;
@@ -131,8 +131,8 @@ body {
     inset 1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 70%, transparent),
     inset -1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 35%, transparent),
     0 4px 24px var(--color-glass-shadow);
-  backdrop-filter: blur(12px) saturate(1.4) brightness(1.04);
-  -webkit-backdrop-filter: blur(12px) saturate(1.4) brightness(1.04);
+  backdrop-filter: blur(4px) saturate(1.17) brightness(1.04);
+  -webkit-backdrop-filter: blur(4px) saturate(1.17) brightness(1.04);
 }
 
 /* Strong glass — primary modals + hero.
@@ -148,12 +148,12 @@ body {
     0 30px 80px var(--color-glass-shadow-strong);
   backdrop-filter:
     url(#lg-displace)
-    blur(40px)
-    saturate(1.5);
+    blur(8px)
+    saturate(1.29);
   -webkit-backdrop-filter:
     url(#lg-displace)
-    blur(40px)
-    saturate(1.5);
+    blur(8px)
+    saturate(1.29);
 }
 
 /* Ink glass — sidebar (dark field with warm gold tint) */
@@ -178,8 +178,8 @@ body {
     inset 0 -1px 1px var(--color-glass-light-bottom),
     inset 2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 18%, transparent),
     inset -2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 10%, transparent);
-  backdrop-filter: blur(4px) brightness(1.03);
-  -webkit-backdrop-filter: blur(4px) brightness(1.03);
+  backdrop-filter: blur(1.33px) saturate(1.0) brightness(1.03);
+  -webkit-backdrop-filter: blur(1.33px) saturate(1.0) brightness(1.03);
 }
 
 /* ─── Sheen overlay ─── */
@@ -194,7 +194,7 @@ body {
   border-radius: inherit;
   background: radial-gradient(
     circle at var(--lg-sheen-x, 90%) var(--lg-sheen-y, 0%),
-    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.10) 0%,
     transparent 50%
   );
   opacity: 0;

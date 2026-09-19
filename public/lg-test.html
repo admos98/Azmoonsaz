@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" text-align="right">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Liquid Glass Balance Test — ExamForge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+
+      /* Brand */
+      --color-ink: #1A1A2E;
+      --color-gold: #F5B301;
+      --color-gold-glow: rgba(245, 179, 1, 0.16);
+
+      /* Page bg */
+      --color-page-bg: #FAFAF8;
+      --color-paper-warm: #FAFAF8;
+
+      /* Glass fills — TUNE THESE */
+      --color-glass-light-fill: rgba(255, 255, 255, 0.02);
+      --color-glass-light-stroke: rgba(255, 255, 255, 0.05);
+      --color-glass-light-sheen: rgba(255, 255, 255, 0.12);
+      --color-glass-light-bottom: rgba(0, 0, 0, 0.035);
+
+      --color-glass-ink-fill: rgba(255, 255, 255, 0.035);
+      --color-glass-ink-stroke: rgba(255, 255, 255, 0.08);
+      --color-glass-ink-sheen: rgba(255, 255, 255, 0.12);
+      --color-glass-ink-bottom: rgba(0, 0, 0, 0.20);
+
+      /* Shadows */
+      --color-glass-shadow: rgba(26, 26, 46, 0.2);
+      --color-glass-shadow-strong: rgba(26, 26, 46, 0.2);
+
+      /* Semantics */
+      --color-accent: #6366F1;
+      --color-text-primary: #1A1A2E;
+      --color-text-secondary: #6B7280;
+      --color-text-tertiary: #9CA3AF;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper-warm);
+      background-image:
+        radial-gradient(circle at 10% 18%, color-mix(in srgb, var(--color-ink) 1%, transparent) 0%, transparent 32%),
+        radial-gradient(circle at 90% 80%, color-mix(in srgb, var(--color-gold) 1.2%, transparent) 0%, transparent 26%);
+      background-size: 160% 160%;
+      color: var(--color-text-primary);
+      direction: rtl;
+      text-align: right;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Fake page content background — visible "content" for glass to blur */
+    .page-fake-content {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      /* Busy "content" so backdrop-filter has something to blur */
+      background-image:
+        radial-gradient(circle at 15% 25%, rgba(99,102,255,0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 75%, rgba(245,179,1,0.12) 0%, transparent 35%),
+        radial-gradient(circle at 50% 50%, rgba(16,185,129,0.08) 0%, transparent 50%);
+      background-size: 500px 500px;
+      /* Gibberish text sprinkled across the background — bigger, black, behind panels */
+      color: var(--bg-text-color, #1A1A2E);
+      font-size: var(--bg-text-size, 16px);
+      font-weight: var(--bg-text-weight, 300);
+    }
+    .page-fake-content .bg-text {
+      position: absolute;
+      max-width: 60%;
+      line-height: 1.6;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 32px 40px;
+      position: relative;
+    }
+
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; position: relative; z-index: 1; }
+    .subtitle { font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 32px; position: relative; z-index: 1; }
+
+    /* ===== GLASS LAYERS ===== */
+
+    /* glx — standard cards */
+    .glx {
+      position: relative;
+      z-index: 2;
+      background: var(--color-glass-light-fill);
+      border: 1px solid var(--color-glass-light-stroke);
+      box-shadow:
+        inset 0 1px 0 var(--color-glass-light-sheen),
+        inset 0 -1px 1px var(--color-glass-light-bottom),
+        inset 1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 70%, transparent),
+        inset -1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 35%, transparent),
+        0 4px 24px var(--color-glass-shadow);
+      backdrop-filter: blur(4px) saturate(1.17) brightness(1.04);
+      -webkit-backdrop-filter: blur(4px) saturate(1.17) brightness(1.04);
+    }
+
+    /* glx-strong — modals/hero */
+    .glx-strong {
+      position: relative;
+      z-index: 2;
+      background: color-mix(in srgb, var(--color-glass-light-fill) 130%, transparent);
+      border: 1px solid var(--color-glass-light-stroke);
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--color-glass-light-sheen) 90%, transparent),
+        inset 0 -1px 1px var(--color-glass-light-bottom),
+        inset 3px 0 4px color-mix(in srgb, var(--color-glass-light-sheen) 40%, transparent),
+        inset -3px 0 4px color-mix(in srgb, var(--color-glass-light-sheen) 20%, transparent),
+        0 30px 80px var(--color-glass-shadow-strong);
+      backdrop-filter:
+        url(#lg-displace)
+        blur(8px)
+        saturate(1.29);
+      -webkit-backdrop-filter:
+        url(#lg-displace)
+        blur(8px)
+        saturate(1.29);
+    }
+
+    /* glx-dark — sidebar */
+    .glx-dark {
+      position: relative;
+      z-index: 2;
+      background: var(--color-ink-field);
+      border-right: 1px solid var(--color-glass-ink-stroke);
+      border-left: 1px solid var(--color-glass-ink-stroke);
+      box-shadow:
+        inset 0 1px 0 var(--color-glass-ink-sheen),
+        inset 0 -1px 4px var(--color-glass-ink-bottom),
+        0 4px 24px var(--color-glass-shadow);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    /* glx-inset — inputs/wells */
+    .glx-inset {
+      position: relative;
+      z-index: 2;
+      background: color-mix(in srgb, var(--color-paper-warm) 55%, var(--color-glass-light-fill) 45%);
+      border: 1px solid var(--color-glass-light-stroke);
+      box-shadow:
+        inset 0 1px 0 var(--color-glass-light-sheen),
+        inset 0 -1px 1px var(--color-glass-light-bottom),
+        inset 2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 18%, transparent),
+        inset -2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 10%, transparent);
+      backdrop-filter: blur(4px) brightness(1.03);
+      -webkit-backdrop-filter: blur(4px) brightness(1.03);
+    }
+
+    .card { padding: 20px; border-radius: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+    .label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      margin-bottom: 6px;
+    }
+    .value { font-size: 1.25rem; font-weight: 700; }
+
+    /* ===== CONTROLS ===== */
+    .controls {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 1000;
+      background: rgba(26, 26, 46, 0.7);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 16px 20px;
+      backdrop-filter: blur(20px);
+      max-width: 90vw;
+    }
+    .controls h3 { font-size: 0.8rem; font-weight: 600; margin-bottom: 12px; color: #fff; }
+    .control-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    .control-row label { font-size: 0.7rem; color: #D1D5DB; min-width: 160px; }
+    input[type="range"] { width: 200px; }
+    .swatch { display: inline-block; width: 20px; height: 20px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+
+    button {
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .btn-reset {
+      background: rgba(26,26,46,0.5);
+      color: #fff;
+      border-color: rgba(255,255,255,0.15);
+    }
+    .btn-reset:hover { background: rgba(26,26,46,0.7); }
+
+    /* ===== SVG displacement filter (for glx-strong) ===== */
+    .lg-displace-filter { display: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-fake-content">
+      <div class="bg-text" style="top: 20%; left: 10%;">این یک متن نمونه برای تست شفافیت شیشه‌ای است. هدف از این متن ایجاد یک لایهٔ متنی است که بتواند برای تست افکت بک‌دراپ فیلتر شود.</div>
+      <div class="bg-text" style="top: 45%; left: 60%;">نمونهٔ دیواری حاوی اطلاعات عمومی دربارهٔ آزمون‌ها، سوالات و نتایج دانش‌آموزان. این متن صرفاً برای اهداف تستی است و محتوای واقعی ندارد.</div>
+      <div class="bg-text" style="top: 70%; left: 20%;">سیستم آزمون‌ساز با استفاده از فناوری شیشهٔ مایع اپل طراحی شده است. این لایهٔ پس‌زمینه برای نمایش متن آزمایشی عمل می‌کند.</div>
+      <div class="bg-text" style="top: 30%; left: 75%;">امتحانات خودکار و تصحیح هوشمند با هوش مصنوعی. پلتفرم آنلاین برای معلمان و دانش‌آموزان.</div>
+      <div class="bg-text" style="top: 80%; left: 50%;">پیکربندی رنگ، شفافیت و افکت بلر را با اسلایدرها تنظیم کنید و به تعادل مناسب دست یابید.</div>
+    </div>
+    <h1>آزمون‌ساز <span style="color: var(--color-gold);">•</span> صفحهٔ آزمون نظرسنجی شفافیت شیشه‌ای</h1>
+    <p class="subtitle">Liquid Glass Balance Test — CSS variables & blur/saturate values</p>
+
+    <div class="grid-3">
+      <!-- Card 1: glx -->
+      <div class="card glx">
+        <div class="label"> GLX — کارت استاندارد </div>
+        <div class="value">۴۲</div>
+        <div style="font-size:0.75rem; color:var(--color-text-secondary); margin-top:8px;">
+          دانش‌آموز فعال
+        </div>
+      </div>
+
+      <!-- Card 2: glx-strong -->
+      <div class="card glx-strong">
+        <div class="label"> GLX-STRONG — مودال / هیرو </div>
+        <div class="value">۱۸۷</div>
+        <div style="font-size:0.75rem; color:var(--color-text-secondary); margin-top:8px;">
+          سوال تکمیل شده
+        </div>
+      </div>
+
+      <!-- Card 3: glx-inset -->
+      <div class="card glx-inset">
+        <div class="label"> GLX-INSET — ورودی / حوضچه </div>
+        <div class="value">۸۳</div>
+        <div style="font-size:0.75rem; color:var(--color-text-secondary); margin-top:8px;">
+          پرسش خالی
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <div class="card glx" style="margin-bottom:16px;">
+        <div class="label"> نوتیفیکیشن‌ها </div>
+        <div style="padding:12px 0; border-top:1px solid var(--color-glass-light-stroke); font-size:0.85rem;">
+          ۳ اعلان جدید — پاسخ‌برگ «علی احمدی» ارسال شد
+        </div>
+      </div>
+
+      <div class="card glx-dark" style="padding:20px;">
+        <div class="label" style="color:#D1D5DB;"> نوار کناری (dark) </div>
+        <div style="font-size:0.85rem; margin-top:8px;">مدیریت آزمون‌ها · بانک سوالات · تنظیمات</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <h3>Liquid Glass Balance Controls</h3>
+    <div class="control-row">
+      <label>Fill alpha <span class="swatch" id="swatch-fill" style="background:var(--color-glass-light-fill)"></span></label>
+      <input type="range" id="r-fill" min="0" max="30" value="2">
+      <span id="v-fill" style="color:#fff; font-size:0.8rem; min-width:40px;">0.02</span>
+    </div>
+    <div class="control-row">
+      <label>Blur (px) <span class="swatch" id="swatch-blur" style="background:rgba(255,255,255,0.1)"></span></label>
+      <input type="range" id="r-blur" min="0" max="60" value="4">
+      <span id="v-blur" style="color:#fff; font-size:0.8rem; min-width:40px;">4px</span>
+    </div>
+    <div class="control-row">
+      <label>Saturate <span class="swatch" id="swatch-sat" style="background:rgba(255,255,255,0.1)"></span></label>
+      <input type="range" id="r-sat" min="100" max="300" value="117">
+      <span id="v-sat" style="color:#fff; font-size:0.8rem; min-width:40px;">1.17</span>
+    </div>
+    <div class="control-row">
+      <label>Stroke alpha <span class="swatch" id="swatch-stroke" style="background:var(--color-glass-light-stroke)"></span></label>
+      <input type="range" id="r-stroke" min="0" max="60" value="5">
+      <span id="v-stroke" style="color:#fff; font-size:0.8rem; min-width:40px;">0.05</span>
+    </div>
+    <div class="control-row">
+      <label>Shadow opacity <span class="swatch" id="swatch-shadow" style="background:rgba(26,26,46,0.05)"></span></label>
+      <input type="range" id="r-shadow" min="0" max="30" value="20">
+      <span id="v-shadow" style="color:#fff; font-size:0.8rem; min-width:40px;">0.2</span>
+    </div>
+    <div class="control-row">
+      <label>Strong blur multiplier <span style="color:#fff; font-size:0.8rem;">x</span></label>
+      <input type="range" id="r-strong" min="1" max="5" step="0.5" value="2">
+      <span id="v-strong" style="color:#fff; font-size:0.8rem; min-width:40px;">2x</span>
+    </div>
+    <div class="control-row">
+      <label>Font size <span class="swatch" style="background:transparent; border:1px solid #555;"></span></label>
+      <input type="range" id="r-fontsize" min="10" max="32" value="18">
+      <span id="v-fontsize" style="color:#fff; font-size:0.8rem; min-width:40px;">14px</span>
+    </div>
+    <div class="control-row">
+      <label>Font weight <span class="swatch" style="background:transparent; border:1px solid #555;"></span></label>
+      <input type="range" id="r-fontweight" min="100" max="900" value="400" step="100">
+      <span id="v-fontweight" style="color:#fff; font-size:0.8rem; min-width:40px;">400</span>
+    </div>
+      <div class="control-row">
+      <label>Text opacity <span class="swatch" style="background:rgba(26,26,46,0.4)"></span></label>
+      <input type="range" id="r-textopacity" min="0" max="60" value="35">
+      <span id="v-textopacity" style="color:#fff; font-size:0.8rem; min-width:40px;">0.35</span>
+    </div>
+    <button class="btn-reset" onclick="resetValues()">Reset</button>
+  </div>
+
+  <script>
+    // Update live values display
+    function setupSlider(id, suffix) {
+      const slider = document.getElementById(id);
+      const valSpan = document.getElementById('v-' + id.replace('r-', ''));
+      slider.addEventListener('input', () => {
+        valSpan.textContent = parseFloat(slider.value) / (id === 'r-fill' || id === 'r-stroke' || id === 'r-shadow' ? 100 : id === 'r-sat' ? 100 : id === 'r-strong' ? 1 : 1) + suffix;
+        if (id === 'r-fill' || id === 'r-stroke' || id === 'r-shadow') {
+          valSpan.textContent = parseFloat(slider.value) + suffix;
+        }
+        apply();
+      });
+    }
+
+    setupSlider('r-fill', '');
+    setupSlider('r-blur', 'px');
+    setupSlider('r-sat', 'x');
+    setupSlider('r-stroke', '');
+    setupSlider('r-shadow', '');
+    setupSlider('r-strong', 'x');
+
+    ['r-fontsize', 'r-fontweight', 'r-textopacity'].forEach(id => {
+      const slider = document.getElementById(id);
+      const valSpan = document.getElementById('v-' + id.replace('r-', ''));
+      slider.addEventListener('input', () => {
+        valSpan.textContent = (id === 'r-fontsize' ? slider.value + 'px' : id === 'r-fontweight' ? slider.value : parseFloat(slider.value) + '');
+        if (id === 'r-textopacity') valSpan.textContent = (parseFloat(slider.value) / 100).toString();
+        apply();
+      });
+    });
+
+    function apply() {
+      const fillA = document.getElementById('r-fill').value / 100;
+      const blur = document.getElementById('r-blur').value;
+      const sat = document.getElementById('r-sat').value / 100;
+      const strokeA = document.getElementById('r-stroke').value / 100;
+      const shadowA = document.getElementById('r-shadow').value / 100;
+      const strongMult = document.getElementById('r-strong').value;
+
+      // Rebuild CSS variables
+      document.documentElement.style.setProperty('--color-glass-light-fill', `rgba(255, 255, 255, ${fillA})`);
+      document.documentElement.style.setProperty('--color-glass-light-stroke', `rgba(255, 255, 255, ${strokeA})`);
+      document.documentElement.style.setProperty('--color-glass-shadow', `rgba(26, 26, 46, ${shadowA})`);
+
+      // Update swatches
+      document.getElementById('swatch-fill').style.background = `rgba(255, 255, 255, ${fillA})`;
+      document.getElementById('swatch-stroke').style.background = `rgba(255, 255, 255, ${strokeA})`;
+      document.getElementById('swatch-shadow').style.background = `rgba(26, 26, 46, ${shadowA})`;
+
+      // Update .glx backdrop-filter
+      const glxEl = document.querySelector('.glx:not(.glx-dark):not(.glx-inset)');
+      // Can't easily update backdrop-filter via CSS var in this test, so we'll inject a style
+      let styleEl = document.getElementById('dynamic-glass');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'dynamic-glass';
+        document.head.appendChild(styleEl);
+      }
+      styleEl.textContent = `
+        .glx {\
+          backdrop-filter: blur(${blur}px) saturate(${sat}) !important;
+          -webkit-backdrop-filter: blur(${blur}px) saturate(${sat}) !important;
+        }\
+        .glx-strong {\
+          backdrop-filter: blur(${blur * strongMult}px) saturate(${sat * 1.1}) !important;
+          -webkit-backdrop-filter: blur(${blur * strongMult}px) saturate(${sat * 1.1}) !important;
+        }\
+        .glx-inset {\
+          backdrop-filter: blur(${blur * 0.33}px) saturate(${sat * 0.85}) !important;
+          -webkit-backdrop-filter: blur(${blur * 0.33}px) saturate(${sat * 0.85}) !important;
+        }\
+        .glx-dark {
+          backdrop-filter: blur(6px) !important;
+          -webkit-backdrop-filter: blur(6px) !important;
+        }`;
+
+      // Update value labels
+      document.getElementById('v-fill').textContent = fillA;
+      document.getElementById('v-blur').textContent = blur + 'px';
+      document.getElementById('v-sat').textContent = sat + 'x';
+      document.getElementById('v-stroke').textContent = strokeA;
+      document.getElementById('v-shadow').textContent = shadowA;
+      document.getElementById('v-strong').textContent = strongMult + 'x';
+
+      // Font management
+      const fontSize = document.getElementById('r-fontsize').value;
+      const fontWeight = document.getElementById('r-fontweight').value;
+      const textOpacity = document.getElementById('r-textopacity').value / 100;
+      document.documentElement.style.setProperty('--bg-text-size', fontSize + 'px');
+      document.documentElement.style.setProperty('--bg-text-weight', fontWeight);
+      document.querySelector('.page-fake-content').style.color = `rgba(26,26,46,${textOpacity})`;
+    }
+
+    function resetValues() {
+      document.getElementById('r-fill').value = 2;
+      document.getElementById('r-blur').value = 4;
+      document.getElementById('r-sat').value = 117;
+      document.getElementById('r-stroke').value = 5;
+      document.getElementById('r-shadow').value = 20;
+      document.getElementById('r-strong').value = 2;
+      document.getElementById('r-fontsize').value = 18;
+      document.getElementById('r-fontweight').value = 400;
+      document.getElementById('r-textopacity').value = 35;
+      // Update labels
+      document.getElementById('v-fill').textContent = '0.02';
+      document.getElementById('v-blur').textContent = '4px';
+      document.getElementById('v-sat').textContent = '1.17';
+      document.getElementById('v-stroke').textContent = '0.05';
+      document.getElementById('v-shadow').textContent = '0.2';
+      document.getElementById('v-strong').textContent = '2x';
+      document.getElementById('v-fontsize').textContent = '18px';
+      document.getElementById('v-fontweight').textContent = '400';
+      document.getElementById('v-textopacity').textContent = '0.35';
+      apply();
+    }
+
+    // Initial apply
+    apply();
+    // Set initial font labels
+    document.getElementById('v-fontsize').textContent = '18px';
+    document.getElementById('v-fontweight').textContent = '400';
+    document.getElementById('v-textopacity').textContent = '0.35';
+  </script>
+
+  <!-- SVG filter definition -->
+  <svg class="lg-displace-filter" width="0" height="0" viewBox="0 0 40 40" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <filter id="lg-displace" x="-20%" y="-20%" width="140%" height="140%" filterUnits="objectBoundingBox" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+      <feImage
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='black'/%3E%3Cstop offset='8%25' stop-color='white'/%3E%3Cstop offset='92%25' stop-color='white'/%3E%3Cstop offset='100%25' stop-color='black'/%3E%3C/linearGradient%3E%3Cdefs%3E%3Crect width='40' height='40' fill='url(%23h)'/%3E%3C/svg%3E"
+        x="0" y="0" width="40" height="40" result="displaceMap"
+      />
+      <feDisplacementMap in="SourceGraphic" in2="displaceMap" scale="14" xChannelSelector="R" yChannelSelector="G" result="bent" />
+      <feBlend mode="normal" in="bent" in2="SourceGraphic" />
+    </filter>
+  </svg>
+</body>
+</html>
