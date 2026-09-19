@@ -34,7 +34,6 @@
    * Brand: deep ink (#1A1A2E) + gold (#F5B301).
    * Glass: whisper-thin white/8% — feels like looking through thin glass.
    */
-  /* Base: sky white — cool white with a subtle but perceptible blue hint. */
   --color-page-bg: #f0f7ff;
   --color-paper-warm: #f0f7ff;
 
@@ -54,8 +53,8 @@
   --color-glass-ink-bottom: rgba(0, 0, 0, 0.2);
 
   /* Shared shadow — balanced for the new lighter glass */
-  --color-glass-shadow: rgba(26, 26, 46, 0.2);
-  --color-glass-shadow-strong: rgba(26, 26, 46, 0.2);
+  --color-glass-shadow: rgba(26, 26, 46, 0.12);
+  --color-glass-shadow-strong: rgba(26, 26, 46, 0.18);
 
   /* Brand — The Mark */
   --color-ink: #1a1a2e;
@@ -140,12 +139,10 @@ body {
 /* ─── Base reset for native <select> (replaced by custom Dropdown) ─── */
 select {
   @apply appearance-none;
+  background-image: none;
 }
 select::-webkit-calendar-picker-indicator {
   opacity: 0;
-}
-select {
-  background-image: none;
 }
 
 /* ─── SVG Displacement Filter ─── */
@@ -164,7 +161,7 @@ select {
     inset 0 -1px 1px var(--color-glass-light-bottom),
     inset 1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 70%, transparent),
     inset -1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 35%, transparent),
-    0 4px 24px var(--color-glass-shadow);
+    0 6px 30px var(--color-glass-shadow);
   backdrop-filter: blur(6px) saturate(1.17) brightness(1.04);
   -webkit-backdrop-filter: blur(6px) saturate(1.17) brightness(1.04);
 }
@@ -179,9 +176,9 @@ select {
     inset 0 -1px 1px var(--color-glass-light-bottom),
     inset 3px 0 4px color-mix(in srgb, var(--color-glass-light-sheen) 40%, transparent),
     inset -3px 0 4px color-mix(in srgb, var(--color-glass-light-sheen) 20%, transparent),
-    0 30px 80px var(--color-glass-shadow-strong);
-  backdrop-filter: url(#lg-displace) blur(8px) saturate(1.29);
-  -webkit-backdrop-filter: url(#lg-displace) blur(8px) saturate(1.29);
+    0 40px 100px var(--color-glass-shadow-strong);
+  backdrop-filter: url(#lg-displace) blur(12px) saturate(1.31);
+  -webkit-backdrop-filter: url(#lg-displace) blur(12px) saturate(1.31);
 }
 
 /* Ink glass — sidebar (dark field with warm gold tint) */

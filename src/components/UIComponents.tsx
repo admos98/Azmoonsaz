@@ -348,7 +348,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           ref={ref}
           type="button"
           onClick={() => setOpen(!open)}
-          className={`w-full flex items-center justify-between glx border px-3 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] ${
+          className={`w-full flex items-center justify-between glx border px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
             error
               ? 'border-rose-350 focus:border-rose-500'
               : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'

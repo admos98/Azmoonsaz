@@ -1131,20 +1131,20 @@ export default function Students() {
               )}
 
               {/* Submit triggers */}
-              <div className="flex gap-2.5 pt-4.5 border-t border-[var(--color-glass-light-stroke)] justify-end">
+              <div className="flex gap-3 pt-4.5 border-t border-[var(--color-glass-light-stroke)] justify-end">
                 <button
                   type="button"
                   onClick={() => setShowAddEditModal(false)}
-                  className="px-4 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer"
+                  className="px-4 py-2 glx-inset hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer transition-all"
                 >
                   انصراف
                 </button>
                 <button
                   type="submit"
                   disabled={!formName}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-white shadow-xs transition-colors cursor-pointer ${
+                  className={`px-5 py-2 rounded-xl font-bold text-white shadow-xs transition-all cursor-pointer ${
                     formName
-                      ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]'
+                      ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] active:scale-95'
                       : 'bg-indigo-300 cursor-not-allowed'
                   }`}
                 >
