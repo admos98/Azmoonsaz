@@ -141,8 +141,12 @@ body {
 select {
   @apply appearance-none;
 }
-select::-webkit-calendar-picker-indicator { opacity: 0; }
-select { background-image: none; }
+select::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+select {
+  background-image: none;
+}
 
 /* ─── SVG Displacement Filter ─── */
 /* Defined once at app root via <GlassFilters /> component.
