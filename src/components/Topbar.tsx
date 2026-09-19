@@ -29,15 +29,14 @@ export interface NotificationItem {
   onClick?: () => void;
 }
 
-// TheMark Hamburger — four rounded pills in a row, 3rd gold-filled
+// TheMark Hamburger — four rounded pills stacked vertically, 3rd gold-filled
 function TheMarkHamburger({ size = 48 }: { size?: number }) {
   const ink = 'var(--color-ink, #221E4A)';
   const gold = 'var(--color-gold, #F5B301)';
-  const pillHeight = size * 0.14;
-  const pillWidth = size * 0.16;
-  const gap = (size - pillWidth * 4) / 3;
-  const y = (size - pillHeight) / 2;
-  const rx = pillHeight / 2;
+  const pillWidth = size * 0.65;     // horizontal bar width
+  const pillHeight = size * 0.12;    // bar thickness
+  const gap = (size - pillHeight * 4) / 3;  // even spacing
+  const rx = pillHeight / 2.5;       // rounded corners
   return (
     <svg
       width={size}
@@ -49,40 +48,42 @@ function TheMarkHamburger({ size = 48 }: { size?: number }) {
     >
       {/* Pill 1 — ink ring */}
       <rect
-        x={0}
-        y={y}
+        x={(size - pillWidth) / 2}
+        y={gap * 0 + pillHeight * 0}
         width={pillWidth}
         height={pillHeight}
         rx={rx}
         stroke={ink}
-        strokeWidth={size * 0.03}
+        strokeWidth={size * 0.035}
       />
+      {/* Pill 2 — ink ring */}
       <rect
-        x={gap + pillWidth}
-        y={y}
+        x={(size - pillWidth) / 2}
+        y={gap * 1 + pillHeight * 1}
         width={pillWidth}
         height={pillHeight}
         rx={rx}
         stroke={ink}
-        strokeWidth={size * 0.03}
+        strokeWidth={size * 0.035}
       />
       {/* Pill 3 — gold filled */}
       <rect
-        x={(gap + pillWidth) * 2}
-        y={y}
+        x={(size - pillWidth) / 2}
+        y={gap * 2 + pillHeight * 2}
         width={pillWidth}
         height={pillHeight}
         rx={rx}
         fill={gold}
       />
+      {/* Pill 4 — ink ring */}
       <rect
-        x={(gap + pillWidth) * 3}
-        y={y}
+        x={(size - pillWidth) / 2}
+        y={gap * 3 + pillHeight * 3}
         width={pillWidth}
         height={pillHeight}
         rx={rx}
         stroke={ink}
-        strokeWidth={size * 0.03}
+        strokeWidth={size * 0.035}
       />
     </svg>
   );
@@ -253,16 +254,26 @@ export default function Topbar({
   }
 
   // Hamburger dropdown position (fixed, anchored to hamburger button)
-  const hamburgerStyle: React.CSSProperties = { position: 'fixed' };
-  if (hamburgerRect) {
-    const menuWidth = 280;
-    const gap = 12;
-    const viewportRight = window.innerWidth - hamburgerRect.right;
-    const top = hamburgerRect.bottom + gap;
-    hamburgerStyle.right = `${viewportRight}px`;
-    hamburgerStyle.top = `${top}px`;
-    hamburgerStyle.width = `${menuWidth}px`;
-  }
+  const hamburgerTop = hamburgerRect ? hamburgerRect.bottom + 12 + window.scrollY : 0;
+  const hamburgerRight = hamburgerRect ? window.innerWidth - hamburgerRect.right + window.scrollX : 0;
+  const hamburgerDropdownStyle: React.CSSProperties = {
+    position: 'fixed',
+    right: `${hamburgerRight}px`,
+    top: `${hamburgerTop}px`,
+    width: '280px',
+  };
+
+  // Panel offset — each panel drops below the previous one
+  const panelGap = 12; // px between panels
+  // Estimated panel heights for stacking (actual content may vary slightly)
+  const panelHeights = [95, 85, 125, 180];
+  const computePanelTop = (index: number) => {
+    let offset = 0;
+    for (let i = 0; i < index; i++) {
+      offset += panelHeights[i] + panelGap;
+    }
+    return `${hamburgerTop + offset}px`;
+  };
 
   return (
     <header
@@ -270,17 +281,17 @@ export default function Topbar({
       id="topbar-wrapper"
     >
       {/* LEFT SIDE: Avatar + Bell cluster */}
-      <div className="flex items-center gap-3" id="topbar-left-group">
-        {/* Avatar with expandable teacher name */}
+      <div className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`} id="topbar-left-group">
+        {/* Avatar with expandable teacher name */ }
         <div
           className="relative flex items-center"
-          onMouseEnter={() => setAvatarExpanded(true)}
-          onMouseLeave={() => setAvatarExpanded(false)}
+          onMouseEnter={() => !showHamburgerMenu && setAvatarExpanded(true)}
+          onMouseLeave={() => !showHamburgerMenu && setAvatarExpanded(false)}
         >
           {avatarExpanded && (
             <div
-              className="absolute right-full mr-3 z-[60] hidden sm:block"
-              style={{ direction: 'rtl', textAlign: 'left' }}
+              className="absolute left-full ml-3 z-[60] hidden sm:block"
+              style={{ direction: 'rtl', textAlign: 'right' }}
             >
               <div className="px-3 py-1.5 rounded-xl glx-strong whitespace-nowrap shadow-lg">
                 <p className="text-xs font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
@@ -295,17 +306,17 @@ export default function Topbar({
             </div>
           )}
 
-          {/* Bell — slides left when avatar expands */}
+          {/* Bell — slides right when avatar expands (pushed away by name panel) */ }
           <div
-            className="transition-all duration-200"
+            className="transition-all duration-300 ease-out"
             style={{
-              transform: avatarExpanded ? 'translateX(-56px)' : 'translateX(0)',
+              transform: avatarExpanded ? 'translateX(56px)' : 'translateX(0)',
             }}
           >
             <button
               ref={bellRef}
               id="notifications-bell-btn"
-              onClick={openNotifications}
+              onClick={() => !showHamburgerMenu && openNotifications()}
               className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative transition-all cursor-pointer"
               aria-label="اعلان‌ها"
               aria-expanded={showNotifications}
@@ -326,7 +337,7 @@ export default function Topbar({
 
           {/* Avatar circle */}
           <div
-            className="w-9 h-9 rounded-full bg-[var(--color-accent)]/10 border-2 border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer transition-all"
+            className="w-9 h-9 rounded-full bg-[var(--color-accent)]/10 border-2 border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer transition-all duration-300 ease-out"
             onClick={() => setAvatarExpanded(!avatarExpanded)}
             role="button"
             tabIndex={0}
@@ -354,13 +365,13 @@ export default function Topbar({
       </div>
 
       {/* RIGHT SIDE: Hamburger + Search */}
-      <div className="flex items-center gap-3" id="topbar-right-group">
+      <div className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`} id="topbar-right-group">
         {/* Search (collapsed/expanded) */}
         <div
           ref={searchRef}
           className="flex items-center"
-          onMouseEnter={() => setShowSearch(true)}
-          onMouseLeave={() => setShowSearch(false)}
+          onMouseEnter={() => !showHamburgerMenu && setShowSearch(true)}
+          onMouseLeave={() => !showHamburgerMenu && setShowSearch(false)}
         >
           {showSearch ? (
             <div className="flex items-center gap-2 glx-inset rounded-full px-3 py-2 transition-all overflow-hidden">
@@ -404,13 +415,19 @@ export default function Topbar({
       {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */}
       {showHamburgerMenu && (
         <>
+          {/* Backdrop — blocks interaction with underlying UI */ }
+          <div
+            className="fixed inset-0 z-[55] bg-black/20 backdrop-blur-sm"
+            onClick={() => setShowHamburgerMenu(false)}
+          />
+
           {/* Panel 1: App info + date */ }
           <div
             className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
             style={{
-              ...hamburgerStyle,
-              top: `calc(${hamburgerStyle.top || '0px'} + 0 * (calc(100% + 8px)) + 0 * 1)`,
-              animation: 'dropIn 0.3s ease-out 0ms both',
+              ...hamburgerDropdownStyle,
+              top: computePanelTop(0),
+              animation: 'dropIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
             }}
             id="hamburger-panel-1"
           >
@@ -432,9 +449,9 @@ export default function Topbar({
           <div
             className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
             style={{
-              ...hamburgerStyle,
-              top: `calc(${hamburgerStyle.top || '0px'} + 1 * (100% + 8px))`,
-              animation: 'dropIn 0.3s ease-out 50ms both',
+              ...hamburgerDropdownStyle,
+              top: computePanelTop(1),
+              animation: 'dropIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
             }}
             id="hamburger-panel-2"
           >
@@ -470,9 +487,9 @@ export default function Topbar({
           <div
             className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
             style={{
-              ...hamburgerStyle,
-              top: `calc(${hamburgerStyle.top || '0px'} + 2 * (100% + 8px))`,
-              animation: 'dropIn 0.3s ease-out 100ms both',
+              ...hamburgerDropdownStyle,
+              top: computePanelTop(2),
+              animation: 'dropIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
             }}
             id="hamburger-panel-3"
           >
@@ -530,9 +547,9 @@ export default function Topbar({
           <div
             className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
             style={{
-              ...hamburgerStyle,
-              top: `calc(${hamburgerStyle.top || '0px'} + 3 * (100% + 8px))`,
-              animation: 'dropIn 0.3s ease-out 150ms both',
+              ...hamburgerDropdownStyle,
+              top: computePanelTop(3),
+              animation: 'dropIn 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
             }}
             id="hamburger-panel-4"
           >
