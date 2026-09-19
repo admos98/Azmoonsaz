@@ -48,6 +48,7 @@ import {
   ClassGroup,
 } from '../../types';
 import { classService, questionService } from '../../services/api';
+import { Dropdown } from '../../components/UIComponents';
 
 interface ExamPreviewProps {
   exam: Exam;
@@ -1437,51 +1438,56 @@ export default function ExamPreview({
                   <label className="text-[9px] text-[var(--color-text-tertiary)] font-bold block">
                     پایه تحصیلی:
                   </label>
-                  <select
+                  <Dropdown
                     value={replaceFilterGrade}
-                    onChange={(e) => setReplaceFilterGrade(e.target.value)}
-                    className="w-full glx border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
-                  >
-                    <option value="all">همه پایه‌ها</option>
-                    <option value="هفتم">پایه هفتم</option>
-                    <option value="هشتم">پایه هشتم</option>
-                    <option value="نهم">پایه نهم</option>
-                  </select>
+                    onChange={setReplaceFilterGrade}
+                    options={[
+                      { value: 'all', label: 'همه پایه‌ها' },
+                      { value: 'هفتم', label: 'پایه هفتم' },
+                      { value: 'هشتم', label: 'پایه هشتم' },
+                      { value: 'نهم', label: 'پایه نهم' },
+                    ]}
+                    className="text-[11px]"
+                  />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[9px] text-[var(--color-text-tertiary)] font-bold block">
                     درس هدف:
                   </label>
-                  <select
+                  <Dropdown
                     value={replaceFilterSubject}
-                    onChange={(e) => setReplaceFilterSubject(e.target.value)}
-                    className="w-full glx border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
-                  >
-                    <option value="all">همه درس‌ها</option>
-                    <option value={localExam.subject}>{localExam.subject}</option>
-                    <option value="علوم تجربی">علوم تجربی</option>
-                    <option value="ریاضی پایه هفتم">ریاضی پایه هفتم</option>
-                    <option value="ادبیات">ادبیات</option>
-                  </select>
+                    onChange={setReplaceFilterSubject}
+                    options={[
+                      { value: 'all', label: 'همه درس‌ها' },
+                      { value: localExam.subject, label: localExam.subject },
+                      { value: 'علوم تجربی', label: 'علوم تجربی' },
+                      { value: 'ریاضی پایه هفتم', label: 'ریاضی پایه هفتم' },
+                      { value: 'ادبیات', label: 'ادبیات' },
+                    ]}
+                    className="text-[11px]"
+                  />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[9px] text-[var(--color-text-tertiary)] font-bold block">
                     قالب سوال قالب:
                   </label>
-                  <select
+                  <Dropdown
                     value={replaceFilterType}
-                    onChange={(e) => setReplaceFilterType(e.target.value)}
-                    className="w-full glx border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
-                  >
-                    <option value="all">همه قالب‌ها</option>
-                    <option value="single_choice">چهارگزینه‌ای</option>
-                    <option value="true_false">درست/غلط</option>
-                    <option value="short_answer">پاسخ کوتاه</option>
-                    <option value="long_answer">تشریحی</option>
-                    <option value="matching">وصل‌کردنی</option>
-                  </select>
+                    onChange={setReplaceFilterType}
+                    options={[
+                      { value: 'all', label: 'همه قالب‌ها' },
+                      { value: 'single_choice', label: 'چهارگزینه‌ای' },
+                      { value: 'multiple_choice', label: 'چندگزینه‌ای' },
+                      { value: 'true_false', label: 'درست/غلط' },
+                      { value: 'short_answer', label: 'پاسخ کوتاه' },
+                      { value: 'long_answer', label: 'تشریحی' },
+                      { value: 'matching', label: 'وصل‌کردنی' },
+                      { value: 'image_based', label: 'تصویری' },
+                    ]}
+                    className="text-[11px]"
+                  />
                 </div>
 
                 <div className="space-y-1">

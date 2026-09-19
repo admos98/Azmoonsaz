@@ -17,6 +17,7 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   AlertTriangle,
 } from 'lucide-react';
 import { formatPersianNumber } from '../services/persianHelpers';
@@ -286,6 +287,108 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
+        {error && (
+          <p className="text-[11px] text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>{error}</span>
+          </p>
+        )}
+      </div>
+    );
+  },
+);
+
+/* ==========================================
+   6B. DROPDOWN COMPONENT (custom, replaces native <select>)
+   ========================================== */
+interface DropdownOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+interface DropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  className?: string;
+  label?: string;
+  error?: string;
+  id?: string;
+}
+export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
+  ({ value, onChange, options, placeholder, label, error, className = '', id }, ref) => {
+    const [open, setOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selectedLabel = options.find((o) => o.value === value)?.label || placeholder || '';
+
+    return (
+      <div className={`relative w-full text-right ${className}`} ref={dropdownRef}>
+        {label && (
+          <label
+            htmlFor={id || `dropdown-${Date.now()}`}
+            className="block text-xs md:text-sm font-bold text-[var(--color-text-secondary)] mb-1"
+          >
+            {label}
+          </label>
+        )}
+        <button
+          id={id || `dropdown-${Date.now()}`}
+          ref={ref}
+          type="button"
+          onClick={() => setOpen(!open)}
+          className={`w-full flex items-center justify-between glx border px-3 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] ${
+            error
+              ? 'border-rose-350 focus:border-rose-500'
+              : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'
+          }`}
+        >
+          <span className={selectedLabel ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]'}>
+            {selectedLabel || placeholder}
+          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-[var(--color-text-tertiary)] transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'none' }} />
+        </button>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -4 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="absolute top-full z-[100] mt-1 w-full glx-strong border border-[var(--color-glass-light-stroke)] rounded-xl shadow-2xl max-h-48 overflow-y-auto"
+            >
+              {options.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={opt.disabled}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={`w-full text-right px-3 py-2 text-xs md:text-sm font-bold transition-all ${
+                    value === opt.value
+                      ? 'bg-[var(--color-accent-soft)]/30 text-[var(--color-accent)]'
+                      : 'text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-sheen)]/20'
+                  }} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
         {error && (
           <p className="text-[11px] text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
             <AlertCircle className="w-3.5 h-3.5" />

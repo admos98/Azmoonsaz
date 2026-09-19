@@ -34,18 +34,19 @@
    * Brand: deep ink (#1A1A2E) + gold (#F5B301).
    * Glass: whisper-thin white/8% — feels like looking through thin glass.
    */
-  --color-page-bg: #fafcff;
-  --color-paper-warm: #fafcff;
+  /* Base: sky white — cool white with a subtle but perceptible blue hint. */
+  --color-page-bg: #f0f7ff;
+  --color-paper-warm: #f0f7ff;
 
   /* Ink field — sidebar, hero on dark */
   --color-ink-field: #1a1a2e;
   --color-ink-stroke: #374151;
 
   /* Glass fills — balanced liquid glass: subtle, readable, not overpowering */
-  --color-glass-light-fill: rgba(255, 255, 255, 0.02);
-  --color-glass-light-stroke: rgba(255, 255, 255, 0.05);
-  --color-glass-light-sheen: rgba(255, 255, 255, 0.12);
-  --color-glass-light-bottom: rgba(0, 0, 0, 0.035);
+  --color-glass-light-fill: rgba(255, 255, 255, 0.035);
+  --color-glass-light-stroke: rgba(255, 255, 255, 0.06);
+  --color-glass-light-sheen: rgba(255, 255, 255, 0.14);
+  --color-glass-light-bottom: rgba(0, 0, 0, 0.045);
 
   --color-glass-ink-fill: rgba(255, 255, 255, 0.035);
   --color-glass-ink-stroke: rgba(255, 255, 255, 0.08);
@@ -136,6 +137,13 @@ body {
   background: color-mix(in srgb, var(--color-ink) 25%, transparent);
 }
 
+/* ─── Base reset for native <select> (replaced by custom Dropdown) ─── */
+select {
+  @apply appearance-none;
+}
+select::-webkit-calendar-picker-indicator { opacity: 0; }
+select { background-image: none; }
+
 /* ─── SVG Displacement Filter ─── */
 /* Defined once at app root via <GlassFilters /> component.
    Uses url(#lg-displace) in backdrop-filter on .glx-strong. */
@@ -153,8 +161,8 @@ body {
     inset 1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 70%, transparent),
     inset -1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 35%, transparent),
     0 4px 24px var(--color-glass-shadow);
-  backdrop-filter: blur(4px) saturate(1.17) brightness(1.04);
-  -webkit-backdrop-filter: blur(4px) saturate(1.17) brightness(1.04);
+  backdrop-filter: blur(6px) saturate(1.17) brightness(1.04);
+  -webkit-backdrop-filter: blur(6px) saturate(1.17) brightness(1.04);
 }
 
 /* Strong glass — primary modals + hero.

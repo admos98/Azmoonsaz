@@ -37,7 +37,7 @@ import {
 
 import { logger } from '../../lib/logger';
 import { Exam, Submission, StudentAnswer, Question, ClassGroup, Student } from '../../types';
-import { Button, Card, Badge, StatusBadge, Table } from '../../components/UIComponents';
+import { Button, Card, Badge, StatusBadge, Table, Dropdown } from '../../components/UIComponents';
 import { formatPersianNumber } from '../../services/persianHelpers';
 import { gradingService, classService, studentService } from '../../services/api';
 
@@ -846,20 +846,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
                     فیلتر بر اساس کلاس
                   </label>
-                  <select
+                  <Dropdown
                     value={classFilter}
-                    onChange={(e) => setClassFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
-                  >
-                    <option value="all">همه کلاس‌ها</option>
-                    {classGroups
-                      .filter((c) => exam.classGroupIds.includes(c.id))
-                      .map((group) => (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ))}
-                  </select>
+                    onChange={setClassFilter}
+                    options={[
+                      { value: 'all', label: 'همه کلاس‌ها' },
+                      ...classGroups
+                        .filter((c) => exam.classGroupIds.includes(c.id))
+                        .map((group) => ({ value: group.id, label: group.name })),
+                    ]}
+                    className="text-xs"
+                  />
                 </div>
 
                 {/* Attendance Status */}
@@ -867,16 +864,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
                     وضعیت ارسال پاسخ‌برگ
                   </label>
-                  <select
+                  <Dropdown
                     value={participationFilter}
-                    onChange={(e) => setParticipationFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
-                  >
-                    <option value="all">همه وضعیت‌ها</option>
-                    <option value="submitted">ارسال شده (تحویل شده)</option>
-                    <option value="absent">ارسال نشده (غائب)</option>
-                    <option value="ongoing">در حال پاسخ‌دهی زنده</option>
-                  </select>
+                    onChange={setParticipationFilter}
+                    options={[
+                      { value: 'all', label: 'همه وضعیت‌ها' },
+                      { value: 'submitted', label: 'ارسال شده (تحویل شده)' },
+                      { value: 'absent', label: 'ارسال نشده (غائب)' },
+                      { value: 'ongoing', label: 'در حال پاسخ‌دهی زنده' },
+                    ]}
+                    className="text-xs"
+                  />
                 </div>
 
                 {/* Descriptive grading status */}
@@ -884,15 +882,16 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
                     وضعیت تصحیح تشریحی
                   </label>
-                  <select
+                  <Dropdown
                     value={correctionFilter}
-                    onChange={(e) => setCorrectionFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
-                  >
-                    <option value="all">همه وضعیت‌ها</option>
-                    <option value="graded">تصحیح‌شده</option>
-                    <option value="needs_grading">نیازمند بررسی دبیر</option>
-                  </select>
+                    onChange={setCorrectionFilter}
+                    options={[
+                      { value: 'all', label: 'همه وضعیت‌ها' },
+                      { value: 'graded', label: 'تصحیح‌شده' },
+                      { value: 'needs_grading', label: 'نیازمند بررسی دبیر' },
+                    ]}
+                    className="text-xs"
+                  />
                 </div>
 
                 {/* Score scale bounds */}
@@ -900,16 +899,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
                     بازه نمره نهایی دانش‌آموز
                   </label>
-                  <select
+                  <Dropdown
                     value={scoreRangeFilter}
-                    onChange={(e) => setScoreRangeFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
-                  >
-                    <option value="all">همه بازه‌ها</option>
-                    <option value="high">سطح عالی (بالای ۸۰٪ نمره کل)</option>
-                    <option value="mid">سطح متوسط (بین ۵۰٪ تا ۸۰٪ نمره)</option>
-                    <option value="low">نیازمند تلاش بیشتر (زیر ۵۰٪ نمره)</option>
-                  </select>
+                    onChange={setScoreRangeFilter}
+                    options={[
+                      { value: 'all', label: 'همه بازه‌ها' },
+                      { value: 'high', label: 'سطح عالی (بالای ۸۰٪ نمره کل)' },
+                      { value: 'mid', label: 'سطح متوسط (بین ۵۰٪ تا ۸۰٪ نمره)' },
+                      { value: 'low', label: 'نیازمند تلاش بیشتر (زیر ۵۰٪ نمره)' },
+                    ]}
+                    className="text-xs"
+                  />
                 </div>
               </div>
             </div>

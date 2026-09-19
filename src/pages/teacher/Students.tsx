@@ -34,7 +34,7 @@ import {
 import { logger } from '../../lib/logger';
 import { Student, Submission, ClassGroup, Exam } from '../../types';
 import { studentService, classService, gradingService, examService } from '../../services/api';
-import { ConfirmDialog } from '../../components/UIComponents';
+import { ConfirmDialog, Dropdown } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 
 export default function Students() {
@@ -1038,32 +1038,32 @@ export default function Students() {
                   <label className="font-semibold text-[var(--color-text-secondary)] block">
                     پایه تحصیلی:
                   </label>
-                  <select
+                  <Dropdown
                     value={formGrade}
-                    onChange={(e) => setFormGrade(e.target.value)}
-                    className="w-full glx border px-2 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-bold"
-                  >
-                    <option value="هفتم">پایه هفتم</option>
-                    <option value="هشتم">پایه هشتم</option>
-                    <option value="نهم">پایه نهم</option>
-                  </select>
+                    onChange={setFormGrade}
+                    options={[
+                      { value: 'هفتم', label: 'پایه هفتم' },
+                      { value: 'هشتم', label: 'پایه هشتم' },
+                      { value: 'نهم', label: 'پایه نهم' },
+                    ]}
+                    className="text-xs md:text-sm"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="font-semibold text-[var(--color-text-secondary)] block">
                     کلاس اختصاصی:
                   </label>
-                  <select
+                  <Dropdown
                     value={formClassGroupId}
-                    onChange={(e) => setFormClassGroupId(e.target.value)}
-                    className="w-full glx border px-2 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-bold"
-                  >
-                    {classGroups.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setFormClassGroupId}
+                    options={[
+                      { value: '', label: 'بدون کلاس', disabled: true },
+                      ...classGroups.map((c) => ({ value: c.id, label: c.name })),
+                    ]}
+                    placeholder="انتخاب کلاس"
+                    className="text-xs md:text-sm"
+                  />
                 </div>
               </div>
 
