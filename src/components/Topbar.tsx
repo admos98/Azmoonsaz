@@ -284,9 +284,9 @@ export default function Topbar({
       className="sticky top-0 z-30 h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent"
       id="topbar-wrapper"
     >
-      {/* LEFT SIDE: Bell then Avatar (reversed for flex-row-reverse = visually Profile|Bell) */ }
+      {/* LEFT SIDE: Bell then Avatar */ }
       <div className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`} id="topbar-left-group">
-        {/* Bell — on the right side in RTL flex, pushed left as avatar expands */ }
+        {/* Bell */ }
         <div className="transition-all duration-500 ease-out">
           <button
             ref={bellRef}
@@ -310,19 +310,12 @@ export default function Topbar({
           </button>
         </div>
 
-        {/* Avatar pill — expands to show name */ }
+        {/* Avatar pill — pic absolutely pinned (never moves), only pill width animates */ }
         <div className="relative flex items-center">
-          {/* The pill container — pic stays still at left, pill grows rightward, name sits right of pic */ }
           <div
-            className={`relative flex items-center overflow-hidden rounded-full glx-strong transition-all duration-500 ease-out ${
-              avatarExpanded
-                ? 'w-[200px] pl-1 pr-3 py-1'
-                : 'w-10 h-10'
+            className={`relative h-10 rounded-full overflow-hidden glx-strong cursor-pointer transition-[width] duration-500 ease-out ${
+              avatarExpanded ? 'w-[200px]' : 'w-10'
             }`}
-            style={{
-              direction: 'ltr',
-              justifyContent: avatarExpanded ? 'flex-start' : 'center',
-            }}
             onMouseEnter={() => !showHamburgerMenu && setAvatarExpanded(true)}
             onMouseLeave={() => {
               setTimeout(() => {
@@ -330,9 +323,9 @@ export default function Topbar({
               }, 200);
             }}
           >
-            {/* Avatar circle — fixed, pill expands from its right edge */ }
+            {/* Pic — absolute, pinned left-1/top-1: centered in collapsed 40px pill, stays put when expanded */ }
             <div
-              className={`rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer w-8 h-8`}
+              className="absolute left-1 top-1 w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden"
               onClick={() => setAvatarExpanded(!avatarExpanded)}
               role="button"
               tabIndex={0}
@@ -357,16 +350,14 @@ export default function Topbar({
               )}
             </div>
 
-            {/* Name panel — extends from avatar leftward */ }
+            {/* Name panel — absolute, fade only (no width/layout change, zero pic movement) */ }
             <div
-              className={`whitespace-nowrap transition-all duration-500 ease-out ${
-                avatarExpanded
-                  ? 'opacity-100 w-auto max-w-[120px] mr-1'
-                  : 'opacity-0 w-0 mr-0 pointer-events-none'
+              className={`absolute left-[42px] top-1/2 -translate-y-1/2 transition-opacity duration-500 ease-out ${
+                avatarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}
               style={{ direction: 'rtl', textAlign: 'right' }}
             >
-              <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+              <p className="text-xs font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
                 {teacher?.name || '...'}
               </p>
             </div>
