@@ -36,7 +36,7 @@ function TheMarkHamburger({ size = 48, isHovered = false }: { size?: number; isH
   const baseScale = isHovered ? 1.1 : 1;       // pills expand on hover
   const pillWidth = size * 0.65 * baseScale;   // horizontal bar width
   const pillHeight = size * 0.10 * baseScale;  // bar thickness (thinner)
-  const gap = (size - pillHeight * 4) / 3;     // pills closer together (vertical gap)
+  const gap = (size - pillHeight * 4) / 3 * 0.5;  // pills closer together
   const x = (size - pillWidth * baseScale) / 2;
   const rx = pillHeight / 2.5;                 // rounded corners
   return (
@@ -112,6 +112,7 @@ export default function Topbar({
   const bellRef = useRef<HTMLButtonElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const hamburgerDropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Fetch real notifications
@@ -190,7 +191,8 @@ export default function Topbar({
     };
     const onClick = (e: MouseEvent) => {
       if (
-        hamburgerRef.current && !hamburgerRef.current.contains(e.target as Node)
+        hamburgerRef.current && !hamburgerRef.current.contains(e.target as Node) &&
+        hamburgerDropdownRef.current && !hamburgerDropdownRef.current.contains(e.target as Node)
       ) {
         setShowHamburgerMenu(false);
       }
@@ -283,33 +285,71 @@ export default function Topbar({
       className="sticky top-0 z-30 h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent"
       id="topbar-wrapper"
     >
-      {/* LEFT SIDE: Avatar + Bell cluster */}
+      {/* LEFT SIDE: Avatar + Bell cluster */ }
       <div className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`} id="topbar-left-group">
-        {/* Avatar with expandable teacher name */ }
+        {/* Avatar pill — expands to show name, pushing bell right */ }
         <div
           className="relative flex items-center"
           onMouseEnter={() => !showHamburgerMenu && setAvatarExpanded(true)}
           onMouseLeave={() => !showHamburgerMenu && setAvatarExpanded(false)}
         >
-          {avatarExpanded && (
+          {/* The pill container — avatar on left, name extends right */ }
+          <div
+            className={`relative flex items-center gap-2 rounded-full glx-strong transition-all duration-300 ease-out overflow-hidden ${
+              avatarExpanded
+                ? 'w-[170px] pl-3 pr-3 py-2'
+                : 'w-10 h-10 p-0 pl-0.5 pr-0.5'
+            }`}
+            style={{
+              direction: 'ltr',
+              justifyContent: avatarExpanded ? 'flex-start' : 'center',
+            }}
+          >
+            {/* Avatar circle — always visible, inside the pill */ }
             <div
-              className="absolute left-full ml-3 z-[60] hidden sm:block"
+              className={`rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer transition-all ${
+                avatarExpanded ? 'w-7 h-7' : 'w-full h-full'
+              }`}
+              onClick={() => setAvatarExpanded(!avatarExpanded)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setAvatarExpanded(!avatarExpanded);
+                }
+              }}
+              aria-label={teacher?.name || 'پروفایل'}
+            >
+              {teacher?.avatarUrl ? (
+                <img
+                  src={teacher.avatarUrl}
+                  alt={teacher.name}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs">
+                  {teacher?.name?.[0] || '?'}
+                </span>
+              )}
+            </div>
+
+            {/* Name panel — slides in from right when expanded */ }
+            <div
+              className={`whitespace-nowrap transition-all duration-300 ease-out ${
+                avatarExpanded
+                  ? 'opacity-100 w-auto max-w-[120px] mr-1'
+                  : 'opacity-0 w-0 mr-0 pointer-events-none'
+              }`}
               style={{ direction: 'rtl', textAlign: 'right' }}
             >
-              <div className="px-3 py-1.5 rounded-xl glx-strong whitespace-nowrap shadow-lg">
-                <p className="text-xs font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
-                  {teacher?.name || '...'}
-                </p>
-                {teacher?.schoolName && (
-                  <p className="text-[9px] text-[var(--color-text-secondary)] truncate max-w-[140px]">
-                    {teacher.schoolName}
-                  </p>
-                )}
-              </div>
+              <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                {teacher?.name || '...'}
+              </p>
             </div>
-          )}
+          </div>
 
-          {/* Bell — slides right when avatar expands (pushed by name panel width) */ }
+          {/* Bell — slides right when avatar expands (pushed by pill width) */ }
           <div
             className="transition-all duration-300 ease-out"
             style={{
@@ -384,49 +424,52 @@ export default function Topbar({
           <TheMarkHamburger size={32} isHovered={hamburgerHover} />
         </button>
 
-        {/* Search (collapsed/expanded) */ }
+        {/* Search — smooth pill expand from icon */ }
         <div
           ref={searchRef}
-          className="flex items-center"
+          className={`relative flex items-center overflow-hidden rounded-full transition-all duration-300 ease-out ${
+            showSearch
+              ? 'w-[200px] glx-inset'
+              : 'w-11 glx-inset'
+          }`}
           onMouseEnter={() => !showHamburgerMenu && setShowSearch(true)}
           onMouseLeave={() => !showHamburgerMenu && setShowSearch(false)}
         >
-          {showSearch ? (
-            <div className="flex items-center gap-2 glx-inset rounded-full px-3 py-2 transition-all overflow-hidden">
-              <Search className="w-4 h-4 text-[var(--color-text-tertiary)] pointer-events-none" />
-              <input
-                type="text"
-                id="global-search-input"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="جستجو..."
-                className="outline-none bg-transparent text-xs md:text-sm w-[160px] text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]"
-              />
-            </div>
-          ) : (
-            <button
-              id="search-toggle-btn"
-              onClick={() => setShowSearch(true)}
-              className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-xl hover:bg-[var(--color-glass-light-stroke)]/20 transition-all cursor-pointer"
-              aria-label="جستجو"
-              aria-expanded={showSearch}
-            >
-              <Search className="w-4.5 h-4.5" />
-            </button>
+          <button
+            id="search-toggle-btn"
+            onClick={() => setShowSearch(!showSearch)}
+            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-full hover:bg-[var(--color-glass-light-stroke)]/20 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11 flex-shrink-0"
+            aria-label="جستجو"
+            aria-expanded={showSearch}
+            style={{ marginRight: showSearch ? '-1px' : '0' }}
+          >
+            <Search className="w-4.5 h-4.5" />
+          </button>
+          {showSearch && (
+            <input
+              type="text"
+              id="global-search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="جستجو..."
+              className="outline-none bg-transparent text-xs md:text-sm w-full text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] pr-2"
+            />
           )}
         </div>
       </div>
 
-      {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */}
+      {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */ }
       {showHamburgerMenu && (
         <>
           {/* Backdrop — blocks interaction with underlying UI */ }
           <div
-            className="fixed inset-0 z-[55] bg-black/20 backdrop-blur-sm"
+            className="fixed inset-0 z-[55] bg-black/10 backdrop-blur-[2px] transition-all duration-500"
             onClick={() => setShowHamburgerMenu(false)}
           />
 
-          {/* Panel 1: App info + date */ }
+          {/* All panels container (for click-outside detection) */ }
+          <div ref={hamburgerDropdownRef}>
+            {/* Panel 1: App info + date */ }
           <div
             className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
             style={{
@@ -616,6 +659,7 @@ export default function Topbar({
                 <span>خروج از سامانه</span>
               </div>
             </div>
+          </div>
           </div>
         </>
       )}
