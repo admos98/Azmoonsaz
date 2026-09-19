@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { TeacherProvider } from './contexts/TeacherContext';
-import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import { GlassFilters, GlassSheen } from './components/GlassSystem';
 import Login from './pages/teacher/Login';
@@ -288,21 +287,10 @@ export default function App() {
           <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-[var(--color-gold)]/4 rounded-full blur-[120px]" />
         </div>
 
-        {/* Sidebar — layer 30 */}
-        <Sidebar
-          currentTab={currentTab}
-          onTabChange={(tab) => {
-            setCurrentTab(tab);
-            setExamSubView('list');
-            setSelectedExamId(undefined);
-          }}
-          onLogout={() => setIsTeacherLoggedIn(false)}
-          onSwitchRole={handleSwitchUserRole}
-        />
-
         {/* Main Container — layer 10 (floats above bg stage) */}
-        <div className="relative z-10 flex-1 lg:mr-60 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
+        <div className="relative z-10 flex-1 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
           <Topbar
+            currentTab={currentTab}
             onTabChange={(tab) => {
               setCurrentTab(tab);
               setExamSubView('list');

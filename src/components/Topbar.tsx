@@ -13,6 +13,7 @@ import { logger } from '../lib/logger';
 import { TheMark } from './TheMark';
 
 interface TopbarProps {
+  currentTab: string;
   onTabChange: (tab: string) => void;
   onSwitchRole: () => void;
   onLogout: () => void;
@@ -28,34 +29,67 @@ export interface NotificationItem {
   onClick?: () => void;
 }
 
-// TheMark Hamburger — four pills in a row, 3rd gold-filled
-function TheMarkHamburger({ size = 44 }: { size?: number }) {
+// TheMark Hamburger — four rounded pills in a row, 3rd gold-filled
+function TheMarkHamburger({ size = 48 }: { size?: number }) {
   const ink = 'var(--color-ink, #221E4A)';
   const gold = 'var(--color-gold, #F5B301)';
-  // Each pill is 1/4 of total width, centered vertically
-  const r = size * 0.18; // radius
-  const strokeWidth = size * 0.07;
-  const cx = [size * 0.19, size * 0.42, size * 0.65, size * 0.88];
-  const cy = size * 0.5;
+  const pillHeight = size * 0.14;
+  const pillWidth = size * 0.16;
+  const gap = (size - pillWidth * 4) / 3;
+  const y = (size - pillHeight) / 2;
+  const rx = pillHeight / 2;
   return (
     <svg
       width={size}
-      height={size * 0.5}
-      viewBox={`0 0 ${size} ${size * 0.5}`}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="cursor-pointer"
       aria-hidden="true"
     >
-      <circle cx={cx[0]} cy={cy} r={r} stroke={ink} strokeWidth={strokeWidth} />
-      <circle cx={cx[1]} cy={cy} r={r} stroke={ink} strokeWidth={strokeWidth} />
-      <circle cx={cx[2]} cy={cy} r={r} fill={gold} />
-      <circle cx={cx[3]} cy={cy} r={r} stroke={ink} strokeWidth={strokeWidth} />
+      {/* Pill 1 — ink ring */}
+      <rect
+        x={0}
+        y={y}
+        width={pillWidth}
+        height={pillHeight}
+        rx={rx}
+        stroke={ink}
+        strokeWidth={size * 0.03}
+      />
+      <rect
+        x={gap + pillWidth}
+        y={y}
+        width={pillWidth}
+        height={pillHeight}
+        rx={rx}
+        stroke={ink}
+        strokeWidth={size * 0.03}
+      />
+      {/* Pill 3 — gold filled */}
+      <rect
+        x={(gap + pillWidth) * 2}
+        y={y}
+        width={pillWidth}
+        height={pillHeight}
+        rx={rx}
+        fill={gold}
+      />
+      <rect
+        x={(gap + pillWidth) * 3}
+        y={y}
+        width={pillWidth}
+        height={pillHeight}
+        rx={rx}
+        stroke={ink}
+        strokeWidth={size * 0.03}
+      />
     </svg>
   );
 }
 
 export default function Topbar({
+  currentTab,
   onTabChange,
   onSwitchRole,
   onLogout,
@@ -70,11 +104,11 @@ export default function Topbar({
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
   const [bellRect, setBellRect] = useState<DOMRect | null>(null);
+  const [hamburgerRect, setHamburgerRect] = useState<DOMRect | null>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
-  const avatarRef = useRef<HTMLDivElement>(null);
 
   // Fetch real notifications
   useEffect(() => {
@@ -136,7 +170,15 @@ export default function Topbar({
     }
   }, [onSelectExamForResults, showNotifications]);
 
-  // Close hamburger menu on outside click / Escape
+  // --- Hamburger menu ---
+  const openHamburgerMenu = useCallback(() => {
+    if (hamburgerRef.current) {
+      setHamburgerRect(hamburgerRef.current.getBoundingClientRect());
+    }
+    setShowNotifications(false);
+    setShowHamburgerMenu(true);
+  }, []);
+
   useEffect(() => {
     if (!showHamburgerMenu) return;
     const onKey = (e: KeyboardEvent) => {
@@ -157,7 +199,7 @@ export default function Topbar({
     };
   }, [showHamburgerMenu]);
 
-  // Close notifications on Escape / outside click
+  // --- Notifications ---
   const openNotifications = useCallback(() => {
     if (bellRef.current) {
       setBellRect(bellRef.current.getBoundingClientRect());
@@ -198,74 +240,49 @@ export default function Topbar({
 
   const unreadCount = notifications.length;
 
-  // Dropdown position for notifications
-  const dropdownStyle: React.CSSProperties = { position: 'fixed' };
+  // Notification dropdown position (fixed, anchored to bell)
+  const notificationStyle: React.CSSProperties = { position: 'fixed' };
   if (bellRect) {
     const dropdownWidth = 320;
     const gap = 12;
     const left = Math.max(16, bellRect.right - dropdownWidth);
     const top = bellRect.bottom + gap;
-    dropdownStyle.left = `${left}px`;
-    dropdownStyle.top = `${top}px`;
-    dropdownStyle.width = `${dropdownWidth}px`;
+    notificationStyle.left = `${left}px`;
+    notificationStyle.top = `${top}px`;
+    notificationStyle.width = `${dropdownWidth}px`;
   }
 
-  // Hamburger menu anchor rect
-  const [hamburgerRect, setHamburgerRect] = useState<DOMRect | null>(null);
-  const openHamburgerMenu = useCallback(() => {
-    if (hamburgerRef.current) {
-      setHamburgerRect(hamburgerRef.current.getBoundingClientRect());
-    }
-    setShowHamburgerMenu(true);
-  }, []);
-
+  // Hamburger dropdown position (fixed, anchored to hamburger button)
   const hamburgerStyle: React.CSSProperties = { position: 'fixed' };
   if (hamburgerRect) {
     const menuWidth = 260;
     const gap = 12;
-    const left = Math.max(16, hamburgerRect.left);
+    const right = Math.max(16, window.innerWidth - hamburgerRect.right);
     const top = hamburgerRect.bottom + gap;
-    hamburgerStyle.left = `${left}px`;
+    hamburgerStyle.right = `${right}px`;
     hamburgerStyle.top = `${top}px`;
     hamburgerStyle.width = `${menuWidth}px`;
   }
 
   return (
     <header
-      className="sticky top-0 z-30 h-16 glx px-4 lg:px-8 flex items-center justify-between select-none"
+      className="sticky top-0 z-30 h-14 glx px-4 lg:px-8 flex items-center justify-between select-none"
       id="topbar-wrapper"
     >
-      {/* LEFT SIDE: Hamburger + Avatar/Bell cluster */}
-      <div className="flex items-center gap-3" id="topbar-left">
-        {/* TheMark Hamburger */ }
-        <button
-          ref={hamburgerRef}
-          id="hamburger-menu-btn"
-          onClick={openHamburgerMenu}
-          className="p-1 rounded-xl hover:bg-white/5 transition-all cursor-pointer flex items-center justify-center w-12 h-12"
-          aria-label="منوی اصلی"
-          aria-expanded={showHamburgerMenu}
-          aria-haspopup="true"
-        >
-          <TheMarkHamburger size={32} />
-        </button>
-
-        {/* Avatar with expandable teacher name */ }
+      {/* LEFT SIDE: Avatar + Bell cluster */}
+      <div className="flex items-center gap-3" id="topbar-left-group">
+        {/* Avatar with expandable teacher name */}
         <div
-          ref={avatarRef}
           className="relative flex items-center"
           onMouseEnter={() => setAvatarExpanded(true)}
           onMouseLeave={() => setAvatarExpanded(false)}
         >
           {avatarExpanded && (
             <div
-              className="absolute right-full mr-3 max-sm:absolute max-sm:static max-sm:mr-0 max-sm:relative"
+              className="absolute left-full ml-3 z-[60] hidden sm:block"
               style={{ direction: 'rtl', textAlign: 'right' }}
             >
-              <div
-                className="px-3 py-1.5 rounded-xl glx-strong whitespace-nowrap shadow-lg"
-                style={{ marginRight: 0 }}
-              >
+              <div className="px-3 py-1.5 rounded-xl glx-strong whitespace-nowrap shadow-lg">
                 <p className="text-xs font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
                   {teacher?.name || '...'}
                 </p>
@@ -277,11 +294,12 @@ export default function Topbar({
               </div>
             </div>
           )}
-          {/* Bell pushes aside when avatar expanded */ }
+
+          {/* Bell — slides left when avatar expands */}
           <div
             className="transition-all duration-200"
             style={{
-              transform: avatarExpanded ? 'translateX(-60px)' : 'translateX(0)',
+              transform: avatarExpanded ? 'translateX(-56px)' : 'translateX(0)',
             }}
           >
             <button
@@ -305,7 +323,8 @@ export default function Topbar({
               )}
             </button>
           </div>
-          {/* Avatar circle */ }
+
+          {/* Avatar circle */}
           <div
             className="w-9 h-9 rounded-full bg-[var(--color-accent)]/10 border-2 border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden cursor-pointer transition-all"
             onClick={() => setAvatarExpanded(!avatarExpanded)}
@@ -334,49 +353,75 @@ export default function Topbar({
         </div>
       </div>
 
-      {/* RIGHT SIDE: Search (collapsed/expanded) */ }
-      <div
-        ref={searchRef}
-        className="flex items-center"
-        onMouseEnter={() => setShowSearch(true)}
-        onMouseLeave={() => setShowSearch(false)}
-      >
-        {showSearch ? (
-          <div className="flex items-center gap-2 glx-inset rounded-full px-3 py-2 transition-all overflow-hidden">
-            <Search className="w-4 h-4 text-[var(--color-text-tertiary)] pointer-events-none" />
-            <input
-              type="text"
-              id="global-search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="جستجو..."
-              className="outline-none bg-transparent text-xs md:text-sm w-[160px] text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)]"
-            />
-          </div>
-        ) : (
-          <button
-            id="search-toggle-btn"
-            onClick={() => setShowSearch(true)}
-            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-xl hover:bg-[var(--color-glass-light-stroke)]/20 transition-all cursor-pointer"
-            aria-label="جستجو"
-            aria-expanded={showSearch}
-          >
-            <Search className="w-4.5 h-4.5" />
-          </button>
-        )}
+      {/* RIGHT SIDE: Hamburger + Search */}
+      <div className="flex items-center gap-3" id="topbar-right-group">
+        {/* Search (collapsed/expanded) */}
+        <div
+          ref={searchRef}
+          className="flex items-center"
+          onMouseEnter={() => setShowSearch(true)}
+          onMouseLeave={() => setShowSearch(false)}
+        >
+          {showSearch ? (
+            <div className="flex items-center gap-2 glx-inset rounded-full px-3 py-2 transition-all overflow-hidden">
+              <Search className="w-4 h-4 text-[var(--color-text-tertiary)] pointer-events-none" />
+              <input
+                type="text"
+                id="global-search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="جستجو..."
+                className="outline-none bg-transparent text-xs md:text-sm w-[160px] text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]"
+              />
+            </div>
+          ) : (
+            <button
+              id="search-toggle-btn"
+              onClick={() => setShowSearch(true)}
+              className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-xl hover:bg-[var(--color-glass-light-stroke)]/20 transition-all cursor-pointer"
+              aria-label="جستجو"
+              aria-expanded={showSearch}
+            >
+              <Search className="w-4.5 h-4.5" />
+            </button>
+          )}
+        </div>
+
+        {/* TheMark Hamburger — FIRST item on right */}
+        <button
+          ref={hamburgerRef}
+          id="hamburger-menu-btn"
+          onClick={openHamburgerMenu}
+          className="p-2 rounded-xl hover:bg-white/5 transition-all cursor-pointer flex items-center justify-center w-11 h-11"
+          aria-label="منوی اصلی"
+          aria-expanded={showHamburgerMenu}
+          aria-haspopup="true"
+        >
+          <TheMarkHamburger size={32} />
+        </button>
       </div>
 
-      {/* Hamburger Dropdown — individual glass panels */ }
+      {/* Hamburger Dropdown — 4 separate glass panels */}
       {showHamburgerMenu && (
         <div
-          ref={notifRef}
           className="fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden"
           style={hamburgerStyle}
           id="hamburger-dropdown"
         >
           <div className="p-2 min-w-[240px]">
-            {/* Panel 1: App info + date */ }
-            <div className="p-3 mb-2 rounded-xl glx-sheen cursor-pointer hover:bg-white/3">
+            {/* Panel 1: App info + date */}
+            <div
+              className="p-3 mb-2 rounded-xl glx-sheen cursor-pointer transition-all"
+              onClick={() => { onTabChange('dashboard'); setShowHamburgerMenu(false); }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  onTabChange('dashboard');
+                  setShowHamburgerMenu(false);
+                }
+              }}
+            >
               <div className="flex items-center gap-3">
                 <TheMark variant="row" size={36} animated={false} />
                 <div>
@@ -389,8 +434,19 @@ export default function Topbar({
               </div>
             </div>
 
-            {/* Panel 2: Teacher profile */ }
-            <div className="p-3 mb-2 rounded-xl glx-sheen cursor-pointer hover:bg-white/3">
+            {/* Panel 2: Teacher profile */}
+            <div
+              className="p-3 mb-2 rounded-xl glx-sheen cursor-pointer transition-all"
+              onClick={() => { onTabChange('settings'); setShowHamburgerMenu(false); }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  onTabChange('settings');
+                  setShowHamburgerMenu(false);
+                }
+              }}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center overflow-hidden">
                   {teacher?.avatarUrl ? (
@@ -417,10 +473,14 @@ export default function Topbar({
               </div>
             </div>
 
-            {/* Panel 3: Management options */ }
+            {/* Panel 3: Management options */}
             <div className="p-3 mb-2 rounded-xl glx-sheen">
               <div
-                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-primary)] hover:bg-white/3 cursor-pointer transition-all"
+                className={`flex items-center gap-3 p-2 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                  currentTab === 'dashboard'
+                    ? 'bg-[var(--color-gold)]/15 text-[var(--color-text-primary)]'
+                    : 'text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)]'
+                }`}
                 onClick={() => { onTabChange('dashboard'); setShowHamburgerMenu(false); }}
                 role="button"
                 tabIndex={0}
@@ -463,7 +523,7 @@ export default function Topbar({
               </div>
             </div>
 
-            {/* Panel 4: Exam panel + settings */ }
+            {/* Panel 4: Exam panel + settings */}
             <div className="p-3 rounded-xl glx-sheen">
               <div
                 className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
@@ -526,12 +586,12 @@ export default function Topbar({
         </div>
       )}
 
-      {/* Notifications Dropdown */ }
+      {/* Notifications Dropdown */}
       {showNotifications && (
         <div
           ref={notifRef}
           className="fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden glx-sheen"
-          style={dropdownStyle}
+          style={notificationStyle}
           id="notification-dropdown"
         >
           <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
