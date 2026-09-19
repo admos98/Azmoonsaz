@@ -245,9 +245,9 @@ export default function Topbar({
   if (bellRect) {
     const dropdownWidth = 320;
     const gap = 12;
-    const left = Math.max(16, bellRect.right - dropdownWidth);
     const top = bellRect.bottom + gap;
-    notificationStyle.left = `${left}px`;
+    const viewportRight = window.innerWidth - bellRect.right;
+    notificationStyle.right = `${viewportRight}px`;
     notificationStyle.top = `${top}px`;
     notificationStyle.width = `${dropdownWidth}px`;
   }
@@ -255,18 +255,18 @@ export default function Topbar({
   // Hamburger dropdown position (fixed, anchored to hamburger button)
   const hamburgerStyle: React.CSSProperties = { position: 'fixed' };
   if (hamburgerRect) {
-    const menuWidth = 260;
+    const menuWidth = 280;
     const gap = 12;
-    const right = Math.max(16, window.innerWidth - hamburgerRect.right);
+    const viewportRight = window.innerWidth - hamburgerRect.right;
     const top = hamburgerRect.bottom + gap;
-    hamburgerStyle.right = `${right}px`;
+    hamburgerStyle.right = `${viewportRight}px`;
     hamburgerStyle.top = `${top}px`;
     hamburgerStyle.width = `${menuWidth}px`;
   }
 
   return (
     <header
-      className="sticky top-0 z-30 h-14 glx px-4 lg:px-8 flex items-center justify-between select-none"
+      className="sticky top-0 z-30 h-14 glx px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse"
       id="topbar-wrapper"
     >
       {/* LEFT SIDE: Avatar + Bell cluster */}
@@ -279,8 +279,8 @@ export default function Topbar({
         >
           {avatarExpanded && (
             <div
-              className="absolute left-full ml-3 z-[60] hidden sm:block"
-              style={{ direction: 'rtl', textAlign: 'right' }}
+              className="absolute right-full mr-3 z-[60] hidden sm:block"
+              style={{ direction: 'rtl', textAlign: 'left' }}
             >
               <div className="px-3 py-1.5 rounded-xl glx-strong whitespace-nowrap shadow-lg">
                 <p className="text-xs font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
@@ -401,27 +401,20 @@ export default function Topbar({
         </button>
       </div>
 
-      {/* Hamburger Dropdown — 4 separate glass panels */}
+      {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */}
       {showHamburgerMenu && (
-        <div
-          className="fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden"
-          style={hamburgerStyle}
-          id="hamburger-dropdown"
-        >
-          <div className="p-2 min-w-[240px]">
-            {/* Panel 1: App info + date */}
-            <div
-              className="p-3 mb-2 rounded-xl glx-sheen cursor-pointer transition-all"
-              onClick={() => { onTabChange('dashboard'); setShowHamburgerMenu(false); }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  onTabChange('dashboard');
-                  setShowHamburgerMenu(false);
-                }
-              }}
-            >
+        <>
+          {/* Panel 1: App info + date */ }
+          <div
+            className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+            style={{
+              ...hamburgerStyle,
+              top: `calc(${hamburgerStyle.top || '0px'} + 0 * (calc(100% + 8px)) + 0 * 1)`,
+              animation: 'dropIn 0.3s ease-out 0ms both',
+            }}
+            id="hamburger-panel-1"
+          >
+            <div className="p-3 min-w-[240px]">
               <div className="flex items-center gap-3">
                 <TheMark variant="row" size={36} animated={false} />
                 <div>
@@ -433,20 +426,19 @@ export default function Topbar({
                 {formatPersianDate(new Date().toISOString())}
               </div>
             </div>
+          </div>
 
-            {/* Panel 2: Teacher profile */}
-            <div
-              className="p-3 mb-2 rounded-xl glx-sheen cursor-pointer transition-all"
-              onClick={() => { onTabChange('settings'); setShowHamburgerMenu(false); }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  onTabChange('settings');
-                  setShowHamburgerMenu(false);
-                }
-              }}
-            >
+          {/* Panel 2: Teacher profile */ }
+          <div
+            className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+            style={{
+              ...hamburgerStyle,
+              top: `calc(${hamburgerStyle.top || '0px'} + 1 * (100% + 8px))`,
+              animation: 'dropIn 0.3s ease-out 50ms both',
+            }}
+            id="hamburger-panel-2"
+          >
+            <div className="p-3 min-w-[240px]">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center overflow-hidden">
                   {teacher?.avatarUrl ? (
@@ -472,9 +464,19 @@ export default function Topbar({
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Panel 3: Management options */}
-            <div className="p-3 mb-2 rounded-xl glx-sheen">
+          {/* Panel 3: Management options */ }
+          <div
+            className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+            style={{
+              ...hamburgerStyle,
+              top: `calc(${hamburgerStyle.top || '0px'} + 2 * (100% + 8px))`,
+              animation: 'dropIn 0.3s ease-out 100ms both',
+            }}
+            id="hamburger-panel-3"
+          >
+            <div className="p-3 min-w-[240px]">
               <div
                 className={`flex items-center gap-3 p-2 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                   currentTab === 'dashboard'
@@ -522,9 +524,19 @@ export default function Topbar({
                 <span>کلاس‌ها</span>
               </div>
             </div>
+          </div>
 
-            {/* Panel 4: Exam panel + settings */}
-            <div className="p-3 rounded-xl glx-sheen">
+          {/* Panel 4: Exam panel + settings */ }
+          <div
+            className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+            style={{
+              ...hamburgerStyle,
+              top: `calc(${hamburgerStyle.top || '0px'} + 3 * (100% + 8px))`,
+              animation: 'dropIn 0.3s ease-out 150ms both',
+            }}
+            id="hamburger-panel-4"
+          >
+            <div className="p-3 min-w-[240px]">
               <div
                 className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
                 onClick={() => { onTabChange('questions'); setShowHamburgerMenu(false); }}
@@ -583,7 +595,7 @@ export default function Topbar({
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Notifications Dropdown */}
