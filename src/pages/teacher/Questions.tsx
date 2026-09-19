@@ -488,7 +488,7 @@ export default function Questions() {
       {toastElement}
 
       {/* Page Title Board */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs" id="questions-title-plate">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs" id="questions-title-plate">
         <div className="space-y-1">
           <h2 className="text-md font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <HelpCircle className="w-5 h-5 text-indigo-600" />
@@ -499,11 +499,11 @@ export default function Questions() {
 
         <div className="flex items-center gap-2 w-full md:w-auto">
           {/* Card / Table Toggle */}
-          <div className="bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-xl p-1 flex items-center gap-1 shrink-0">
+          <div className="glx border rounded-xl p-1 flex items-center gap-1 shrink-0">
             <button
               onClick={() => setViewMode('card')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'card' ? 'bg-white text-indigo-600 shadow-xs' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                viewMode === 'card' ? 'glx text-indigo-600 shadow-xs' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
               }`}
               title="نمایش کارتی بخر"
             >
@@ -512,7 +512,7 @@ export default function Questions() {
             <button
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'table' ? 'bg-white text-indigo-600 shadow-xs' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                viewMode === 'table' ? 'glx text-indigo-600 shadow-xs' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
               }`}
               title="نمایش جدولی منظم"
             >
@@ -533,7 +533,7 @@ export default function Questions() {
       </div>
 
       {/* COMPREHENSIVE MULTI-FILTER PANEL */}
-      <div className="bg-white p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm space-y-4" id="filters-container">
+      <div className="glx p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm space-y-4" id="filters-container">
         <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-2.5 mb-2">
           <Sliders className="w-4 h-4 text-[var(--color-accent)]" />
           <h4 className="text-xs font-bold text-[var(--color-text-secondary)]">جستجوی موضوعی و پالایش هوشمند سوالات</h4>
@@ -551,7 +551,7 @@ export default function Questions() {
                 placeholder="کلمه کلیدی، عنوان، هشتگ یا درس..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 pr-9 pl-3.5 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-white transition-all text-right"
+                className="w-full glx border text-xs text-slate-750 pr-9 pl-3.5 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-[var(--color-accent-soft)]/30 transition-all text-right"
               />
             </div>
           </div>
@@ -562,7 +562,7 @@ export default function Questions() {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full glx border text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه قالب‌ها (۱۱ نوع)</option>
               <option value="single_choice">چهارگزینه‌ای تک‌پاسخ</option>
@@ -585,7 +585,7 @@ export default function Questions() {
             <select
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value)}
-              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full glx border text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه پایه‌ها</option>
               <optgroup label="دبستان">
@@ -615,7 +615,7 @@ export default function Questions() {
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full glx border text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه درس‌ها</option>
               {uniqueSubjects.map(sub => (
@@ -630,7 +630,7 @@ export default function Questions() {
             <select
               value={selectedSection}
               onChange={(e) => setSelectedSection(e.target.value)}
-              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full glx border text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه فصل‌ها</option>
               {uniqueSections.map(s => (
@@ -645,7 +645,7 @@ export default function Questions() {
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full glx border text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه سطوح</option>
               <option value="easy">آسان</option>
@@ -660,7 +660,7 @@ export default function Questions() {
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
-              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full glx border text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه برچسب‌ها</option>
               {uniqueTags.map(t => (
@@ -675,7 +675,7 @@ export default function Questions() {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
+              className="w-full glx border text-xs text-slate-750 p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
             >
               <option value="all">همه وضعیت‌ها</option>
               <option value="complete">کامل (دارای جواب معتبر)</option>
@@ -725,7 +725,7 @@ export default function Questions() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
-                      className="bg-white rounded-3xl p-5 border border-[var(--color-glass-light-stroke)] hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
+                      className="glx rounded-3xl p-5 border border-[var(--color-glass-light-stroke)] hover:border-indigo-300 hover:shadow-sm transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
                       id={`card-q-${q.id}`}
                     >
                       <div className="space-y-3.5">
@@ -733,7 +733,7 @@ export default function Questions() {
                         {/* Upper line metadata */}
                         <div className="flex items-center justify-between gap-1 text-[10px] text-[var(--color-text-tertiary)]">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="bg-white/4 text-[var(--color-text-secondary)] font-bold px-2 py-0.5 rounded-md">پایه {q.grade}</span>
+                            <span className="glx-inset text-[var(--color-text-secondary)] font-bold px-2 py-0.5 rounded-md">پایه {q.grade}</span>
                             <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-bold px-2 py-0.5 rounded-md">{q.category}</span>
                             {q.section && <span className="text-[var(--color-text-tertiary)] italic">فصل: {q.section}</span>}
                           </div>
@@ -756,7 +756,7 @@ export default function Questions() {
 
                         {/* Middle specific indicators badges */}
                         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--color-glass-light-stroke)]">
-                          <span className="bg-white/3 text-[var(--color-text-secondary)] rounded-md px-2 py-0.5 text-[10px] font-semibold border border-[var(--color-glass-light-stroke)]/60">
+                          <span className="glx text-[var(--color-text-secondary)] rounded-md px-2 py-0.5 text-[10px] font-semibold border border-[var(--color-glass-light-stroke)]/60">
                             {getTypeNameInPersian(q.type)}
                           </span>
 
@@ -788,10 +788,10 @@ export default function Questions() {
                       </div>
 
                       {/* Card Action footer operations */}
-                      <div className="border-t border-[var(--color-glass-light-stroke)] pt-3.5 flex justify-between items-center bg-white/3/50 -m-5 mt-2 px-5 py-3">
+                      <div className="border-t border-[var(--color-glass-light-stroke)] pt-3.5 flex justify-between items-center glx -m-5 mt-2 px-5 py-3">
                         <div className="flex gap-1.5">
                           {q.tags?.slice(0, 2).map((tag, i) => (
-                            <span key={i} className="text-[9px] text-indigo-600 bg-white border border-[var(--color-glass-light-stroke)] px-1.5 py-0.5 rounded-md font-bold">
+                            <span key={i} className="text-[9px] text-indigo-600 glx border border-[var(--color-glass-light-stroke)] px-1.5 py-0.5 rounded-md font-bold">
                               #{tag}
                             </span>
                           ))}
@@ -800,14 +800,14 @@ export default function Questions() {
                         <div className="flex gap-1.5">
                           <button
                             onClick={() => setPreviewQuestion(q)}
-                            className="p-1.5 text-indigo-600 hover:bg-white/4 rounded-lg transition-all cursor-pointer"
+                            className="p-1.5 text-indigo-600 hover:brightness-105 rounded-lg transition-all cursor-pointer"
                             title="پیش‌نمایش زنده"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => openEditDrawer(q)}
-                            className="p-1.5 text-[var(--color-text-secondary)] hover:bg-white/4 hover:text-[var(--color-text-primary)] rounded-lg transition-all cursor-pointer"
+                            className="p-1.5 text-[var(--color-text-secondary)] hover:brightness-105 hover:text-[var(--color-text-primary)] rounded-lg transition-all cursor-pointer"
                             title="ویرایش سوال"
                           >
                             <Edit className="w-4 h-4" />
@@ -828,10 +828,10 @@ export default function Questions() {
               </div>
             ) : (
               /* TABLE ROW VIEW MODE */
-              <div className="bg-white rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs overflow-hidden" id="questions-table-view-box">
+              <div className="glx rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs overflow-hidden" id="questions-table-view-box">
                 <div className="overflow-x-auto text-right">
                   <table className="w-full text-xs text-[var(--color-text-secondary)]" id="questions-table">
-                    <thead className="bg-white/3 border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]">
+                    <thead className="glx border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]">
                       <tr>
                         <th className="p-4 font-bold text-right">خلاصه متن سوال</th>
                         <th className="p-4 font-bold text-right">پایه</th>
@@ -853,7 +853,7 @@ export default function Questions() {
                           <motion.tr
                             key={q.id}
                             layout
-                            className="hover:bg-white/3/40 transition-colors"
+                            className="hover:brightness-105 transition-colors"
                           >
                             {/* Short question text */}
                             <td className="p-4 max-w-xs md:max-w-sm">
@@ -900,7 +900,7 @@ export default function Questions() {
 
                             {/* Has image? */}
                             <td className="p-4 text-center">
-                              <span className={`inline-block w-2.5 h-2.5 rounded-full ${hasImage ? 'bg-purple-505 border border-purple-500 bg-purple-500 shadow-xs' : 'bg-white/6'}`} title={hasImage ? 'دارای تصویر ضمیمه' : 'فاقد تصویر'}></span>
+                              <span className={`inline-block w-2.5 h-2.5 rounded-full ${hasImage ? 'bg-purple-505 border border-purple-500 bg-purple-500 shadow-xs' : 'glx-inset'}`} title={hasImage ? 'دارای تصویر ضمیمه' : 'فاقد تصویر'}></span>
                             </td>
 
                             {/* Row Actions */}
@@ -908,14 +908,14 @@ export default function Questions() {
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   onClick={() => setPreviewQuestion(q)}
-                                  className="p-1 hover:bg-white/4 text-indigo-600 rounded-lg cursor-pointer"
+                                  className="p-1 hover:brightness-105 text-indigo-600 rounded-lg cursor-pointer"
                                   title="پیش‌نمایش"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => openEditDrawer(q)}
-                                  className="p-1 hover:bg-white/4 text-[var(--color-text-tertiary)] cursor-pointer"
+                                  className="p-1 hover:brightness-105 text-[var(--color-text-tertiary)] cursor-pointer"
                                   title="ویرایش"
                                 >
                                   <Edit className="w-3.5 h-3.5" />
@@ -940,8 +940,8 @@ export default function Questions() {
             )
           ) : (
             /* EMPTY FILTERED QUESTIONS STATE */
-            <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-3xl p-16 text-center text-[var(--color-text-tertiary)] select-none space-y-3" id="empty-questions">
-              <div className="w-16 h-16 rounded-full bg-white/3 border border-[var(--color-glass-light-stroke)] mx-auto flex items-center justify-center text-slate-300 shadow-xs">
+            <div className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-16 text-center text-[var(--color-text-tertiary)] select-none space-y-3" id="empty-questions">
+              <div className="w-16 h-16 rounded-full glx border mx-auto flex items-center justify-center text-slate-300 shadow-xs">
                 <HelpCircle className="w-8 h-8" />
               </div>
               <h4 className="font-bold text-[var(--color-text-secondary)] text-xs">هیچ سوالی با فیلترهای بالا همخوانی ندارد</h4>
@@ -957,11 +957,11 @@ export default function Questions() {
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white/3 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[90vh]"
+            className="glx rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[90vh]"
             id="preview-box"
           >
             {/* Header */}
-            <div className="px-6 py-4.5 bg-white border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-4.5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <button
                 onClick={() => setPreviewQuestion(null)}
                 className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 transition-all font-bold rounded-xl text-[10px] cursor-pointer"
@@ -983,7 +983,7 @@ export default function Questions() {
             </div>
 
             {/* Footer comments */}
-            <div className="bg-white border-t border-[var(--color-glass-light-stroke)] p-4 flex justify-between items-center text-[10px] text-[var(--color-text-tertiary)] font-medium">
+            <div className="glx border-t border-[var(--color-glass-light-stroke)] p-4 flex justify-between items-center text-[10px] text-[var(--color-text-tertiary)] font-medium">
               <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
               <span>بروزرسانی شده در: {toPersianDigits(new Date(previewQuestion.createdAt).toLocaleDateString('fa-IR'))}</span>
             </div>
@@ -1001,11 +1001,11 @@ export default function Questions() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 200 }}
             transition={{ type: 'spring', damping: 25 }}
-            className="w-full max-w-3xl bg-white/3 shadow-2xl z-10 flex flex-col h-full border-l border-[var(--color-glass-light-stroke)] overflow-hidden text-xs text-right"
+            className="w-full max-w-3xl glx shadow-2xl z-10 flex flex-col h-full border-l border-[var(--color-glass-light-stroke)] overflow-hidden text-xs text-right"
             id="add-edit-drawer"
           >
             {/* Drawer Header */}
-            <div className="px-6 py-5 bg-white border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setShowAddEditDrawer(false)}
@@ -1025,7 +1025,7 @@ export default function Questions() {
             <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
 
               {/* Left Column (Realtime live visual preview of QuestionRenderer as the teacher types!) */}
-              <div className="hidden lg:block lg:col-span-5 bg-white/4 p-5 overflow-y-auto border-l border-[var(--color-glass-light-stroke)]" id="drawer-live-visual">
+              <div className="hidden lg:block lg:col-span-5 glx-inset p-5 overflow-y-auto border-l border-[var(--color-glass-light-stroke)]" id="drawer-live-visual">
                 <div className="sticky top-0 space-y-3.5">
                   <div className="flex items-center gap-1 text-[var(--color-text-tertiary)] font-bold mb-1">
                     <Eye className="w-4 h-4 text-[var(--color-accent)]" />
@@ -1059,7 +1059,7 @@ export default function Questions() {
                     showCorrectAnswers={true}
                   />
 
-                  <div className="bg-white/80 border border-[var(--color-glass-light-stroke)] p-3.5 rounded-2xl text-[9.5px] leading-relaxed text-[var(--color-text-tertiary)] flex items-start gap-1.5 shadow-xs">
+                  <div className="glx0 border border-[var(--color-glass-light-stroke)] p-3.5 rounded-2xl text-[9.5px] leading-relaxed text-[var(--color-text-tertiary)] flex items-start gap-1.5 shadow-xs">
                     <Info className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-tertiary)] mt-0.5" />
                     <span>تغیرات بالا بلافاصله با تایپ کردن فرم زیر، به‌روزرسانی می‌شوند تا ساختار نهایی را بررسی نمایید.</span>
                   </div>
@@ -1067,11 +1067,11 @@ export default function Questions() {
               </div>
 
               {/* Right Column (Intense Form controls) */}
-              <div className="lg:col-span-7 overflow-y-auto p-6 bg-white space-y-5" id="drawer-form-contents">
+              <div className="lg:col-span-7 overflow-y-auto p-6 glx space-y-5" id="drawer-form-contents">
                 <form onSubmit={handleSaveQuestion} className="space-y-4">
 
                   {/* 1. Grade, Subject, Section, Difficulty */}
-                  <div className="bg-white/3 p-4 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                  <div className="glx p-4 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
                     <span className="font-bold text-[var(--color-text-primary)] text-[11px] block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">شناسنامه علمی سوال</span>
 
                     <div className="grid grid-cols-2 gap-3.5">
@@ -1081,7 +1081,7 @@ export default function Questions() {
                         <select
                           value={formGrade}
                           onChange={(e) => setFormGrade(e.target.value)}
-                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
+                          className="w-full glx border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
                         >
                           <option value="">انتخاب پایه...</option>
                           <optgroup label="دبستان">
@@ -1114,7 +1114,7 @@ export default function Questions() {
                           value={formSubject}
                           onChange={(e) => setFormSubject(e.target.value)}
                           placeholder="مثال: علوم تجربی، ریاضی"
-                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
+                          className="w-full glx border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
                         />
                       </div>
 
@@ -1127,7 +1127,7 @@ export default function Questions() {
                           value={formSection}
                           onChange={(e) => setFormSection(e.target.value)}
                           placeholder="مثال: فصل اول یا مبحث فیزیک"
-                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
+                          className="w-full glx border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
                         />
                       </div>
 
@@ -1137,7 +1137,7 @@ export default function Questions() {
                         <select
                           value={formDifficulty}
                           onChange={(e) => setFormDifficulty(e.target.value as any)}
-                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
+                          className="w-full glx border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
                         >
                           <option value="easy">آسان</option>
                           <option value="medium">متوسط</option>
@@ -1155,7 +1155,7 @@ export default function Questions() {
                           step={0.25}
                           value={formPoints}
                           onChange={(e) => setFormPoints(Number(e.target.value))}
-                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
+                          className="w-full glx border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
                         />
                       </div>
 
@@ -1167,7 +1167,7 @@ export default function Questions() {
                           value={formTagsString}
                           onChange={(e) => setFormTagsString(e.target.value)}
                           placeholder="کنکوری، تستی، مهم"
-                          className="w-full bg-white border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden text-[var(--color-accent)] font-bold"
+                          className="w-full glx border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden text-[var(--color-accent)] font-bold"
                         />
                       </div>
                     </div>
@@ -1205,7 +1205,7 @@ export default function Questions() {
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
                         placeholder="ماشاالله: محاسبه سرعت زاویه‌ای"
-                        className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 font-bold"
+                        className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-bold"
                       />
                     </div>
 
@@ -1217,18 +1217,18 @@ export default function Questions() {
                         value={formText}
                         onChange={(e) => setFormText(e.target.value)}
                         placeholder="متن کامل سوال خود را به زبان فارسی روان تالیف کنید..."
-                        className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 font-medium leading-relaxed"
+                        className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-medium leading-relaxed"
                       />
                     </div>
                   </div>
 
                   {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
-                  <div className="bg-white/3 p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2">
+                  <div className="glx p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2">
                     <span className="text-[10px] text-slate-550 font-bold block">الصاق پرونده تصویر برای کل سوال (اختیاری):</span>
 
                     <div className="flex items-center gap-3">
                       {/* Hidden manual selector */}
-                      <label className="px-4 py-2 bg-white hover:bg-white/4 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] text-[11px] rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
+                      <label className="px-4 py-2 glx-inset hover:brightness-105 border text-[var(--color-text-secondary)] text-[11px] rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
                         <ImageIcon className="w-3.5 h-3.5" />
                         <span>انتخاب فایل تصویر</span>
                         <input
@@ -1268,7 +1268,7 @@ export default function Questions() {
 
                   {/* Choice builder (single_choice, multiple_choice, image_based) */}
                   {(formType === 'single_choice' || formType === 'multiple_choice' || formType === 'image_based') && (
-                    <div className="bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-4">
+                    <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-4">
                       <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2 mb-1">
                         <span className="font-bold text-[var(--color-text-primary)] text-[11px]">سازنده گزینه‌های آزمون (تعداد کلید گزینه‌ها)</span>
                         <button
@@ -1282,7 +1282,7 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formOptions.map((opt, oIdx) => (
-                          <div key={opt.id} className="bg-white p-3 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2 text-right">
+                          <div key={opt.id} className="glx p-3 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2 text-right">
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Is correct tick check */}
                               <label className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-text-secondary)] cursor-pointer">
@@ -1320,7 +1320,7 @@ export default function Questions() {
                                     setFormOptions(updated);
                                   }}
                                   placeholder={`عبارت گزینه ${oIdx + 1}`}
-                                  className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3.5 py-1.5 rounded-lg text-[11px]"
+                                  className="w-full glx border px-3.5 py-1.5 rounded-lg text-[11px]"
                                 />
                               </div>
 
@@ -1328,7 +1328,7 @@ export default function Questions() {
                               <div className="space-y-1">
                                 <span className="text-[9px] text-[var(--color-text-tertiary)] block">پیوست عکس گزینه (الزامی برای سوال تصویری):</span>
                                 <div className="flex items-center gap-2">
-                                  <label className="px-2 py-1 bg-white/4 hover:bg-white/6 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-[9px] font-bold cursor-pointer shrink-0">
+                                  <label className="px-2 py-1 glx-inset hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-[9px] font-bold cursor-pointer shrink-0">
                                     <span>الحاق تصویر</span>
                                     <input
                                       type="file"
@@ -1360,11 +1360,11 @@ export default function Questions() {
 
                   {/* True / False picker builder */}
                   {formType === 'true_false' && (
-                    <div className="bg-white/3 p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2">
+                    <div className="glx p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2">
                       <span className="font-bold text-[var(--color-text-secondary)] text-[11px] block">انتخاب گزینه پاسخ درست:</span>
                       <div className="flex gap-4">
                         <label className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
-                          formCorrectTrueFalse === true ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-white border-[var(--color-glass-light-stroke)]'
+                          formCorrectTrueFalse === true ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]' : 'glx border-[var(--color-glass-light-stroke)]'
                         }`}>
                           <input
                             type="radio"
@@ -1377,7 +1377,7 @@ export default function Questions() {
                         </label>
 
                         <label className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
-                          formCorrectTrueFalse === false ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-white border-[var(--color-glass-light-stroke)]'
+                          formCorrectTrueFalse === false ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]' : 'glx border-[var(--color-glass-light-stroke)]'
                         }`}>
                           <input
                             type="radio"
@@ -1394,8 +1394,8 @@ export default function Questions() {
 
                   {/* Fill blank builder */}
                   {formType === 'fill_blank' && (
-                    <div className="bg-white/3 p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-3">
-                      <div className="flex justify-between items-center mb-1 bg-white p-2 rounded-lg border">
+                    <div className="glx p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                      <div className="flex justify-between items-center mb-1 glx p-2 rounded-lg border">
                         <strong className="text-[var(--color-text-primary)] text-[11px]">کلید واژه‌های صحیح برای جاهای خالی:</strong>
                         <button
                           type="button"
@@ -1420,7 +1420,7 @@ export default function Questions() {
                                 setFormFillBlanks(updated);
                               }}
                               placeholder="کلمه کلید صحیح"
-                              className="w-full bg-white border border-[var(--color-glass-light-stroke)] px-2.5 py-1.5 rounded-md text-[11px]"
+                              className="w-full glx border border-[var(--color-glass-light-stroke)] px-2.5 py-1.5 rounded-md text-[11px]"
                             />
                             {formFillBlanks.length > 1 && (
                               <button
@@ -1439,7 +1439,7 @@ export default function Questions() {
 
                   {/* Matching matchingPairs builder */}
                   {formType === 'matching' && (
-                    <div className="bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
                       <div className="flex justify-between items-center border-b pb-2">
                         <span className="font-bold text-[var(--color-text-primary)] text-[11px]">پلاس لغات تطبیقی وصل‌کردنی</span>
                         <button
@@ -1453,7 +1453,7 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formMatchingPairs.map((pair, idx) => (
-                          <div key={idx} className="grid grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-[var(--color-glass-light-stroke)] relative">
+                          <div key={idx} className="grid grid-cols-2 gap-3 glx p-3 rounded-xl border border-[var(--color-glass-light-stroke)] relative">
                             <button
                               type="button"
                               onClick={() => setFormMatchingPairs(formMatchingPairs.filter((_, i) => i !== idx))}
@@ -1472,7 +1472,7 @@ export default function Questions() {
                                   updated[idx].left = e.target.value;
                                   setFormMatchingPairs(updated);
                                 }}
-                                className="w-full bg-white/3 px-2 py-1.5 rounded-md"
+                                className="w-full glx px-2 py-1.5 rounded-md"
                               />
                             </div>
                             <div className="space-y-1">
@@ -1486,7 +1486,7 @@ export default function Questions() {
                                   updated[idx].right = e.target.value;
                                   setFormMatchingPairs(updated);
                                 }}
-                                className="w-full bg-white/3 px-2 py-1.5 rounded-md"
+                                className="w-full glx px-2 py-1.5 rounded-md"
                               />
                             </div>
                           </div>
@@ -1497,7 +1497,7 @@ export default function Questions() {
 
                   {/* Ordering lists builder */}
                   {formType === 'ordering' && (
-                    <div className="bg-white/3 p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <div className="glx p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-3">
                       <div className="flex justify-between items-center pb-2 border-b">
                         <span className="font-bold text-[11px] text-[var(--color-text-primary)]">سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)</span>
                         <button
@@ -1511,7 +1511,7 @@ export default function Questions() {
 
                       <div className="space-y-2">
                         {formOrderingItems.map((item, idx) => (
-                          <div key={idx} className="flex gap-2 items-center bg-white p-2 rounded-lg border">
+                          <div key={idx} className="flex gap-2 items-center glx p-2 rounded-lg border">
                             <span className="text-[10px] font-bold text-[var(--color-text-tertiary)] w-12 shrink-0">رتبه {idx + 1}:</span>
                             <input
                               type="text"
@@ -1522,7 +1522,7 @@ export default function Questions() {
                                 updated[idx] = e.target.value;
                                 setFormOrderingItems(updated);
                               }}
-                              className="w-full bg-white/3 px-2 py-1.5 rounded-md text-[11px]"
+                              className="w-full glx px-2 py-1.5 rounded-md text-[11px]"
                             />
                             {formOrderingItems.length > 2 && (
                               <button
@@ -1550,7 +1550,7 @@ export default function Questions() {
                           value={formSampleAnswer}
                           onChange={(e) => setFormSampleAnswer(e.target.value)}
                           placeholder="نمونه پاسخ ایده‌آل بنویسید..."
-                          className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl"
+                          className="w-full glx border px-3 py-2 rounded-xl"
                         />
                       </div>
 
@@ -1569,7 +1569,7 @@ export default function Questions() {
 
                         <div className="space-y-2">
                           {formRubrics.map((rub) => (
-                            <div key={rub.id} className="bg-white p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2 relative">
+                            <div key={rub.id} className="glx p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2 relative">
                               <button
                                 type="button"
                                 onClick={() => removeRubricRow(rub.id)}
@@ -1589,7 +1589,7 @@ export default function Questions() {
                                       const updated = formRubrics.map(r => r.id === rub.id ? { ...r, title: e.target.value } : r);
                                       setFormRubrics(updated);
                                     }}
-                                    className="w-full bg-white/3 px-2 py-1 rounded text-[11px]"
+                                    className="w-full glx px-2 py-1 rounded text-[11px]"
                                   />
                                 </div>
                                 <div className="space-y-1">
@@ -1603,7 +1603,7 @@ export default function Questions() {
                                       const updated = formRubrics.map(r => r.id === rub.id ? { ...r, maxPoints: Number(e.target.value) } : r);
                                       setFormRubrics(updated);
                                     }}
-                                    className="w-full bg-white/3 p-1 text-center rounded text-[11px]"
+                                    className="w-full glx p-1 text-center rounded text-[11px]"
                                   />
                                 </div>
                               </div>
@@ -1617,7 +1617,7 @@ export default function Questions() {
                                     setFormRubrics(updated);
                                   }}
                                   placeholder="ملاک نیم‌نمره چیست..."
-                                  className="w-full bg-white/3 px-2 py-1 rounded text-[10px] text-[var(--color-text-tertiary)]"
+                                  className="w-full glx px-2 py-1 rounded text-[10px] text-[var(--color-text-tertiary)]"
                                 />
                               </div>
                             </div>
@@ -1639,7 +1639,7 @@ export default function Questions() {
 
                   {/* Reading comprehension & Cloze parts dynamic details */}
                   {(formType === 'reading_comprehension' || formType === 'cloze') && (
-                    <div className="bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
                       <div className="flex justify-between items-center border-b pb-2">
                         <span className="font-bold text-[var(--color-text-primary)] text-[11px]">بخش‌ها و زیرسوالات تابعه ({formParts.length} مینی‌سوال)</span>
                         <button
@@ -1653,7 +1653,7 @@ export default function Questions() {
 
                       <div className="space-y-3">
                         {formParts.map((part, idx) => (
-                          <div key={part.id} className="bg-white p-3 rounded-xl border border-[var(--color-glass-light-stroke)] relative space-y-2">
+                          <div key={part.id} className="glx p-3 rounded-xl border border-[var(--color-glass-light-stroke)] relative space-y-2">
                             <button
                               type="button"
                               onClick={() => removePartRow(idx)}
@@ -1661,7 +1661,7 @@ export default function Questions() {
                             >
                               &times;
                             </button>
-                            <span className="bg-white/4 rounded px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-text-secondary)] block w-20 text-center">بخش شماره {idx + 1}</span>
+                            <span className="glx-inset rounded px-1.5 py-0.5 text-[9px] font-bold text-[var(--color-text-secondary)] block w-20 text-center">بخش شماره {idx + 1}</span>
 
                             <div className="space-y-1">
                               <span className="text-[9px] text-[var(--color-text-tertiary)] block">صورت مینی‌سوال:</span>
@@ -1674,7 +1674,7 @@ export default function Questions() {
                                   updated[idx].text = e.target.value;
                                   setFormParts(updated);
                                 }}
-                                className="w-full bg-white/3 px-2 py-1 rounded text-[11px]"
+                                className="w-full glx px-2 py-1 rounded text-[11px]"
                               />
                             </div>
 
@@ -1690,7 +1690,7 @@ export default function Questions() {
                                   setFormParts(updated);
                                 }}
                                 placeholder="گزینه یا عبارت کلید مینی‌سوال"
-                                className="w-full bg-white/3 px-2 py-1 rounded text-[11px] font-mono"
+                                className="w-full glx px-2 py-1 rounded text-[11px] font-mono"
                               />
                             </div>
                           </div>
@@ -1707,7 +1707,7 @@ export default function Questions() {
                       value={formExplanation}
                       onChange={(e) => setFormExplanation(e.target.value)}
                       placeholder="این یادداشت به دانش‌آموزان در قالب پاسخ‌برگ تشریحی سیستم نشان داده خواهد گردید..."
-                      className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl text-[11px] leading-relaxed"
+                      className="w-full glx border px-3.5 py-2.5 rounded-xl text-[11px] leading-relaxed"
                     />
                   </div>
 
@@ -1716,7 +1716,7 @@ export default function Questions() {
                     <button
                       type="button"
                       onClick={() => setShowAddEditDrawer(false)}
-                      className="px-4.5 py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] font-semibold rounded-xl cursor-pointer"
+                      className="px-4.5 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-semibold rounded-xl cursor-pointer"
                     >
                       انصراف
                     </button>

@@ -75,7 +75,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-[var(--color-glass-light-stroke)] p-8">
+        <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* School Name */}
             <div>
@@ -88,7 +88,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
                 placeholder="مثال: دبیرستان نمونه دولتی علوم"
-                className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-sm text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-slate-400"
+                className="w-full glx border text-sm text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-slate-400"
                 autoFocus
               />
             </div>
@@ -102,7 +102,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-sm text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all appearance-none cursor-pointer"
+                className="w-full glx border text-sm text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all appearance-none cursor-pointer"
               >
                 <option value="">انتخاب کنید...</option>
                 {SUBJECTS.map((s) => (
@@ -120,7 +120,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                   value={customSubject}
                   onChange={(e) => setCustomSubject(e.target.value)}
                   placeholder="رشته خود را وارد کنید"
-                  className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-sm text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-slate-400"
+                  className="w-full glx border text-sm text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-slate-400"
                 />
               </div>
             )}

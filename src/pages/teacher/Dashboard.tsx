@@ -197,25 +197,27 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </p>
           </div>
           {/* Buttons: bottom-left, with blurred Mark logo centered above */ }
-          <div className="absolute bottom-6 left-6 z-20 flex flex-col items-end gap-3 shrink-0">
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-6 opacity-15 pointer-events-none">
-              <TheMark variant="row" size={80} animated={false} className="blur-[4px] brightness-200" />
+          <div className="absolute bottom-6 left-6 z-20 flex flex-col items-end">
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 opacity-10 pointer-events-none">
+              <TheMark variant="row" size={80} animated={false} className="blur-[4px] brightness-200 invert" />
             </div>
-            <button
-              id="hero-btn-new-exam"
-              onClick={() => onNavigate('exams/new')}
-              className="px-5 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>طراحی آزمون نو</span>
-            </button>
-            <button
-              id="hero-btn-questions"
-              onClick={() => onNavigate('questions')}
-              className="px-5 py-3 bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-glass-light-fill)]/30 text-[var(--color-text-primary)] border border-[var(--color-glass-light-stroke)] rounded-xl text-xs font-semibold transition-all cursor-pointer"
-            >
-              افزودن سوال جدید
-            </button>
+            <div className="flex gap-3">
+              <button
+                id="hero-btn-new-exam"
+                onClick={() => onNavigate('exams/new')}
+                className="px-5 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>طراحی آزمون نو</span>
+              </button>
+              <button
+                id="hero-btn-questions"
+                onClick={() => onNavigate('questions')}
+                className="px-5 py-3 bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-glass-light-fill)]/30 text-[var(--color-text-primary)] border border-[var(--color-glass-light-stroke)] rounded-xl text-xs font-semibold transition-all cursor-pointer"
+              >
+                افزودن سوال جدید
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -406,13 +408,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   {currentExams.map((ex) => (
                     <div
                       key={ex.id}
-                      className="p-4 rounded-2xl bg-white/3/70 hover:bg-white hover:shadow-xs border border-[var(--color-glass-light-stroke)]/80 hover:border-[var(--color-glass-light-stroke)] transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 text-right"
+                      className="p-4 rounded-2xl glx hover:brightness-105 transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 text-right"
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="text-xs font-bold text-[var(--color-text-primary)]">{ex.title}</h4>
                           <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold ${
-                            ex.settings.mode === 'official' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'bg-white/4 text-[var(--color-text-secondary)]'
+                            ex.settings.mode === 'official' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'glx-inset text-[var(--color-text-secondary)]'
                           }`}>
                             {ex.settings.mode === 'official' ? 'رسمی' : 'تمرینی'}
                           </span>
@@ -496,7 +498,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                       const isGraded = sub.status === 'graded';
                       const isOngoing = sub.status === 'ongoing';
                       return (
-                        <tr key={sub.id} className="hover:bg-white/3/50 transition-colors text-xs md:text-sm">
+                        <tr key={sub.id} className="hover:brightness-105 transition-colors text-xs md:text-sm">
                           <td className="p-4 font-bold text-[var(--color-text-secondary)]">{sub.studentName}</td>
                           <td className="p-4 text-[var(--color-text-tertiary)] font-semibold">{getStudentClassLabel(sub.studentId)}</td>
                           <td className="p-4 font-medium text-[var(--color-text-secondary)] max-w-xs truncate">{getExamTitle(sub.examId)}</td>
@@ -692,7 +694,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <h3 className="text-xs font-black text-[var(--color-text-primary)] mb-4">آمار کلاس‌های تحت پوشش پایه‌ها</h3>
             <div className="space-y-3">
               {classGroups.map((cg) => (
-                <div key={cg.id} className="p-3.5 rounded-2xl bg-white/3 border border-[var(--color-glass-light-stroke)] flex justify-between items-center hover:bg-white hover:border-[var(--color-glass-light-stroke)] transition-all">
+                <div key={cg.id} className="p-3.5 rounded-2xl glx flex justify-between items-center hover:brightness-105 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[var(--color-accent-soft)] border border-[var(--color-accent-soft)] flex items-center justify-center text-indigo-600 text-xs font-bold">
                       {cg.grade.slice(0, 2)}
@@ -702,7 +704,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                       <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">پایه {cg.grade}</p>
                     </div>
                   </div>
-                  <span className="text-[10px] bg-white/6/50 text-[var(--color-text-secondary)] px-2.5 py-1 rounded-full font-bold">
+                  <span className="text-[10px] glx-inset text-[var(--color-text-secondary)] px-2.5 py-1 rounded-full font-bold">
                     {cg.studentCount} دانش‌آموز
                   </span>
                 </div>
@@ -712,7 +714,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <button
               id="sidebar-add-class-dashboard"
               onClick={() => onNavigate('students')}
-              className="w-full py-2.5 bg-white/3 hover:bg-white/4 text-[var(--color-text-secondary)] rounded-xl text-xs font-semibold mt-4 border border-dashed border-[var(--color-glass-light-stroke)] transition-all flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full py-2.5 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl text-xs font-semibold mt-4 border border-dashed border-[var(--color-glass-light-stroke)] transition-all flex items-center justify-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>ایجاد کلاس یا گروه جدید</span>
@@ -722,7 +724,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           {/* Quick Security Checklist / Protip */}
           <div className="glx p-6 rounded-2xl">
             <div className="flex items-start gap-4">
-              <div className="p-2.5 bg-white text-[var(--color-accent)] rounded-xl">
+              <div className="p-2.5 glx text-[var(--color-accent)] rounded-xl">
                 <Award className="w-5 h-5" />
               </div>
               <div className="space-y-1.5 flex-1">
@@ -757,14 +759,14 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             id="excel-import-dialog"
           >
             {/* Modal Header */}
-            <div className="p-5 border-b border-[var(--color-glass-light-stroke)] bg-white/3 flex items-center justify-between">
+            <div className="p-5 border-b border-[var(--color-glass-light-stroke)] glx-inset flex items-center justify-between">
               <button
                 onClick={() => {
                   setIsExcelModalOpen(false);
                   setImportStep('idle');
                   setExcelFile(null);
                 }}
-                className="p-1 px-2.5 bg-white/6/50 hover:bg-white/6 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] rounded-xl transition-colors font-bold cursor-pointer"
+                className="p-1 px-2.5 glx-inset hover:brightness-110 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] rounded-xl transition-all font-bold cursor-pointer"
               >
                 بستن ×
               </button>
@@ -792,7 +794,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all ${
-                      dragActive ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30' : 'border-[var(--color-glass-light-stroke)] bg-white/3 hover:bg-white/4/50'
+                      dragActive ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30' : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
                     }`}
                   >
                     <Upload className="w-10 h-10 text-[var(--color-text-tertiary)] animate-bounce" />
@@ -829,9 +831,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     </p>
                     <p className="text-[10px] text-[var(--color-text-tertiary)]">لطفاً از بستن این کادر یا رفرش تب مرورگر خود خودداری نمایید.</p>
                   </div>
-                  <div className="w-64 bg-white/4 h-2.5 rounded-full overflow-hidden mx-auto mt-2">
-                    <div className="bg-[var(--color-accent)] h-full transition-all duration-300" style={{ width: `${importProgress}%` }} />
-                  </div>
+                  <div className="w-64 glx-inset h-2.5 rounded-full overflow-hidden mx-auto mt-2"><div className="bg-[var(--color-accent)] h-full transition-all duration-300" style={{ width: `${importProgress}%` }} /></div>
                 </div>
               )}
 
@@ -845,7 +845,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
                   <p className="text-[var(--color-text-tertiary)] text-[11px]">پیش‌نمایش رکوردهای خوانده‌شده قبل از درج نهایی دیتابیس:</p>
 
-                  <div className="border border-[var(--color-glass-light-stroke)] rounded-xl overflow-hidden bg-white/3 p-6 text-center">
+                  <div className="border border-[var(--color-glass-light-stroke)] glx rounded-xl overflow-hidden p-6 text-center">
                     <p className="text-sm text-[var(--color-text-tertiary)] font-bold">پیش‌نمایش داده‌ها پس از پیاده‌سازی واقعی ورود اکسل نمایش داده خواهد شد.</p>
                   </div>
 
@@ -855,7 +855,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                         setImportStep('idle');
                         setExcelFile(null);
                       }}
-                      className="px-4 py-2 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] font-bold rounded-xl cursor-pointer"
+                      className="px-4 py-2 glx-inset hover:brightness-110 text-[var(--color-text-secondary)] font-bold rounded-xl cursor-pointer"
                     >
                       لغو و تفکیک دگر
                     </button>

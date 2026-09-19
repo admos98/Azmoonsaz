@@ -93,7 +93,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">آزمون‌ساز</h1>
           </div>
-          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
+          <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full">
               <CheckCircle2 className="w-8 h-8 text-emerald-600" />
             </div>
@@ -121,7 +121,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">آزمون‌ساز</h1>
           </div>
-          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
+          <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
             <p className="text-sm text-red-600">{error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}</p>
             <button
               onClick={onDone}
@@ -146,7 +146,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
           <p className="text-sm text-[var(--color-text-tertiary)] mt-1">تغییر رمز عبور</p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-[var(--color-glass-light-stroke)] p-8">
+        <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">رمز عبور جدید</label>
@@ -158,7 +158,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="حداقل ۶ کاراکتر"
-                  className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-sm text-[var(--color-text-primary)] pr-10 pl-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-slate-400"
+                  className="w-full glx border text-sm text-[var(--color-text-primary)] pr-10 pl-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-slate-400"
                   autoFocus
                 />
                 <button

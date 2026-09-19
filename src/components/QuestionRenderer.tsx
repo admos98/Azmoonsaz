@@ -84,7 +84,7 @@ export default function QuestionRenderer({
   const optionsHaveImages = question.options?.some((o: any) => o.imageUrl);
 
   return (
-    <div className="bg-white p-5 md:p-6 rounded-2xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-5 text-right font-sans" dir="rtl" id={`render-q-${question.id}`}>
+    <div className="glx p-5 md:p-6 rounded-2xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-5 text-right font-sans" dir="rtl" id={`render-q-${question.id}`}>
       
       {/* Header Specs */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-accent)]/10 pb-3 text-xs">
@@ -93,12 +93,12 @@ export default function QuestionRenderer({
             {getTypeNameInPersian(question.type)}
           </span>
           {question.grade && (
-            <span className="bg-white/4 text-[var(--color-text-secondary)] px-2 py-1 rounded-md">
+            <span className="glx-inset text-[var(--color-text-secondary)] px-2 py-1 rounded-md">
               پایه {question.grade}
             </span>
           )}
           {question.category && (
-            <span className="bg-white/4 text-[var(--color-text-secondary)] px-2 py-1 rounded-md font-medium">
+            <span className="glx-inset text-[var(--color-text-secondary)] px-2 py-1 rounded-md font-medium">
               درس {question.category}
             </span>
           )}
@@ -133,7 +133,7 @@ export default function QuestionRenderer({
               src={question.imageUrl} 
               alt="ضمیمه سوال" 
               referrerPolicy="no-referrer"
-              className="rounded-xl border border-[var(--color-glass-light-stroke)] shadow-2xs max-h-64 object-contain max-w-full bg-white/3"
+              className="rounded-xl border border-[var(--color-glass-light-stroke)] shadow-2xs max-h-64 object-contain max-w-full glx"
             />
             <span className="absolute bottom-2 right-2 bg-black/30 text-white rounded-md px-2 py-0.5 text-[9px] font-mono">
               پیوست اصلی تصویر سوال
@@ -161,14 +161,14 @@ export default function QuestionRenderer({
                 className={`p-3.5 rounded-xl border text-xs flex flex-col justify-between transition-all ${
                   showCorrectAnswers && isCorrect
                     ? 'bg-[var(--color-success-soft)]/80 border-[var(--color-success)]/30 text-[var(--color-success)] font-medium shadow-2xs'
-                    : 'bg-white/3 border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)]'
+                    : 'glx border text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)]'
                 }`}
               >
                 <div className="flex items-start gap-2.5">
                   <span className={`w-6 h-6 shrink-0 rounded-lg flex items-center justify-center font-bold text-[10px] ${
                     showCorrectAnswers && isCorrect
                       ? 'bg-[var(--color-success)] text-white'
-                      : 'bg-white/6 text-[var(--color-text-primary)]'
+                      : 'glx-inset text-[var(--color-text-primary)]'
                   }`}>
                     {letters[index] || toPersianDigits(index + 1)}
                   </span>
@@ -216,7 +216,7 @@ export default function QuestionRenderer({
                 className={`flex-1 p-3.5 rounded-xl border text-center font-bold text-xs flex items-center justify-center gap-2 ${
                   showCorrectAnswers && isSelected
                     ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] shadow-3xs'
-                    : 'bg-white/3 border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                    : 'glx border text-[var(--color-text-secondary)]'
                 }`}
               >
                 <span>{item.label}</span>
@@ -239,7 +239,7 @@ export default function QuestionRenderer({
               <span className="block font-bold mb-2">کلید واژه‌های صحیح برای پر کردن جاهای خالی:</span>
               <div className="flex flex-wrap gap-2">
                 {question.correctFillBlanks.map((ans, idx) => (
-                  <span key={idx} className="bg-white border border-[var(--color-success)]/20 px-3 py-1.5 rounded-lg font-mono font-bold text-[var(--color-success)]">
+                  <span key={idx} className="glx border border-[var(--color-success)]/20 px-3 py-1.5 rounded-lg font-mono font-bold text-[var(--color-success)]">
                     جای خالی شماره {toPersianDigits(idx + 1)}: «{ans}»
                   </span>
                 ))}
@@ -247,7 +247,7 @@ export default function QuestionRenderer({
             </div>
           )}
           {!showCorrectAnswers && (
-            <div className="p-4 bg-white/3 rounded-xl border border-[var(--color-glass-light-stroke)]">
+            <div className="p-4 glx rounded-xl border">
               <p className="text-[var(--color-text-tertiary)] text-xs italic">هنرجو یا دانش‌آموز کلمات مناسب را در فیلد پاسخ تابعه تایپ می‌کند.</p>
             </div>
           )}
@@ -264,7 +264,7 @@ export default function QuestionRenderer({
             </div>
           )}
           {question.explanation && (
-            <div className="bg-white/3 rounded-xl p-3 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] text-[11px] leading-relaxed">
+            <div className="glx rounded-xl p-3 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] text-[11px] leading-relaxed">
               <span className="font-bold text-[var(--color-text-primary)] block mb-1">توضیح دبیر / راهکار رسیدن به جواب:</span>
               <p>{question.explanation}</p>
             </div>
@@ -282,7 +282,7 @@ export default function QuestionRenderer({
               <span className="block font-bold text-[var(--color-danger)]/80 mb-1.5">معیارهای تصحیح و توزیع بارم پاسخ تشریحی:</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {question.rubrics.map((rub: RubricCriterion) => (
-                  <div key={rub.id} className="p-3 bg-white border border-rose-200/60 rounded-xl">
+                  <div key={rub.id} className="p-3 glx border border-rose-200/60 rounded-xl">
                     <div className="flex justify-between items-center pb-1.5 border-b border-rose-50 mb-1.5">
                       <strong className="text-rose-950 font-bold">{rub.title}</strong>
                       <span className="bg-rose-100 text-[var(--color-danger)]/80 rounded-md px-1.5 py-0.5 text-[10px] font-extrabold">{toPersianDigits(rub.maxPoints)} نمره</span>
@@ -298,7 +298,7 @@ export default function QuestionRenderer({
           {question.sampleAnswer && (
             <div className="bg-[var(--color-success-soft)]/50 border border-[var(--color-success)]/15 rounded-xl p-4 text-xs text-[var(--color-success)]">
               <h5 className="font-bold mb-1.5">پاسخ نمونه / مدل استاندارد پاسخ تشریحی:</h5>
-              <p className="bg-white p-3 rounded-lg border border-[var(--color-success)]/10 whitespace-pre-wrap leading-relaxed text-[var(--color-text-secondary)]">{question.sampleAnswer}</p>
+              <p className="glx p-3 rounded-lg border border-[var(--color-success)]/10 whitespace-pre-wrap leading-relaxed text-[var(--color-text-secondary)]">{question.sampleAnswer}</p>
             </div>
           )}
 
@@ -325,12 +325,12 @@ export default function QuestionRenderer({
 
       {/* 6. Matching Pair lists */}
       {question.type === 'matching' && question.matchingPairs && (
-        <div className="bg-white/3/70 rounded-xl p-4 border border-[var(--color-glass-light-stroke)] mt-3 text-xs">
+        <div className="glx rounded-xl p-4 border border-[var(--color-glass-light-stroke)] mt-3 text-xs">
           <p className="font-bold text-[var(--color-text-primary)] text-[11px] mb-2 border-b border-[var(--color-glass-light-stroke)] pb-1.5">نگاشت وصل‌کردنی صحیح:</p>
           <div className="space-y-2">
             {question.matchingPairs.map((pair, pIdx) => (
-              <div key={pIdx} className="flex gap-2.5 items-center justify-between bg-white px-3 py-2 rounded-lg border border-[var(--color-glass-light-stroke)]/70">
-                <span className="bg-white/4 text-[var(--color-text-primary)] px-3 py-1.5 rounded-md font-bold text-center flex-1">{pair.right}</span>
+              <div key={pIdx} className="flex gap-2.5 items-center justify-between glx px-3 py-2 rounded-lg border border-[var(--color-glass-light-stroke)]/70">
+                <span className="glx-inset text-[var(--color-text-primary)] px-3 py-1.5 rounded-md font-bold text-center flex-1">{pair.right}</span>
                 <span className="text-indigo-400 font-black">➔</span>
                 <span className="bg-[var(--color-accent-soft)] text-indigo-800 border border-[var(--color-accent-soft)] px-3 py-1.5 rounded-md font-bold text-center flex-1">{pair.left}</span>
               </div>
@@ -341,12 +341,12 @@ export default function QuestionRenderer({
 
       {/* 7. Ordering ordered elements listing */}
       {question.type === 'ordering' && question.orderingItems && (
-        <div className="bg-white/3 rounded-xl p-4 border border-[var(--color-glass-light-stroke)] mt-3 text-xs">
+        <div className="glx rounded-xl p-4 border border-[var(--color-glass-light-stroke)] mt-3 text-xs">
           <p className="font-bold text-indigo-950 mb-2.5">ترتیب قرارگیری پاسخ‌ها از راست به چپ:</p>
           <div className="flex flex-wrap gap-2 items-center">
             {question.orderingItems.map((item, idx) => (
               <div key={idx} className="flex items-center gap-1.5">
-                <span className="bg-white border border-slate-250 text-[var(--color-text-primary)] px-3.5 py-2 font-bold rounded-xl shadow-3xs">
+                <span className="glx border border-slate-250 text-[var(--color-text-primary)] px-3.5 py-2 font-bold rounded-xl shadow-3xs">
                   {idx + 1}. {item}
                 </span>
                 {idx < (question.orderingItems?.length || 0) - 1 && (
@@ -387,7 +387,7 @@ export default function QuestionRenderer({
                {question.parts.map((part: QuestionPart, idx: number) => {
                  const partLetters = ['الف', 'ب', 'پ', 'ت', 'ث'];
                  return (
-                   <div key={part.id} className="bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-xl p-4 space-y-3">
+                   <div key={part.id} className="glx border rounded-xl p-4 space-y-3">
                      
                      {/* Subquestion prompt */}
                      <div className="flex items-start justify-between gap-2.5">
@@ -415,7 +415,7 @@ export default function QuestionRenderer({
                                className={`p-2.5 rounded-lg border ${
                                  showCorrectAnswers && isCorrect
                                    ? 'bg-[var(--color-success-soft)]/60 border-[var(--color-success)]/20 text-[var(--color-success)] font-bold'
-                                   : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                                   : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                                }`}
                              >
                                {oIdx + 1}. {opt.text}
@@ -449,7 +449,7 @@ export default function QuestionRenderer({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {question.parts.map((p, pIdx) => {
                   return (
-                    <div key={p.id} className="p-3 bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-xl space-y-2">
+                    <div key={p.id} className="p-3 glx border rounded-xl space-y-2">
                       <strong className="text-teal-900 font-bold text-[11px] block text-right">محل جای خالی شماره {toPersianDigits(pIdx + 1)}</strong>
                       <div className="flex flex-wrap gap-1.5 justify-content-start text-[11px]">
                         {p.options?.map((opt) => {
@@ -460,7 +460,7 @@ export default function QuestionRenderer({
                               className={`px-2.5 py-1 rounded-md border text-center ${
                                 isCorrect && showCorrectAnswers
                                   ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] font-bold font-mono'
-                                  : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                                  : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                               }`}
                             >
                               {opt.text}
@@ -482,7 +482,7 @@ export default function QuestionRenderer({
         <div className="flex flex-wrap items-center gap-1.5 border-t border-[var(--color-glass-light-stroke)] pt-3 text-[10px]">
           <span className="text-[var(--color-text-tertiary)] font-medium">برچسب‌ها:</span>
           {question.tags.map((tag, idx) => (
-            <span key={idx} className="bg-white/4 text-[var(--color-text-secondary)] px-2 py-0.5 rounded-full font-bold">
+            <span key={idx} className="glx-inset text-[var(--color-text-secondary)] px-2 py-0.5 rounded-full font-bold">
               #{tag}
             </span>
           ))}

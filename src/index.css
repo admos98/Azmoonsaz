@@ -276,6 +276,16 @@ body {
   100% { opacity: 0; transform: scale(0.85); }
 }
 
+/* ─── Hamburger panels: grow from hamburger origin (open) / shrink to hamburger (close) ─── */
+@keyframes growFromHamburger {
+  0% { opacity: 0; transform: scale(0.88); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes shrinkToHamburger {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.88); }
+}
+
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .goldpop { animation: none; }

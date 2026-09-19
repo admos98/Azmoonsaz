@@ -538,12 +538,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             id="panel-results-list"
           >
             {/* Top Navigation & Action Title Raw header bar */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm">
               <div className="flex items-center gap-4">
                 <button
                   id="btn-return-exams-list-arrow"
                   onClick={onBack}
-                  className="p-2 hover:bg-white/4 rounded-2xl text-[var(--color-text-tertiary)] cursor-pointer transition-all border border-[var(--color-glass-light-stroke)]"
+                  className="p-2 hover:brightness-105 rounded-2xl text-[var(--color-text-tertiary)] cursor-pointer transition-all border border-[var(--color-glass-light-stroke)]"
                   title="بازگشت به آزمون‌ها"
                 >
                   <ArrowRight className="w-5 h-5" />
@@ -563,7 +563,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               <div className="flex items-center gap-2 self-stretch md:self-auto">
                 <button
                   onClick={handleExportCSV}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-slate-105 hover:bg-white/6 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-slate-105 hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer"
                   id="btn-export-csv"
                 >
                   <Download className="w-4 h-4 text-[var(--color-text-tertiary)]" />
@@ -583,10 +583,10 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             {/* Comprehensive Analytics Metrics Dashboard grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
               {/* Card 1: Total Allocated classes */}
-              <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">کل کارنامه تخصصی</span>
-                  <div className="p-1.5 bg-white/3 rounded-lg text-[var(--color-text-tertiary)]"><Users className="w-4 h-4" /></div>
+                  <div className="p-1.5 glx rounded-lg text-[var(--color-text-tertiary)]"><Users className="w-4 h-4" /></div>
                 </div>
                 <div className="mt-2 text-right">
                   <h4 className="text-xl font-black text-[var(--color-text-primary)]">{toPersianDigits(totalCohortsCount)} <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">نفر</span></h4>
@@ -595,7 +595,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 2: Participated */}
-              <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">تعداد شرکت‌کنندگان</span>
                   <div className="p-1.5 bg-[var(--color-success-soft)] rounded-lg text-emerald-500"><UserCheck className="w-4 h-4" /></div>
@@ -607,7 +607,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 3: Absents */}
-              <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">غائبین ارزیابی</span>
                   <div className="p-1.5 bg-rose-50 rounded-lg text-[var(--color-danger)]"><UserX className="w-4 h-4" /></div>
@@ -619,7 +619,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 4: Average score */}
-              <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">میانگین کلی نمرات</span>
                   <div className="p-1.5 bg-[var(--color-accent-soft)] rounded-lg text-[var(--color-accent)]"><Percent className="w-4 h-4" /></div>
@@ -631,7 +631,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 5: Highest score */}
-              <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">بالاترین نمره کلاس</span>
                   <div className="p-1.5 bg-[var(--color-warning-soft)] rounded-lg text-[var(--color-warning-soft)]/500"><Award className="w-4 h-4" /></div>
@@ -643,7 +643,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 6: Needs correction */}
-              <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">نیازمند تصحیح تشریحی</span>
                   <div className="p-1.5 bg-[var(--color-warning-soft)] rounded-lg text-[var(--color-warning)]"><AlertCircle className="w-4 h-4" /></div>
@@ -655,7 +655,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 7: Completed corrections */}
-              <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">تصحیح‌های تکمیل‌شده</span>
                   <div className="p-1.5 bg-[var(--color-success-soft)] rounded-lg text-emerald-600"><CheckCircle2 className="w-4 h-4" /></div>
@@ -668,7 +668,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             </div>
 
             {/* Smart Reactive Filters Panel */}
-            <div className="bg-white border border-[var(--color-glass-light-stroke)] shadow-xs rounded-3xl p-5 md:p-6 space-y-4">
+            <div className="glx border rounded-3xl p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-3">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4.5 h-4.5 text-[var(--color-accent)]" />
@@ -698,7 +698,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                       placeholder="نام دانش‌آموز را بنویسید..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pr-9 pl-3 py-2 border rounded-xl bg-white/3/50 text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors"
+                      className="w-full pr-9 pl-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors"
                     />
                     <Search className="absolute right-3 top-2.5 w-4 h-4 text-[var(--color-text-tertiary)]" />
                   </div>
@@ -710,7 +710,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <select
                     value={classFilter}
                     onChange={(e) => setClassFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl bg-white/3/50 text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
+                    className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
                   >
                     <option value="all">همه کلاس‌ها</option>
                     {classGroups.filter(c => exam.classGroupIds.includes(c.id)).map(group => (
@@ -725,7 +725,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <select
                     value={participationFilter}
                     onChange={(e) => setParticipationFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl bg-white/3/50 text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
+                    className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
                   >
                     <option value="all">همه وضعیت‌ها</option>
                     <option value="submitted">ارسال شده (تحویل شده)</option>
@@ -740,7 +740,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <select
                     value={correctionFilter}
                     onChange={(e) => setCorrectionFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl bg-white/3/50 text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
+                    className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
                   >
                     <option value="all">همه وضعیت‌ها</option>
                     <option value="graded">تصحیح‌شده</option>
@@ -754,7 +754,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <select
                     value={scoreRangeFilter}
                     onChange={(e) => setScoreRangeFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-xl bg-white/3/50 text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
+                    className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
                   >
                     <option value="all">همه بازه‌ها</option>
                     <option value="high">سطح عالی (بالای ۸۰٪ نمره کل)</option>
@@ -766,7 +766,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             </div>
 
             {/* Structured Submissions Tables */}
-            <div className="bg-white border border-[var(--color-glass-light-stroke)] rounded-3xl p-4 md:p-6 shadow-sm overflow-hidden space-y-4" id="section-structured-submissions">
+            <div className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-4 md:p-6 shadow-sm overflow-hidden space-y-4" id="section-structured-submissions">
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                 <div>
                   <h3 className="text-sm font-bold text-[var(--color-text-primary)]">لیست پاسخ‌برگ‌ها و وضعیت ثبت نمرات</h3>
@@ -797,7 +797,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   const isAbsent = row.status === 'absent';
 
                   return (
-                    <tr key={row.id} className="hover:bg-white/3/50 transition-all font-medium text-xs md:text-sm">
+                    <tr key={row.id} className="hover:brightness-105 transition-all font-medium text-xs md:text-sm">
                       <td className="p-4 font-bold text-[var(--color-text-primary)]">{row.studentName}</td>
                       <td className="p-4 font-mono text-[var(--color-text-tertiary)] tracking-wider">
                         {toPersianDigits(row.maskedNationalId)}
@@ -806,7 +806,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                       <td className="p-4 text-center">
                         <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                           isGraded || hasSubmitted ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15' :
-                          isOngoing ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/10 animate-pulse' : 'bg-white/4 text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)]'
+                          isOngoing ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/10 animate-pulse' : 'glx-inset text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)]'
                         }`}>
                           {isGraded || hasSubmitted ? 'ارسال شده' : isOngoing ? 'در حال آزمون' : 'ارسال نشده'}
                         </span>
@@ -914,12 +914,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             {/* Right evaluation control details drawer list (or column top) */}
             <div className="lg:col-span-8 space-y-6">
               {/* Grading panel title row */}
-              <div className="bg-white p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+              <div className="glx p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
                 <div className="flex items-center gap-3">
                   <button
                     id="btn-close-and-return-list"
                     onClick={() => setSelectedSubmissionId(null)}
-                    className="p-2 border border-[var(--color-glass-light-stroke)] hover:bg-white/3 rounded-2xl text-[var(--color-text-tertiary)] cursor-pointer"
+                    className="p-2 border border-[var(--color-glass-light-stroke)] hover:brightness-105 rounded-2xl text-[var(--color-text-tertiary)] cursor-pointer"
                   >
                     <ArrowRight className="w-5 h-5" />
                   </button>
@@ -929,7 +929,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   </div>
                 </div>
 
-                <div className="bg-white/3 border px-4 py-2.5 rounded-2xl flex items-center gap-4 text-xs shadow-3xs">
+                <div className="glx border px-4 py-2.5 rounded-2xl flex items-center gap-4 text-xs shadow-3xs">
                   <div>
                     <span className="text-[var(--color-text-tertiary)] font-bold block text-[9px] mb-0.5">ثبت نهایی ساعت:</span>
                     <span className="font-mono text-[var(--color-text-secondary)] font-bold">{activeSubmission.submittedAt ? toPersianDigits(new Date(activeSubmission.submittedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })) : 'در حال آزمون'}</span>
@@ -951,7 +951,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   const isGraded = savedDescriptiveQuestions[q.id];
 
                   return (
-                    <div key={q.id} className="bg-white border border-[var(--color-glass-light-stroke)] rounded-3xl p-5 md:p-6 space-y-4 shadow-xs" id={`sheet-qscol-${q.id}`}>
+                    <div key={q.id} className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-5 md:p-6 space-y-4 shadow-xs" id={`sheet-qscol-${q.id}`}>
                       {/* Section heading bar */}
                       <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2.5">
                         <span className="text-xs font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
@@ -980,12 +980,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                       {/* Options or Answer representation container */}
                       {!isDescriptive ? (
                         /* Objective grading review widget */
-                        <div className="space-y-3.5 bg-white/3 border p-4 rounded-2xl" id="objective-grading-review">
+                        <div className="space-y-3.5 glx border p-4 rounded-2xl" id="objective-grading-review">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Student Answer */}
                             <div className="space-y-1">
                               <span className="text-[10px] text-[var(--color-danger)] font-bold block">● کاندید انتخابی دانش‌آموز:</span>
-                              <div className="bg-white border rounded-xl p-3 text-xs font-bold text-[var(--color-text-secondary)]">
+                              <div className="glx border rounded-xl p-3 text-xs font-bold text-[var(--color-text-secondary)]">
                                 {stdAnsObj ? (
                                   q.type === 'single_choice' ? (
                                     q.options?.find(o => o.id === stdAnswerValue)?.text || `گزینه ${toPersianDigits(stdAnswerValue)}`
@@ -996,7 +996,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                   ) : q.type === 'ordering' && Array.isArray(stdAnswerValue) ? (
                                     <div className="flex flex-wrap gap-1 mt-1">
                                       {stdAnswerValue.map((item, orIdx) => (
-                                        <span key={orIdx} className="bg-white/4 border px-2 py-0.5 rounded text-[10px] font-mono">{toPersianDigits(orIdx + 1)}. {item}</span>
+                                        <span key={orIdx} className="glx-inset border px-2 py-0.5 rounded text-[10px] font-mono">{toPersianDigits(orIdx + 1)}. {item}</span>
                                       ))}
                                     </div>
                                   ) : q.type === 'matching' && typeof stdAnswerValue === 'object' ? (
@@ -1017,7 +1017,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                             {/* Correct Key */}
                             <div className="space-y-1">
                               <span className="text-[10px] text-[var(--color-success)] font-bold block">✔ کلید پاسخ آزمون‌ساز:</span>
-                              <div className="bg-white border border-[var(--color-success)]/10 rounded-xl p-3 text-xs font-bold text-[var(--color-text-secondary)]">
+                              <div className="glx border border-[var(--color-success)]/10 rounded-xl p-3 text-xs font-bold text-[var(--color-text-secondary)]">
                                 {q.type === 'single_choice' ? (
                                   q.options?.find(o => o.id === q.correctAnswer)?.text || `گزینه ${toPersianDigits(q.correctAnswer as string)}`
                                 ) : q.type === 'multiple_choice' && Array.isArray(q.correctAnswer) ? (
@@ -1061,12 +1061,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                         </div>
                       ) : (
                         /* Extensive Descriptive Rubrics evaluation interface */
-                        <div className="space-y-4 bg-white/3 border p-4 rounded-2xl" id="descriptive-evaluation">
+                        <div className="space-y-4 glx border p-4 rounded-2xl" id="descriptive-evaluation">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Student Answer Sheet design */}
                             <div className="space-y-1">
                               <span className="text-[10px] text-[var(--color-accent)] font-bold block">● برگه دست‌نویس داوطلب:</span>
-                              <div className="bg-white border rounded-xl p-4 text-xs font-bold text-[var(--color-text-primary)] font-sans leading-relaxed whitespace-pre-wrap min-h-[110px]">
+                              <div className="glx border rounded-xl p-4 text-xs font-bold text-[var(--color-text-primary)] font-sans leading-relaxed whitespace-pre-wrap min-h-[110px]">
                                 {stdAnswerValue || <span className="text-slate-300 font-normal">ورقه سفید رها شده است.</span>}
                               </div>
                             </div>
@@ -1084,7 +1084,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                           </div>
 
                           {/* 5. SPECIFICATION REQ: Rubric criteria table for descriptive evaluation */}
-                          <div className="space-y-2.5 bg-white p-4 border border-[var(--color-glass-light-stroke)] rounded-xl">
+                          <div className="space-y-2.5 glx p-4 border border-[var(--color-glass-light-stroke)] rounded-xl">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[var(--color-danger)]/10/60 pb-2">
                               <span className="text-[11px] font-black text-[var(--color-danger)]/80 block">جدول بارم‌بندی تفصیلی تصحیح (Rubrics):</span>
                               
@@ -1172,7 +1172,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                               [q.id]: false
                                             }));
                                           }}
-                                          className="w-20 px-2 py-1.5 border rounded-lg bg-white/3 text-center font-black text-[var(--color-text-primary)] text-xs focus:ring-1 focus:ring-[var(--color-accent)]/40 focus:outline-hidden font-mono"
+                                          className="w-20 px-2 py-1.5 border rounded-lg glx text-center font-black text-[var(--color-text-primary)] text-xs focus:ring-1 focus:ring-[var(--color-accent)]/40 focus:outline-hidden font-mono"
                                         />
                                       </td>
                                     </tr>
@@ -1203,7 +1203,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                 }));
                               }}
                               placeholder="رهنمودهای آموزشی خود را بنویسید (مثال: پاراگراف اول فاقد مستند بومی است، بقیه بخش‌ها غنی بود)."
-                              className="w-full bg-white border text-xs text-[var(--color-text-secondary)] p-2.5 rounded-xl outline-hidden focus:border-[var(--color-accent)]/40 leading-relaxed font-semibold transition-colors"
+                              className="w-full glx border text-xs text-[var(--color-text-secondary)] p-2.5 rounded-xl outline-hidden focus:border-[var(--color-accent)]/40 leading-relaxed font-semibold transition-colors"
                             />
                           </div>
 
@@ -1232,7 +1232,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
             {/* Left static metadata summary & finalizing drawer col */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="bg-white border border-[var(--color-glass-light-stroke)] shadow-sm rounded-3xl p-5 sticky top-6 space-y-5 text-right">
+              <div className="glx border rounded-3xl p-5 sticky top-6 space-y-5 text-right">
                 <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-3">
                   <Award className="w-5 h-5 text-[var(--color-accent)]" />
                   <h3 className="text-xs font-black text-[var(--color-text-primary)]">کاردکس جمع‌بندی تصحیح</h3>
@@ -1250,7 +1250,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                 </div>
 
                 {/* Detailed Student description block */}
-                <div className="space-y-3 text-[11px] font-semibold text-[var(--color-text-secondary)] bg-white/3 border p-4 rounded-2xl leading-relaxed">
+                <div className="space-y-3 text-[11px] font-semibold text-[var(--color-text-secondary)] glx border p-4 rounded-2xl leading-relaxed">
                   <div>🏫 <strong>آزمون آنلاین:</strong> {exam.title}</div>
                   <div>👤 <strong>نام داوطلب کلاس:</strong> {activeSubmission.studentName}</div>
                   <div>🆔 <strong>کد ملی ثبت‌شده:</strong> {toPersianDigits(activeSubmission.nationalId)}</div>
@@ -1259,7 +1259,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
                 {/* Correction Progress meter list */}
                 {hasDescriptiveQuestions && (
-                  <div className="bg-white border rounded-2xl p-4 text-[11px] font-bold text-[var(--color-text-secondary)] space-y-3">
+                  <div className="glx border rounded-2xl p-4 text-[11px] font-bold text-[var(--color-text-secondary)] space-y-3">
                     <span className="text-[var(--color-text-tertiary)] block pb-1 border-b">وضعیت تصحیح سوالات تشریحی:</span>
                     <div className="grid grid-cols-2 gap-2 text-center text-[10px]">
                       <div className="bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-xl p-2">
@@ -1301,7 +1301,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   </button>
                   <button
                     onClick={() => setSelectedSubmissionId(null)}
-                    className="w-full py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-tertiary)] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border border-[var(--color-glass-light-stroke)]"
+                    className="w-full py-2.5 glx-inset hover:glx-inset text-[var(--color-text-tertiary)] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border border-[var(--color-glass-light-stroke)]"
                   >
                     <span>انصراف و بازگشت</span>
                   </button>

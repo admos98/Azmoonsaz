@@ -47,9 +47,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   
   const variants = {
     primary: "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-sm",
-    secondary: "bg-white/8 hover:bg-white/3 text-[var(--color-text-primary)]",
-    outline: "bg-transparent hover:bg-white/4 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)]",
-    ghost: "bg-transparent hover:bg-white/4 text-[var(--color-text-secondary)]",
+    secondary: "glx-inset hover:brightness-105 text-[var(--color-text-primary)]",
+    outline: "bg-transparent hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)]",
+    ghost: "bg-transparent hover:glx-inset text-[var(--color-text-secondary)]",
     danger: "bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90 text-white shadow-sm",
     success: "bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white shadow-sm",
     gold: "bg-[var(--color-gold)] hover:bg-[var(--color-gold)]/90 text-[var(--color-ink)] shadow-sm"
@@ -135,7 +135,7 @@ export const Badge = ({
     success: "bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/10",
     warning: "bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/10",
     danger: "bg-rose-50 text-[var(--color-danger)] border-[var(--color-danger)]/10",
-    slate: "bg-white/4 text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]",
+    slate: "glx-inset text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]",
     info: "bg-blue-50 text-blue-700 border-blue-100"
   };
 
@@ -210,7 +210,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(({
           id={inputId}
           ref={ref}
           type={type}
-          className={`w-full text-xs md:text-sm px-4 py-2.5 bg-white/3/50 hover:bg-white/3 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-slate-400 ${
+          className={`w-full text-xs md:text-sm px-4 py-2.5 glx-inset hover:brightness-105 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-slate-400 ${
             error ? 'border-rose-350 focus:border-rose-500' : 'border-[var(--color-glass-light-stroke)]'
           } ${icon ? 'pr-11' : ''} ${className}`}
           {...props}
@@ -264,7 +264,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({
       <select
         id={selectId}
         ref={ref}
-        className={`w-full text-xs md:text-sm px-4 py-2.5 bg-white/3/50 hover:bg-white/3 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] ${
+        className={`w-full text-xs md:text-sm px-4 py-2.5 glx-inset hover:brightness-105 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] ${
           error ? 'border-rose-350 focus:border-rose-500' : 'border-[var(--color-glass-light-stroke)]'
         } ${className}`}
         {...props}
@@ -308,7 +308,7 @@ export const Tabs = ({
   className = ''
 }: TabsProps) => {
   return (
-    <div className={`flex items-center gap-1 bg-white/4 p-1.5 rounded-2xl w-fit ${className}`}>
+    <div className={`flex items-center gap-1 glx-inset p-1.5 rounded-2xl w-fit ${className}`}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (
@@ -317,8 +317,8 @@ export const Tabs = ({
             onClick={() => onChange(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-bold rounded-xl transition-all cursor-pointer select-none ${
               isActive 
-                ? 'bg-white text-[var(--color-accent)] shadow-sm' 
-                : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-white/6/50'
+                ? 'bg-[var(--color-gold)]/10 text-[var(--color-ink)] shadow-sm border border-[var(--color-glass-light-stroke)]' 
+                : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-white/20'
             }`}
           >
             {tab.icon && tab.icon}
@@ -389,7 +389,7 @@ export const Modal = ({
               </h3>
               <button
                 onClick={onClose}
-                className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:bg-white/4 hover:text-[var(--color-text-secondary)] transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:glx-inset hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -402,7 +402,7 @@ export const Modal = ({
 
             {/* Footer */}
             {footer && (
-              <div className="px-6 py-4 bg-white/3 border-t border-[var(--color-glass-light-stroke)] flex items-center justify-end gap-3">
+              <div className="px-6 py-4 glx-inset border-t border-[var(--color-glass-light-stroke)] flex items-center justify-end gap-3">
                 {footer}
               </div>
             )}
@@ -458,7 +458,7 @@ export const Drawer = ({
                 <h2 className="text-md font-black text-[var(--color-text-primary)]">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:bg-white/4 hover:text-[var(--color-text-secondary)] cursor-pointer"
+                  className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:glx-inset hover:text-[var(--color-text-primary)] cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -488,7 +488,7 @@ export const Stepper = ({ steps, activeStep }: StepperProps) => {
   return (
     <div className="flex items-center justify-between w-full relative mb-6">
       {/* Background connector line */}
-      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white/4 -translate-y-1/2 z-0" />
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[var(--color-glass-light-stroke)] -translate-y-1/2 z-0" />
       
       {/* Animated active path */}
       <div 
@@ -506,8 +506,8 @@ export const Stepper = ({ steps, activeStep }: StepperProps) => {
                 isCompleted 
                   ? 'bg-[var(--color-accent)] text-white' 
                   : isActive 
-                    ? 'bg-white border-2 border-indigo-600 text-[var(--color-accent)] font-extrabold' 
-                    : 'bg-white/3 border-2 border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'
+                    ? 'glx border-2 border-[var(--color-accent)] text-[var(--color-accent)] font-extrabold' 
+                    : 'glx border-2 border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'
               }`}
             >
               {isCompleted ? '✓' : formatPersianNumber(idx + 1)}
@@ -539,7 +539,7 @@ export const EmptyState = ({
   action
 }: EmptyStateProps) => {
   return (
-    <div className="flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed border-[var(--color-glass-light-stroke)] bg-white/3/50 rounded-3xl space-y-4">
+    <div className="flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed border-[var(--color-glass-light-stroke)] glx rounded-3xl space-y-4">
       <div className="p-4 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-full">
         {icon || <HelpCircle className="w-8 h-8" />}
       </div>
@@ -662,8 +662,8 @@ export const FileDropzone = ({
       onDragLeave={handleDrag}
       onDrop={handleDrop}
       onClick={triggerInput}
-      className={`border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:bg-white/3/50 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${
-        isDragActive ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30' : 'border-[var(--color-glass-light-stroke)] bg-white'
+      className={`border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:brightness-105 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${
+        isDragActive ? 'border-[var(--color-accent)]/100 glx' : 'border-[var(--color-glass-light-stroke)] glx'
       }`}
     >
       <input
@@ -718,9 +718,9 @@ export const Table = ({
     <div className="w-full">
       {/* Table for Desktop Viewports */}
       <div className={`overflow-x-auto rounded-2xl border border-[var(--color-glass-light-stroke)] hidden ${renderMobileCard ? 'md:block' : 'block'}`}>
-        <table className="w-full text-right border-collapse text-xs md:text-sm bg-white">
+        <table className="w-full text-right border-collapse text-xs md:text-sm glx-inset">
           <thead>
-            <tr className="bg-white/3 border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)] font-bold text-[11px] md:text-xs">
+            <tr className="glx-inset border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)] font-bold text-[11px] md:text-xs">
               {headers.map((col, idx) => {
                 const alignStyles = {
                   right: "text-right",

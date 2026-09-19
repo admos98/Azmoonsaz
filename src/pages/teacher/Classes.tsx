@@ -123,10 +123,10 @@ export default function Classes() {
             ]}
             data={classes}
             renderRow={(cls) => (
-              <tr key={cls.id} className="hover:bg-white/3 transition-colors text-xs md:text-sm">
+              <tr key={cls.id} className="hover:brightness-105 transition-colors text-xs md:text-sm">
                 <td className="p-4 font-bold text-[var(--color-text-secondary)]">{cls.name}</td>
                 <td className="p-4">
-                  <Badge variant="slate" className="bg-white/4 text-[var(--color-text-secondary)]">{cls.grade}</Badge>
+                  <Badge variant="slate" className="glx-inset text-[var(--color-text-secondary)]">{cls.grade}</Badge>
                 </td>
                 <td className="p-4 text-center font-mono text-[var(--color-text-secondary)]">
                   {formatPersianNumber(cls.studentCount)} نفر
@@ -184,7 +184,7 @@ export default function Classes() {
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               placeholder="مثلاً کلاس ۷۰۱ یا گروه پیشرفته نهم"
-              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] bg-white/3 text-sm focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
+              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] glx text-sm focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
             />
           </div>
           <div className="space-y-1.5">
@@ -192,7 +192,7 @@ export default function Classes() {
             <select
               value={formData.grade}
               onChange={(e) => setFormData({...formData, grade: e.target.value})}
-              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] bg-white/3 text-sm focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
+              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] glx text-sm focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
             >
               <option value="">انتخاب پایه...</option>
               <optgroup label="دبستان">

@@ -543,15 +543,15 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 text-right bg-white/3/50 p-1 md:p-3 rounded-2xl" dir="rtl" id="exam-preview-edit-canvas">
+    <div className="space-y-6 animate-in fade-in duration-300 text-right glx p-1 md:p-3 rounded-2xl" dir="rtl" id="exam-preview-edit-canvas">
       
       {/* Upper header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glx p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs">
         <div className="flex items-center gap-3">
           <button
             id="btn-back-to-exams-list"
             onClick={onBack}
-            className="p-2 hover:bg-white/4 rounded-xl text-[var(--color-text-tertiary)] cursor-pointer border border-[var(--color-glass-light-stroke)] transition-all font-bold"
+            className="p-2 hover:brightness-105 rounded-xl text-[var(--color-text-tertiary)] cursor-pointer border border-[var(--color-glass-light-stroke)] transition-all font-bold"
             title="رجوع به بانک لیست آزمون‌ها"
           >
             <ArrowRight className="w-5 h-5" />
@@ -567,12 +567,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
         {/* View mode toggle switcher layout */}
         <div className="flex items-center gap-2 w-full lg:w-auto self-end lg:self-center">
-          <div className="bg-white/4 p-1 rounded-2xl border border-[var(--color-glass-light-stroke)] flex items-center gap-1 w-full lg:w-auto">
+          <div className="glx-inset p-1 rounded-2xl border border-[var(--color-glass-light-stroke)] flex items-center gap-1 w-full lg:w-auto">
             <button
               onClick={() => setViewMode('teacher')}
               className={`flex-1 lg:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 viewMode === 'teacher' 
-                  ? 'bg-white text-[var(--color-accent)] shadow-sm' 
+                  ? 'glx text-[var(--color-accent)] shadow-sm' 
                   : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
               }`}
             >
@@ -583,7 +583,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
               onClick={() => setViewMode('student')}
               className={`flex-1 lg:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 viewMode === 'student' 
-                  ? 'bg-white text-[var(--color-accent)] shadow-sm' 
+                  ? 'glx text-[var(--color-accent)] shadow-sm' 
                   : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
               }`}
             >
@@ -606,7 +606,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             {warnings.map(warn => (
               <div 
                 key={warn.id} 
-                className="bg-white/80 p-2.5 rounded-xl border border-[var(--color-danger)]/10 flex items-start gap-2 text-rose-900 cursor-pointer hover:bg-white transition-all"
+                className="glx0 p-2.5 rounded-xl border border-[var(--color-danger)]/10 flex items-start gap-2 text-rose-900 cursor-pointer hover:brightness-105 transition-all"
                 onClick={() => {
                   const targetElement = document.getElementById(`editor-q-box-${warn.targetId}`);
                   if (targetElement) {
@@ -631,14 +631,14 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
         <div className="col-span-1 space-y-5" id="specifications-column">
           
           {/* 1. Exam Static Summary Panel */}
-          <div className="bg-white p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-4 text-right">
+          <div className="glx p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-4 text-right">
             <h3 className="text-xs font-extrabold text-[var(--color-text-primary)] pb-2.5 border-b border-[var(--color-glass-light-stroke)] flex items-center gap-1.5">
               <Layers className="w-4.5 h-4.5 text-[var(--color-text-tertiary)]" />
               <span>جزییات شناسنامه آزمون</span>
             </h3>
             
             <div className="space-y-3.5 text-xs text-slate-705">
-              <div className="flex justify-between items-center bg-white/3/60 p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
+              <div className="flex justify-between items-center glx p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
                 <span className="text-[var(--color-text-tertiary)]">عنوان آزمون:</span>
                 <span className="font-extrabold text-[var(--color-text-primary)] text-[11px] max-w-[130px] truncate" title={localExam.title}>
                   {localExam.title}
@@ -675,7 +675,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
               
               <div className="flex justify-between items-center">
                 <span className="text-[var(--color-text-tertiary)]">تعداد کل سوالات:</span>
-                <span className="bg-white/4 px-2.5 py-0.5 rounded-md font-extrabold text-slate-850 font-mono text-[11.5px]">
+                <span className="glx-inset px-2.5 py-0.5 rounded-md font-extrabold text-slate-850 font-mono text-[11.5px]">
                   {toPersianDigits(totalQuestions)}
                 </span>
               </div>
@@ -715,7 +715,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
           </div>
 
           {/* Guidelines info block */}
-          <div className="bg-white p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-3xs text-xs space-y-3">
+          <div className="glx p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-3xs text-xs space-y-3">
             <h4 className="font-bold text-[var(--color-text-secondary)] flex items-center gap-1.5">
               <Info className="w-4 h-4 text-[var(--color-accent)]" />
               <span>ملاحظات پاسخ‌نامه‌ها</span>
@@ -738,7 +738,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             return (
               <div 
                 key={section.id} 
-                className="bg-white p-5 md:p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-5"
+                className="glx p-5 md:p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-5"
                 id={`pview-section-${section.id}`}
               >
                 
@@ -788,7 +788,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                         {/* Upper mini spec line inside (Teacher edit vs student meta) */}
                         <div className="flex items-center justify-between gap-2 text-[10px]">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="bg-white/4 text-[var(--color-text-secondary)] px-2 py-0.5 rounded-md font-bold">
+                            <span className="glx-inset text-[var(--color-text-secondary)] px-2 py-0.5 rounded-md font-bold">
                               شماره {toPersianDigits(qIdx + 1)}
                             </span>
                             <span className="bg-[var(--color-accent-soft)] text-indigo-800 border border-[var(--color-accent-soft)]/50 px-2 py-0.5 rounded-md font-semibold">
@@ -809,7 +809,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                           <p className="text-xs text-[var(--color-text-primary)] font-bold leading-relaxed">{q.text}</p>
                           
                           {q.imageUrl && (
-                            <div className="max-w-md bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-2xl p-2 relative group inline-block">
+                            <div className="max-w-md glx border rounded-2xl p-2 relative group inline-block">
                               <img
                                 src={q.imageUrl}
                                 alt="سوال پیوست"
@@ -851,7 +851,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                       ? 'bg-[var(--color-success-soft)]/70 border-[var(--color-success)]/30 text-[var(--color-success)] font-semibold shadow-3xs'
                                       : currentSelected && viewMode === 'student'
                                       ? 'bg-[var(--color-accent-soft)] border-indigo-400 text-indigo-900 font-semibold shadow-3xs'
-                                      : 'bg-white/3 border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-slate-350'
+                                      : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-slate-350'
                                   }`}
                                 >
                                   <div className="flex items-start gap-2.5">
@@ -860,7 +860,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                         <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
                                           (viewMode === 'teacher' && isCorrectOption) || (viewMode === 'student' && currentSelected)
                                             ? 'bg-[var(--color-accent)] border-indigo-600 text-white'
-                                            : 'border-[var(--color-glass-light-stroke)] bg-white'
+                                            : 'border-[var(--color-glass-light-stroke)] glx'
                                         }`}>
                                           <Check className="w-3 h-3" />
                                         </div>
@@ -868,7 +868,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                           (viewMode === 'teacher' && isCorrectOption) || (viewMode === 'student' && currentSelected)
                                             ? 'bg-[var(--color-accent)] border-indigo-600 text-white'
-                                            : 'border-[var(--color-glass-light-stroke)] bg-white'
+                                            : 'border-[var(--color-glass-light-stroke)] glx'
                                         }`}>
                                           <div className="w-1.5 h-1.5 rounded-full bg-white" />
                                         </div>
@@ -925,7 +925,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                       ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] shadow-3xs'
                                       : viewMode === 'student' && isSelected
                                       ? 'bg-[var(--color-accent-soft)] border-indigo-400 text-indigo-800 shadow-3xs'
-                                      : 'bg-white/3 border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)]'
+                                      : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)]'
                                   }`}
                                 >
                                   <span>{item.label}</span>
@@ -950,7 +950,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               placeholder={viewMode === 'teacher' ? 'فقط در حالت پیش‌نمایش دانش‌آموز قابل پاسخ‌دهی است...' : 'پاسخ کوتاه خود را در اینجا بنویسید...'}
                               value={studentAnswers[q.id] || ''}
                               onChange={(e) => handleStudentAnswerChange(q.id, e.target.value)}
-                              className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 px-3.5 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-slate-300"
+                              className="w-full glx border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 px-3.5 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-slate-300"
                             />
                             {viewMode === 'teacher' && q.correctAnswer && (
                               <div className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-l-2 border-emerald-400 p-2 text-[10.5px] rounded-md font-medium">
@@ -970,16 +970,16 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               placeholder={viewMode === 'teacher' ? 'فقط در حالت پیش‌نمایش دانش‌آموز قابل پاسخ‌دهی است...' : 'پاسخ کامل تشریحی خود را در زیر بنویسید... برای سوالات درس محاسباتی حتماً فرمول‌ها را وارد کنید.'}
                               value={studentAnswers[q.id] || ''}
                               onChange={(e) => handleStudentAnswerChange(q.id, e.target.value)}
-                              className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-3.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-slate-350 leading-relaxed text-right"
+                              className="w-full glx border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 p-3.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-slate-350 leading-relaxed text-right"
                             />
                             
                             {/* Rubric evaluation criteria info boxes */}
                             {q.rubrics && q.rubrics.length > 0 && (
-                              <div className="bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-2xl p-4.5 space-y-2.5 text-[11px]">
+                              <div className="glx border rounded-2xl p-4.5 space-y-2.5 text-[11px]">
                                 <span className="block font-bold text-[var(--color-text-secondary)]">معیارهای توزیع بارم تصحیح معلم:</span>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   {q.rubrics.map((rub: RubricCriterion) => (
-                                    <div key={rub.id} className="p-3 bg-white border border-[var(--color-glass-light-stroke)] rounded-xl space-y-1">
+                                    <div key={rub.id} className="p-3 glx border border-[var(--color-glass-light-stroke)] rounded-xl space-y-1">
                                       <div className="flex justify-between items-center text-slate-900 border-b border-[var(--color-glass-light-stroke)] pb-1">
                                         <strong className="font-bold">{rub.title}</strong>
                                         <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-md px-1.5 py-0.5 text-[9.5px] font-extrabold">{toPersianDigits(rub.maxPoints)} نمره</span>
@@ -1012,7 +1012,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                         nextList[fIdx] = e.target.value;
                                         handleStudentAnswerChange(q.id, nextList);
                                       }}
-                                      className="bg-white border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-lg text-xs font-semibold focus:outline-hidden focus:border-[var(--color-accent)]/40 w-28 text-center"
+                                      className="glx border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-lg text-xs font-semibold focus:outline-hidden focus:border-[var(--color-accent)]/40 w-28 text-center"
                                     />
                                   </div>
                                 ))}
@@ -1021,7 +1021,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               <div className="flex flex-wrap gap-1 bg-[var(--color-success-soft)] p-2 rounded-xl text-[10.5px] border border-[var(--color-success)]/10/60 text-[var(--color-success)]">
                                 <span className="font-bold block mr-2">کلید کل کلمات گمشده:</span>
                                 {q.correctFillBlanks?.map((word, idx) => (
-                                  <span key={idx} className="bg-white px-2 py-0.5 rounded-md font-bold font-mono text-[var(--color-success)] ml-1">
+                                  <span key={idx} className="glx px-2 py-0.5 rounded-md font-bold font-mono text-[var(--color-success)] ml-1">
                                     {toPersianDigits(idx + 1)}. {word}
                                   </span>
                                 ))}
@@ -1032,12 +1032,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                         {/* 6. Matching Pairs elements rendering */}
                         {q.type === 'matching' && q.matchingPairs && (
-                          <div className="bg-white/3/70 rounded-2xl p-4.5 border border-[var(--color-glass-light-stroke)] mt-2 space-y-3.5 text-xs">
+                          <div className="glx rounded-2xl p-4.5 border border-[var(--color-glass-light-stroke)] mt-2 space-y-3.5 text-xs">
                             <span className="block font-bold text-[var(--color-text-secondary)]">تطبیق ستون الف با ب:</span>
                             <div className="space-y-2">
                               {q.matchingPairs.map((pair, pIdx) => (
-                                <div key={pIdx} className="flex items-center justify-between gap-2.5 bg-white px-3 py-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
-                                  <span className="bg-white/4 text-[var(--color-text-secondary)] px-3 py-1.5 rounded-lg font-bold flex-1 text-center">
+                                <div key={pIdx} className="flex items-center justify-between gap-2.5 glx px-3 py-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
+                                  <span className="glx-inset text-[var(--color-text-secondary)] px-3 py-1.5 rounded-lg font-bold flex-1 text-center">
                                     {pair.right}
                                   </span>
                                   <span className="text-slate-300 font-black">➔</span>
@@ -1052,12 +1052,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                         {/* 7. Ordering array rendering */}
                         {q.type === 'ordering' && q.orderingItems && (
-                          <div className="bg-white/3 rounded-2xl p-4.5 border border-[var(--color-glass-light-stroke)] mt-2 text-xs">
+                          <div className="glx rounded-2xl p-4.5 border border-[var(--color-glass-light-stroke)] mt-2 text-xs">
                             <span className="font-bold text-slate-755 block mb-2.5">ترتیب قرارگیری مراحل صحیح:</span>
                             <div className="flex flex-wrap gap-2 items-center">
                               {q.orderingItems.map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
-                                  <span className="bg-white border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)] px-3.5 py-2 font-black rounded-xl shadow-3xs">
+                                  <span className="glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)] px-3.5 py-2 font-black rounded-xl shadow-3xs">
                                     {toPersianDigits(idx + 1)}. {item}
                                   </span>
                                   {idx < (q.orderingItems?.length || 0) - 1 && (
@@ -1077,7 +1077,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                 <span className="block font-bold text-[var(--color-text-secondary)] text-xs border-r-2 border-[var(--color-accent)]/100 pr-2 pb-0.5">زیرسوالات درک مطلب:</span>
                                 {q.parts.map((part: QuestionPart, idx: number) => {
                                   return (
-                                    <div key={part.id} className="bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-xl p-3.5 space-y-3">
+                                    <div key={part.id} className="glx border rounded-xl p-3.5 space-y-3">
                                       <h6 className="text-[11px] font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                                         <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">
                                           {toPersianDigits(idx + 1)}
@@ -1096,7 +1096,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                                 className={`p-2 rounded-lg border ${
                                                   viewMode === 'teacher' && isCorrect
                                                     ? 'bg-[var(--color-success-soft)] border-emerald-250 text-[var(--color-success)] font-bold'
-                                                    : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                                                    : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                                                 }`}
                                               >
                                                 <span>{opt.text}</span>
@@ -1119,7 +1119,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                             {q.parts && q.parts.length > 0 && (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {q.parts.map((p, pIdx) => (
-                                  <div key={p.id} className="p-3 bg-white/3 border border-[var(--color-glass-light-stroke)] rounded-xl space-y-2">
+                                  <div key={p.id} className="p-3 glx border rounded-xl space-y-2">
                                     <strong className="text-indigo-900 font-bold text-[10.5px] block text-right">جای خالی کلوز شماره {toPersianDigits(pIdx + 1)}</strong>
                                     <div className="flex flex-wrap gap-1.5 text-[10.5px]">
                                       {p.options?.map((opt) => (
@@ -1128,7 +1128,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                                           className={`px-2 py-0.5 rounded-md border text-center ${
                                             (opt.isCorrect || p.correctAnswer === opt.id) && viewMode === 'teacher'
                                               ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] font-bold font-mono'
-                                              : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                                              : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                                           }`}
                                         >
                                           {opt.text}
@@ -1144,14 +1144,14 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                         {/* Teacher Edit Controls (ONLY visible in teacher view mode) */}
                         {viewMode === 'teacher' && (
-                          <div className="bg-white/3 -mx-5 -mb-6 mt-4 p-3.5 border-t border-[var(--color-glass-light-stroke)] flex flex-wrap items-center justify-between gap-3.5 rounded-b-3xl">
+                          <div className="glx -mx-5 -mb-6 mt-4 p-3.5 border-t border-[var(--color-glass-light-stroke)] flex flex-wrap items-center justify-between gap-3.5 rounded-b-3xl">
                             
                             {/* Order Moving Controls */}
                             <div className="flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => moveQuestion(q.id, 'up')}
-                                className="p-2 bg-white hover:bg-white/4 text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-glass-light-stroke)] cursor-pointer text-[10px] font-bold flex items-center gap-1 transition-all"
+                                className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-glass-light-stroke)] cursor-pointer text-[10px] font-bold flex items-center gap-1 transition-all"
                                 title="جابه‌جایی سوال به بالا"
                               >
                                 <ChevronUp className="w-4 h-4 text-indigo-600" />
@@ -1160,7 +1160,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               <button
                                 type="button"
                                 onClick={() => moveQuestion(q.id, 'down')}
-                                className="p-2 bg-white hover:bg-white/4 text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-glass-light-stroke)] cursor-pointer text-[10px] font-bold flex items-center gap-1 transition-all"
+                                className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-glass-light-stroke)] cursor-pointer text-[10px] font-bold flex items-center gap-1 transition-all"
                                 title="جابه‌جایی سوال به پایین"
                               >
                                 <ChevronDown className="w-4 h-4 text-indigo-600" />
@@ -1173,7 +1173,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               <button
                                 type="button"
                                 onClick={() => triggerEditQuestion(q)}
-                                className="p-2 bg-white hover:bg-slate-150 text-[var(--color-accent)] hover:text-indigo-900 rounded-lg border border-[var(--color-accent-soft)] hover:border-indigo-200 cursor-pointer text-[10.5px] font-bold flex items-center gap-1.5 transition-all"
+                                className="p-2 glx-inset hover:brightness-105 text-[var(--color-accent)] hover:text-indigo-900 rounded-lg border border-[var(--color-accent-soft)] hover:border-indigo-200 cursor-pointer text-[10.5px] font-bold flex items-center gap-1.5 transition-all"
                               >
                                 <Edit className="w-3.5 h-3.5 text-indigo-600" />
                                 <span>ویرایش محتوا و گزینه‌ها</span>
@@ -1181,7 +1181,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                               <button
                                 type="button"
                                 onClick={() => triggerReplaceQuestion(q.id, section.id)}
-                                className="p-2 bg-white hover:bg-slate-150 text-[var(--color-warning)] hover:text-[var(--color-warning)] rounded-lg border border-[var(--color-warning)]/10 hover:border-[var(--color-warning)]/20 cursor-pointer text-[10.5px] font-bold flex items-center gap-1.5 transition-all"
+                                className="p-2 glx-inset hover:brightness-105 text-[var(--color-warning)] hover:text-[var(--color-warning)] rounded-lg border border-[var(--color-warning)]/10 hover:border-[var(--color-warning)]/20 cursor-pointer text-[10.5px] font-bold flex items-center gap-1.5 transition-all"
                               >
                                 <RefreshCw className="w-3.5 h-3.5 text-[var(--color-warning)]" />
                                 <span>جایگزینی از بانک سوالات</span>
@@ -1221,10 +1221,10 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
       </div>
 
       {/* FOOTER ACTIONS BAR */}
-      <div className="border-t border-[var(--color-glass-light-stroke)] bg-white p-5 rounded-3xl mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-3xs" id="preview-footer-plate">
+      <div className="border-t border-[var(--color-glass-light-stroke)] glx p-5 rounded-3xl mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-3xs" id="preview-footer-plate">
         <button
           onClick={onBack}
-          className="w-full sm:w-auto px-5 py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] font-bold rounded-xl text-xs transition-all cursor-pointer text-center"
+          className="w-full sm:w-auto px-5 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-bold rounded-xl text-xs transition-all cursor-pointer text-center"
         >
           بازگشت به ساخت آزمون
         </button>
@@ -1261,24 +1261,24 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
       {/* MODAL 1: REPLACE QUESTION BANK */}
       {replacingQuestionId && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4" id="replace-modal-backdrop">
-          <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[85vh] text-right font-sans" dir="rtl">
+          <div className="glx-strong rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[85vh] text-right font-sans" dir="rtl">
             
             {/* Modal Header */}
-            <div className="px-6 py-4.5 bg-white/3 border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-4.5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <h3 className="font-extrabold text-[var(--color-text-primary)] text-xs md:text-sm flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-indigo-600 animate-spin-slow" />
                 <span>جایگزینی سوال با مخزن بانک سوالات همگام</span>
               </h3>
               <button
                 onClick={() => setReplacingQuestionId(null)}
-                className="p-1 hover:bg-white/6 rounded-lg text-[var(--color-text-tertiary)] cursor-pointer"
+                className="p-1 hover:glx-inset rounded-lg text-[var(--color-text-tertiary)] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Smart Filters Header block inside modal */}
-            <div className="p-4 bg-white/4/60 border-b border-[var(--color-glass-light-stroke)] space-y-3">
+            <div className="p-4 glx-inset border-b border-[var(--color-glass-light-stroke)] space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                 
                 <div className="space-y-1">
@@ -1286,7 +1286,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   <select
                     value={replaceFilterGrade}
                     onChange={(e) => setReplaceFilterGrade(e.target.value)}
-                    className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
+                    className="w-full glx border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
                   >
                     <option value="all">همه پایه‌ها</option>
                     <option value="هفتم">پایه هفتم</option>
@@ -1300,7 +1300,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   <select
                     value={replaceFilterSubject}
                     onChange={(e) => setReplaceFilterSubject(e.target.value)}
-                    className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
+                    className="w-full glx border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
                   >
                     <option value="all">همه درس‌ها</option>
                     <option value={localExam.subject}>{localExam.subject}</option>
@@ -1315,7 +1315,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   <select
                     value={replaceFilterType}
                     onChange={(e) => setReplaceFilterType(e.target.value)}
-                    className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
+                    className="w-full glx border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
                   >
                     <option value="all">همه قالب‌ها</option>
                     <option value="single_choice">چهارگزینه‌ای</option>
@@ -1331,7 +1331,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   <select
                     value={replaceFilterDifficulty}
                     onChange={(e) => setReplaceFilterDifficulty(e.target.value)}
-                    className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
+                    className="w-full glx border border-[var(--color-glass-light-stroke)] text-[11px] p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
                   >
                     <option value="all">همه سطوح</option>
                     <option value="easy">آسان</option>
@@ -1348,28 +1348,28 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                 placeholder="جستجو در کل صورت سوال یا موضوعات..."
                 value={replaceSearchQuery}
                 onChange={(e) => setReplaceSearchQuery(e.target.value)}
-                className="w-full bg-white border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 text-right"
+                className="w-full glx border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 text-right"
               />
             </div>
 
             {/* Questions Bank scrolling container list */}
-            <div className="p-5 overflow-y-auto flex-1 space-y-4 bg-white/3">
+            <div className="p-5 overflow-y-auto flex-1 space-y-4 glx">
               {filteredBankQuestions.length > 0 ? (
                 filteredBankQuestions.map(bq => {
                   const hasImg = !!bq.imageUrl;
                   return (
                     <div 
                       key={bq.id} 
-                      className="bg-white p-4 rounded-2xl border border-[var(--color-glass-light-stroke)] hover:border-indigo-400 transition-all shadow-3xs flex flex-col justify-between gap-3"
+                      className="glx p-4 rounded-2xl border border-[var(--color-glass-light-stroke)] hover:border-indigo-400 transition-all shadow-3xs flex flex-col justify-between gap-3"
                     >
                       <div className="space-y-2 text-right">
                         
                         {/* Upper indicators bar */}
                         <div className="flex items-center justify-between gap-1 text-[9px] text-[var(--color-text-tertiary)]">
                           <div className="flex items-center gap-1.5">
-                            <span className="bg-white/4 text-[var(--color-text-secondary)] font-bold px-1.5 py-0.5 rounded-md">پایه {bq.grade}</span>
+                            <span className="glx-inset text-[var(--color-text-secondary)] font-bold px-1.5 py-0.5 rounded-md">پایه {bq.grade}</span>
                             <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-semibold px-2 py-0.5 rounded-md">{bq.category}</span>
-                            <span className="bg-white/3 text-[var(--color-text-tertiary)] rounded-md px-1.5 py-0.5 font-medium border border-[var(--color-glass-light-stroke)]">
+                            <span className="glx text-[var(--color-text-tertiary)] rounded-md px-1.5 py-0.5 font-medium border border-[var(--color-glass-light-stroke)]">
                               {getTypeNameInPersian(bq.type)}
                             </span>
                           </div>
@@ -1414,7 +1414,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             </div>
 
             {/* Modal Footer comments */}
-            <div className="bg-white/3 border-t border-[var(--color-glass-light-stroke)] p-3 text-center text-[9px] text-[var(--color-text-tertiary)] font-semibold">
+            <div className="glx border-t border-[var(--color-glass-light-stroke)] p-3 text-center text-[9px] text-[var(--color-text-tertiary)] font-semibold">
               <span>تطبیق‌دهنده هوشمند آزمون‌ساز همگام دبیـران</span>
             </div>
 
@@ -1428,12 +1428,12 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
           <div className="fixed inset-0" onClick={() => setEditingQuestion(null)} />
           
           <div
-            className="w-full max-w-xl bg-white/3 shadow-2xl z-10 flex flex-col h-full border-r border-slate-250 overflow-hidden text-xs text-right animate-in slide-in-from-right duration-300 font-sans"
+            className="w-full max-w-xl glx shadow-2xl z-10 flex flex-col h-full border-r border-slate-250 overflow-hidden text-xs text-right animate-in slide-in-from-right duration-300 font-sans"
             dir="rtl"
             id="drawer-edit-form"
           >
             {/* Drawer Header */}
-            <div className="px-5 py-4 bg-white border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-5 py-4 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <h3 className="font-extrabold text-[var(--color-text-primary)] text-xs md:text-sm flex items-center gap-1.5">
                 <Sliders className="w-5 h-5 text-indigo-600" />
                 <span>
@@ -1453,7 +1453,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             <div className="p-5 overflow-y-auto space-y-5 flex-1">
               
               {/* Type selector */}
-              <div className="space-y-1 bg-white p-3 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+              <div className="space-y-1 glx p-3 rounded-2xl border border-[var(--color-glass-light-stroke)]">
                 <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">نوع قالب‌بندی سوال:</label>
                 <select
                   value={editingQuestion.type}
@@ -1473,7 +1473,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       parts: nextVal === 'reading_comprehension' ? [] : undefined
                     });
                   }}
-                  className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs text-[var(--color-text-secondary)] p-2 rounded-xl focus:outline-hidden font-bold cursor-pointer"
+                  className="w-full glx border text-xs text-[var(--color-text-secondary)] p-2 rounded-xl focus:outline-hidden font-bold cursor-pointer"
                 >
                   <option value="single_choice">چهارگزینه‌ای یا کتبی تستی</option>
                   <option value="multiple_choice">چندگزینه‌ای چندپاسخ</option>
@@ -1489,7 +1489,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
               {/* Title & Points row */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-2 space-y-1 bg-white p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+                <div className="md:col-span-2 space-y-1 glx p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
                   <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">عنوان خلاصه سوال:</label>
                   <input
                     type="text"
@@ -1500,7 +1500,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   />
                 </div>
 
-                <div className="space-y-1 bg-white p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)] text-center">
+                <div className="space-y-1 glx p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)] text-center">
                   <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block text-right">بارم (امتیاز عددی):</label>
                   <input
                     type="number"
@@ -1514,7 +1514,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
               </div>
 
               {/* Question Text Prompt */}
-              <div className="space-y-1 bg-white p-4 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+              <div className="space-y-1 glx p-4 rounded-2xl border border-[var(--color-glass-light-stroke)]">
                 <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">متن اصلی صورت سوال:</label>
                 <textarea
                   rows={4}
@@ -1526,14 +1526,14 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
               </div>
 
               {/* Image URL / media upload simulation */}
-              <div className="space-y-2 bg-white p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+              <div className="space-y-2 glx p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
                 <label className="text-[10px] text-[var(--color-text-tertiary)] font-bold block">تصویر یا نمودار پیوست سوال:</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={editingQuestion.imageUrl || ''}
                     onChange={(e) => setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })}
-                    className="w-full bg-white/3 border border-[var(--color-glass-light-stroke)] text-xs px-2.5 py-1.5 rounded-lg placeholder-slate-300 focus:outline-hidden"
+                    className="w-full glx border text-xs px-2.5 py-1.5 rounded-lg placeholder-slate-300 focus:outline-hidden"
                     placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
                   />
                   {editingQuestion.imageUrl && (
@@ -1584,7 +1584,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   
                   <div className="space-y-2.5">
                     {(editingQuestion.options || []).map((opt, oIdx) => (
-                      <div key={opt.id} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
+                      <div key={opt.id} className="flex gap-2 items-center glx p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
                         
                         {/* Correct trigger */}
                         <button
@@ -1593,7 +1593,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                           className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
                             opt.isCorrect 
                               ? 'bg-[var(--color-success)] border-emerald-500 text-white shadow-xs' 
-                              : 'border-[var(--color-glass-light-stroke)] bg-white/3 hover:bg-white/4'
+                              : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
                           }`}
                           title={opt.isCorrect ? 'کلید پاسخ صحیح (غیرفعال‌سازی)' : 'تبدیل به کلید پاسخ صحیح'}
                         >
@@ -1617,7 +1617,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                             const updatedOpts = (editingQuestion.options || []).map(o => o.id === opt.id ? { ...o, imageUrl: e.target.value } : o);
                             setEditingQuestion({ ...editingQuestion, options: updatedOpts });
                           }}
-                          className="bg-white/3 border border-[var(--color-glass-light-stroke)] text-[10px] w-28 px-1 rounded-md"
+                          className="glx border text-[10px] w-28 px-1 rounded-md"
                           placeholder="آدرس تصویر گزینه"
                         />
 
@@ -1647,7 +1647,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
                         editingQuestion.correctAnswer === true
                           ? 'bg-[var(--color-success)] border-emerald-500 text-white shadow-xs'
-                          : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                          : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                       }`}
                     >
                       صحیح
@@ -1658,7 +1658,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
                         editingQuestion.correctAnswer === false
                           ? 'bg-[var(--color-success)] border-emerald-500 text-white shadow-xs'
-                          : 'bg-white border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                          : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
                       }`}
                     >
                       غلط
@@ -1673,7 +1673,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                   <span className="text-[10.5px] text-indigo-900 font-extrabold block">کلید واژه‌های صحیح برای پرکردن جاهای خالی (به ترتیب):</span>
                   <div className="space-y-2">
                     {(editingQuestion.correctFillBlanks || ['']).map((word, wIdx) => (
-                      <div key={wIdx} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
+                      <div key={wIdx} className="flex gap-2 items-center glx p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
                         <span className="text-[var(--color-text-tertiary)] font-bold font-mono">جای خالی ({toPersianDigits(wIdx + 1)}):</span>
                         <input
                           type="text"
@@ -1692,7 +1692,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                             const nextWords = (editingQuestion.correctFillBlanks || []).filter((_, i) => i !== wIdx);
                             setEditingQuestion({ ...editingQuestion, correctFillBlanks: nextWords });
                           }}
-                          className="p-1 hover:bg-white/4 text-[var(--color-danger)] rounded-lg"
+                          className="p-1 hover:brightness-105 text-[var(--color-danger)] rounded-lg"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -1706,7 +1706,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                       const nextWords = [...(editingQuestion.correctFillBlanks || []), ''];
                       setEditingQuestion({ ...editingQuestion, correctFillBlanks: nextWords });
                     }}
-                    className="w-full bg-white text-[var(--color-accent)] text-[10.5px] py-1.5 rounded-xl border border-indigo-200 font-bold hover:bg-[var(--color-accent-soft)] transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    className="w-full glx text-[var(--color-accent)] text-[10.5px] py-1.5 rounded-xl border border-indigo-200 font-bold hover:bg-[var(--color-accent-soft)] transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>افزودن جای خالی گمشده دیگر</span>
@@ -1731,13 +1731,13 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                   <div className="space-y-3">
                     {(editingQuestion.rubrics || []).map((rub) => (
-                      <div key={rub.id} className="bg-white p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2">
+                      <div key={rub.id} className="glx p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2">
                         <div className="flex gap-2 justify-between">
                           <input
                             type="text"
                             value={rub.title}
                             onChange={(e) => updateRubricInDrawer(rub.id, { title: e.target.value })}
-                            className="w-full bg-white/3 border-none px-2 py-1 rounded-md text-[var(--color-text-primary)] font-bold font-sans"
+                            className="w-full glx border-none px-2 py-1 rounded-md text-[var(--color-text-primary)] font-bold font-sans"
                             placeholder="نام معیار (مثال: رسم درست نمودار)"
                           />
                           <input
@@ -1745,7 +1745,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                             step="0.25"
                             value={rub.maxPoints}
                             onChange={(e) => updateRubricInDrawer(rub.id, { maxPoints: Number(e.target.value) })}
-                            className="w-20 bg-white/3 border-none px-2 py-1 rounded-md font-bold font-mono text-center"
+                            className="w-20 glx border-none px-2 py-1 rounded-md font-bold font-mono text-center"
                             placeholder="بارم"
                           />
                         </div>
@@ -1753,7 +1753,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                           type="text"
                           value={rub.description}
                           onChange={(e) => updateRubricInDrawer(rub.id, { description: e.target.value })}
-                          className="w-full bg-white/3/60 border-none px-2 py-1 rounded-md"
+                          className="w-full glx border-none px-2 py-1 rounded-md"
                           placeholder="شرح کوتاه برای دبیـر تصحیح‌کننده..."
                         />
                         <button
@@ -1785,7 +1785,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
 
                   <div className="space-y-3">
                     {(editingQuestion.parts || []).map((part, pIdx) => (
-                      <div key={part.id} className="bg-white p-3 rounded-xl border border-teal-100 space-y-2">
+                      <div key={part.id} className="glx p-3 rounded-xl border border-teal-100 space-y-2">
                         <div className="flex justify-between items-center text-[10px] text-[var(--color-text-tertiary)]">
                           <span>زیرسوال شماره {toPersianDigits(pIdx + 1)}</span>
                           <button
@@ -1800,7 +1800,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
                           type="text"
                           value={part.text}
                           onChange={(e) => updateSubquestionTextInDrawer(part.id, e.target.value)}
-                          className="w-full bg-white/3 border-none p-1.5 rounded-md font-semibold text-slate-850"
+                          className="w-full glx border-none p-1.5 rounded-md font-semibold text-slate-850"
                           placeholder="نمام متن مینی‌سوال..."
                         />
                       </div>
@@ -1812,7 +1812,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
             </div>
 
             {/* Save trigger inside drawer */}
-            <div className="p-4 bg-white border-t border-[var(--color-glass-light-stroke)] flex gap-2">
+            <div className="p-4 glx border-t border-[var(--color-glass-light-stroke)] flex gap-2">
               <button
                 type="button"
                 onClick={handleSaveDrawerQuestion}
@@ -1823,7 +1823,7 @@ export default function ExamPreview({ exam, onBack, onSave, onNavigateToSettings
               <button
                 type="button"
                 onClick={() => setEditingQuestion(null)}
-                className="flex-1 py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] font-bold rounded-xl text-center cursor-pointer text-xs"
+                className="flex-1 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-bold rounded-xl text-center cursor-pointer text-xs"
               >
                 لغو تغییرات
               </button>

@@ -105,12 +105,12 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
 
   const getStatusBadgeStyles = (status: Exam['status']) => {
     const styles = {
-      draft: 'bg-white/4 text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]',
+      draft: 'glx-inset text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]',
       scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
       active: 'bg-orange-500/10 text-orange-600 border-orange-500/20 animate-pulse',
       completed: 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/20',
     };
-    return styles[status] || 'bg-white/4 text-[var(--color-text-secondary)]';
+    return styles[status] || 'glx-inset text-[var(--color-text-secondary)]';
   };
 
   const getClassNamesForExam = (classGroupIds: string[]) => {
@@ -251,7 +251,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${getStatusBadgeStyles(ex.status)}`}>
                       {getStatusLabelInPersian(ex.status)}
                     </span>
-                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono font-bold select-all bg-white/3 px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono font-bold select-all glx px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
                       کد ورود: {ex.examCode}
                     </span>
                   </div>
@@ -279,7 +279,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-pre-${ex.id}`}
                       onClick={() => navigateToSubView('preview', ex.id)}
-                      className="p-2 bg-white/3 hover:bg-white/4 text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-glass-light-stroke)] cursor-pointer"
+                      className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-glass-light-stroke)] cursor-pointer"
                       title="پیش‌نمایش آزمون"
                     >
                       <Eye className="w-4 h-4" />
@@ -289,7 +289,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-set-${ex.id}`}
                       onClick={() => navigateToSubView('settings', ex.id)}
-                      className="p-2 bg-white/3 hover:bg-white/4 text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-glass-light-stroke)] cursor-pointer"
+                      className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-glass-light-stroke)] cursor-pointer"
                       title="تنظیمات فنی آزمون"
                     >
                       <SettingsIcon className="w-4 h-4" />
@@ -299,7 +299,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-res-${ex.id}`}
                       onClick={() => navigateToSubView('results', ex.id)}
-                      className="p-2 bg-white/3 hover:bg-white/4 text-indigo-600 rounded-xl transition-colors border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] cursor-pointer"
+                      className="p-2 glx hover:brightness-105 text-indigo-600 rounded-xl transition-colors border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] cursor-pointer"
                       title="مشاهده کارنامه‌ها و نتایج"
                     >
                       <CheckSquare className="w-4 h-4" />

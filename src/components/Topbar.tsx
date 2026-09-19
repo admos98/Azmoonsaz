@@ -304,6 +304,18 @@ export default function Topbar({
     }
     return `${hamburgerTop + offset}px`;
   };
+  // Transform origin relative to each panel: hamburger button center.
+  // Both panel and button share the same right edge, so the button center is
+  // panelWidth - hamburgerRect.width/2 from the panel's left edge.
+  // The button is above the first panel by hamburgerRect.height/2 + 12 (gap).
+  const panelWidth = 280;
+  const computeHamburgerTransformOrigin = (index: number) => {
+    if (!hamburgerRect) return 'center top';
+    const originX = `${panelWidth - hamburgerRect.width / 2}px`;
+    const offset = index === 0 ? 0 : (index * (panelGap + 4)); // approximate offset for stacked panels
+    const originY = `${-hamburgerRect.height / 2 - 12 - offset}px`;
+    return `${originX} ${originY}`;
+  };
 
   return (
     <header
@@ -466,9 +478,10 @@ export default function Topbar({
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(0),
+                transformOrigin: computeHamburgerTransformOrigin(0),
                 animation: menuClosing
-                  ? 'dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
-                  : 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
+                  ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
+                  : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
               }}
               id="hamburger-panel-1"
             >
@@ -492,9 +505,10 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(1),
+              transformOrigin: computeHamburgerTransformOrigin(1),
               animation: menuClosing
-                ? 'dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both'
-                : 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
+                ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both'
+                : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
             }}
             id="hamburger-panel-2"
           >
@@ -532,9 +546,10 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(2),
+              transformOrigin: computeHamburgerTransformOrigin(2),
               animation: menuClosing
-                ? 'dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both'
-                : 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
+                ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both'
+                : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
             }}
             id="hamburger-panel-3"
           >
@@ -594,9 +609,10 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(3),
+              transformOrigin: computeHamburgerTransformOrigin(3),
               animation: menuClosing
-                ? 'dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both'
-                : 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
+                ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both'
+                : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
             }}
             id="hamburger-panel-4"
           >

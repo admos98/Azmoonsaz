@@ -302,8 +302,8 @@ export default function App() {
             onSelectExamForResults={handleSelectExamForResults}
           />
 
-          {/* Dynamic Page Router — floats above bg stage on a glx surface */}
-          <div className="p-4 lg:p-8 flex-1 glx" id="router-view-box">
+          {/* Dynamic Page Router — floats above bg stage */ }
+          <div className="p-4 lg:p-8 flex-1 bg-transparent" id="router-view-box">
             <Suspense fallback={
               <div className="space-y-6" id="page-skeleton">
                 <div className="h-8 w-48 bg-white/3 skeleton rounded-xl" />

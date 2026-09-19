@@ -533,7 +533,7 @@ export default function Students() {
             placeholder="جستجوی دانش‌آموز با نام و کد ملی..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] text-xs text-slate-750 pr-9.5 pl-4 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-white transition-all text-right"
+            className="w-full glx border text-xs text-slate-750 pr-9.5 pl-4 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-[var(--color-accent-soft)]/30 transition-all text-right"
           />
         </div>
 
@@ -541,7 +541,7 @@ export default function Students() {
         <div className="flex flex-wrap items-center gap-3">
           
           {/* Grade filter */}
-          <div className="flex items-center gap-1.5 bg-white/3 border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-xl">
+          <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
             <Filter className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">پایه تحصیلی:</span>
             <select
@@ -558,7 +558,7 @@ export default function Students() {
           </div>
 
           {/* Class Group filter */}
-          <div className="flex items-center gap-1.5 bg-white/3 border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-xl">
+          <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
             <GraduationCap className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">گروه کلاسی:</span>
             <select
@@ -575,7 +575,7 @@ export default function Students() {
           </div>
 
           {/* Status filter */}
-          <div className="flex items-center gap-1.5 bg-white/3 border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-xl">
+          <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
             <Activity className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">وضعیت دانش‌آموز:</span>
             <select
@@ -615,7 +615,7 @@ export default function Students() {
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
           <table className="w-full text-xs" id="students-desk-table">
-            <thead className="bg-white/3/75 border-b border-[var(--color-glass-light-stroke)] text-slate-550">
+            <thead className="glx border-b border-[var(--color-glass-light-stroke)] text-slate-550">
               <tr>
                 <th className="p-4 font-bold text-right">نام و نام خانوادگی</th>
                 <th className="p-4 font-bold text-right">کد ملی (ماسک زنده)</th>
@@ -638,13 +638,13 @@ export default function Students() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="hover:bg-white/3/40 transition-colors"
+                        className="hover:brightness-105 transition-colors"
                         id={`stud-row-${student.id}`}
                       >
                         {/* Name */}
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-white/4 text-[var(--color-text-secondary)] font-black text-xs flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full glx-inset text-[var(--color-text-secondary)] font-black text-xs flex items-center justify-center">
                               {student.name.charAt(0)}
                             </div>
                             <div>
@@ -656,7 +656,7 @@ export default function Students() {
 
                         {/* Masked National ID: ۱۲۳****۸۹۰ */}
                         <td className="p-4">
-                          <span className="font-mono bg-white/3 px-2 py-1 rounded-md border border-[var(--color-glass-light-stroke)] select-all font-semibold text-[var(--color-text-secondary)] text-[11px] hover:text-indigo-600 transition-colors">
+                          <span className="font-mono glx px-2 py-1 rounded-md border border-[var(--color-glass-light-stroke)] select-all font-semibold text-[var(--color-text-secondary)] text-[11px] hover:text-indigo-600 transition-colors">
                             {maskNationalIdPersian(student.nationalId)}
                           </span>
                         </td>
@@ -719,7 +719,7 @@ export default function Students() {
                             <button
                               id={`edit-std-${student.id}`}
                               onClick={() => openEditModal(student)}
-                              className="p-2 text-[var(--color-text-tertiary)] hover:bg-white/4 hover:text-[var(--color-text-primary)] rounded-xl transition-all cursor-pointer"
+                              className="p-2 text-[var(--color-text-tertiary)] hover:brightness-105 hover:text-[var(--color-text-primary)] rounded-xl transition-all cursor-pointer"
                               title="ویرایش شناسنامه"
                             >
                               <Edit className="w-4 h-4" />
@@ -768,12 +768,12 @@ export default function Students() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="bg-white/3/70 border border-[var(--color-glass-light-stroke)] p-4.5 rounded-2xl flex flex-col gap-3 text-right text-xs"
+                    className="glx border p-4.5 rounded-2xl flex flex-col gap-3 text-right text-xs"
                     id={`stud-card-${student.id}`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-white/6 text-[var(--color-text-secondary)] font-bold flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full glx-inset text-[var(--color-text-secondary)] font-bold flex items-center justify-center">
                           {student.name.charAt(0)}
                         </div>
                         <div>
@@ -818,7 +818,7 @@ export default function Students() {
                       </button>
                       <button
                         onClick={() => openEditModal(student)}
-                        className="px-3 py-1.5 bg-white/4 text-[var(--color-text-secondary)] rounded-xl font-bold text-[10px]"
+                        className="px-3 py-1.5 glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold text-[10px]"
                       >
                         ویرایش
                       </button>
@@ -834,7 +834,7 @@ export default function Students() {
                 );
               })
             ) : (
-              <div className="py-12 text-center text-[var(--color-text-tertiary)] font-medium bg-white/3 rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)]">
+              <div className="py-12 text-center text-[var(--color-text-tertiary)] font-medium glx rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)]">
                 هیچ موردی منطبق با فیلترها و مقادیر بالا یافت نشد.
               </div>
             )}
@@ -853,7 +853,7 @@ export default function Students() {
             id="add-edit-student-box"
           >
             {/* Modal Header */}
-            <div className="px-6 py-5 bg-white/3 border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <button 
                 onClick={() => setShowAddEditModal(false)}
                 className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] font-bold text-lg cursor-pointer"
@@ -878,7 +878,7 @@ export default function Students() {
                   placeholder="مثال: بردیا مهدوی"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 text-[11px] text-[var(--color-text-primary)] text-right"
+                  className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-[11px] text-[var(--color-text-primary)] text-right"
                 />
               </div>
 
@@ -892,7 +892,7 @@ export default function Students() {
                   placeholder="مثال: 0012487654"
                   value={formNationalId}
                   onChange={(e) => setFormNationalId(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 text-[11px] font-mono tracking-widest text-[var(--color-text-primary)] text-right"
+                  className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-[11px] font-mono tracking-widest text-[var(--color-text-primary)] text-right"
                 />
                 
                 {/* Live validation feedback display! */}
@@ -919,7 +919,7 @@ export default function Students() {
                   <select
                     value={formGrade}
                     onChange={(e) => setFormGrade(e.target.value)}
-                    className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-2 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 font-bold"
+                    className="w-full glx border px-2 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-bold"
                   >
                     <option value="هفتم">پایه هفتم</option>
                     <option value="هشتم">پایه هشتم</option>
@@ -932,7 +932,7 @@ export default function Students() {
                   <select
                     value={formClassGroupId}
                     onChange={(e) => setFormClassGroupId(e.target.value)}
-                    className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-2 py-2.5 rounded-xl focus:bg-white focus:border-[var(--color-accent)]/40 font-bold"
+                    className="w-full glx border px-2 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-bold"
                   >
                     {classGroups.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>
@@ -957,7 +957,7 @@ export default function Students() {
                       className={`py-2 text-[10px] rounded-xl border font-bold transition-all cursor-pointer ${
                         formStatus === s.val 
                           ? 'bg-[var(--color-accent)] border-indigo-600 text-white shadow-sm' 
-                          : 'bg-white/3 border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:bg-white/4'
+                          : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
                       }`}
                     >
                       {s.label}
@@ -975,7 +975,7 @@ export default function Students() {
                     placeholder="مثال: 09123456789"
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-3.5 py-2.5 rounded-xl font-mono"
+                    className="w-full glx border px-3.5 py-2.5 rounded-xl font-mono"
                   />
                 </div>
 
@@ -986,7 +986,7 @@ export default function Students() {
                     placeholder="stud@school.ir"
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
-                    className="w-full bg-white/3/70 border border-[var(--color-glass-light-stroke)] px-3 py-2.5 rounded-xl font-mono text-left"
+                    className="w-full glx border px-3 py-2.5 rounded-xl font-mono text-left"
                   />
                 </div>
               </div>
@@ -1001,7 +1001,7 @@ export default function Students() {
                 <button 
                   type="button"
                   onClick={() => setShowAddEditModal(false)}
-                  className="px-4 py-2.5 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer"
+                  className="px-4 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer"
                 >
                   انصراف
                 </button>
@@ -1031,7 +1031,7 @@ export default function Students() {
             id="wizard-container"
           >
             {/* Header with Close */}
-            <div className="px-6 py-5 bg-white/3 border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
               <button
                 onClick={() => {
                   setShowImportWizard(false);
@@ -1039,7 +1039,7 @@ export default function Students() {
                   setUploadedFileName('');
                   setWizardRawData([]);
                 }}
-                className="px-2.5 py-1 bg-white/4/60 hover:bg-white/6 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-bold rounded-xl cursor-pointer"
+                className="px-2.5 py-1 glx-inset hover:glx-inset text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-bold rounded-xl cursor-pointer"
               >
                 بستن راهنما ×
               </button>
@@ -1050,7 +1050,7 @@ export default function Students() {
             </div>
 
             {/* Step Wizard visual track bar! */}
-            <div className="bg-white/3 border-b border-[var(--color-glass-light-stroke)] px-6 py-3.5 flex items-center justify-around gap-2 select-none">
+            <div className="glx border-b border-[var(--color-glass-light-stroke)] px-6 py-3.5 flex items-center justify-around gap-2 select-none">
               {[
                 { s: 1, label: 'مرحله ۱: انتخاب فایل' },
                 { s: 2, label: 'مرحله ۲: پیش‌نمایش اطلاعات' },
@@ -1063,7 +1063,7 @@ export default function Students() {
                       ? 'bg-[var(--color-accent)] text-white shadow-sm' 
                       : wizardStep > stepObj.s 
                       ? 'bg-[var(--color-success)] text-white' 
-                      : 'bg-white/6 text-[var(--color-text-tertiary)]'
+                      : 'glx-inset text-[var(--color-text-tertiary)]'
                   }`}>
                     {wizardStep > stepObj.s ? '✓' : toPersianDigits(stepObj.s)}
                   </div>
@@ -1082,7 +1082,7 @@ export default function Students() {
               {/* Step 1: File selection Drag & Drop */}
               {wizardStep === 1 && (
                 <div className="space-y-4">
-                  <div className="space-y-1 bg-white/3/80 border border-[var(--color-glass-light-stroke)] p-4.5 rounded-2xl leading-relaxed">
+                  <div className="space-y-1 glx border p-4.5 rounded-2xl leading-relaxed">
                     <p className="font-bold text-[var(--color-text-primary)] text-[11px]">ملاحظات قالب فایل بارگذاری شده:</p>
                     <p className="text-[var(--color-text-tertiary)]">
                       فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با <strong className="font-bold text-[var(--color-text-secondary)]">name</strong> (نام و نام خانوادگی)، <strong className="font-bold text-[var(--color-text-secondary)]">national_id</strong> (کدملی)، <strong className="font-bold text-[var(--color-text-secondary)] text-indigo-600">class</strong> (نام کلاس) و <strong className="font-bold text-[var(--color-text-secondary)]">grade</strong> (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
@@ -1102,7 +1102,7 @@ export default function Students() {
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center gap-3 transition-colors ${
-                      dragActive ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30' : 'border-[var(--color-glass-light-stroke)] bg-white/3 hover:bg-white/4/50'
+                      dragActive ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30' : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105/50'
                     }`}
                   >
                     <Upload className="w-12 h-12 text-[var(--color-text-tertiary)] animate-pulse" />
@@ -1123,7 +1123,7 @@ export default function Students() {
                   </div>
 
                   {/* Sandboxed Demo Presets triggers so testers don't even need to provide a file! */}
-                  <div className="bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                  <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
                     <p className="font-bold text-[var(--color-text-secondary)] block text-[10.5px]">بررسی ساده و سریع دمو بدون آپلود فایل واقعی:</p>
                     <div className="flex gap-2">
                       <button
@@ -1149,7 +1149,7 @@ export default function Students() {
               {/* Step 2: Preview of Raw Rows */}
               {wizardStep === 2 && (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-white/3 p-3 rounded-xl">
+                  <div className="flex justify-between items-center glx p-3 rounded-xl">
                     <span className="text-[var(--color-text-tertiary)] font-semibold">فایل دریافتی: <strong className="text-slate-900">{uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}</strong></span>
                     <span className="font-bold text-indigo-600 bg-[var(--color-accent-soft)] px-2.5 py-1 rounded-full">{toPersianDigits(wizardRawData.length)} ردیف یافت شد</span>
                   </div>
@@ -1158,7 +1158,7 @@ export default function Students() {
 
                   <div className="border border-[var(--color-glass-light-stroke)] rounded-xl overflow-hidden shadow-sm max-h-60 overflow-y-auto">
                     <table className="w-full text-right text-[11px]">
-                      <thead className="bg-white/4 border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] sticky top-0">
+                      <thead className="glx-inset border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] sticky top-0">
                         <tr>
                           <th className="p-3 font-bold text-center w-12">ردیف</th>
                           <th className="p-3 font-bold">name (نام و نام خانوادگی)</th>
@@ -1169,7 +1169,7 @@ export default function Students() {
                       </thead>
                       <tbody className="divide-y divide-slate-100 bg-white">
                         {wizardRawData.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-white/3/40">
+                          <tr key={idx} className="hover:brightness-105">
                             <td className="p-3 text-center text-[var(--color-text-tertiary)] font-bold">{toPersianDigits(row.row)}</td>
                             <td className="p-3 font-bold text-[var(--color-text-primary)]">{row.name || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
                             <td className="p-3 font-mono text-[var(--color-text-secondary)]">{toPersianDigits(row.national_id) || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
@@ -1184,7 +1184,7 @@ export default function Students() {
                   <div className="flex justify-end gap-2 pt-2 border-t border-[var(--color-glass-light-stroke)]">
                     <button
                       onClick={() => setWizardStep(1)}
-                      className="px-4 py-2 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
+                      className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
                     >
                       بازگشت و انتخاب فایل دیگر
                     </button>
@@ -1265,7 +1265,7 @@ export default function Students() {
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                         <span>پیش‌نمایش ارقام سالم و آماده درج نهایی:</span>
                       </p>
-                      <div className="border border-[var(--color-success)]/10 bg-white rounded-xl max-h-40 overflow-y-auto text-[10px]">
+                      <div className="border border-[var(--color-success)]/10 glx rounded-xl max-h-40 overflow-y-auto text-[10px]">
                         <table className="w-full text-right">
                           <thead className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-b border-[var(--color-success)]/10 sticky top-0">
                             <tr>
@@ -1296,7 +1296,7 @@ export default function Students() {
                   <div className="flex justify-between gap-2.5 pt-3.5 border-t border-[var(--color-glass-light-stroke)]">
                     <button
                       onClick={() => setWizardStep(2)}
-                      className="px-4 py-2 bg-white/4 hover:bg-white/6 text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
+                      className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
                     >
                       بازگشت به پیش‌نمایش سطور
                     </button>
@@ -1355,7 +1355,7 @@ export default function Students() {
             <div className="px-6 py-5 bg-[var(--color-accent-soft)]/70 border-b border-[var(--color-accent-soft)] flex items-center justify-between">
               <button 
                 onClick={() => setShowExamLogsModal(false)}
-                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-xs bg-white px-2.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-xs glx px-2.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
               >
                 بستن سوابق
               </button>
@@ -1368,7 +1368,7 @@ export default function Students() {
             {/* Logs Body info */}
             <div className="p-6 space-y-5">
               
-              <div className="flex justify-between items-center bg-white/3 p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+              <div className="flex justify-between items-center glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
                 <div>
                   <p className="font-bold text-[var(--color-text-primary)] text-[11.5px]">{activeLogStudent.name}</p>
                   <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}</p>
@@ -1389,7 +1389,7 @@ export default function Students() {
                       return (
                         <div 
                           key={sub.id || index} 
-                          className="p-3.5 bg-white/3/70 border border-[var(--color-glass-light-stroke)] rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
+                          className="p-3.5 glx border rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
                         >
                           <div>
                             <h5 className="font-bold text-[var(--color-text-secondary)] text-[11px]">{examItem?.title || sub.examCode}</h5>
@@ -1412,7 +1412,7 @@ export default function Students() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-8 text-center bg-white/3/45 rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)] select-none">
+                  <div className="p-8 text-center glx rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)] select-none">
                     <Info className="w-8 h-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
                     <p className="text-[10px] text-[var(--color-text-tertiary)]">هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت نگردیده است.</p>
                   </div>
