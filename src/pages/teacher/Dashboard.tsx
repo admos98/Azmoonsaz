@@ -179,25 +179,28 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
       {toastElement}
 
-      {/* 1. Welcome Card Hero — ink liquid glass with The Mark watermark */}
-      <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx-strong text-white shadow-2xl" id="dashboard-hero-banner">
+      {/* 1. Welcome Card Hero — liquid glass with The Mark watermark */ }
+      <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx-strong shadow-2xl" id="dashboard-hero-banner">
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-[var(--color-accent)]/8 rounded-full blur-[80px] filter" />
-        <div className="absolute right-4 bottom-4 opacity-[0.05] pointer-events-none hidden xl:block">
-          <TheMark variant="core" size={120} animated={false} />
-        </div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="text-right">
-            <span className="bg-white/4 text-[var(--color-text-on-dark-secondary)] text-[11px] font-bold px-3 py-1 rounded-full border border-[var(--color-glass-ink-stroke)]">
+            <span className="bg-[var(--color-glass-light-fill)] text-[var(--color-text-secondary)] text-[11px] font-bold px-3 py-1 rounded-full border border-[var(--color-glass-light-stroke)]">
               {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
-            <h2 className="text-xl md:text-2xl font-black mt-3 leading-snug drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">سلام، استاد {teacher?.name || 'گرامی'} عزیز</h2>
-            <p className="text-xs md:text-sm mt-2 max-w-2xl leading-relaxed text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+            <h2 className="text-xl md:text-2xl font-black mt-3 leading-snug text-[var(--color-text-primary)]">
+              سلام، استاد {teacher?.name || 'گرمی'} عزیز
+            </h2>
+            <p className="text-xs md:text-sm mt-2 max-w-2xl leading-relaxed text-[var(--color-text-secondary)]">
               {formatPersianNumber(totalExams)} آزمون جاری فعال و {formatPersianNumber(pendingGradings)} پاسخ‌برگ در صف تصحیح.
             </p>
           </div>
-          <div className="flex gap-3 shrink-0 self-start md:self-auto">
+          {/* Buttons: bottom-left, with blurred Mark logo centered above */ }
+          <div className="absolute bottom-6 left-6 z-20 flex flex-col items-end gap-3 shrink-0">
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-6 opacity-15 pointer-events-none">
+              <TheMark variant="row" size={80} animated={false} className="blur-[4px] brightness-200" />
+            </div>
             <button
               id="hero-btn-new-exam"
               onClick={() => onNavigate('exams/new')}
@@ -209,7 +212,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <button
               id="hero-btn-questions"
               onClick={() => onNavigate('questions')}
-              className="px-5 py-3 bg-white/4 hover:bg-white/6 text-white border border-[var(--color-glass-ink-stroke)] rounded-xl text-xs font-semibold transition-all cursor-pointer"
+              className="px-5 py-3 bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-glass-light-fill)]/30 text-[var(--color-text-primary)] border border-[var(--color-glass-light-stroke)] rounded-xl text-xs font-semibold transition-all cursor-pointer"
             >
               افزودن سوال جدید
             </button>

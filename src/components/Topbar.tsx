@@ -101,6 +101,7 @@ export default function Topbar({
   const { teacher } = useTeacher();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
+  const [menuClosing, setMenuClosing] = useState(false);
   const [hamburgerHover, setHamburgerHover] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [avatarExpanded, setAvatarExpanded] = useState(false);
@@ -185,19 +186,29 @@ export default function Topbar({
     }
     setShowNotifications(false);
     setShowHamburgerMenu(true);
+    setMenuClosing(false);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setMenuClosing(true);
+    setTimeout(() => {
+      setShowHamburgerMenu(false);
+      setMenuClosing(false);
+    }, 350);
   }, []);
 
   useEffect(() => {
     if (!showHamburgerMenu) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowHamburgerMenu(false);
+      if (e.key === 'Escape') closeMenu();
     };
     const onClick = (e: MouseEvent) => {
       if (
+        !menuClosing &&
         hamburgerRef.current && !hamburgerRef.current.contains(e.target as Node) &&
         hamburgerDropdownRef.current && !hamburgerDropdownRef.current.contains(e.target as Node)
       ) {
-        setShowHamburgerMenu(false);
+        closeMenu();
       }
     };
     document.addEventListener('keydown', onKey);
@@ -439,26 +450,28 @@ export default function Topbar({
       </div>
 
       {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */ }
-      {showHamburgerMenu && (
+      {(showHamburgerMenu || menuClosing) && (
         <>
           {/* Backdrop — blocks interaction with underlying UI, full blur */ }
           <div
             className="fixed inset-0 z-[55] bg-black/10 backdrop-blur-sm"
-            onClick={() => setShowHamburgerMenu(false)}
+            onClick={closeMenu}
           />
 
           {/* All panels container (for click-outside detection) */ }
           <div ref={hamburgerDropdownRef}>
             {/* Panel 1: App info + date */ }
-          <div
-            className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
-            style={{
-              ...hamburgerDropdownStyle,
-              top: computePanelTop(0),
-              animation: 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
-            }}
-            id="hamburger-panel-1"
-          >
+            <div
+              className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+              style={{
+                ...hamburgerDropdownStyle,
+                top: computePanelTop(0),
+                animation: menuClosing
+                  ? 'dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
+                  : 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
+              }}
+              id="hamburger-panel-1"
+            >
             <div className="p-3 min-w-[240px]">
               <div className="flex items-center gap-3">
                 <TheMark variant="row" size={36} animated={false} />
@@ -479,7 +492,9 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(1),
-              animation: 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
+              animation: menuClosing
+                ? 'dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both'
+                : 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
             }}
             id="hamburger-panel-2"
           >
@@ -517,7 +532,9 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(2),
-              animation: 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
+              animation: menuClosing
+                ? 'dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both'
+                : 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
             }}
             id="hamburger-panel-3"
           >
@@ -528,13 +545,13 @@ export default function Topbar({
                     ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
                 }`}
-                onClick={() => { onTabChange('dashboard'); setShowHamburgerMenu(false); }}
+                onClick={() => { onTabChange('dashboard'); closeMenu(); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     onTabChange('dashboard');
-                    setShowHamburgerMenu(false);
+                    closeMenu();
                   }
                 }}
               >
@@ -542,13 +559,13 @@ export default function Topbar({
               </div>
               <div
                 className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
-                onClick={() => { onTabChange('students'); setShowHamburgerMenu(false); }}
+                onClick={() => { onTabChange('students'); closeMenu(); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     onTabChange('students');
-                    setShowHamburgerMenu(false);
+                    closeMenu();
                   }
                 }}
               >
@@ -556,13 +573,13 @@ export default function Topbar({
               </div>
               <div
                 className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
-                onClick={() => { onTabChange('classes'); setShowHamburgerMenu(false); }}
+                onClick={() => { onTabChange('classes'); closeMenu(); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     onTabChange('classes');
-                    setShowHamburgerMenu(false);
+                    closeMenu();
                   }
                 }}
               >
@@ -577,20 +594,22 @@ export default function Topbar({
             style={{
               ...hamburgerDropdownStyle,
               top: computePanelTop(3),
-              animation: 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
+              animation: menuClosing
+                ? 'dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both'
+                : 'dropIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
             }}
             id="hamburger-panel-4"
           >
             <div className="p-3 min-w-[240px]">
               <div
                 className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
-                onClick={() => { onTabChange('questions'); setShowHamburgerMenu(false); }}
+                onClick={() => { onTabChange('questions'); closeMenu(); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     onTabChange('questions');
-                    setShowHamburgerMenu(false);
+                    closeMenu();
                   }
                 }}
               >
@@ -598,13 +617,13 @@ export default function Topbar({
               </div>
               <div
                 className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
-                onClick={() => { onTabChange('exams'); setShowHamburgerMenu(false); }}
+                onClick={() => { onTabChange('exams'); closeMenu(); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     onTabChange('exams');
-                    setShowHamburgerMenu(false);
+                    closeMenu();
                   }
                 }}
               >
@@ -612,13 +631,13 @@ export default function Topbar({
               </div>
               <div
                 className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
-                onClick={() => { onSwitchRole(); setShowHamburgerMenu(false); }}
+                onClick={() => { onSwitchRole(); closeMenu(); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     onSwitchRole();
-                    setShowHamburgerMenu(false);
+                    closeMenu();
                   }
                 }}
               >
@@ -626,13 +645,13 @@ export default function Topbar({
               </div>
               <div
                 className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 cursor-pointer transition-all duration-300"
-                onClick={() => { onLogout(); setShowHamburgerMenu(false); }}
+                onClick={() => { onLogout(); closeMenu(); }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     onLogout();
-                    setShowHamburgerMenu(false);
+                    closeMenu();
                   }
                 }}
               >

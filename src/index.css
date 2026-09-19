@@ -30,12 +30,12 @@
 
   /*
    * UNIFIED COLOR SYSTEM — Minimal, calm, eye-pleasing
-   * Base: cool-warm paper (#FAFAF8) — not beige, not pure white.
+   * Base: sky white — cool white with subtle blue hint.
    * Brand: deep ink (#1A1A2E) + gold (#F5B301).
    * Glass: whisper-thin white/8% — feels like looking through thin glass.
    */
-  --color-page-bg: #FAFAF8;
-  --color-paper-warm: #FAFAF8;
+  --color-page-bg: #FAFCFF;
+  --color-paper-warm: #FAFCFF;
 
   /* Ink field — sidebar, hero on dark */
   --color-ink-field: #1A1A2E;
@@ -81,6 +81,15 @@
   --color-text-tertiary: #9CA3AF;
   --color-text-on-dark: #F9FAFB;
   --color-text-on-dark-secondary: #D1D5DB;
+}
+
+/* ─── Dark Theme ─── */
+:root[data-theme="dark"] {
+  --color-page-bg: #0A0A12;
+  --color-paper-warm: #0A0A12;
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #D1D5DB;
+  --color-text-tertiary: #9CA3AF;
 }
 
 /* ─── Base ─── */
@@ -204,6 +213,16 @@ body {
 }
 .glx-sheen:hover::before { opacity: 1; }
 
+/* ─── Dark theme glass overrides ─── */
+:root[data-theme="dark"] {
+  --color-glass-light-fill: rgba(255, 255, 255, 0.03);
+  --color-glass-light-stroke: rgba(255, 255, 255, 0.07);
+  --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
+  --color-glass-light-bottom: rgba(0, 0, 0, 0.15);
+  --color-glass-ink-fill: rgba(255, 255, 255, 0.05);
+  --color-glass-ink-stroke: rgba(255, 255, 255, 0.06);
+}
+
 /* ─── Skeleton shimmer ─── */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
@@ -238,7 +257,7 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Panel drop-out animation (close) — opposite of dropIn */
+/* Panel drop-out animation (close) — opposite of dropIn */
 @keyframes dropOut {
   0% { opacity: 1; transform: translateY(0); }
   100% { opacity: 0; transform: translateY(12px); }
