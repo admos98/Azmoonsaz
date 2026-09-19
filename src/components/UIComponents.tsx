@@ -354,10 +354,19 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
               : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'
           }`}
         >
-          <span className={selectedLabel ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]'}>
+          <span
+            className={
+              selectedLabel
+                ? 'text-[var(--color-text-primary)]'
+                : 'text-[var(--color-text-tertiary)]'
+            }
+          >
             {selectedLabel || placeholder}
           </span>
-          <ChevronDown className="w-3.5 h-3.5 text-[var(--color-text-tertiary)] transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'none' }} />
+          <ChevronDown
+            className="w-3.5 h-3.5 text-[var(--color-text-tertiary)] transition-transform"
+            style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+          />
         </button>
         <AnimatePresence>
           {open && (
