@@ -312,16 +312,16 @@ export default function Topbar({
 
         {/* Avatar pill — expands to show name */ }
         <div className="relative flex items-center">
-          {/* The pill container — avatar on right, name extends left */ }
+          {/* The pill container — pic stays still at left, pill grows rightward, name sits right of pic */ }
           <div
             className={`relative flex items-center overflow-hidden rounded-full glx-strong transition-all duration-500 ease-out ${
               avatarExpanded
-                ? 'w-[200px] pl-3 pr-3 py-2'
+                ? 'w-[200px] pl-1 pr-3 py-1'
                 : 'w-10 h-10'
             }`}
             style={{
-              direction: 'rtl',
-              justifyContent: 'flex-end',
+              direction: 'ltr',
+              justifyContent: avatarExpanded ? 'flex-start' : 'center',
             }}
             onMouseEnter={() => !showHamburgerMenu && setAvatarExpanded(true)}
             onMouseLeave={() => {
