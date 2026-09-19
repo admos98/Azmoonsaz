@@ -109,7 +109,10 @@ export default function Topbar({
   const [loadingNotifs, setLoadingNotifs] = useState(true);
   const [bellRect, setBellRect] = useState<DOMRect | null>(null);
   const [hamburgerRect, setHamburgerRect] = useState<DOMRect | null>(null);
+  const [notifClosing, setNotifClosing] = useState(false);
   const bellRef = useRef<HTMLButtonElement>(null);
+
+  // --- Notifications ---
   const notifRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const hamburgerDropdownRef = useRef<HTMLDivElement>(null);
@@ -205,6 +208,21 @@ export default function Topbar({
     };
   }, [showHamburgerMenu]);
 
+  // Close notifications when avatar expands (bell gets pushed)
+  const closeNotifications = useCallback(() => {
+    setNotifClosing(true);
+    setTimeout(() => {
+      setShowNotifications(false);
+      setBellRect(null);
+    }, 400);
+  }, []);
+
+  useEffect(() => {
+    if (avatarExpanded && showNotifications) {
+      closeNotifications();
+    }
+  }, [avatarExpanded, showNotifications, closeNotifications]);
+
   // --- Notifications ---
   const openNotifications = useCallback(() => {
     if (bellRef.current) {
@@ -212,11 +230,6 @@ export default function Topbar({
     }
     setShowHamburgerMenu(false);
     setShowNotifications(true);
-  }, []);
-
-  const closeNotifications = useCallback(() => {
-    setShowNotifications(false);
-    setBellRect(null);
   }, []);
 
   useEffect(() => {
@@ -622,12 +635,27 @@ export default function Topbar({
         </>
       )}
 
-      {/* Notifications Dropdown */}
-      {showNotifications && (
+      {/* Notifications Dropdown — animates from bell origin */ }
+      {(showNotifications || notifClosing) && (
         <div
           ref={notifRef}
-          className="fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden glx-sheen"
-          style={notificationStyle}
+          className={`fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden glx-sheen ${
+            notifClosing ? 'notification-shrink' : 'notification-grow'
+          }`}
+          style={{
+            ...notificationStyle,
+            // Scale animates from bell center. Bell is above dropdown, left-aligned.
+            // transformOrigin computed relative to dropdown element:
+            // X = bell center X - dropdown left = bellWidth/2 (since dropdown.left = bellRect.left)
+            // Y = bell center Y - dropdown top = (bellRect.top + bellHeight/2) - (bellRect.bottom + 12)
+            //   = -bellHeight/2 - 12 (negative = above element)
+            transformOrigin: bellRect
+              ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`
+              : 'center',
+            animation: notifClosing
+              ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
+              : 'growFromBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both',
+          }}
           id="notification-dropdown"
         >
           <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
