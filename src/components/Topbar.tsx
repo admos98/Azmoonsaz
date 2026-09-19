@@ -214,6 +214,7 @@ export default function Topbar({
     setTimeout(() => {
       setShowNotifications(false);
       setBellRect(null);
+      setNotifClosing(false);
     }, 400);
   }, []);
 
