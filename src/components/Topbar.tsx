@@ -225,6 +225,7 @@ export default function Topbar({
 
   // --- Notifications ---
   const openNotifications = useCallback(() => {
+    setNotifClosing(false);
     if (bellRef.current) {
       setBellRect(bellRef.current.getBoundingClientRect());
     }
@@ -304,7 +305,14 @@ export default function Topbar({
           <button
             ref={bellRef}
             id="notifications-bell-btn"
-            onClick={() => !showHamburgerMenu && openNotifications()}
+            onClick={() => {
+              if (showHamburgerMenu) return;
+              if (showNotifications || notifClosing) {
+                closeNotifications();
+              } else {
+                openNotifications();
+              }
+            }}
             className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative transition-all cursor-pointer"
             aria-label="اعلان‌ها"
             aria-expanded={showNotifications}
