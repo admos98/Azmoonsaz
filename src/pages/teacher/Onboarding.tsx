@@ -71,7 +71,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             <GraduationCap className="w-10 h-10 text-indigo-600" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">خوش آمدید!</h1>
-          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">برای شروع، اطلاعات زیر را تکمیل کنید</p>
+          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
+            برای شروع، اطلاعات زیر را تکمیل کنید
+          </p>
         </div>
 
         {/* Form */}
@@ -106,7 +108,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               >
                 <option value="">انتخاب کنید...</option>
                 {SUBJECTS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -114,7 +118,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             {/* Custom Subject */}
             {subject === 'سایر' && (
               <div>
-                <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">رشته دیگر</label>
+                <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">
+                  رشته دیگر
+                </label>
                 <input
                   type="text"
                   value={customSubject}
@@ -126,7 +132,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             )}
 
             {error && (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {error}
+              </p>
             )}
 
             <button

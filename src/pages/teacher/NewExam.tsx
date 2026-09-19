@@ -5,7 +5,19 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, ArrowLeft, CheckCircle2, Award, Clock, FileText, Check, CheckSquare, Plus, Layers, ShieldAlert } from 'lucide-react';
+import {
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  Award,
+  Clock,
+  FileText,
+  Check,
+  CheckSquare,
+  Plus,
+  Layers,
+  ShieldAlert,
+} from 'lucide-react';
 import { logger } from '../../lib/logger';
 import { useToast } from '../../hooks/useToast';
 import { Exam, ExamSection, Question, ClassGroup } from '../../types';
@@ -42,42 +54,56 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   const [browserLockdown, setBrowserLockdown] = useState(true);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   useEffect(() => {
-    classService.getClassGroups().then(setClassGroups).catch(() => {});
+    classService
+      .getClassGroups()
+      .then(setClassGroups)
+      .catch(() => {});
   }, []);
   useEffect(() => {
     let active = true;
     setQuestionsLoading(true);
-    questionService.getQuestions()
+    questionService
+      .getQuestions()
       .then((questions) => {
         if (!active) return;
         setQuestionBank(questions);
-        setSelectedQuestionIds((current) => current.filter((id) => questions.some((q) => q.id === id)));
+        setSelectedQuestionIds((current) =>
+          current.filter((id) => questions.some((q) => q.id === id)),
+        );
       })
       .catch((err) => {
         logger.error('Failed to load question bank for exam builder:', err);
         if (active) setQuestionBank([]);
       })
-      .finally(() => { if (active) setQuestionsLoading(false); });
-    return () => { active = false; };
+      .finally(() => {
+        if (active) setQuestionsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const filteredQuestionBank = useMemo(() => {
     return questionBank.filter((q) => {
       const gradeOk = !grade || q.grade === grade || String(q.grade).includes(String(grade));
-      const subjectOk = !subject || q.category === subject || String(q.category || '').includes(subject) || subject.includes(String(q.category || ''));
+      const subjectOk =
+        !subject ||
+        q.category === subject ||
+        String(q.category || '').includes(subject) ||
+        subject.includes(String(q.category || ''));
       return gradeOk || subjectOk;
     });
   }, [questionBank, grade, subject]);
 
   const selectedQuestions = useMemo(() => {
-    return questionBank.filter(q => selectedQuestionIds.includes(q.id));
+    return questionBank.filter((q) => selectedQuestionIds.includes(q.id));
   }, [questionBank, selectedQuestionIds]);
 
   const totalPoints = selectedQuestions.reduce((sum, q) => sum + q.points, 0);
 
   const handleClassToggle = (classId: string) => {
     if (selectedClasses.includes(classId)) {
-      setSelectedClasses(selectedClasses.filter(id => id !== classId));
+      setSelectedClasses(selectedClasses.filter((id) => id !== classId));
     } else {
       setSelectedClasses([...selectedClasses, classId]);
     }
@@ -85,7 +111,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
   const handleQuestionToggle = (qId: string) => {
     if (selectedQuestionIds.includes(qId)) {
-      setSelectedQuestionIds(selectedQuestionIds.filter(id => id !== qId));
+      setSelectedQuestionIds(selectedQuestionIds.filter((id) => id !== qId));
     } else {
       setSelectedQuestionIds([...selectedQuestionIds, qId]);
     }
@@ -153,7 +179,10 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   };
 
   return (
-    <div className="glass-1 rounded-2xl overflow-hidden animate-in fade-in duration-300" id="new-exam-wizard-wrapper">
+    <div
+      className="glass-1 rounded-2xl overflow-hidden animate-in fade-in duration-300"
+      id="new-exam-wizard-wrapper"
+    >
       {/* Header and Back Button */}
       <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -165,14 +194,21 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
             <ArrowRight className="w-5 h-5" />
           </button>
           <div>
-            <h3 className="text-sm font-black text-[var(--color-text-primary)]">طراح هوشمند و گام‌به‌گام آزمون</h3>
-            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">تخصیص سوالات به همراه بارگذاری همزمان پارامترهای تدارکاتی</p>
+            <h3 className="text-sm font-black text-[var(--color-text-primary)]">
+              طراح هوشمند و گام‌به‌گام آزمون
+            </h3>
+            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+              تخصیص سوالات به همراه بارگذاری همزمان پارامترهای تدارکاتی
+            </p>
           </div>
         </div>
 
         {/* Floating Steps indicators */}
-        <div className="flex items-center space-x-2 space-x-reverse text-xs font-bold" id="stepper-bubble-container">
-          {[1, 2, 3, 4].map(sNum => (
+        <div
+          className="flex items-center space-x-2 space-x-reverse text-xs font-bold"
+          id="stepper-bubble-container"
+        >
+          {[1, 2, 3, 4].map((sNum) => (
             <div
               key={sNum}
               className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
@@ -191,14 +227,23 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       {step === 1 && (
         <div className="p-6 md:p-8 space-y-6 text-right animate-in fade-in slide-in-from-left-4 duration-250">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3">
-            <h4 className="text-xs font-black text-[var(--color-text-primary)]">گام اول: مشخصات و مقطع تحصیلی آزمون</h4>
-            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">عنوان آزمون و مرجع درسی را برای ثبت در نظام نمرات دانش‌آموزی تنظیم نمایید.</p>
+            <h4 className="text-xs font-black text-[var(--color-text-primary)]">
+              گام اول: مشخصات و مقطع تحصیلی آزمون
+            </h4>
+            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+              عنوان آزمون و مرجع درسی را برای ثبت در نظام نمرات دانش‌آموزی تنظیم نمایید.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Title */}
             <div className="space-y-1.5">
-              <label htmlFor="exam-title-input" className="text-xs font-bold text-[var(--color-text-secondary)] block">عنوان اصلی آزمون:</label>
+              <label
+                htmlFor="exam-title-input"
+                className="text-xs font-bold text-[var(--color-text-secondary)] block"
+              >
+                عنوان اصلی آزمون:
+              </label>
               <input
                 type="text"
                 id="exam-title-input"
@@ -212,7 +257,12 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
             {/* Subject */}
             <div className="space-y-1.5">
-              <label htmlFor="exam-subject-input" className="text-xs font-bold text-[var(--color-text-secondary)] block text-right font-sans">موضوع درس سنجش:</label>
+              <label
+                htmlFor="exam-subject-input"
+                className="text-xs font-bold text-[var(--color-text-secondary)] block text-right font-sans"
+              >
+                موضوع درس سنجش:
+              </label>
               <input
                 type="text"
                 id="exam-subject-input"
@@ -227,7 +277,12 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
           {/* Details Descriptions */}
           <div className="space-y-1.5">
-            <label htmlFor="exam-desc-input" className="text-xs font-bold text-[var(--color-text-secondary)] block">توضیحات راهنما یا مرجع مطالعه برای دانش‌آموز:</label>
+            <label
+              htmlFor="exam-desc-input"
+              className="text-xs font-bold text-[var(--color-text-secondary)] block"
+            >
+              توضیحات راهنما یا مرجع مطالعه برای دانش‌آموز:
+            </label>
             <textarea
               id="exam-desc-input"
               rows={3}
@@ -240,40 +295,47 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
           {/* Grade and Class selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label htmlFor="exam-grade-select" className="text-xs font-bold text-[var(--color-text-secondary)] block">پایه آموزشی مرجع:</label>
-            <select
-              id="exam-grade-select"
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              className="w-full glx border text-xs text-[var(--color-text-secondary)] px-3.5 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
-            >
-              <option value="">انتخاب پایه...</option>
-              <optgroup label="دبستان">
-                <option value="اول">پایه اول</option>
-                <option value="دوم">پایه دوم</option>
-                <option value="سوم">پایه سوم</option>
-                <option value="چهارم">پایه چهارم</option>
-                <option value="پنجم">پایه پنجم</option>
-                <option value="ششم">پایه ششم</option>
-              </optgroup>
-              <optgroup label="دوره اول متوسطه">
-                <option value="هفتم">پایه هفتم</option>
-                <option value="هشتم">پایه هشتم</option>
-                <option value="نهم">پایه نهم</option>
-              </optgroup>
-              <optgroup label="دوره دوم متوسطه">
-                <option value="دهم">پایه دهم</option>
-                <option value="یازدهم">پایه یازدهم</option>
-                <option value="دوازدهم">پایه دوازدهم</option>
-              </optgroup>
-            </select>
-          </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="exam-grade-select"
+                className="text-xs font-bold text-[var(--color-text-secondary)] block"
+              >
+                پایه آموزشی مرجع:
+              </label>
+              <select
+                id="exam-grade-select"
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                className="w-full glx border text-xs text-[var(--color-text-secondary)] px-3.5 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
+              >
+                <option value="">انتخاب پایه...</option>
+                <optgroup label="دبستان">
+                  <option value="اول">پایه اول</option>
+                  <option value="دوم">پایه دوم</option>
+                  <option value="سوم">پایه سوم</option>
+                  <option value="چهارم">پایه چهارم</option>
+                  <option value="پنجم">پایه پنجم</option>
+                  <option value="ششم">پایه ششم</option>
+                </optgroup>
+                <optgroup label="دوره اول متوسطه">
+                  <option value="هفتم">پایه هفتم</option>
+                  <option value="هشتم">پایه هشتم</option>
+                  <option value="نهم">پایه نهم</option>
+                </optgroup>
+                <optgroup label="دوره دوم متوسطه">
+                  <option value="دهم">پایه دهم</option>
+                  <option value="یازدهم">پایه یازدهم</option>
+                  <option value="دوازدهم">پایه دوازدهم</option>
+                </optgroup>
+              </select>
+            </div>
 
             <div className="space-y-2">
-              <span className="text-xs font-bold text-[var(--color-text-secondary)] block">تخصیص کلاس‌های دبیرستان (امکان بیش از یک تشکیلات):</span>
+              <span className="text-xs font-bold text-[var(--color-text-secondary)] block">
+                تخصیص کلاس‌های دبیرستان (امکان بیش از یک تشکیلات):
+              </span>
               <div className="flex flex-wrap gap-2.5">
-                {classGroups.map(cg => (
+                {classGroups.map((cg) => (
                   <button
                     key={cg.id}
                     type="button"
@@ -298,8 +360,12 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
         <div className="p-6 md:p-8 space-y-6 text-right animate-in fade-in slide-in-from-left-4 duration-250">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3 flex justify-between items-center">
             <div>
-              <h4 className="text-xs font-black text-[var(--color-text-primary)]">گام دوم: گزینش سوالات تالیفی یا بانک ملی</h4>
-              <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">تک‌تک گزینه‌ها را علامت بزنید تا در برگه جایگیری شوند.</p>
+              <h4 className="text-xs font-black text-[var(--color-text-primary)]">
+                گام دوم: گزینش سوالات تالیفی یا بانک ملی
+              </h4>
+              <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+                تک‌تک گزینه‌ها را علامت بزنید تا در برگه جایگیری شوند.
+              </p>
             </div>
 
             <span className="text-xs bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-3 py-1.5 rounded-xl font-bold">
@@ -310,44 +376,56 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           {/* Quick select database */}
           <div className="space-y-3">
             {questionsLoading && (
-              <div className="p-6 rounded-2xl border border-[var(--color-glass-light-stroke)] glx text-center text-xs font-bold text-[var(--color-text-tertiary)]">در حال دریافت سوالات از بانک سوالات...</div>
+              <div className="p-6 rounded-2xl border border-[var(--color-glass-light-stroke)] glx text-center text-xs font-bold text-[var(--color-text-tertiary)]">
+                در حال دریافت سوالات از بانک سوالات...
+              </div>
             )}
 
             {!questionsLoading && filteredQuestionBank.length === 0 && (
               <div className="p-6 rounded-2xl border border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] text-center text-xs font-bold text-[var(--color-warning)]">
-                سوالی برای پایه یا درس انتخاب‌شده پیدا نشد. ابتدا در بانک سوالات، سوال واقعی ثبت کنید.
+                سوالی برای پایه یا درس انتخاب‌شده پیدا نشد. ابتدا در بانک سوالات، سوال واقعی ثبت
+                کنید.
               </div>
             )}
 
-            {!questionsLoading && filteredQuestionBank.map((q) => {
-              const checked = selectedQuestionIds.includes(q.id);
-              return (
-                <div
-                  key={q.id}
-                  onClick={() => handleQuestionToggle(q.id)}
-                  className={`p-4 rounded-xl border text-right transition-all cursor-pointer flex gap-4 items-center ${
-                    checked
-                      ? 'bg-[var(--color-accent-soft)]/40 border-indigo-200'
-                      : 'glx border border-[var(--color-glass-light-stroke)] hover:border-[var(--color-glass-light-stroke)]'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => {}} // handled by parent div click
-                    className="w-4 h-4 text-indigo-600 rounded-lg cursor-pointer"
-                  />
-                  <div className="flex-1 space-y-1">
-                    <div className="flex justify-between items-center text-[10px] text-[var(--color-text-tertiary)]">
-                      <span className="glx-inset text-[var(--color-text-secondary)] px-2 py-0.5 rounded-md font-semibold">{q.category}</span>
-                      <span className="font-bold text-[var(--color-text-secondary)]">{q.points} امتیاز</span>
+            {!questionsLoading &&
+              filteredQuestionBank.map((q) => {
+                const checked = selectedQuestionIds.includes(q.id);
+                return (
+                  <div
+                    key={q.id}
+                    onClick={() => handleQuestionToggle(q.id)}
+                    className={`p-4 rounded-xl border text-right transition-all cursor-pointer flex gap-4 items-center ${
+                      checked
+                        ? 'bg-[var(--color-accent-soft)]/40 border-indigo-200'
+                        : 'glx border border-[var(--color-glass-light-stroke)] hover:border-[var(--color-glass-light-stroke)]'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {}} // handled by parent div click
+                      className="w-4 h-4 text-indigo-600 rounded-lg cursor-pointer"
+                    />
+                    <div className="flex-1 space-y-1">
+                      <div className="flex justify-between items-center text-[10px] text-[var(--color-text-tertiary)]">
+                        <span className="glx-inset text-[var(--color-text-secondary)] px-2 py-0.5 rounded-md font-semibold">
+                          {q.category}
+                        </span>
+                        <span className="font-bold text-[var(--color-text-secondary)]">
+                          {q.points} امتیاز
+                        </span>
+                      </div>
+                      <h5 className="text-xs font-black text-[var(--color-text-primary)]">
+                        {q.title}
+                      </h5>
+                      <p className="text-[11px] text-[var(--color-text-tertiary)] leading-normal line-clamp-1">
+                        {q.text}
+                      </p>
                     </div>
-                    <h5 className="text-xs font-black text-[var(--color-text-primary)]">{q.title}</h5>
-                    <p className="text-[11px] text-[var(--color-text-tertiary)] leading-normal line-clamp-1">{q.text}</p>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       )}
@@ -356,14 +434,21 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       {step === 3 && (
         <div className="p-6 md:p-8 space-y-6 text-right animate-in fade-in slide-in-from-left-4 duration-250">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3">
-            <h4 className="text-xs font-black text-[var(--color-text-primary)]">گام سوم: محدوده‌گذاری زمانی و ابزار ضد تقلب</h4>
-            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">سیستم‌ها و قوانین تصحیح و backtracking را فعال نمایید.</p>
+            <h4 className="text-xs font-black text-[var(--color-text-primary)]">
+              گام سوم: محدوده‌گذاری زمانی و ابزار ضد تقلب
+            </h4>
+            <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+              سیستم‌ها و قوانین تصحیح و backtracking را فعال نمایید.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Hours */}
             <div className="space-y-1.5">
-              <label htmlFor="new-ex-dur" className="text-xs font-bold text-[var(--color-text-secondary)] block flex items-center gap-1.5">
+              <label
+                htmlFor="new-ex-dur"
+                className="text-xs font-bold text-[var(--color-text-secondary)] block flex items-center gap-1.5"
+              >
                 <Clock className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                 <span>مدت زمان آزمون (دقیقه):</span>
               </label>
@@ -380,7 +465,9 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
             {/* Mode Practice */}
             <div className="space-y-1.5">
-              <span className="text-xs font-bold text-[var(--color-text-secondary)] block">حالت ارزشیابی:</span>
+              <span className="text-xs font-bold text-[var(--color-text-secondary)] block">
+                حالت ارزشیابی:
+              </span>
               <div className="grid grid-cols-2 gap-2 text-xs font-bold">
                 <button
                   type="button"
@@ -402,23 +489,64 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-3 glx rounded-xl border border-[var(--color-glass-light-stroke)]">
-              <input type="checkbox" id="sh-q" checked={shuffleQuestions} onChange={(e) => setShuffleQuestions(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer" />
-              <label htmlFor="sh-q" className="text-xs font-bold text-[var(--color-text-secondary)] cursor-pointer">ترتیب سوال تصادفی برای دانش‌آموزان</label>
+              <input
+                type="checkbox"
+                id="sh-q"
+                checked={shuffleQuestions}
+                onChange={(e) => setShuffleQuestions(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer"
+              />
+              <label
+                htmlFor="sh-q"
+                className="text-xs font-bold text-[var(--color-text-secondary)] cursor-pointer"
+              >
+                ترتیب سوال تصادفی برای دانش‌آموزان
+              </label>
             </div>
 
             <div className="flex items-center gap-3 p-3 glx rounded-xl border border-[var(--color-glass-light-stroke)]">
-              <input type="checkbox" id="sh-opt" checked={shuffleOptions} onChange={(e) => setShuffleOptions(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer" />
-              <label htmlFor="sh-opt" className="text-xs font-bold text-[var(--color-text-secondary)] cursor-pointer">ترتیب گزینه‌های تستی تصادفی</label>
+              <input
+                type="checkbox"
+                id="sh-opt"
+                checked={shuffleOptions}
+                onChange={(e) => setShuffleOptions(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer"
+              />
+              <label
+                htmlFor="sh-opt"
+                className="text-xs font-bold text-[var(--color-text-secondary)] cursor-pointer"
+              >
+                ترتیب گزینه‌های تستی تصادفی
+              </label>
             </div>
 
             <div className="flex items-center gap-3 p-3 glx rounded-xl border border-[var(--color-glass-light-stroke)]">
-              <input type="checkbox" id="btr" checked={allowBacktrack} onChange={(e) => setAllowBacktrack(e.target.checked)} className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer" />
-              <label htmlFor="btr" className="text-xs font-bold text-[var(--color-text-secondary)] cursor-pointer">اجازه تصحیح مجدد سوال رد شده</label>
+              <input
+                type="checkbox"
+                id="btr"
+                checked={allowBacktrack}
+                onChange={(e) => setAllowBacktrack(e.target.checked)}
+                className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer"
+              />
+              <label
+                htmlFor="btr"
+                className="text-xs font-bold text-[var(--color-text-secondary)] cursor-pointer"
+              >
+                اجازه تصحیح مجدد سوال رد شده
+              </label>
             </div>
 
             <div className="flex items-center gap-3 p-3 bg-rose-50/30 rounded-xl border border-[var(--color-danger)]/10">
-              <input type="checkbox" id="locks" checked={browserLockdown} onChange={(e) => setBrowserLockdown(e.target.checked)} className="w-4 h-4 text-rose-550 rounded-md cursor-pointer" />
-              <label htmlFor="locks" className="text-xs font-bold text-rose-900 cursor-pointer">فعال‌سازی قفل مرورگر ضدهک و تقلب</label>
+              <input
+                type="checkbox"
+                id="locks"
+                checked={browserLockdown}
+                onChange={(e) => setBrowserLockdown(e.target.checked)}
+                className="w-4 h-4 text-rose-550 rounded-md cursor-pointer"
+              />
+              <label htmlFor="locks" className="text-xs font-bold text-rose-900 cursor-pointer">
+                فعال‌سازی قفل مرورگر ضدهک و تقلب
+              </label>
             </div>
           </div>
         </div>
@@ -429,8 +557,12 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
         <div className="p-6 md:p-8 space-y-6 text-right animate-in fade-in slide-in-from-left-4 duration-250">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3 flex items-center justify-between">
             <div>
-              <h4 className="text-xs font-black text-[var(--color-text-primary)]">گام پایانی: مرور کلی ساختار آزمون</h4>
-              <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">کلیه پارامترها را بازرسی کنید تا کدهای ورود توزیع گردند.</p>
+              <h4 className="text-xs font-black text-[var(--color-text-primary)]">
+                گام پایانی: مرور کلی ساختار آزمون
+              </h4>
+              <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+                کلیه پارامترها را بازرسی کنید تا کدهای ورود توزیع گردند.
+              </p>
             </div>
             <span className="px-3 py-1 bg-[var(--color-success-soft)] text-[var(--color-success)] text-[10px] font-bold rounded-full">
               آماده برای انتشار نهایی
@@ -445,36 +577,52 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-[var(--color-text-tertiary)] block mb-1">موضوع درس و پایه:</span>
-                <p className="font-bold text-[var(--color-text-primary)]">{subject} | پایه {grade}</p>
+                <span className="text-[var(--color-text-tertiary)] block mb-1">
+                  موضوع درس و پایه:
+                </span>
+                <p className="font-bold text-[var(--color-text-primary)]">
+                  {subject} | پایه {grade}
+                </p>
               </div>
               <div>
                 <span className="text-[var(--color-text-tertiary)] block mb-1">کلاس‌ها:</span>
                 <p className="font-bold text-[var(--color-text-primary)]">
-                  {selectedClasses.map(id => classGroups.find(c => c.id === id)?.name || id).join(' و ')}
+                  {selectedClasses
+                    .map((id) => classGroups.find((c) => c.id === id)?.name || id)
+                    .join(' و ')}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-[var(--color-text-tertiary)] block mb-1">کل تعداد سوالات انتخابی:</span>
-                <p className="font-bold text-[var(--color-text-primary)]">{selectedQuestionIds.length} سوال</p>
+                <span className="text-[var(--color-text-tertiary)] block mb-1">
+                  کل تعداد سوالات انتخابی:
+                </span>
+                <p className="font-bold text-[var(--color-text-primary)]">
+                  {selectedQuestionIds.length} سوال
+                </p>
               </div>
               <div>
-                <span className="text-[var(--color-text-tertiary)] block mb-1">بارم به ازای کل آزمون:</span>
+                <span className="text-[var(--color-text-tertiary)] block mb-1">
+                  بارم به ازای کل آزمون:
+                </span>
                 <p className="font-bold text-[var(--color-accent)] text-sm">{totalPoints} نمره</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-[var(--color-text-tertiary)] block mb-1">مدت زمان آزمون:</span>
+                <span className="text-[var(--color-text-tertiary)] block mb-1">
+                  مدت زمان آزمون:
+                </span>
                 <p className="font-bold text-[var(--color-text-primary)]">{duration} دقیقه</p>
               </div>
               <div>
                 <span className="text-[var(--color-text-tertiary)] block mb-1">سیستم امنیتی:</span>
-                <p className="font-bold text-[var(--color-danger)]">{browserLockdown ? 'قفل سخت مرورگر (فعال)' : 'غیر فعال'}</p>
+                <p className="font-bold text-[var(--color-danger)]">
+                  {browserLockdown ? 'قفل سخت مرورگر (فعال)' : 'غیر فعال'}
+                </p>
               </div>
             </div>
           </div>

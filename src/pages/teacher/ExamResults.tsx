@@ -5,34 +5,34 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ArrowRight, 
-  CheckCircle2, 
-  ChevronLeft, 
-  Award, 
-  HelpCircle, 
-  Save, 
-  MessageSquare, 
-  AlertTriangle, 
-  Users, 
-  UserCheck, 
-  UserX, 
-  Percent, 
-  TrendingUp, 
-  Sparkles, 
-  Download, 
-  Search, 
-  Filter, 
-  AlertCircle, 
-  Check, 
-  X, 
-  ChevronRight, 
-  BookOpen, 
-  Cpu, 
-  FileSpreadsheet, 
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronLeft,
+  Award,
+  HelpCircle,
+  Save,
+  MessageSquare,
+  AlertTriangle,
+  Users,
+  UserCheck,
+  UserX,
+  Percent,
+  TrendingUp,
+  Sparkles,
+  Download,
+  Search,
+  Filter,
+  AlertCircle,
+  Check,
+  X,
+  ChevronRight,
+  BookOpen,
+  Cpu,
+  FileSpreadsheet,
   ArrowLeft,
   Settings,
-  ShieldAlert
+  ShieldAlert,
 } from 'lucide-react';
 
 import { logger } from '../../lib/logger';
@@ -59,8 +59,8 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   const [allStudents, setAllStudents] = useState<Student[]>([]);
 
   // Combine real submissions and general cohort to have a complete student ledger
-  const examCohortStudents = allStudents.filter(student => 
-    exam.classGroupIds.includes(student.classGroupId)
+  const examCohortStudents = allStudents.filter((student) =>
+    exam.classGroupIds.includes(student.classGroupId),
   );
   const effectiveCohort = examCohortStudents.length > 0 ? examCohortStudents : allStudents;
 
@@ -94,10 +94,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   // Stores scoring details per question
   const [assignedScores, setAssignedScores] = useState<Record<string, number>>({});
   const [teacherComments, setTeacherComments] = useState<Record<string, string>>({});
-  
+
   // Rubric details state: questionId => criterionId => assignedPoints
   const [rubricScores, setRubricScores] = useState<Record<string, Record<string, number>>>({});
-  const [savedDescriptiveQuestions, setSavedDescriptiveQuestions] = useState<Record<string, boolean>>({});
+  const [savedDescriptiveQuestions, setSavedDescriptiveQuestions] = useState<
+    Record<string, boolean>
+  >({});
 
   // AI assistant simulation state
   const [aiLoadingQuestionId, setAiLoadingQuestionId] = useState<string | null>(null);
@@ -106,7 +108,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   // Re-sync active submission object when state updates or sub selection shifts
   useEffect(() => {
     if (selectedSubmissionId) {
-      const sub = submissions.find(s => s.id === selectedSubmissionId);
+      const sub = submissions.find((s) => s.id === selectedSubmissionId);
       if (sub) {
         setActiveSubmission(sub);
       }
@@ -116,21 +118,21 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   }, [selectedSubmissionId, submissions]);
 
   // Construct complete row data pairing cohort with submissions
-  let studentRows = effectiveCohort.map(student => {
-    const sub = submissions.find(s => s.studentId === student.id);
-    const classGroup = classGroups.find(c => c.id === student.classGroupId);
-    
+  let studentRows = effectiveCohort.map((student) => {
+    const sub = submissions.find((s) => s.studentId === student.id);
+    const classGroup = classGroups.find((c) => c.id === student.classGroupId);
+
     // Auto-calculate objective score vs descriptive
     let hasDescriptive = false;
     let autoScore = 0;
-    
+
     if (sub) {
-      exam.questions.forEach(q => {
+      exam.questions.forEach((q) => {
         const isDescriptive = q.type === 'long_answer' || q.type === 'short_answer';
         if (isDescriptive) {
           hasDescriptive = true;
         } else {
-          const ans = sub.answers.find(a => a.questionId === q.id);
+          const ans = sub.answers.find((a) => a.questionId === q.id);
           if (ans?.isCorrect) {
             autoScore += q.points;
           }
@@ -143,7 +145,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
         studentId: student.id,
         studentName: student.name,
         nationalId: student.nationalId,
-        maskedNationalId: student.maskedNationalId || `${student.nationalId.slice(0, 3)}***${student.nationalId.slice(7)}`,
+        maskedNationalId:
+          student.maskedNationalId ||
+          `${student.nationalId.slice(0, 3)}***${student.nationalId.slice(7)}`,
         classGroupId: student.classGroupId,
         className: classGroup ? classGroup.name : 'کلاس عمومی',
         status: sub.status as 'ongoing' | 'submitted' | 'graded' | 'absent',
@@ -153,7 +157,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
         autoScore: autoScore,
         maxScore: sub.maxScore || exam.questions.reduce((sum, q) => sum + q.points, 0),
         hasDescriptive,
-        rawSubmission: sub
+        rawSubmission: sub,
       };
     } else {
       // Virtual absent student
@@ -164,7 +168,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
         studentId: student.id,
         studentName: student.name,
         nationalId: student.nationalId,
-        maskedNationalId: student.maskedNationalId || `${student.nationalId.slice(0, 3)}***${student.nationalId.slice(7)}`,
+        maskedNationalId:
+          student.maskedNationalId ||
+          `${student.nationalId.slice(0, 3)}***${student.nationalId.slice(7)}`,
         classGroupId: student.classGroupId,
         className: classGroup ? classGroup.name : 'کلاس عمومی',
         status: 'absent' as const,
@@ -173,15 +179,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
         score: 0,
         autoScore: 0,
         maxScore: examMaxScore,
-        hasDescriptive: exam.questions.some(q => q.type === 'long_answer' || q.type === 'short_answer'),
-        rawSubmission: null
+        hasDescriptive: exam.questions.some(
+          (q) => q.type === 'long_answer' || q.type === 'short_answer',
+        ),
+        rawSubmission: null,
       };
     }
   });
 
   const realOnlyRows = submissions
-    .filter(sub => !studentRows.some(row => row.rawSubmission?.id === sub.id))
-    .map(sub => ({
+    .filter((sub) => !studentRows.some((row) => row.rawSubmission?.id === sub.id))
+    .map((sub) => ({
       id: sub.id,
       isRealSubmission: true,
       studentId: sub.studentId,
@@ -196,37 +204,45 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
       score: sub.score,
       autoScore: sub.score,
       maxScore: sub.maxScore || exam.questions.reduce((sum, q) => sum + q.points, 0),
-      hasDescriptive: exam.questions.some(q => q.type === 'long_answer' || q.type === 'short_answer'),
-      rawSubmission: sub
+      hasDescriptive: exam.questions.some(
+        (q) => q.type === 'long_answer' || q.type === 'short_answer',
+      ),
+      rawSubmission: sub,
     }));
 
   studentRows = [...realOnlyRows, ...studentRows];
 
   // Calculate OVERVIEW stats analytics
   const totalCohortsCount = studentRows.length;
-  const participantSubmissions = studentRows.filter(r => r.status !== 'absent');
+  const participantSubmissions = studentRows.filter((r) => r.status !== 'absent');
   const participantsCount = participantSubmissions.length;
   const absentCount = totalCohortsCount - participantsCount;
 
-  const evaluatedSubmissions = studentRows.filter(r => r.status === 'graded');
-  const activeSubmitted = studentRows.filter(r => r.status === 'submitted');
-  
+  const evaluatedSubmissions = studentRows.filter((r) => r.status === 'graded');
+  const activeSubmitted = studentRows.filter((r) => r.status === 'submitted');
+
   // Calculate avg & high scores amongst submitted / graded
-  const scoringGradedSheets = studentRows.filter(r => r.status === 'submitted' || r.status === 'graded');
-  const avgScore = scoringGradedSheets.length > 0
-    ? (scoringGradedSheets.reduce((sum, s) => sum + s.score, 0) / scoringGradedSheets.length).toFixed(1)
-    : '۰';
-  const highestScore = scoringGradedSheets.length > 0
-    ? Math.max(...scoringGradedSheets.map(s => s.score))
-    : 0;
+  const scoringGradedSheets = studentRows.filter(
+    (r) => r.status === 'submitted' || r.status === 'graded',
+  );
+  const avgScore =
+    scoringGradedSheets.length > 0
+      ? (
+          scoringGradedSheets.reduce((sum, s) => sum + s.score, 0) / scoringGradedSheets.length
+        ).toFixed(1)
+      : '۰';
+  const highestScore =
+    scoringGradedSheets.length > 0 ? Math.max(...scoringGradedSheets.map((s) => s.score)) : 0;
 
   // Count descriptive questions requiring attention
-  const hasDescriptiveQuestions = exam.questions.some(q => q.type === 'long_answer' || q.type === 'short_answer');
+  const hasDescriptiveQuestions = exam.questions.some(
+    (q) => q.type === 'long_answer' || q.type === 'short_answer',
+  );
   const needsCorrectionCount = activeSubmitted.length;
   const completedCorrectionCount = evaluatedSubmissions.length;
 
   // Apply filters
-  const filteredRows = studentRows.filter(row => {
+  const filteredRows = studentRows.filter((row) => {
     // 1. Search name
     if (searchQuery.trim() !== '') {
       if (!row.studentName.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -241,7 +257,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     }
     // 3. Participation Status Filter
     if (participationFilter !== 'all') {
-      if (participationFilter === 'submitted' && row.status !== 'submitted' && row.status !== 'graded') return false;
+      if (
+        participationFilter === 'submitted' &&
+        row.status !== 'submitted' &&
+        row.status !== 'graded'
+      )
+        return false;
       if (participationFilter === 'absent' && row.status !== 'absent') return false;
       if (participationFilter === 'ongoing' && row.status !== 'ongoing') return false;
     }
@@ -267,30 +288,30 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
       alert('این دانش‌آموز غایب بوده و پاسخ‌برگی ارسال نکرده است.');
       return;
     }
-    
+
     setSelectedSubmissionId(row.id);
     const sub = row.rawSubmission;
-    
+
     // Auto populate existing scores, comments, & rubrics
     const scores: Record<string, number> = {};
     const comments: Record<string, string> = {};
     const initialRubric: Record<string, Record<string, number>> = {};
     const gradedQSaved: Record<string, boolean> = {};
 
-    exam.questions.forEach(q => {
+    exam.questions.forEach((q) => {
       const stdAns = sub.answers.find((a: any) => a.questionId === q.id);
       scores[q.id] = stdAns?.scoreGained ?? 0;
       comments[q.id] = stdAns?.teacherComment ?? '';
-      
+
       // Setup rubrics
       initialRubric[q.id] = {};
       const isDescriptive = q.type === 'long_answer' || q.type === 'short_answer';
-      
+
       if (isDescriptive) {
         // If question already has score, set up mock rubrics partitioned
         const defaultRubrics = getQuestionRubrics(q);
         const savedScore = stdAns?.scoreGained;
-        
+
         if (savedScore !== undefined && savedScore !== null) {
           gradedQSaved[q.id] = true;
           // Split saved score across rubrics
@@ -299,14 +320,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             if (rIdx === defaultRubrics.length - 1) {
               initialRubric[q.id][rub.id] = Math.min(rub.maxPoints, remaining);
             } else {
-              const allocated = Math.min(rub.maxPoints, Number((savedScore * (rub.maxPoints / q.points)).toFixed(2)));
+              const allocated = Math.min(
+                rub.maxPoints,
+                Number((savedScore * (rub.maxPoints / q.points)).toFixed(2)),
+              );
               initialRubric[q.id][rub.id] = allocated;
               remaining -= allocated;
             }
           });
         } else {
           // Initialize empty
-          defaultRubrics.forEach(rub => {
+          defaultRubrics.forEach((rub) => {
             initialRubric[q.id][rub.id] = 0;
           });
         }
@@ -333,20 +357,20 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
         id: `${q.id}-crit-accuracy`,
         title: 'درستی استدلال و محتوای علمی',
         description: 'عمق پاسخ ارائه شده در تحلیل مسئله و تطابق آن با اصول کلید تصحیح آزمون',
-        maxPoints: crit1Points
+        maxPoints: crit1Points,
       },
       {
         id: `${q.id}-crit-grammar`,
         title: 'نگارش، شیوایی سخن و انسجام ساختاری',
         description: 'رعایت اصول دستوری ادبیات ملی، انسجام مفاهیم و عدم ابهام زبانی',
-        maxPoints: crit2Points
-      }
+        maxPoints: crit2Points,
+      },
     ];
   };
 
   // Save score of a single descriptive question based on rubrics
   const saveSingleQuestionGrade = (questionId: string) => {
-    const q = exam.questions.find(item => item.id === questionId);
+    const q = exam.questions.find((item) => item.id === questionId);
     if (!q) return;
 
     // Sum points allocated in the active rubric rows
@@ -354,22 +378,24 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     const sumPoints = (Object.values(rubricRows) as number[]).reduce((s, val) => s + val, 0);
     const finalPoints = Math.min(q.points, Math.max(0, Number(sumPoints.toFixed(2))));
 
-    setAssignedScores(prev => ({
+    setAssignedScores((prev) => ({
       ...prev,
-      [questionId]: finalPoints
+      [questionId]: finalPoints,
     }));
 
-    setSavedDescriptiveQuestions(prev => ({
+    setSavedDescriptiveQuestions((prev) => ({
       ...prev,
-      [questionId]: true
+      [questionId]: true,
     }));
 
-    alert(`نمره ثبت شد: نمره ${toPersianDigits(finalPoints)} از ${toPersianDigits(q.points)} برای این سؤال اعمال گردید.`);
+    alert(
+      `نمره ثبت شد: نمره ${toPersianDigits(finalPoints)} از ${toPersianDigits(q.points)} برای این سؤال اعمال گردید.`,
+    );
   };
 
   // AI Assisted score generator
   const triggerAiAssistedGrading = (qId: string) => {
-    const q = exam.questions.find(item => item.id === qId);
+    const q = exam.questions.find((item) => item.id === qId);
     if (!q) return;
 
     setAiLoadingQuestionId(qId);
@@ -379,44 +405,46 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     setTimeout(() => {
       const rubrics = getQuestionRubrics(q);
       const generatedScores: Record<string, number> = {};
-      
+
       // Auto-assign high/medium realistic scores for student answers
-      rubrics.forEach(r => {
+      rubrics.forEach((r) => {
         // assign 85% to 95% of score
         const rScore = Number((r.maxPoints * (0.85 + Math.random() * 0.12)).toFixed(2));
         generatedScores[r.id] = rScore;
       });
 
-      setRubricScores(prev => ({
+      setRubricScores((prev) => ({
         ...prev,
         [qId]: {
           ...prev[qId],
-          ...generatedScores
-        }
+          ...generatedScores,
+        },
       }));
 
       // Generate contextually intelligent comment in Persian
       const feedbackTexts = [
-        "پاسخ تشریحی ارائه شده پیوندی منسجم بین مفاهیم علمی سال هفتم دارد. ساختار استدلالی در نگارش متن بسیار عالی است.",
-        "خوانا و تحلیل‌گرانه‌؛ گزاره‌ها انطباق بالایی با اهداف کتاب درسی نوین دارند. ایرادات املائی وجود ندارد.",
-        "نتیجه‌گیری پایانی غنی و منطبق بر کلید تصحیح است. نمره پیشنهادی با لحاظ شیوایی سخن در بالاترین بازه قرار گرفت."
+        'پاسخ تشریحی ارائه شده پیوندی منسجم بین مفاهیم علمی سال هفتم دارد. ساختار استدلالی در نگارش متن بسیار عالی است.',
+        'خوانا و تحلیل‌گرانه‌؛ گزاره‌ها انطباق بالایی با اهداف کتاب درسی نوین دارند. ایرادات املائی وجود ندارد.',
+        'نتیجه‌گیری پایانی غنی و منطبق بر کلید تصحیح است. نمره پیشنهادی با لحاظ شیوایی سخن در بالاترین بازه قرار گرفت.',
       ];
-      
+
       const randomFeedback = feedbackTexts[Math.floor(Math.random() * feedbackTexts.length)];
-      setTeacherComments(prev => ({
+      setTeacherComments((prev) => ({
         ...prev,
-        [qId]: randomFeedback
+        [qId]: randomFeedback,
       }));
 
       setAiLoadingQuestionId(null);
-      setAiMessage(`هوش مصنوعی پیشنهاد نمره را ثبت کرد. لطفا بازبینی نموده و کلیه بارم‌ها را تایید کنید.`);
+      setAiMessage(
+        `هوش مصنوعی پیشنهاد نمره را ثبت کرد. لطفا بازبینی نموده و کلیه بارم‌ها را تایید کنید.`,
+      );
     }, 1200);
   };
 
   // Check if any descriptive questions remain ungraded
   const getUngradedDescriptiveQuestionsCount = () => {
     let unGraded = 0;
-    exam.questions.forEach(q => {
+    exam.questions.forEach((q) => {
       const isDescriptive = q.type === 'long_answer' || q.type === 'short_answer';
       if (isDescriptive && !savedDescriptiveQuestions[q.id]) {
         unGraded++;
@@ -433,16 +461,16 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     const ungradedCount = getUngradedDescriptiveQuestionsCount();
     if (ungradedCount > 0) {
       const confirmFinal = window.confirm(
-        `هشدار تصحیح ناقص:\nتعداد ${toPersianDigits(ungradedCount)} سوال تشریحی هنوز نمره‌دهی نهایی نشده‌اند. آیا مایل هستید بدون تصحیح کاملِ ورقه اقدام به ثبت کارنامه کنید؟`
+        `هشدار تصحیح ناقص:\nتعداد ${toPersianDigits(ungradedCount)} سوال تشریحی هنوز نمره‌دهی نهایی نشده‌اند. آیا مایل هستید بدون تصحیح کاملِ ورقه اقدام به ثبت کارنامه کنید؟`,
       );
       if (!confirmFinal) return;
     }
 
     // Assemble final student answers array
     const finalizedAnswers = activeSubmission.rawSubmission.answers.map((ans: any) => {
-      const q = exam.questions.find(item => item.id === ans.questionId);
+      const q = exam.questions.find((item) => item.id === ans.questionId);
       const isDescriptive = q?.type === 'long_answer' || q?.type === 'short_answer';
-      
+
       const scoreGained = assignedScores[ans.questionId] ?? ans.scoreGained ?? 0;
       const comment = teacherComments[ans.questionId] || ans.teacherComment;
 
@@ -450,12 +478,15 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
         ...ans,
         scoreGained: scoreGained,
         teacherComment: comment,
-        isCorrect: isDescriptive ? scoreGained >= (q?.points ?? 1) / 2 : ans.isCorrect
+        isCorrect: isDescriptive ? scoreGained >= (q?.points ?? 1) / 2 : ans.isCorrect,
       };
     });
 
     // Sum overall score gained
-    const finalTotalScore = (Object.values(assignedScores) as number[]).reduce((sum, s) => sum + s, 0);
+    const finalTotalScore = (Object.values(assignedScores) as number[]).reduce(
+      (sum, s) => sum + s,
+      0,
+    );
 
     try {
       // Simulate calling update for each to persist
@@ -464,12 +495,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
           activeSubmission.id,
           ans.questionId,
           ans.scoreGained,
-          ans.teacherComment
+          ans.teacherComment,
         );
       }
 
       // Update local state state fully
-      const updatedSubmissions = submissions.map(sub => {
+      const updatedSubmissions = submissions.map((sub) => {
         if (sub.id === activeSubmission.id) {
           return {
             ...sub,
@@ -477,14 +508,16 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             score: Number(finalTotalScore.toFixed(2)),
             status: 'graded' as const,
             gradedBy: 'استاد حمیدرضا علیزاده',
-            gradedAt: new Date().toISOString()
+            gradedAt: new Date().toISOString(),
           };
         }
         return sub;
       });
 
       setSubmissions(updatedSubmissions);
-      alert(`تصحیح پایانی کارنامه «${activeSubmission.studentName}» با موفقیت تکمیل شد و نتایج به سیستم آموزشی ابلاغ گردید.`);
+      alert(
+        `تصحیح پایانی کارنامه «${activeSubmission.studentName}» با موفقیت تکمیل شد و نتایج به سیستم آموزشی ابلاغ گردید.`,
+      );
       setSelectedSubmissionId(null);
     } catch (err) {
       alert('خطا در نهایی سازی و ثبت کارنامه');
@@ -493,25 +526,41 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
   // Excel CSV Export feature (with Persian BOM support)
   const handleExportCSV = () => {
-    let csvData = "\uFEFF"; // UTF-8 byte order mark to display Persian characters flawlessly in MS Excel
-    
-    // Headers
-    csvData += "نام دانش‌آموز,کد ملی دانش‌آموز,گروه کلاسی,وضعیت شرکت در آزمون,ساعت شروع,ساعت ارسال پاسخ‌برگ,نمره آزمون تستی (خودکار),بارم نمره نهایی\n";
+    let csvData = '\uFEFF'; // UTF-8 byte order mark to display Persian characters flawlessly in MS Excel
 
-    studentRows.forEach(row => {
-      const startStr = row.startedAt ? new Date(row.startedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'غایب';
-      const submitStr = row.submittedAt ? new Date(row.submittedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : 'غایب';
-      
-      const pStatus = row.status === 'graded' ? 'تصحیح شده' :
-                      row.status === 'submitted' ? 'ارسال شده (در انتظار تصحیح)' :
-                      row.status === 'ongoing' ? 'در حال آزمون' : 'غایب / بدون پاسخ‌برگ';
+    // Headers
+    csvData +=
+      'نام دانش‌آموز,کد ملی دانش‌آموز,گروه کلاسی,وضعیت شرکت در آزمون,ساعت شروع,ساعت ارسال پاسخ‌برگ,نمره آزمون تستی (خودکار),بارم نمره نهایی\n';
+
+    studentRows.forEach((row) => {
+      const startStr = row.startedAt
+        ? new Date(row.startedAt).toLocaleTimeString('fa-IR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : 'غایب';
+      const submitStr = row.submittedAt
+        ? new Date(row.submittedAt).toLocaleTimeString('fa-IR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : 'غایب';
+
+      const pStatus =
+        row.status === 'graded'
+          ? 'تصحیح شده'
+          : row.status === 'submitted'
+            ? 'ارسال شده (در انتظار تصحیح)'
+            : row.status === 'ongoing'
+              ? 'در حال آزمون'
+              : 'غایب / بدون پاسخ‌برگ';
 
       csvData += `"${row.studentName}","${row.nationalId}","${row.className}","${pStatus}","${startStr}","${submitStr}",${row.autoScore},${row.score}\n`;
     });
 
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
     link.download = `کارنامه_برخط_آزمون_${exam.title.replace(/\s+/g, '_')}.csv`;
     document.body.appendChild(link);
@@ -521,12 +570,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
   const handleExportExcelMock = () => {
     // Elegant system feedback indicating Excel export setup
-    alert('خروجی Excel با فرمت XLSX به کمک ماژول پیشرفته ExcelJS آماده دانلود گردید. انتقال با موفقیت انجام شد.');
+    alert(
+      'خروجی Excel با فرمت XLSX به کمک ماژول پیشرفته ExcelJS آماده دانلود گردید. انتقال با موفقیت انجام شد.',
+    );
     handleExportCSV();
   };
 
   return (
-    <div className="space-y-6 text-right animate-in fade-in duration-300" id="exam-grading-dashboard">
+    <div
+      className="space-y-6 text-right animate-in fade-in duration-300"
+      id="exam-grading-dashboard"
+    >
       <AnimatePresence mode="wait">
         {!selectedSubmissionId ? (
           <motion.div
@@ -550,12 +604,20 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                 </button>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-accent-soft)] text-[var(--color-accent)]">دبیرخانه آنلاین آزمون‌ساز</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+                      دبیرخانه آنلاین آزمون‌ساز
+                    </span>
                     <span className="text-slate-300 text-xs">/</span>
-                    <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">ارزیابی پیشرفته تستی و تشریحی</span>
+                    <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">
+                      ارزیابی پیشرفته تستی و تشریحی
+                    </span>
                   </div>
-                  <h1 className="text-md md:text-lg font-black text-[var(--color-text-primary)] mt-1">نتایج و تصحیح آزمون</h1>
-                  <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">{exam.title}</p>
+                  <h1 className="text-md md:text-lg font-black text-[var(--color-text-primary)] mt-1">
+                    نتایج و تصحیح آزمون
+                  </h1>
+                  <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
+                    {exam.title}
+                  </p>
                 </div>
               </div>
 
@@ -585,84 +647,155 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               {/* Card 1: Total Allocated classes */}
               <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">کل کارنامه تخصصی</span>
-                  <div className="p-1.5 glx rounded-lg text-[var(--color-text-tertiary)]"><Users className="w-4 h-4" /></div>
+                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">
+                    کل کارنامه تخصصی
+                  </span>
+                  <div className="p-1.5 glx rounded-lg text-[var(--color-text-tertiary)]">
+                    <Users className="w-4 h-4" />
+                  </div>
                 </div>
                 <div className="mt-2 text-right">
-                  <h4 className="text-xl font-black text-[var(--color-text-primary)]">{toPersianDigits(totalCohortsCount)} <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">نفر</span></h4>
-                  <p className="text-[9px] text-[var(--color-text-tertiary)] font-semibold mt-1">منتسب از کلاس‌های اختصاصی</p>
+                  <h4 className="text-xl font-black text-[var(--color-text-primary)]">
+                    {toPersianDigits(totalCohortsCount)}{' '}
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">
+                      نفر
+                    </span>
+                  </h4>
+                  <p className="text-[9px] text-[var(--color-text-tertiary)] font-semibold mt-1">
+                    منتسب از کلاس‌های اختصاصی
+                  </p>
                 </div>
               </div>
 
               {/* Card 2: Participated */}
               <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">تعداد شرکت‌کنندگان</span>
-                  <div className="p-1.5 bg-[var(--color-success-soft)] rounded-lg text-emerald-500"><UserCheck className="w-4 h-4" /></div>
+                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">
+                    تعداد شرکت‌کنندگان
+                  </span>
+                  <div className="p-1.5 bg-[var(--color-success-soft)] rounded-lg text-emerald-500">
+                    <UserCheck className="w-4 h-4" />
+                  </div>
                 </div>
                 <div className="mt-2 text-right">
-                  <h4 className="text-xl font-black text-emerald-600">{toPersianDigits(participantsCount)} <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">نفر</span></h4>
-                  <p className="text-[9px] text-emerald-500 font-semibold mt-1">حضور یافته در سیستم امتحان</p>
+                  <h4 className="text-xl font-black text-emerald-600">
+                    {toPersianDigits(participantsCount)}{' '}
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">
+                      نفر
+                    </span>
+                  </h4>
+                  <p className="text-[9px] text-emerald-500 font-semibold mt-1">
+                    حضور یافته در سیستم امتحان
+                  </p>
                 </div>
               </div>
 
               {/* Card 3: Absents */}
               <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">غائبین ارزیابی</span>
-                  <div className="p-1.5 bg-rose-50 rounded-lg text-[var(--color-danger)]"><UserX className="w-4 h-4" /></div>
+                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">
+                    غائبین ارزیابی
+                  </span>
+                  <div className="p-1.5 bg-rose-50 rounded-lg text-[var(--color-danger)]">
+                    <UserX className="w-4 h-4" />
+                  </div>
                 </div>
                 <div className="mt-2 text-right">
-                  <h4 className="text-xl font-black text-[var(--color-danger)]">{toPersianDigits(absentCount)} <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">نفر</span></h4>
-                  <p className="text-[9px] text-[var(--color-danger)] font-semibold mt-1">بدون شروع کدرهگیری</p>
+                  <h4 className="text-xl font-black text-[var(--color-danger)]">
+                    {toPersianDigits(absentCount)}{' '}
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">
+                      نفر
+                    </span>
+                  </h4>
+                  <p className="text-[9px] text-[var(--color-danger)] font-semibold mt-1">
+                    بدون شروع کدرهگیری
+                  </p>
                 </div>
               </div>
 
               {/* Card 4: Average score */}
               <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">میانگین کلی نمرات</span>
-                  <div className="p-1.5 bg-[var(--color-accent-soft)] rounded-lg text-[var(--color-accent)]"><Percent className="w-4 h-4" /></div>
+                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">
+                    میانگین کلی نمرات
+                  </span>
+                  <div className="p-1.5 bg-[var(--color-accent-soft)] rounded-lg text-[var(--color-accent)]">
+                    <Percent className="w-4 h-4" />
+                  </div>
                 </div>
                 <div className="mt-2 text-right">
-                  <h4 className="text-xl font-black text-indigo-600">{toPersianDigits(avgScore)}</h4>
-                  <p className="text-[9px] text-[var(--color-accent)] font-semibold mt-1">معدل کتبی کلاس داوطلبان</p>
+                  <h4 className="text-xl font-black text-indigo-600">
+                    {toPersianDigits(avgScore)}
+                  </h4>
+                  <p className="text-[9px] text-[var(--color-accent)] font-semibold mt-1">
+                    معدل کتبی کلاس داوطلبان
+                  </p>
                 </div>
               </div>
 
               {/* Card 5: Highest score */}
               <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">بالاترین نمره کلاس</span>
-                  <div className="p-1.5 bg-[var(--color-warning-soft)] rounded-lg text-[var(--color-warning-soft)]/500"><Award className="w-4 h-4" /></div>
+                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">
+                    بالاترین نمره کلاس
+                  </span>
+                  <div className="p-1.5 bg-[var(--color-warning-soft)] rounded-lg text-[var(--color-warning-soft)]/500">
+                    <Award className="w-4 h-4" />
+                  </div>
                 </div>
                 <div className="mt-2 text-right">
-                  <h4 className="text-xl font-black text-[var(--color-warning)]">{toPersianDigits(highestScore)}</h4>
-                  <p className="text-[9px] text-[var(--color-warning-soft)]/500 font-semibold mt-1">بهترین رتبه ثبت نهایی شده</p>
+                  <h4 className="text-xl font-black text-[var(--color-warning)]">
+                    {toPersianDigits(highestScore)}
+                  </h4>
+                  <p className="text-[9px] text-[var(--color-warning-soft)]/500 font-semibold mt-1">
+                    بهترین رتبه ثبت نهایی شده
+                  </p>
                 </div>
               </div>
 
               {/* Card 6: Needs correction */}
               <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">نیازمند تصحیح تشریحی</span>
-                  <div className="p-1.5 bg-[var(--color-warning-soft)] rounded-lg text-[var(--color-warning)]"><AlertCircle className="w-4 h-4" /></div>
+                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">
+                    نیازمند تصحیح تشریحی
+                  </span>
+                  <div className="p-1.5 bg-[var(--color-warning-soft)] rounded-lg text-[var(--color-warning)]">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
                 </div>
                 <div className="mt-2 text-right">
-                  <h4 className="text-xl font-black text-[var(--color-warning)]">{toPersianDigits(needsCorrectionCount)} <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">برگه</span></h4>
-                  <p className="text-[9px] text-[var(--color-warning)] font-semibold mt-1">در برگیرنده پاسخ‌های توصیفی</p>
+                  <h4 className="text-xl font-black text-[var(--color-warning)]">
+                    {toPersianDigits(needsCorrectionCount)}{' '}
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">
+                      برگه
+                    </span>
+                  </h4>
+                  <p className="text-[9px] text-[var(--color-warning)] font-semibold mt-1">
+                    در برگیرنده پاسخ‌های توصیفی
+                  </p>
                 </div>
               </div>
 
               {/* Card 7: Completed corrections */}
               <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">تصحیح‌های تکمیل‌شده</span>
-                  <div className="p-1.5 bg-[var(--color-success-soft)] rounded-lg text-emerald-600"><CheckCircle2 className="w-4 h-4" /></div>
+                  <span className="text-[11px] text-[var(--color-text-tertiary)] font-bold">
+                    تصحیح‌های تکمیل‌شده
+                  </span>
+                  <div className="p-1.5 bg-[var(--color-success-soft)] rounded-lg text-emerald-600">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
                 </div>
                 <div className="mt-2 text-right">
-                  <h4 className="text-xl font-black text-emerald-600">{toPersianDigits(completedCorrectionCount)} <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">کارنامه</span></h4>
-                  <p className="text-[9px] text-emerald-600 font-semibold mt-1">ثبت قطعی در کارتابل دبیران</p>
+                  <h4 className="text-xl font-black text-emerald-600">
+                    {toPersianDigits(completedCorrectionCount)}{' '}
+                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">
+                      کارنامه
+                    </span>
+                  </h4>
+                  <p className="text-[9px] text-emerald-600 font-semibold mt-1">
+                    ثبت قطعی در کارتابل دبیران
+                  </p>
                 </div>
               </div>
             </div>
@@ -672,7 +805,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-3">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4.5 h-4.5 text-[var(--color-accent)]" />
-                  <h3 className="text-xs font-black text-[var(--color-text-primary)]">فیلترها و محدودسازی کارنامه داوطلبان</h3>
+                  <h3 className="text-xs font-black text-[var(--color-text-primary)]">
+                    فیلترها و محدودسازی کارنامه داوطلبان
+                  </h3>
                 </div>
                 <button
                   onClick={() => {
@@ -691,7 +826,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* Search query Input */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">جستجوی داوطلب بر اساس نام</label>
+                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
+                    جستجوی داوطلب بر اساس نام
+                  </label>
                   <div className="relative">
                     <input
                       type="text"
@@ -706,22 +843,30 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
                 {/* Class Group Select */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">فیلتر بر اساس کلاس</label>
+                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
+                    فیلتر بر اساس کلاس
+                  </label>
                   <select
                     value={classFilter}
                     onChange={(e) => setClassFilter(e.target.value)}
                     className="w-full px-3 py-2 border rounded-xl glx text-xs text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors cursor-pointer"
                   >
                     <option value="all">همه کلاس‌ها</option>
-                    {classGroups.filter(c => exam.classGroupIds.includes(c.id)).map(group => (
-                      <option key={group.id} value={group.id}>{group.name}</option>
-                    ))}
+                    {classGroups
+                      .filter((c) => exam.classGroupIds.includes(c.id))
+                      .map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
                   </select>
                 </div>
 
                 {/* Attendance Status */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">وضعیت ارسال پاسخ‌برگ</label>
+                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
+                    وضعیت ارسال پاسخ‌برگ
+                  </label>
                   <select
                     value={participationFilter}
                     onChange={(e) => setParticipationFilter(e.target.value)}
@@ -736,7 +881,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
                 {/* Descriptive grading status */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">وضعیت تصحیح تشریحی</label>
+                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
+                    وضعیت تصحیح تشریحی
+                  </label>
                   <select
                     value={correctionFilter}
                     onChange={(e) => setCorrectionFilter(e.target.value)}
@@ -750,7 +897,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
                 {/* Score scale bounds */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">بازه نمره نهایی دانش‌آموز</label>
+                  <label className="text-[11px] text-[var(--color-text-tertiary)] font-bold block">
+                    بازه نمره نهایی دانش‌آموز
+                  </label>
                   <select
                     value={scoreRangeFilter}
                     onChange={(e) => setScoreRangeFilter(e.target.value)}
@@ -766,11 +915,18 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             </div>
 
             {/* Structured Submissions Tables */}
-            <div className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-4 md:p-6 shadow-sm overflow-hidden space-y-4" id="section-structured-submissions">
+            <div
+              className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-4 md:p-6 shadow-sm overflow-hidden space-y-4"
+              id="section-structured-submissions"
+            >
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                 <div>
-                  <h3 className="text-sm font-bold text-[var(--color-text-primary)]">لیست پاسخ‌برگ‌ها و وضعیت ثبت نمرات</h3>
-                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">مجموع فیلتر شده: {toPersianDigits(filteredRows.length)} دانش‌آموز</p>
+                  <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+                    لیست پاسخ‌برگ‌ها و وضعیت ثبت نمرات
+                  </h3>
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
+                    مجموع فیلتر شده: {toPersianDigits(filteredRows.length)} دانش‌آموز
+                  </p>
                 </div>
               </div>
 
@@ -785,7 +941,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   { key: 'autoScore', label: 'تستی (خودکار)', align: 'center' },
                   { key: 'descriptive', label: 'تصحیح تشریحی', align: 'center' },
                   { key: 'finalScore', label: 'نمره نهایی', align: 'center' },
-                  { key: 'action', label: 'عملیات', align: 'center' }
+                  { key: 'action', label: 'عملیات', align: 'center' },
                 ]}
                 data={filteredRows}
                 emptyTitle="هیچ داوطلبی یافت نشد"
@@ -797,25 +953,55 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   const isAbsent = row.status === 'absent';
 
                   return (
-                    <tr key={row.id} className="hover:brightness-105 transition-all font-medium text-xs md:text-sm">
-                      <td className="p-4 font-bold text-[var(--color-text-primary)]">{row.studentName}</td>
+                    <tr
+                      key={row.id}
+                      className="hover:brightness-105 transition-all font-medium text-xs md:text-sm"
+                    >
+                      <td className="p-4 font-bold text-[var(--color-text-primary)]">
+                        {row.studentName}
+                      </td>
                       <td className="p-4 font-mono text-[var(--color-text-tertiary)] tracking-wider">
                         {toPersianDigits(row.maskedNationalId)}
                       </td>
-                      <td className="p-4 text-[var(--color-text-secondary)] font-bold">{row.className}</td>
+                      <td className="p-4 text-[var(--color-text-secondary)] font-bold">
+                        {row.className}
+                      </td>
                       <td className="p-4 text-center">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                          isGraded || hasSubmitted ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15' :
-                          isOngoing ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/10 animate-pulse' : 'glx-inset text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)]'
-                        }`}>
-                          {isGraded || hasSubmitted ? 'ارسال شده' : isOngoing ? 'در حال آزمون' : 'ارسال نشده'}
+                        <span
+                          className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                            isGraded || hasSubmitted
+                              ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15'
+                              : isOngoing
+                                ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/10 animate-pulse'
+                                : 'glx-inset text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)]'
+                          }`}
+                        >
+                          {isGraded || hasSubmitted
+                            ? 'ارسال شده'
+                            : isOngoing
+                              ? 'در حال آزمون'
+                              : 'ارسال نشده'}
                         </span>
                       </td>
                       <td className="p-4 text-center font-mono text-[var(--color-text-tertiary)]">
-                        {row.startedAt ? toPersianDigits(new Date(row.startedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })) : '—'}
+                        {row.startedAt
+                          ? toPersianDigits(
+                              new Date(row.startedAt).toLocaleTimeString('fa-IR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }),
+                            )
+                          : '—'}
                       </td>
                       <td className="p-4 text-center font-mono text-[var(--color-text-tertiary)]">
-                        {row.submittedAt ? toPersianDigits(new Date(row.submittedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })) : '—'}
+                        {row.submittedAt
+                          ? toPersianDigits(
+                              new Date(row.submittedAt).toLocaleTimeString('fa-IR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              }),
+                            )
+                          : '—'}
                       </td>
                       <td className="p-4 text-center font-extrabold text-[var(--color-accent)]">
                         {isAbsent || isOngoing ? '—' : toPersianDigits(row.autoScore)}
@@ -824,7 +1010,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                         {isAbsent || isOngoing ? (
                           <span className="text-slate-350">—</span>
                         ) : !row.hasDescriptive ? (
-                          <span className="text-[var(--color-text-tertiary)] font-semibold text-xs">تستی محض</span>
+                          <span className="text-[var(--color-text-tertiary)] font-semibold text-xs">
+                            تستی محض
+                          </span>
                         ) : isGraded ? (
                           <span className="inline-flex items-center gap-1 text-emerald-600 font-bold bg-[var(--color-success-soft)]/60 px-2 py-0.5 rounded-md border border-[var(--color-success)]/10 text-xs">
                             <Check className="w-3.5 h-3.5" />
@@ -839,11 +1027,18 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                       </td>
                       <td className="p-4 text-center font-black text-[var(--color-text-primary)]">
                         {isAbsent ? (
-                          <span className="text-[var(--color-danger)] bg-rose-50/60 font-bold px-2 py-0.5 rounded border border-[var(--color-danger)]/10 text-xs">غایب</span>
+                          <span className="text-[var(--color-danger)] bg-rose-50/60 font-bold px-2 py-0.5 rounded border border-[var(--color-danger)]/10 text-xs">
+                            غایب
+                          </span>
                         ) : isOngoing ? (
                           <span className="text-slate-300">—</span>
                         ) : (
-                          <span>{toPersianDigits(row.score)} <span className="text-[10px] text-[var(--color-text-tertiary)] font-normal">از {toPersianDigits(row.maxScore)}</span></span>
+                          <span>
+                            {toPersianDigits(row.score)}{' '}
+                            <span className="text-[10px] text-[var(--color-text-tertiary)] font-normal">
+                              از {toPersianDigits(row.maxScore)}
+                            </span>
+                          </span>
                         )}
                       </td>
                       <td className="p-4 text-center">
@@ -851,7 +1046,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                           id={`btn-open-review-panel-${row.id}`}
                           onClick={() => startGrading(row)}
                           disabled={isAbsent || isOngoing}
-                          variant={isGraded ? "indigo" : "danger"}
+                          variant={isGraded ? 'indigo' : 'danger'}
                           size="sm"
                         >
                           {isGraded ? 'بازبینی پاسخ‌ها' : 'تصحیح و بررسی ورقه'}
@@ -866,29 +1061,63 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   const isOngoing = row.status === 'ongoing';
                   const isAbsent = row.status === 'absent';
                   return (
-                    <Card hoverable key={row.id} className="p-4 space-y-3" id={`submission-mob-card-${row.id}`}>
+                    <Card
+                      hoverable
+                      key={row.id}
+                      className="p-4 space-y-3"
+                      id={`submission-mob-card-${row.id}`}
+                    >
                       <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-[var(--color-text-primary)]">{row.studentName}</span>
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold border ${
-                          isGraded || hasSubmitted ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15' :
-                          isOngoing ? 'bg-[var(--color-warning-soft)] text-amber-655 border-[var(--color-warning)]/10 animate-pulse' : 'bg-slate-105 text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)]'
-                        }`}>
-                          {isGraded || hasSubmitted ? 'ارسال شده' : isOngoing ? 'در حال آزمون' : 'ارسال نشده'}
+                        <span className="font-bold text-[var(--color-text-primary)]">
+                          {row.studentName}
+                        </span>
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                            isGraded || hasSubmitted
+                              ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15'
+                              : isOngoing
+                                ? 'bg-[var(--color-warning-soft)] text-amber-655 border-[var(--color-warning)]/10 animate-pulse'
+                                : 'bg-slate-105 text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)]'
+                          }`}
+                        >
+                          {isGraded || hasSubmitted
+                            ? 'ارسال شده'
+                            : isOngoing
+                              ? 'در حال آزمون'
+                              : 'ارسال نشده'}
                         </span>
                       </div>
                       <div className="text-[11px] text-[var(--color-text-tertiary)] space-y-1">
                         <p>کلاس: {row.className}</p>
-                        <p>کد ملی: <span className="font-mono">{toPersianDigits(row.maskedNationalId)}</span></p>
-                        <p>تحویل: {row.submittedAt ? toPersianDigits(new Date(row.submittedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })) : '—'}</p>
+                        <p>
+                          کد ملی:{' '}
+                          <span className="font-mono">{toPersianDigits(row.maskedNationalId)}</span>
+                        </p>
+                        <p>
+                          تحویل:{' '}
+                          {row.submittedAt
+                            ? toPersianDigits(
+                                new Date(row.submittedAt).toLocaleTimeString('fa-IR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                }),
+                              )
+                            : '—'}
+                        </p>
                         <p className="font-bold text-indigo-755">
-                          نمره: {isAbsent ? 'غایب' : isOngoing ? 'در جریان' : `${toPersianDigits(row.score)} از ${toPersianDigits(row.maxScore)}`}
+                          نمره:{' '}
+                          {isAbsent
+                            ? 'غایب'
+                            : isOngoing
+                              ? 'در جریان'
+                              : `${toPersianDigits(row.score)} از ${toPersianDigits(row.maxScore)}`}
                         </p>
                       </div>
                       <div className="pt-2 flex justify-end">
                         <Button
                           onClick={() => startGrading(row)}
                           disabled={isAbsent || isOngoing}
-                          variant={isGraded ? "indigo" : "danger"}
+                          variant={isGraded ? 'indigo' : 'danger'}
                           size="sm"
                           className="w-full"
                         >
@@ -924,20 +1153,52 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                     <ArrowRight className="w-5 h-5" />
                   </button>
                   <div>
-                    <span className="text-[10px] font-bold text-indigo-600 block bg-[var(--color-accent-soft)]/30 px-2.5 py-0.5 rounded-full w-fit">مدیریت پاسخ‌برگ داوطلب</span>
-                    <h2 className="text-md font-black text-[var(--color-text-primary)] mt-1">پاسخ‌برگ تحویلی: {activeSubmission.studentName}</h2>
+                    <span className="text-[10px] font-bold text-indigo-600 block bg-[var(--color-accent-soft)]/30 px-2.5 py-0.5 rounded-full w-fit">
+                      مدیریت پاسخ‌برگ داوطلب
+                    </span>
+                    <h2 className="text-md font-black text-[var(--color-text-primary)] mt-1">
+                      پاسخ‌برگ تحویلی: {activeSubmission.studentName}
+                    </h2>
                   </div>
                 </div>
 
                 <div className="glx border px-4 py-2.5 rounded-2xl flex items-center gap-4 text-xs shadow-3xs">
                   <div>
-                    <span className="text-[var(--color-text-tertiary)] font-bold block text-[9px] mb-0.5">ثبت نهایی ساعت:</span>
-                    <span className="font-mono text-[var(--color-text-secondary)] font-bold">{activeSubmission.submittedAt ? toPersianDigits(new Date(activeSubmission.submittedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })) : 'در حال آزمون'}</span>
+                    <span className="text-[var(--color-text-tertiary)] font-bold block text-[9px] mb-0.5">
+                      ثبت نهایی ساعت:
+                    </span>
+                    <span className="font-mono text-[var(--color-text-secondary)] font-bold">
+                      {activeSubmission.submittedAt
+                        ? toPersianDigits(
+                            new Date(activeSubmission.submittedAt).toLocaleTimeString('fa-IR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            }),
+                          )
+                        : 'در حال آزمون'}
+                    </span>
                   </div>
                   <div className="w-[1px] h-8 bg-slate-205" />
                   <div className="text-left">
-                    <span className="text-[var(--color-text-tertiary)] font-bold block text-[9px] mb-0.5 text-right">میانگین پیشرفت بارم:</span>
-                    <span className="text-[var(--color-accent)] font-black text-sm block">%{toPersianDigits(Number((((Object.values(assignedScores) as number[]).reduce((sum, s) => sum + s, 0) / activeSubmission.maxScore) * 100).toFixed(0)))}</span>
+                    <span className="text-[var(--color-text-tertiary)] font-bold block text-[9px] mb-0.5 text-right">
+                      میانگین پیشرفت بارم:
+                    </span>
+                    <span className="text-[var(--color-accent)] font-black text-sm block">
+                      %
+                      {toPersianDigits(
+                        Number(
+                          (
+                            ((Object.values(assignedScores) as number[]).reduce(
+                              (sum, s) => sum + s,
+                              0,
+                            ) /
+                              activeSubmission.maxScore) *
+                            100
+                          ).toFixed(0),
+                        ),
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -945,27 +1206,41 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               {/* Step-by-step Reviewing all exam questions list */}
               <div className="space-y-6">
                 {exam.questions.map((q, idx) => {
-                  const stdAnsObj = activeSubmission.rawSubmission.answers.find((ans: any) => ans.questionId === q.id);
+                  const stdAnsObj = activeSubmission.rawSubmission.answers.find(
+                    (ans: any) => ans.questionId === q.id,
+                  );
                   const isDescriptive = q.type === 'long_answer' || q.type === 'short_answer';
                   const stdAnswerValue = stdAnsObj?.answer;
                   const isGraded = savedDescriptiveQuestions[q.id];
 
                   return (
-                    <div key={q.id} className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-5 md:p-6 space-y-4 shadow-xs" id={`sheet-qscol-${q.id}`}>
+                    <div
+                      key={q.id}
+                      className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-5 md:p-6 space-y-4 shadow-xs"
+                      id={`sheet-qscol-${q.id}`}
+                    >
                       {/* Section heading bar */}
                       <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2.5">
                         <span className="text-xs font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
                           <BookOpen className="w-4.5 h-4.5 text-[var(--color-accent)]" />
                           <span>سؤال {toPersianDigits(idx + 1)}</span>
                           <span className="text-slate-300">|</span>
-                          <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">قالب: {
-                            q.type === 'single_choice' ? 'چهار گزینه‌ای (تستی)' :
-                            q.type === 'multiple_choice' ? 'چند گزینه‌ای تستی' :
-                            q.type === 'true_false' ? 'صحیح / غلط' :
-                            q.type === 'fill_blank' ? 'جای خالی' :
-                            q.type === 'ordering' ? 'مرتب‌سازی ترتیبی' :
-                            q.type === 'matching' ? 'وصل‌کردنی متناظر' : 'معمولی تشریحی'
-                          }</span>
+                          <span className="text-[10px] text-[var(--color-text-tertiary)] font-bold">
+                            قالب:{' '}
+                            {q.type === 'single_choice'
+                              ? 'چهار گزینه‌ای (تستی)'
+                              : q.type === 'multiple_choice'
+                                ? 'چند گزینه‌ای تستی'
+                                : q.type === 'true_false'
+                                  ? 'صحیح / غلط'
+                                  : q.type === 'fill_blank'
+                                    ? 'جای خالی'
+                                    : q.type === 'ordering'
+                                      ? 'مرتب‌سازی ترتیبی'
+                                      : q.type === 'matching'
+                                        ? 'وصل‌کردنی متناظر'
+                                        : 'معمولی تشریحی'}
+                          </span>
                         </span>
                         <span className="bg-[var(--color-accent-soft)]/60 border border-[var(--color-accent-soft)] text-[var(--color-accent)] font-black px-2.5 py-0.5 rounded-lg text-[10px]">
                           حداکثر سهم بارم: {toPersianDigits(q.points)} امتیاز
@@ -973,71 +1248,118 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                       </div>
 
                       {/* Question Text stem */}
-                      <div className="text-[var(--color-text-primary)] font-bold text-xs leading-relaxed leading-7" id="question-text-box">
+                      <div
+                        className="text-[var(--color-text-primary)] font-bold text-xs leading-relaxed leading-7"
+                        id="question-text-box"
+                      >
                         {q.text}
                       </div>
 
                       {/* Options or Answer representation container */}
                       {!isDescriptive ? (
                         /* Objective grading review widget */
-                        <div className="space-y-3.5 glx border p-4 rounded-2xl" id="objective-grading-review">
+                        <div
+                          className="space-y-3.5 glx border p-4 rounded-2xl"
+                          id="objective-grading-review"
+                        >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Student Answer */}
                             <div className="space-y-1">
-                              <span className="text-[10px] text-[var(--color-danger)] font-bold block">● کاندید انتخابی دانش‌آموز:</span>
+                              <span className="text-[10px] text-[var(--color-danger)] font-bold block">
+                                ● کاندید انتخابی دانش‌آموز:
+                              </span>
                               <div className="glx border rounded-xl p-3 text-xs font-bold text-[var(--color-text-secondary)]">
                                 {stdAnsObj ? (
                                   q.type === 'single_choice' ? (
-                                    q.options?.find(o => o.id === stdAnswerValue)?.text || `گزینه ${toPersianDigits(stdAnswerValue)}`
-                                  ) : q.type === 'multiple_choice' && Array.isArray(stdAnswerValue) ? (
-                                    stdAnswerValue.map(val => q.options?.find(o => o.id === val)?.text || val).join(' ، ')
+                                    q.options?.find((o) => o.id === stdAnswerValue)?.text ||
+                                    `گزینه ${toPersianDigits(stdAnswerValue)}`
+                                  ) : q.type === 'multiple_choice' &&
+                                    Array.isArray(stdAnswerValue) ? (
+                                    stdAnswerValue
+                                      .map(
+                                        (val) => q.options?.find((o) => o.id === val)?.text || val,
+                                      )
+                                      .join(' ، ')
                                   ) : q.type === 'true_false' ? (
-                                    stdAnswerValue ? 'صحیح (درست)' : 'غلط (نادرست)'
+                                    stdAnswerValue ? (
+                                      'صحیح (درست)'
+                                    ) : (
+                                      'غلط (نادرست)'
+                                    )
                                   ) : q.type === 'ordering' && Array.isArray(stdAnswerValue) ? (
                                     <div className="flex flex-wrap gap-1 mt-1">
                                       {stdAnswerValue.map((item, orIdx) => (
-                                        <span key={orIdx} className="glx-inset border px-2 py-0.5 rounded text-[10px] font-mono">{toPersianDigits(orIdx + 1)}. {item}</span>
+                                        <span
+                                          key={orIdx}
+                                          className="glx-inset border px-2 py-0.5 rounded text-[10px] font-mono"
+                                        >
+                                          {toPersianDigits(orIdx + 1)}. {item}
+                                        </span>
                                       ))}
                                     </div>
-                                  ) : q.type === 'matching' && typeof stdAnswerValue === 'object' ? (
+                                  ) : q.type === 'matching' &&
+                                    typeof stdAnswerValue === 'object' ? (
                                     <div className="space-y-1 mt-1 text-[10px] font-semibold text-[var(--color-text-secondary)]">
                                       {Object.entries(stdAnswerValue).map(([k, v]) => (
-                                        <div key={k}>🔗 «{k}» وصل شده به «{String(v)}»</div>
+                                        <div key={k}>
+                                          🔗 «{k}» وصل شده به «{String(v)}»
+                                        </div>
                                       ))}
                                     </div>
                                   ) : (
                                     String(stdAnswerValue)
                                   )
                                 ) : (
-                                  <span className="text-[var(--color-text-tertiary)]">بدون جواب (خالی رها شده)</span>
+                                  <span className="text-[var(--color-text-tertiary)]">
+                                    بدون جواب (خالی رها شده)
+                                  </span>
                                 )}
                               </div>
                             </div>
 
                             {/* Correct Key */}
                             <div className="space-y-1">
-                              <span className="text-[10px] text-[var(--color-success)] font-bold block">✔ کلید پاسخ آزمون‌ساز:</span>
+                              <span className="text-[10px] text-[var(--color-success)] font-bold block">
+                                ✔ کلید پاسخ آزمون‌ساز:
+                              </span>
                               <div className="glx border border-[var(--color-success)]/10 rounded-xl p-3 text-xs font-bold text-[var(--color-text-secondary)]">
                                 {q.type === 'single_choice' ? (
-                                  q.options?.find(o => o.id === q.correctAnswer)?.text || `گزینه ${toPersianDigits(q.correctAnswer as string)}`
-                                ) : q.type === 'multiple_choice' && Array.isArray(q.correctAnswer) ? (
-                                  q.correctAnswer.map(val => q.options?.find(o => o.id === val)?.text || val).join(' ، ')
+                                  q.options?.find((o) => o.id === q.correctAnswer)?.text ||
+                                  `گزینه ${toPersianDigits(q.correctAnswer as string)}`
+                                ) : q.type === 'multiple_choice' &&
+                                  Array.isArray(q.correctAnswer) ? (
+                                  q.correctAnswer
+                                    .map((val) => q.options?.find((o) => o.id === val)?.text || val)
+                                    .join(' ، ')
                                 ) : q.type === 'true_false' ? (
-                                  q.correctAnswer ? 'صحیح (درست)' : 'غلط (نادرست)'
+                                  q.correctAnswer ? (
+                                    'صحیح (درست)'
+                                  ) : (
+                                    'غلط (نادرست)'
+                                  )
                                 ) : q.type === 'ordering' && Array.isArray(q.orderingItems) ? (
                                   <div className="flex flex-wrap gap-1 mt-1">
                                     {q.orderingItems.map((item, orIdx) => (
-                                      <span key={orIdx} className="bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 px-2 py-0.5 rounded text-[10px] font-mono">{toPersianDigits(orIdx + 1)}. {item}</span>
+                                      <span
+                                        key={orIdx}
+                                        className="bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 px-2 py-0.5 rounded text-[10px] font-mono"
+                                      >
+                                        {toPersianDigits(orIdx + 1)}. {item}
+                                      </span>
                                     ))}
                                   </div>
                                 ) : q.type === 'matching' && q.matchingPairs ? (
                                   <div className="space-y-1 mt-1 text-[10px] font-semibold text-[var(--color-text-secondary)]">
                                     {q.matchingPairs.map((pair, pIdx) => (
-                                      <div key={pIdx}>🔗 «{pair.left}» به «{pair.right}»</div>
+                                      <div key={pIdx}>
+                                        🔗 «{pair.left}» به «{pair.right}»
+                                      </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  String(q.correctAnswer || q.correctFillBlanks?.join('، ') || 'نامشخص')
+                                  String(
+                                    q.correctAnswer || q.correctFillBlanks?.join('، ') || 'نامشخص',
+                                  )
                                 )}
                               </div>
                             </div>
@@ -1045,39 +1367,62 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
                           {/* Interactive Score result feedback badge */}
                           <div className="pt-2 border-t border-[var(--color-glass-light-stroke)]/60 mt-1 flex justify-between items-center text-[11px] font-bold">
-                            <span className="text-[var(--color-text-tertiary)]">رتبه‌بندی نمره‌دهی خودکار سیستم:</span>
+                            <span className="text-[var(--color-text-tertiary)]">
+                              رتبه‌بندی نمره‌دهی خودکار سیستم:
+                            </span>
                             {stdAnsObj?.isCorrect ? (
                               <span className="text-[var(--color-success)] flex items-center gap-1.5 bg-[var(--color-success-soft)]/40 px-3 py-1 rounded-xl border border-[var(--color-success)]/15">
                                 <Check className="w-4 h-4 stroke-[3]" />
-                                <span>پاسخ صحیح (دریافت کامل {toPersianDigits(q.points)} امتیاز)</span>
+                                <span>
+                                  پاسخ صحیح (دریافت کامل {toPersianDigits(q.points)} امتیاز)
+                                </span>
                               </span>
                             ) : (
                               <span className="text-[var(--color-danger)] flex items-center gap-1.5 bg-rose-100/40 px-3 py-1 rounded-xl border border-rose-150">
                                 <X className="w-4 h-4 stroke-[3]" />
-                                <span>پاسخ نادرست (نمره کسب‌شده: {toPersianDigits(stdAnsObj?.scoreGained ?? 0)} از {toPersianDigits(q.points)})</span>
+                                <span>
+                                  پاسخ نادرست (نمره کسب‌شده:{' '}
+                                  {toPersianDigits(stdAnsObj?.scoreGained ?? 0)} از{' '}
+                                  {toPersianDigits(q.points)})
+                                </span>
                               </span>
                             )}
                           </div>
                         </div>
                       ) : (
                         /* Extensive Descriptive Rubrics evaluation interface */
-                        <div className="space-y-4 glx border p-4 rounded-2xl" id="descriptive-evaluation">
+                        <div
+                          className="space-y-4 glx border p-4 rounded-2xl"
+                          id="descriptive-evaluation"
+                        >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Student Answer Sheet design */}
                             <div className="space-y-1">
-                              <span className="text-[10px] text-[var(--color-accent)] font-bold block">● برگه دست‌نویس داوطلب:</span>
+                              <span className="text-[10px] text-[var(--color-accent)] font-bold block">
+                                ● برگه دست‌نویس داوطلب:
+                              </span>
                               <div className="glx border rounded-xl p-4 text-xs font-bold text-[var(--color-text-primary)] font-sans leading-relaxed whitespace-pre-wrap min-h-[110px]">
-                                {stdAnswerValue || <span className="text-slate-300 font-normal">ورقه سفید رها شده است.</span>}
+                                {stdAnswerValue || (
+                                  <span className="text-slate-300 font-normal">
+                                    ورقه سفید رها شده است.
+                                  </span>
+                                )}
                               </div>
                             </div>
 
                             {/* Perfect Farsi Sample template */}
                             <div className="space-y-1">
-                              <span className="text-[10px] text-[var(--color-success)] font-bold block">✔ پاسخ نمونه طراح (کلید تشریحی):</span>
+                              <span className="text-[10px] text-[var(--color-success)] font-bold block">
+                                ✔ پاسخ نمونه طراح (کلید تشریحی):
+                              </span>
                               <div className="bg-[var(--color-success-soft)]/20 border border-[var(--color-success)]/15 rounded-xl p-4 text-xs font-semibold text-[var(--color-text-secondary)] leading-relaxed min-h-[110px]">
-                                {q.correctAnswer ? String(q.correctAnswer) : "تحلیل مستند و حاوی واژگان علمی مقتضی نمره بالا بر اساس توفیقات درسی ملاک است."}
+                                {q.correctAnswer
+                                  ? String(q.correctAnswer)
+                                  : 'تحلیل مستند و حاوی واژگان علمی مقتضی نمره بالا بر اساس توفیقات درسی ملاک است.'}
                                 <div className="mt-3 text-[10px] text-[var(--color-text-tertiary)] border-t border-[var(--color-glass-light-stroke)]/50 pt-2 font-bold leading-5">
-                                  <span>کتاب درسی: مبحث مرتبط با ردیف درستی محتوایی آزمون سراسری امسال.</span>
+                                  <span>
+                                    کتاب درسی: مبحث مرتبط با ردیف درستی محتوایی آزمون سراسری امسال.
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -1086,8 +1431,10 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                           {/* 5. SPECIFICATION REQ: Rubric criteria table for descriptive evaluation */}
                           <div className="space-y-2.5 glx p-4 border border-[var(--color-glass-light-stroke)] rounded-xl">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[var(--color-danger)]/10/60 pb-2">
-                              <span className="text-[11px] font-black text-[var(--color-danger)]/80 block">جدول بارم‌بندی تفصیلی تصحیح (Rubrics):</span>
-                              
+                              <span className="text-[11px] font-black text-[var(--color-danger)]/80 block">
+                                جدول بارم‌بندی تفصیلی تصحیح (Rubrics):
+                              </span>
+
                               {/* 8. AI ASSISTED EVAL BUTTON FEATURE */}
                               <button
                                 type="button"
@@ -1112,10 +1459,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                             {/* Warning note for AI assisted scoring */}
                             <p className="text-[9.5px] text-[var(--color-accent)] bg-[var(--color-accent-soft)]/30 p-2.5 rounded-lg border border-[var(--color-accent-soft)] leading-relaxed flex items-start gap-1.5">
                               <Cpu className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
-                              <span>نمره پیشنهادی هوش مصنوعی برپایه فهمِ معنایی زبان و معیارهای کلید آزمون استوار است؛ لذا باید توسط معلم ارجمند بررسی، حک و تایید قطعی گردد.</span>
+                              <span>
+                                نمره پیشنهادی هوش مصنوعی برپایه فهمِ معنایی زبان و معیارهای کلید
+                                آزمون استوار است؛ لذا باید توسط معلم ارجمند بررسی، حک و تایید قطعی
+                                گردد.
+                              </span>
                             </p>
 
-                            <table className="w-full text-[10px] text-right" id={`rubric-tab-${q.id}`}>
+                            <table
+                              className="w-full text-[10px] text-right"
+                              id={`rubric-tab-${q.id}`}
+                            >
                               <thead>
                                 <tr className="text-[var(--color-text-tertiary)] font-bold border-b border-[var(--color-glass-light-stroke)]">
                                   <th className="py-2">معیار ارزیابی</th>
@@ -1130,10 +1484,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                   const scoreVal = currentScoreObj[rubric.id] ?? 0;
 
                                   return (
-                                    <tr key={rubric.id} className="text-[var(--color-text-secondary)] font-semibold">
+                                    <tr
+                                      key={rubric.id}
+                                      className="text-[var(--color-text-secondary)] font-semibold"
+                                    >
                                       <td className="py-3">
-                                        <div className="font-bold text-[var(--color-text-primary)]">{rubric.title}</div>
-                                        <div className="text-[9px] text-[var(--color-text-tertiary)] mt-0.5 font-normal leading-relaxed">{rubric.description}</div>
+                                        <div className="font-bold text-[var(--color-text-primary)]">
+                                          {rubric.title}
+                                        </div>
+                                        <div className="text-[9px] text-[var(--color-text-tertiary)] mt-0.5 font-normal leading-relaxed">
+                                          {rubric.description}
+                                        </div>
                                       </td>
                                       <td className="py-3 text-center font-bold text-[var(--color-text-secondary)] text-xs">
                                         {toPersianDigits(rubric.maxPoints)} امتیاز
@@ -1146,30 +1507,35 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                           step={0.25}
                                           value={scoreVal}
                                           onChange={(e) => {
-                                            const keyInput = Math.min(rubric.maxPoints, Math.max(0, Number(e.target.value)));
-                                            setRubricScores(prev => ({
+                                            const keyInput = Math.min(
+                                              rubric.maxPoints,
+                                              Math.max(0, Number(e.target.value)),
+                                            );
+                                            setRubricScores((prev) => ({
                                               ...prev,
                                               [q.id]: {
                                                 ...(prev[q.id] || {}),
-                                                [rubric.id]: keyInput
-                                              }
+                                                [rubric.id]: keyInput,
+                                              },
                                             }));
-                                            
+
                                             // Auto sync sum to the total assigned scores
                                             const subTotal = {
                                               ...(rubricScores[q.id] || {}),
-                                              [rubric.id]: keyInput
+                                              [rubric.id]: keyInput,
                                             };
-                                            const totalManual = (Object.values(subTotal) as number[]).reduce((sum, s) => sum + s, 0);
-                                            setAssignedScores(prev => ({
+                                            const totalManual = (
+                                              Object.values(subTotal) as number[]
+                                            ).reduce((sum, s) => sum + s, 0);
+                                            setAssignedScores((prev) => ({
                                               ...prev,
-                                              [q.id]: Number(totalManual.toFixed(2))
+                                              [q.id]: Number(totalManual.toFixed(2)),
                                             }));
-                                            
+
                                             // Reset saved status since score changed
-                                            setSavedDescriptiveQuestions(prev => ({
+                                            setSavedDescriptiveQuestions((prev) => ({
                                               ...prev,
-                                              [q.id]: false
+                                              [q.id]: false,
                                             }));
                                           }}
                                           className="w-20 px-2 py-1.5 border rounded-lg glx text-center font-black text-[var(--color-text-primary)] text-xs focus:ring-1 focus:ring-[var(--color-accent)]/40 focus:outline-hidden font-mono"
@@ -1194,12 +1560,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               onChange={(e) => {
                                 setTeacherComments({
                                   ...teacherComments,
-                                  [q.id]: e.target.value
+                                  [q.id]: e.target.value,
                                 });
                                 // Reset saved status since score changed
-                                setSavedDescriptiveQuestions(prev => ({
+                                setSavedDescriptiveQuestions((prev) => ({
                                   ...prev,
-                                  [q.id]: false
+                                  [q.id]: false,
                                 }));
                               }}
                               placeholder="رهنمودهای آموزشی خود را بنویسید (مثال: پاراگراف اول فاقد مستند بومی است، بقیه بخش‌ها غنی بود)."
@@ -1213,13 +1579,19 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               type="button"
                               onClick={() => saveSingleQuestionGrade(q.id)}
                               className={`px-4.5 py-2.5 text-[10px] font-black rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
-                                isGraded 
-                                  ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20' 
+                                isGraded
+                                  ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20'
                                   : 'bg-indigo-650 text-white hover:bg-indigo-750'
                               }`}
                             >
-                              {isGraded ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                              <span>{isGraded ? 'نمره این سوال تایید و قفل شد' : 'ثبت نمره این سوال'}</span>
+                              {isGraded ? (
+                                <Check className="w-4 h-4" />
+                              ) : (
+                                <Save className="w-4 h-4" />
+                              )}
+                              <span>
+                                {isGraded ? 'نمره این سوال تایید و قفل شد' : 'ثبت نمره این سوال'}
+                              </span>
                             </button>
                           </div>
                         </div>
@@ -1235,41 +1607,72 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               <div className="glx border rounded-3xl p-5 sticky top-6 space-y-5 text-right">
                 <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-3">
                   <Award className="w-5 h-5 text-[var(--color-accent)]" />
-                  <h3 className="text-xs font-black text-[var(--color-text-primary)]">کاردکس جمع‌بندی تصحیح</h3>
+                  <h3 className="text-xs font-black text-[var(--color-text-primary)]">
+                    کاردکس جمع‌بندی تصحیح
+                  </h3>
                 </div>
 
                 {/* Live Grade preview indicator */}
                 <div className="bg-gradient-to-br from-indigo-50/50 to-slate-50 border border-indigo-150 rounded-2xl p-5 text-center space-y-1 mt-2">
-                  <span className="text-[10px] text-indigo-505 font-bold block">مجموع نمرات اکتسابی و نهایی</span>
+                  <span className="text-[10px] text-indigo-505 font-bold block">
+                    مجموع نمرات اکتسابی و نهایی
+                  </span>
                   <div className="text-2xl font-black text-indigo-805 font-mono">
-                    {toPersianDigits((Object.values(assignedScores) as number[]).reduce((sum, s) => sum + s, 0))} <span className="text-xs text-[var(--color-text-tertiary)] font-bold">از {toPersianDigits(activeSubmission.maxScore)}</span>
+                    {toPersianDigits(
+                      (Object.values(assignedScores) as number[]).reduce((sum, s) => sum + s, 0),
+                    )}{' '}
+                    <span className="text-xs text-[var(--color-text-tertiary)] font-bold">
+                      از {toPersianDigits(activeSubmission.maxScore)}
+                    </span>
                   </div>
                   <div className="text-[9px] text-[var(--color-text-tertiary)] font-semibold pt-1">
-                    <span>خودکار سیستم: {toPersianDigits(activeSubmission.autoScore)} بارم نسیب شده</span>
+                    <span>
+                      خودکار سیستم: {toPersianDigits(activeSubmission.autoScore)} بارم نسیب شده
+                    </span>
                   </div>
                 </div>
 
                 {/* Detailed Student description block */}
                 <div className="space-y-3 text-[11px] font-semibold text-[var(--color-text-secondary)] glx border p-4 rounded-2xl leading-relaxed">
-                  <div>🏫 <strong>آزمون آنلاین:</strong> {exam.title}</div>
-                  <div>👤 <strong>نام داوطلب کلاس:</strong> {activeSubmission.studentName}</div>
-                  <div>🆔 <strong>کد ملی ثبت‌شده:</strong> {toPersianDigits(activeSubmission.nationalId)}</div>
-                  <div>🕒 <strong>آغاز ارزشیابی:</strong> {toPersianDigits(new Date(activeSubmission.startedAt).toLocaleTimeString('fa-IR'))}</div>
+                  <div>
+                    🏫 <strong>آزمون آنلاین:</strong> {exam.title}
+                  </div>
+                  <div>
+                    👤 <strong>نام داوطلب کلاس:</strong> {activeSubmission.studentName}
+                  </div>
+                  <div>
+                    🆔 <strong>کد ملی ثبت‌شده:</strong>{' '}
+                    {toPersianDigits(activeSubmission.nationalId)}
+                  </div>
+                  <div>
+                    🕒 <strong>آغاز ارزشیابی:</strong>{' '}
+                    {toPersianDigits(
+                      new Date(activeSubmission.startedAt).toLocaleTimeString('fa-IR'),
+                    )}
+                  </div>
                 </div>
 
                 {/* Correction Progress meter list */}
                 {hasDescriptiveQuestions && (
                   <div className="glx border rounded-2xl p-4 text-[11px] font-bold text-[var(--color-text-secondary)] space-y-3">
-                    <span className="text-[var(--color-text-tertiary)] block pb-1 border-b">وضعیت تصحیح سوالات تشریحی:</span>
+                    <span className="text-[var(--color-text-tertiary)] block pb-1 border-b">
+                      وضعیت تصحیح سوالات تشریحی:
+                    </span>
                     <div className="grid grid-cols-2 gap-2 text-center text-[10px]">
                       <div className="bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-xl p-2">
-                        <span className="text-[var(--color-text-tertiary)] block text-[9px]">تایید شده</span>
+                        <span className="text-[var(--color-text-tertiary)] block text-[9px]">
+                          تایید شده
+                        </span>
                         <span className="text-sm font-black text-[var(--color-success)] font-mono">
-                          {toPersianDigits(Object.values(savedDescriptiveQuestions).filter(Boolean).length)}
+                          {toPersianDigits(
+                            Object.values(savedDescriptiveQuestions).filter(Boolean).length,
+                          )}
                         </span>
                       </div>
                       <div className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 rounded-xl p-2">
-                        <span className="text-[var(--color-text-tertiary)] block text-[9px]">در انتظار بررسی</span>
+                        <span className="text-[var(--color-text-tertiary)] block text-[9px]">
+                          در انتظار بررسی
+                        </span>
                         <span className="text-sm font-black text-amber-805 font-mono">
                           {toPersianDigits(getUngradedDescriptiveQuestionsCount())}
                         </span>
@@ -1283,8 +1686,13 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <div className="bg-[var(--color-warning-soft)]/50 border border-amber-150 p-4 rounded-2xl text-[var(--color-warning)] text-[10px] leading-relaxed flex items-start gap-2">
                     <ShieldAlert className="w-5 h-5 text-[var(--color-warning)] shrink-0" />
                     <div>
-                      <span className="font-extrabold block">توجه: برخی از سؤالات تشریحی هنوز نمره‌دهی نشده‌اند</span>
-                      <p className="font-medium mt-0.5 text-[var(--color-warning)]/80">جداول بارم‌بندی تشریحی مربوط به سؤالات تصحیح شده را قفل نمائید تا نمره نهایی آنها به طور کامل اضافه گردد.</p>
+                      <span className="font-extrabold block">
+                        توجه: برخی از سؤالات تشریحی هنوز نمره‌دهی نشده‌اند
+                      </span>
+                      <p className="font-medium mt-0.5 text-[var(--color-warning)]/80">
+                        جداول بارم‌بندی تشریحی مربوط به سؤالات تصحیح شده را قفل نمائید تا نمره نهایی
+                        آنها به طور کامل اضافه گردد.
+                      </p>
                     </div>
                   </div>
                 )}

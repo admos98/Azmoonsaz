@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   /* Typography */
-  --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
 
   /* Spacing (4px base) */
   --spacing-0: 0px;
@@ -34,11 +34,11 @@
    * Brand: deep ink (#1A1A2E) + gold (#F5B301).
    * Glass: whisper-thin white/8% — feels like looking through thin glass.
    */
-  --color-page-bg: #FAFCFF;
-  --color-paper-warm: #FAFCFF;
+  --color-page-bg: #fafcff;
+  --color-paper-warm: #fafcff;
 
   /* Ink field — sidebar, hero on dark */
-  --color-ink-field: #1A1A2E;
+  --color-ink-field: #1a1a2e;
   --color-ink-stroke: #374151;
 
   /* Glass fills — balanced liquid glass: subtle, readable, not overpowering */
@@ -50,46 +50,46 @@
   --color-glass-ink-fill: rgba(255, 255, 255, 0.035);
   --color-glass-ink-stroke: rgba(255, 255, 255, 0.08);
   --color-glass-ink-sheen: rgba(255, 255, 255, 0.12);
-  --color-glass-ink-bottom: rgba(0, 0, 0, 0.20);
+  --color-glass-ink-bottom: rgba(0, 0, 0, 0.2);
 
   /* Shared shadow — balanced for the new lighter glass */
   --color-glass-shadow: rgba(26, 26, 46, 0.2);
   --color-glass-shadow-strong: rgba(26, 26, 46, 0.2);
 
   /* Brand — The Mark */
-  --color-ink: #1A1A2E;
-  --color-gold: #F5B301;
-  --color-gold-soft: #FEF9E7;
+  --color-ink: #1a1a2e;
+  --color-gold: #f5b301;
+  --color-gold-soft: #fef9e7;
   --color-gold-glow: rgba(245, 179, 1, 0.16);
 
   /* Semantic — Primary */
-  --color-accent: #6366F1;
-  --color-accent-hover: #4F46E5;
-  --color-accent-soft: #EEF2FF;
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-soft: #eef2ff;
 
   /* Semantic — Status */
-  --color-success: #10B981;
-  --color-success-soft: #DCFCE7;
-  --color-warning: #F59E0B;
-  --color-warning-soft: #FEF3C7;
-  --color-danger: #EF4444;
-  --color-danger-soft: #FEE2E2;
+  --color-success: #10b981;
+  --color-success-soft: #dcfce7;
+  --color-warning: #f59e0b;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #ef4444;
+  --color-danger-soft: #fee2e2;
 
   /* Text */
-  --color-text-primary: #1A1A2E;
-  --color-text-secondary: #6B7280;
-  --color-text-tertiary: #9CA3AF;
-  --color-text-on-dark: #F9FAFB;
-  --color-text-on-dark-secondary: #D1D5DB;
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #6b7280;
+  --color-text-tertiary: #9ca3af;
+  --color-text-on-dark: #f9fafb;
+  --color-text-on-dark-secondary: #d1d5db;
 }
 
 /* ─── Dark Theme ─── */
-:root[data-theme="dark"] {
-  --color-page-bg: #0A0A12;
-  --color-paper-warm: #0A0A12;
-  --color-text-primary: #F9FAFB;
-  --color-text-secondary: #D1D5DB;
-  --color-text-tertiary: #9CA3AF;
+:root[data-theme='dark'] {
+  --color-page-bg: #0a0a12;
+  --color-paper-warm: #0a0a12;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-text-tertiary: #9ca3af;
 }
 
 /* ─── Base ─── */
@@ -100,8 +100,16 @@ body {
   text-align: right;
   background: var(--color-paper-warm);
   background-image:
-    radial-gradient(circle at 10% 18%, color-mix(in srgb, var(--color-ink) 1%, transparent) 0%, transparent 32%),
-    radial-gradient(circle at 90% 80%, color-mix(in srgb, var(--color-gold) 1.2%, transparent) 0%, transparent 26%);
+    radial-gradient(
+      circle at 10% 18%,
+      color-mix(in srgb, var(--color-ink) 1%, transparent) 0%,
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      color-mix(in srgb, var(--color-gold) 1.2%, transparent) 0%,
+      transparent 26%
+    );
   background-size: 160% 160%;
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
@@ -113,8 +121,13 @@ body {
   color: var(--color-ink);
 }
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--color-ink) 15%, transparent);
   border-radius: 9999px;
@@ -155,14 +168,8 @@ body {
     inset 3px 0 4px color-mix(in srgb, var(--color-glass-light-sheen) 40%, transparent),
     inset -3px 0 4px color-mix(in srgb, var(--color-glass-light-sheen) 20%, transparent),
     0 30px 80px var(--color-glass-shadow-strong);
-  backdrop-filter:
-    url(#lg-displace)
-    blur(8px)
-    saturate(1.29);
-  -webkit-backdrop-filter:
-    url(#lg-displace)
-    blur(8px)
-    saturate(1.29);
+  backdrop-filter: url(#lg-displace) blur(8px) saturate(1.29);
+  -webkit-backdrop-filter: url(#lg-displace) blur(8px) saturate(1.29);
 }
 
 /* Ink glass — sidebar (dark field with warm gold tint) */
@@ -187,8 +194,8 @@ body {
     inset 0 -1px 1px var(--color-glass-light-bottom),
     inset 2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 18%, transparent),
     inset -2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 10%, transparent);
-  backdrop-filter: blur(1.33px) saturate(1.0) brightness(1.03);
-  -webkit-backdrop-filter: blur(1.33px) saturate(1.0) brightness(1.03);
+  backdrop-filter: blur(1.33px) saturate(1) brightness(1.03);
+  -webkit-backdrop-filter: blur(1.33px) saturate(1) brightness(1.03);
 }
 
 /* ─── Sheen overlay ─── */
@@ -197,13 +204,13 @@ body {
   isolation: isolate;
 }
 .glx-sheen::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: radial-gradient(
     circle at var(--lg-sheen-x, 90%) var(--lg-sheen-y, 0%),
-    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.1) 0%,
     transparent 50%
   );
   opacity: 0;
@@ -211,10 +218,12 @@ body {
   pointer-events: none;
   z-index: 1;
 }
-.glx-sheen:hover::before { opacity: 1; }
+.glx-sheen:hover::before {
+  opacity: 1;
+}
 
 /* ─── Dark theme glass overrides ─── */
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   --color-glass-light-fill: rgba(255, 255, 255, 0.03);
   --color-glass-light-stroke: rgba(255, 255, 255, 0.07);
   --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
@@ -225,20 +234,30 @@ body {
 
 /* ─── Skeleton shimmer ─── */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 .skeleton {
-  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: var(--radius-sm);
 }
 
 /* ─── Legacy aliases (backward compat → glx system) ─── */
-@utility glass-1 { @apply glx; }
-@utility glass-2 { @apply glx-strong; }
-@utility glass-3 { @apply glx-dark; }
+@utility glass-1 {
+  @apply glx;
+}
+@utility glass-2 {
+  @apply glx-strong;
+}
+@utility glass-3 {
+  @apply glx-dark;
+}
 
 /* ─── The Mark gold pop ─── */
 .goldpop {
@@ -246,21 +265,39 @@ body {
   animation: mark-pop 0.55s cubic-bezier(0.25, 1.6, 0.45, 1) both;
 }
 @keyframes mark-pop {
-  from { transform: scale(0); }
-  70% { transform: scale(1.15); }
-  to { transform: scale(1); }
+  from {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.15);
+  }
+  to {
+    transform: scale(1);
+  }
 }
 
 /* ─── Panel drop-in animation (open) ─── */
 @keyframes dropIn {
-  0% { opacity: 0; transform: translateY(12px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Panel drop-out animation (close) — opposite of dropIn */
 @keyframes dropOut {
-  0% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(12px); }
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
 .panel-drop-out {
   animation: dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) both;
@@ -268,30 +305,62 @@ body {
 
 /* ─── Notification dropdown: grows from bell origin (open) / shrinks to bell (close) ─── */
 @keyframes growFromBell {
-  0% { opacity: 0; transform: scale(0.85); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes shrinkToBell {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.85); }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
 }
 
 /* ─── Hamburger panels: grow from hamburger origin (open) / shrink to hamburger (close) ─── */
 @keyframes growFromHamburger {
-  0% { opacity: 0; transform: scale(0.88); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes shrinkToHamburger {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.88); }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
 }
 
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
-  .goldpop { animation: none; }
-  .skeleton { animation: none; }
-  .glx-sheen:hover::before { opacity: 0; }
-  *, *::before, *::after {
+  .goldpop {
+    animation: none;
+  }
+  .skeleton {
+    animation: none;
+  }
+  .glx-sheen:hover::before {
+    opacity: 0;
+  }
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

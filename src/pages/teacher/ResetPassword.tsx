@@ -34,7 +34,8 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
     const refreshToken = params.get('refresh_token');
 
     if (accessToken && refreshToken) {
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+      supabase.auth
+        .setSession({ access_token: accessToken, refresh_token: refreshToken })
         .then(({ error }) => {
           if (error) {
             setError('لینک بازیابی منقضی شده یا نامعتبر است.');
@@ -97,8 +98,12 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full">
               <CheckCircle2 className="w-8 h-8 text-emerald-600" />
             </div>
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">رمز عبور با موفقیت تغییر کرد</h2>
-            <p className="text-sm text-[var(--color-text-tertiary)]">حالا می‌توانید با رمز جدید وارد شوید.</p>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+              رمز عبور با موفقیت تغییر کرد
+            </h2>
+            <p className="text-sm text-[var(--color-text-tertiary)]">
+              حالا می‌توانید با رمز جدید وارد شوید.
+            </p>
             <button
               onClick={onDone}
               className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer"
@@ -122,7 +127,9 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">آزمون‌ساز</h1>
           </div>
           <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
-            <p className="text-sm text-red-600">{error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}</p>
+            <p className="text-sm text-red-600">
+              {error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}
+            </p>
             <button
               onClick={onDone}
               className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer"
@@ -149,7 +156,9 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
         <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">رمز عبور جدید</label>
+              <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">
+                رمز عبور جدید
+              </label>
               <div className="relative">
                 <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
                 <input
@@ -172,7 +181,9 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             </div>
 
             {error && (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {error}
+              </p>
             )}
 
             <button

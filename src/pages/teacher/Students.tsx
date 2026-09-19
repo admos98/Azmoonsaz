@@ -5,30 +5,30 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Users, 
-  Search, 
-  PlusCircle, 
-  Filter, 
-  Trash2, 
-  Edit, 
-  GraduationCap, 
-  Check, 
-  CheckSquare, 
-  Upload, 
-  FileSpreadsheet, 
-  AlertTriangle, 
-  CheckCircle, 
-  Info, 
-  FileText, 
-  Smartphone, 
-  Mail, 
-  X, 
-  ArrowLeft, 
+import {
+  Users,
+  Search,
+  PlusCircle,
+  Filter,
+  Trash2,
+  Edit,
+  GraduationCap,
+  Check,
+  CheckSquare,
+  Upload,
+  FileSpreadsheet,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  FileText,
+  Smartphone,
+  Mail,
+  X,
+  ArrowLeft,
   ArrowRight,
   Eye,
   Activity,
-  UserPlus
+  UserPlus,
 } from 'lucide-react';
 
 import { logger } from '../../lib/logger';
@@ -51,10 +51,13 @@ export default function Students() {
       setLoading(true);
       try {
         const data = await studentService.getStudents();
-        setStudents(data.map((s, idx) => ({
-          ...s,
-          status: s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active')
-        })));
+        setStudents(
+          data.map((s, idx) => ({
+            ...s,
+            status:
+              s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active'),
+          })),
+        );
       } catch (err) {
         logger.error('Error fetching students:', err);
       } finally {
@@ -62,16 +65,25 @@ export default function Students() {
       }
     };
     fetchStudents();
-    classService.getClassGroups().then(setClassGroups).catch(() => {});
-    gradingService.getSubmissions().then(setSubmissions).catch(() => {});
-    examService.getExams().then(setAllExams).catch(() => {});
+    classService
+      .getClassGroups()
+      .then(setClassGroups)
+      .catch(() => {});
+    gradingService
+      .getSubmissions()
+      .then(setSubmissions)
+      .catch(() => {});
+    examService
+      .getExams()
+      .then(setAllExams)
+      .catch(() => {});
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedClassGroup, setSelectedClassGroup] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  
+
   // Modals state
   const [showAddEditModal, setShowAddEditModal] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
@@ -111,19 +123,24 @@ export default function Students() {
   const validateIranianNationalId = (id: string): { isValid: boolean; message: string } => {
     if (!id) return { isValid: false, message: 'لطفاً کد ملی را وارد نمایید.' };
     const cleanId = id.trim().replace(/\D/g, '');
-    if (cleanId.length !== 10) return { isValid: false, message: 'کد ملی باید دقیقاً ۱۰ رقم عددی باشد.' };
-    if (/^(\d)\1{9}$/.test(cleanId)) return { isValid: false, message: 'شماره ملی نامعتبر است (ارقام تکراری هستند).' };
-    
+    if (cleanId.length !== 10)
+      return { isValid: false, message: 'کد ملی باید دقیقاً ۱۰ رقم عددی باشد.' };
+    if (/^(\d)\1{9}$/.test(cleanId))
+      return { isValid: false, message: 'شماره ملی نامعتبر است (ارقام تکراری هستند).' };
+
     const digits = cleanId.split('').map(Number);
     const checkDigit = digits[9];
     const sum = digits.slice(0, 9).reduce((acc, digit, idx) => acc + digit * (10 - idx), 0);
     const remainder = sum % 11;
     const computedCheck = remainder < 2 ? remainder : 11 - remainder;
-    
+
     if (checkDigit === computedCheck) {
       return { isValid: true, message: 'کد ملی وارد شده معتبر و تایید شده است.' };
     } else {
-      return { isValid: false, message: 'الگوریتم رقم کنترلی کد ملی با استانداردهای ثبت احوال همخوانی ندارد.' };
+      return {
+        isValid: false,
+        message: 'الگوریتم رقم کنترلی کد ملی با استانداردهای ثبت احوال همخوانی ندارد.',
+      };
     }
   };
 
@@ -178,7 +195,7 @@ export default function Students() {
     try {
       if (modalMode === 'add') {
         // Check for duplicated National ID
-        const isDuplicate = students.some(s => s.nationalId === formNationalId);
+        const isDuplicate = students.some((s) => s.nationalId === formNationalId);
         if (isDuplicate) {
           showToast('دانش‌آموزی با این کد ملی قبلاً ثبت شده است.', 'error');
           return;
@@ -190,12 +207,12 @@ export default function Students() {
           grade: formGrade,
           classGroupId: formClassGroupId,
           phoneNumber: formPhone || undefined,
-          email: formEmail || undefined
+          email: formEmail || undefined,
         });
-        
+
         const newStudent: Student = {
           ...created,
-          status: formStatus
+          status: formStatus,
         };
         setStudents([newStudent, ...students]);
       } else {
@@ -207,19 +224,21 @@ export default function Students() {
           grade: formGrade,
           classGroupId: formClassGroupId,
           phoneNumber: formPhone || undefined,
-          email: formEmail || undefined
+          email: formEmail || undefined,
         });
 
-        setStudents(students.map(s => {
-          if (s.id === selectedStudentId) {
-            return {
-              ...s,
-              ...updated,
-              status: formStatus
-            };
-          }
-          return s;
-        }));
+        setStudents(
+          students.map((s) => {
+            if (s.id === selectedStudentId) {
+              return {
+                ...s,
+                ...updated,
+                status: formStatus,
+              };
+            }
+            return s;
+          }),
+        );
       }
       setShowAddEditModal(false);
     } catch (err: any) {
@@ -238,7 +257,7 @@ export default function Students() {
     if (!studentToDelete) return;
     try {
       await studentService.deleteStudent(studentToDelete.id);
-      setStudents(students.filter(s => s.id !== studentToDelete.id));
+      setStudents(students.filter((s) => s.id !== studentToDelete.id));
       showToast('دانش‌آموز حذف شد.', 'success');
     } catch (err: any) {
       showToast(`خطا در حذف: ${err?.message || err}`, 'error');
@@ -248,19 +267,19 @@ export default function Students() {
   };
 
   const openStudentExamHistory = (student: Student) => {
-    const studentSubs = submissions.filter(sub => sub.studentId === student.id);
+    const studentSubs = submissions.filter((sub) => sub.studentId === student.id);
     setActiveLogStudent(student);
     setActiveLogSubmissions(studentSubs);
     setShowExamLogsModal(true);
   };
 
   // Filters logic
-  const filteredStudents = students.filter(student => {
+  const filteredStudents = students.filter((student) => {
     const matchesSearch =
-      student.name.includes(searchQuery) ||
-      student.nationalId.includes(searchQuery);
+      student.name.includes(searchQuery) || student.nationalId.includes(searchQuery);
     const matchesGrade = selectedGrade === 'all' || student.grade === selectedGrade;
-    const matchesClass = selectedClassGroup === 'all' || student.classGroupId === selectedClassGroup;
+    const matchesClass =
+      selectedClassGroup === 'all' || student.classGroupId === selectedClassGroup;
     const matchesStatus = selectedStatus === 'all' || student.status === selectedStatus;
 
     return matchesSearch && matchesGrade && matchesClass && matchesStatus;
@@ -270,9 +289,9 @@ export default function Students() {
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   };
@@ -281,7 +300,7 @@ export default function Students() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processSelectedFile(e.dataTransfer.files[0]);
     }
@@ -295,15 +314,15 @@ export default function Students() {
 
   const processSelectedFile = (file: File) => {
     setUploadedFileName(file.name);
-    
+
     // Check if it is .csv or plain-text to implement actual text parser
-    if (file.name.endsWith('.csv') || file.type === "text/csv") {
+    if (file.name.endsWith('.csv') || file.type === 'text/csv') {
       const reader = new FileReader();
       reader.onload = (event) => {
         const textStr = event.target?.result as string;
         parseCSVText(textStr);
       };
-      reader.readAsText(file, "UTF-8");
+      reader.readAsText(file, 'UTF-8');
     } else {
       // For .xlsx files, we simulate parsing gracefully according to guidelines
       simulateXLSXLoad();
@@ -311,13 +330,16 @@ export default function Students() {
   };
 
   const parseCSVText = (text: string) => {
-    const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+    const lines = text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
     if (lines.length < 2) {
       showToast('فایل ارسالی خالی است یا ساختار صحیحی ندارد.', 'error');
       return;
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
     const nameIdx = headers.indexOf('name');
     const nidIdx = headers.indexOf('national_id');
     const classIdx = headers.indexOf('class');
@@ -331,14 +353,14 @@ export default function Students() {
 
     const rawDataList: any[] = [];
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',').map(c => c.trim());
+      const cols = lines[i].split(',').map((c) => c.trim());
       if (cols.length >= 4) {
         rawDataList.push({
           row: i + 1,
           name: cols[nameIdx] || '',
           national_id: cols[nidIdx] || '',
           class: cols[classIdx] || '',
-          grade: cols[gradeIdx] || ''
+          grade: cols[gradeIdx] || '',
         });
       }
     }
@@ -350,9 +372,27 @@ export default function Students() {
   const simulateXLSXLoad = () => {
     // Return sample row array with mixed valid, invalid, and duplicate student datasets to show comprehensive step validations
     const sampleRows = [
-      { row: 1, name: 'آبتین سهرابی', national_id: '0012345678', class: 'کلاس ۷۰۱ (علوم تجربی)', grade: 'هفتم' }, // Valid Model
-      { row: 2, name: '', national_id: '0440981234', class: 'کلاس ۷۰۱ (علوم تجربی)', grade: 'هفتم' }, // Invalid: Missing name
-      { row: 3, name: 'رها سالاری', national_id: '0021487654', class: 'کلاس ۷۰۱ (علوم تجربی)', grade: 'هفتم' }, // Duplicate: nationalId already in mockStudents (id s-1)
+      {
+        row: 1,
+        name: 'آبتین سهرابی',
+        national_id: '0012345678',
+        class: 'کلاس ۷۰۱ (علوم تجربی)',
+        grade: 'هفتم',
+      }, // Valid Model
+      {
+        row: 2,
+        name: '',
+        national_id: '0440981234',
+        class: 'کلاس ۷۰۱ (علوم تجربی)',
+        grade: 'هفتم',
+      }, // Invalid: Missing name
+      {
+        row: 3,
+        name: 'رها سالاری',
+        national_id: '0021487654',
+        class: 'کلاس ۷۰۱ (علوم تجربی)',
+        grade: 'هفتم',
+      }, // Duplicate: nationalId already in mockStudents (id s-1)
       { row: 4, name: 'فراز یگانه', national_id: '12345', class: 'کلاس ۸۰۱', grade: 'هشتم' }, // Invalid National ID (not 10 digits)
       { row: 5, name: 'سهراب سپهری', national_id: '1111111111', class: 'کلاس ۹۰۱', grade: 'نهم' }, // Invalid mathematical sequence
       { row: 6, name: 'بهار کیانی', national_id: '0081234569', class: '', grade: 'نهم' }, // Invalid: Missing class
@@ -374,7 +414,7 @@ export default function Students() {
         errors.push({
           row: row.row,
           student: row,
-          reason: `اطلاعات ناقص: ${!row.name ? 'نام ناقص | ' : ''}${!row.national_id ? 'کد ملی ناقص | ' : ''}${!row.grade ? 'پایه ناقص | ' : ''}${!row.class ? 'کلاس ناقص' : ''}`
+          reason: `اطلاعات ناقص: ${!row.name ? 'نام ناقص | ' : ''}${!row.national_id ? 'کد ملی ناقص | ' : ''}${!row.grade ? 'پایه ناقص | ' : ''}${!row.class ? 'کلاس ناقص' : ''}`,
         });
         return;
       }
@@ -385,29 +425,29 @@ export default function Students() {
         errors.push({
           row: row.row,
           student: row,
-          reason: `کدملی غیرمجاز: ${idVal.message}`
+          reason: `کدملی غیرمجاز: ${idVal.message}`,
         });
         return;
       }
 
       // 3. Duplicate checks inside local database students
-      const isAlreadyInDB = students.some(s => s.nationalId === row.national_id);
+      const isAlreadyInDB = students.some((s) => s.nationalId === row.national_id);
       if (isAlreadyInDB) {
         duplicates.push({
           row: row.row,
           student: row,
-          reason: 'این شماره ملی پیش از این در دیتابیس ثبت شده است.'
+          reason: 'این شماره ملی پیش از این در دیتابیس ثبت شده است.',
         });
         return;
       }
 
       // 4. Duplicate within the file itself
-      const internalDupe = valid.some(s => s.national_id === row.national_id);
+      const internalDupe = valid.some((s) => s.national_id === row.national_id);
       if (internalDupe) {
         duplicates.push({
           row: row.row,
           student: row,
-          reason: 'کد ملی فوق به طور مکرر در سطور فایل بارگذاری گردیده است.'
+          reason: 'کد ملی فوق به طور مکرر در سطور فایل بارگذاری گردیده است.',
         });
         return;
       }
@@ -424,26 +464,28 @@ export default function Students() {
     // Map valid wizard rows into existing students layout
     const toImport = wizardValidationResults.valid.map((r) => {
       // Try to find matching classGroupId by name or default
-      const matchedClass = classGroups.find(c => c.name.includes(r.class) || r.class.includes(c.name)) || classGroups[0];
+      const matchedClass =
+        classGroups.find((c) => c.name.includes(r.class) || r.class.includes(c.name)) ||
+        classGroups[0];
       return {
         name: r.name,
         nationalId: r.national_id,
         grade: r.grade,
         classGroupId: matchedClass?.id || 'c-1',
         phoneNumber: r.phone || undefined,
-        email: r.email || undefined
+        email: r.email || undefined,
       };
     });
 
     try {
       const imported = await studentService.importStudents(toImport);
-      const importedWithStatus: Student[] = imported.map(s => ({
+      const importedWithStatus: Student[] = imported.map((s) => ({
         ...s,
-        status: 'active' as const
+        status: 'active' as const,
       }));
-      setStudents(prev => [...importedWithStatus, ...prev]);
+      setStudents((prev) => [...importedWithStatus, ...prev]);
       setWizardStep(4);
-      
+
       // Auto reset wizard modal
       setTimeout(() => {
         setShowImportWizard(false);
@@ -459,9 +501,21 @@ export default function Students() {
   // Quick Action triggers for mock data sandbox examples
   const loadValidSampleTemplate = () => {
     const validSample = [
-      { row: 1, name: 'آرش کمانگیر', national_id: '0076241584', class: 'کلاس ۷۰۱ (علوم تجربی)', grade: 'هفتم' },
-      { row: 2, name: 'دیبا ابراهیمی', national_id: '0085421369', class: 'کلاس ۸۰۱', grade: 'هشتم' }, // Note: national_id matches s-5, duplicates detector will catch it!
-      { row: 3, name: 'روژان نادری', national_id: '0021487654', class: 'کلاس ۹۰۱', grade: 'نهم' }
+      {
+        row: 1,
+        name: 'آرش کمانگیر',
+        national_id: '0076241584',
+        class: 'کلاس ۷۰۱ (علوم تجربی)',
+        grade: 'هفتم',
+      },
+      {
+        row: 2,
+        name: 'دیبا ابراهیمی',
+        national_id: '0085421369',
+        class: 'کلاس ۸۰۱',
+        grade: 'هشتم',
+      }, // Note: national_id matches s-5, duplicates detector will catch it!
+      { row: 3, name: 'روژان نادری', national_id: '0021487654', class: 'کلاس ۹۰۱', grade: 'نهم' },
     ];
     setWizardRawData(validSample);
     setWizardStep(2);
@@ -474,28 +528,40 @@ export default function Students() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300" id="students-tab-view">
       {toastElement}
-      
+
       {/* Privacy Warning Card (Critical Safeguard) */}
-      <div className="bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/20 p-4.5 rounded-2xl flex items-start gap-3 shadow-sm" id="privacy-warning-banner">
+      <div
+        className="bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/20 p-4.5 rounded-2xl flex items-start gap-3 shadow-sm"
+        id="privacy-warning-banner"
+      >
         <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] shrink-0 mt-0.5" />
         <div className="space-y-1 text-right">
-          <h4 className="text-xs font-bold text-[var(--color-warning)]/80">هشدار صیانت از اطلاعات حساس سجلی دانش‌آموزان</h4>
+          <h4 className="text-xs font-bold text-[var(--color-warning)]/80">
+            هشدار صیانت از اطلاعات حساس سجلی دانش‌آموزان
+          </h4>
           <p className="text-[11px] text-[var(--color-warning)] leading-relaxed">
-            کد ملی اطلاعات حساس محسوب می‌شود. از اشتراک‌گذاری فایل دانش‌آموزان با افراد غیرمجاز خودداری کنید. تمامی کدملی‌ها و پاسخ‌برگ‌های ارسالی همگام با سامانه امتحانات استعدادهای درخشان رمزنگاری می‌شوند.
+            کد ملی اطلاعات حساس محسوب می‌شود. از اشتراک‌گذاری فایل دانش‌آموزان با افراد غیرمجاز
+            خودداری کنید. تمامی کدملی‌ها و پاسخ‌برگ‌های ارسالی همگام با سامانه امتحانات استعدادهای
+            درخشان رمزنگاری می‌شوند.
           </p>
         </div>
       </div>
 
       {/* Primary Tab Headers */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-1 p-6 rounded-2xl" id="students-control-board">
+      <div
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-1 p-6 rounded-2xl"
+        id="students-control-board"
+      >
         <div>
           <h2 className="text-md font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <Users className="w-5 h-5 text-[var(--color-accent)]" />
             <span>مدیریت دانش‌آموزان و درگاه ورودی</span>
           </h2>
-          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-1">پذیرش اطلاعات دانش‌آموزی، ویرایش شناسنامه تحصیلی و قرینه‌سازی با فرمت اکسل سناد</p>
+          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-1">
+            پذیرش اطلاعات دانش‌آموزی، ویرایش شناسنامه تحصیلی و قرینه‌سازی با فرمت اکسل سناد
+          </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Add Manual student */}
           <button
@@ -523,8 +589,10 @@ export default function Students() {
       </div>
 
       {/* Multi-Filter Panel: Search, Grade, Class Group, and Status! */}
-      <div className="glass-1 p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center" id="multi-filter-wrapper">
-        
+      <div
+        className="glass-1 p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center"
+        id="multi-filter-wrapper"
+      >
         {/* Real-time search by name/nationalId */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
@@ -539,11 +607,12 @@ export default function Students() {
 
         {/* Selective Filters */}
         <div className="flex flex-wrap items-center gap-3">
-          
           {/* Grade filter */}
           <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
             <Filter className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">پایه تحصیلی:</span>
+            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">
+              پایه تحصیلی:
+            </span>
             <select
               id="filter-grade"
               value={selectedGrade}
@@ -560,7 +629,9 @@ export default function Students() {
           {/* Class Group filter */}
           <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
             <GraduationCap className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">گروه کلاسی:</span>
+            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">
+              گروه کلاسی:
+            </span>
             <select
               id="filter-class"
               value={selectedClassGroup}
@@ -568,8 +639,10 @@ export default function Students() {
               className="bg-transparent text-xs text-[var(--color-text-secondary)] focus:outline-hidden font-bold cursor-pointer"
             >
               <option value="all">همه کلاس‌ها</option>
-              {classGroups.map(cg => (
-                <option key={cg.id} value={cg.id}>{cg.name}</option>
+              {classGroups.map((cg) => (
+                <option key={cg.id} value={cg.id}>
+                  {cg.name}
+                </option>
               ))}
             </select>
           </div>
@@ -577,7 +650,9 @@ export default function Students() {
           {/* Status filter */}
           <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
             <Activity className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">وضعیت دانش‌آموز:</span>
+            <span className="text-[10px] text-[var(--color-text-tertiary)] font-semibold">
+              وضعیت دانش‌آموز:
+            </span>
             <select
               id="filter-status"
               value={selectedStatus}
@@ -592,7 +667,10 @@ export default function Students() {
           </div>
 
           {/* Clear Filter button if active */}
-          {(searchQuery || selectedGrade !== 'all' || selectedClassGroup !== 'all' || selectedStatus !== 'all') && (
+          {(searchQuery ||
+            selectedGrade !== 'all' ||
+            selectedClassGroup !== 'all' ||
+            selectedStatus !== 'all') && (
             <button
               onClick={() => {
                 setSearchQuery('');
@@ -605,13 +683,11 @@ export default function Students() {
               حذف فیلترها
             </button>
           )}
-
         </div>
       </div>
 
       {/* Main Student Representation Area (Responsive Table vs Mobile Cards) */}
       <div className="glass-1 rounded-2xl overflow-hidden" id="students-grid-box">
-        
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
           <table className="w-full text-xs" id="students-desk-table">
@@ -630,8 +706,8 @@ export default function Students() {
               <AnimatePresence initial={false}>
                 {filteredStudents.length > 0 ? (
                   filteredStudents.map((student) => {
-                    const classGroup = classGroups.find(c => c.id === student.classGroupId);
-                    
+                    const classGroup = classGroups.find((c) => c.id === student.classGroupId);
+
                     return (
                       <motion.tr
                         key={student.id}
@@ -648,8 +724,12 @@ export default function Students() {
                               {student.name.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-bold text-[var(--color-text-primary)] text-[12px]">{student.name}</p>
-                              <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">شناسه: {student.id}</p>
+                              <p className="font-bold text-[var(--color-text-primary)] text-[12px]">
+                                {student.name}
+                              </p>
+                              <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
+                                شناسه: {student.id}
+                              </p>
                             </div>
                           </div>
                         </td>
@@ -662,7 +742,9 @@ export default function Students() {
                         </td>
 
                         {/* Grade */}
-                        <td className="p-4 text-[var(--color-text-secondary)] font-medium">پایه {student.grade}</td>
+                        <td className="p-4 text-[var(--color-text-secondary)] font-medium">
+                          پایه {student.grade}
+                        </td>
 
                         {/* Class */}
                         <td className="p-4 text-[var(--color-text-secondary)] font-bold">
@@ -671,13 +753,20 @@ export default function Students() {
 
                         {/* Status */}
                         <td className="p-4 text-center">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            student.status === 'examining' ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 animate-pulse' :
-                            student.status === 'suspended' ? 'bg-rose-50 text-[var(--color-danger)] border border-[var(--color-danger)]/10' :
-                            'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
-                          }`}>
-                            {student.status === 'examining' ? 'در حال آزمون' :
-                             student.status === 'suspended' ? 'غیرفعال / مسدود' : 'فعال'}
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                              student.status === 'examining'
+                                ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 animate-pulse'
+                                : student.status === 'suspended'
+                                  ? 'bg-rose-50 text-[var(--color-danger)] border border-[var(--color-danger)]/10'
+                                  : 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
+                            }`}
+                          >
+                            {student.status === 'examining'
+                              ? 'در حال آزمون'
+                              : student.status === 'suspended'
+                                ? 'غیرفعال / مسدود'
+                                : 'فعال'}
                           </span>
                         </td>
 
@@ -695,8 +784,12 @@ export default function Students() {
                                 <Mail className="w-3 h-3 text-[var(--color-text-tertiary)]" />
                                 <span>{student.email}</span>
                               </p>
-                            ) : !student.phoneNumber && (
-                              <p className="text-[10px] text-[var(--color-text-tertiary)] italic">بدون اطلاعات تماس</p>
+                            ) : (
+                              !student.phoneNumber && (
+                                <p className="text-[10px] text-[var(--color-text-tertiary)] italic">
+                                  بدون اطلاعات تماس
+                                </p>
+                              )
                             )}
                           </div>
                         </td>
@@ -704,7 +797,6 @@ export default function Students() {
                         {/* Actions */}
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            
                             {/* Student exams history */}
                             <button
                               id={`logs-std-${student.id}`}
@@ -734,16 +826,17 @@ export default function Students() {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
-
                           </div>
                         </td>
-
                       </motion.tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="p-12 text-center text-[var(--color-text-tertiary)] select-none">
+                    <td
+                      colSpan={7}
+                      className="p-12 text-center text-[var(--color-text-tertiary)] select-none"
+                    >
                       <div className="w-12 h-12 rounded-full border border-dashed border-[var(--color-glass-light-stroke)] mx-auto flex items-center justify-center text-slate-300 mb-3">
                         <Users className="w-6 h-6" />
                       </div>
@@ -761,7 +854,7 @@ export default function Students() {
           <AnimatePresence initial={false}>
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student) => {
-                const classGroup = classGroups.find(c => c.id === student.classGroupId);
+                const classGroup = classGroups.find((c) => c.id === student.classGroupId);
                 return (
                   <motion.div
                     key={student.id}
@@ -777,32 +870,49 @@ export default function Students() {
                           {student.name.charAt(0)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-[var(--color-text-primary)] text-[12px]">{student.name}</h4>
-                          <span className="text-[9px] text-[var(--color-text-tertiary)]">شناسه: {student.id}</span>
+                          <h4 className="font-bold text-[var(--color-text-primary)] text-[12px]">
+                            {student.name}
+                          </h4>
+                          <span className="text-[9px] text-[var(--color-text-tertiary)]">
+                            شناسه: {student.id}
+                          </span>
                         </div>
                       </div>
 
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                        student.status === 'examining' ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] animate-pulse' :
-                        student.status === 'suspended' ? 'bg-rose-50 text-[var(--color-danger)]' :
-                        'bg-[var(--color-success-soft)] text-[var(--color-success)]'
-                      }`}>
-                        {student.status === 'examining' ? 'در حال آزمون' :
-                         student.status === 'suspended' ? 'غیرفعال' : 'فعال'}
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          student.status === 'examining'
+                            ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] animate-pulse'
+                            : student.status === 'suspended'
+                              ? 'bg-rose-50 text-[var(--color-danger)]'
+                              : 'bg-[var(--color-success-soft)] text-[var(--color-success)]'
+                        }`}
+                      >
+                        {student.status === 'examining'
+                          ? 'در حال آزمون'
+                          : student.status === 'suspended'
+                            ? 'غیرفعال'
+                            : 'فعال'}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 border-t border-[var(--color-glass-light-stroke)]/60 pt-3 text-[11px] text-[var(--color-text-secondary)]">
                       <div>
-                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">پایه تحصیلی</span>
+                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">
+                          پایه تحصیلی
+                        </span>
                         <span className="font-bold">{student.grade}</span>
                       </div>
                       <div>
-                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">کلاس ثبت‌شده</span>
+                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">
+                          کلاس ثبت‌شده
+                        </span>
                         <span className="font-bold">{classGroup?.name || 'بدون انتساب'}</span>
                       </div>
                       <div className="col-span-2 pt-1">
-                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">کد ملی ورود به آزمون</span>
+                        <span className="text-[var(--color-text-tertiary)] block pb-0.5">
+                          کد ملی ورود به آزمون
+                        </span>
                         <span className="font-mono bg-white px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
                           {maskNationalIdPersian(student.nationalId)}
                         </span>
@@ -829,7 +939,6 @@ export default function Students() {
                         حذف
                       </button>
                     </div>
-
                   </motion.div>
                 );
               })
@@ -840,13 +949,15 @@ export default function Students() {
             )}
           </AnimatePresence>
         </div>
-
       </div>
 
       {/* Manual Add / Edit Modal Dialouge Room */}
       {showAddEditModal && (
-        <div className="fixed inset-0 z-[60] bg-black/20 backdrop-blur-[3px] flex items-center justify-center p-4 text-right" id="add-edit-modal-backdrop">
-          <motion.div 
+        <div
+          className="fixed inset-0 z-[60] bg-black/20 backdrop-blur-[3px] flex items-center justify-center p-4 text-right"
+          id="add-edit-modal-backdrop"
+        >
+          <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             className="glx-strong glx-sheen rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
@@ -854,7 +965,7 @@ export default function Students() {
           >
             {/* Modal Header */}
             <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
-              <button 
+              <button
                 onClick={() => setShowAddEditModal(false)}
                 className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] font-bold text-lg cursor-pointer"
               >
@@ -862,17 +973,22 @@ export default function Students() {
               </button>
               <h3 className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                 <UserPlus className="w-5 h-5 text-[var(--color-accent)]" />
-                <span>{modalMode === 'add' ? 'ایجاد پرونده تحصیلی دانش‌آموز نو' : 'ویرایش شناسنامه تحصیلی دانش‌آموز'}</span>
+                <span>
+                  {modalMode === 'add'
+                    ? 'ایجاد پرونده تحصیلی دانش‌آموز نو'
+                    : 'ویرایش شناسنامه تحصیلی دانش‌آموز'}
+                </span>
               </h3>
             </div>
 
             {/* Form body */}
             <form onSubmit={handleSaveStudentSubmit} className="p-6 space-y-4 text-xs">
-              
               {/* Family name */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-[var(--color-text-secondary)] block">نام و نام خانوادگی:</label>
-                <input 
+                <label className="font-semibold text-[var(--color-text-secondary)] block">
+                  نام و نام خانوادگی:
+                </label>
+                <input
                   type="text"
                   required
                   placeholder="مثال: بردیا مهدوی"
@@ -884,8 +1000,10 @@ export default function Students() {
 
               {/* National ID + Interactive Live Validation logic */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-[var(--color-text-secondary)] block">کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):</label>
-                <input 
+                <label className="font-semibold text-[var(--color-text-secondary)] block">
+                  کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):
+                </label>
+                <input
                   type="text"
                   required
                   maxLength={10}
@@ -894,14 +1012,16 @@ export default function Students() {
                   onChange={(e) => setFormNationalId(e.target.value.replace(/\D/g, ''))}
                   className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-[11px] font-mono tracking-widest text-[var(--color-text-primary)] text-right"
                 />
-                
+
                 {/* Live validation feedback display! */}
                 {formNationalId && (
-                  <div className={`p-2.5 rounded-lg border flex items-start gap-1.5 transition-all text-[9.5px] leading-relaxed ${
-                    validateIranianNationalId(formNationalId).isValid 
-                      ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/10/60 text-[var(--color-success)]' 
-                      : 'bg-rose-50 border-[var(--color-danger)]/10/60 text-[var(--color-danger)]/80'
-                  }`}>
+                  <div
+                    className={`p-2.5 rounded-lg border flex items-start gap-1.5 transition-all text-[9.5px] leading-relaxed ${
+                      validateIranianNationalId(formNationalId).isValid
+                        ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/10/60 text-[var(--color-success)]'
+                        : 'bg-rose-50 border-[var(--color-danger)]/10/60 text-[var(--color-danger)]/80'
+                    }`}
+                  >
                     {validateIranianNationalId(formNationalId).isValid ? (
                       <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                     ) : (
@@ -915,7 +1035,9 @@ export default function Students() {
               {/* Grade and Class Row */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-[var(--color-text-secondary)] block">پایه تحصیلی:</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)] block">
+                    پایه تحصیلی:
+                  </label>
                   <select
                     value={formGrade}
                     onChange={(e) => setFormGrade(e.target.value)}
@@ -928,14 +1050,18 @@ export default function Students() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-[var(--color-text-secondary)] block">کلاس اختصاصی:</label>
+                  <label className="font-semibold text-[var(--color-text-secondary)] block">
+                    کلاس اختصاصی:
+                  </label>
                   <select
                     value={formClassGroupId}
                     onChange={(e) => setFormClassGroupId(e.target.value)}
                     className="w-full glx border px-2 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-bold"
                   >
-                    {classGroups.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                    {classGroups.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -943,20 +1069,22 @@ export default function Students() {
 
               {/* Status Selector */}
               <div className="space-y-1.5">
-                <label className="font-semibold text-[var(--color-text-secondary)] block">وضعیت دانش‌آموز:</label>
+                <label className="font-semibold text-[var(--color-text-secondary)] block">
+                  وضعیت دانش‌آموز:
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { val: 'active', label: 'فعال' },
                     { val: 'suspended', label: 'غیرفعال / مسدود' },
-                    { val: 'examining', label: 'در حال آزمون' }
+                    { val: 'examining', label: 'در حال آزمون' },
                   ].map((s) => (
                     <button
                       key={s.val}
                       type="button"
                       onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
                       className={`py-2 text-[10px] rounded-xl border font-bold transition-all cursor-pointer ${
-                        formStatus === s.val 
-                          ? 'bg-[var(--color-accent)] border-indigo-600 text-white shadow-sm' 
+                        formStatus === s.val
+                          ? 'bg-[var(--color-accent)] border-indigo-600 text-white shadow-sm'
                           : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
                       }`}
                     >
@@ -969,8 +1097,10 @@ export default function Students() {
               {/* Phone and Email Optional */}
               <div className="grid grid-cols-2 gap-4 border-t border-[var(--color-glass-light-stroke)] pt-4.5">
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-[var(--color-text-secondary)] block">همراه ولی (اختیاری):</label>
-                  <input 
+                  <label className="font-semibold text-[var(--color-text-secondary)] block">
+                    همراه ولی (اختیاری):
+                  </label>
+                  <input
                     type="text"
                     placeholder="مثال: 09123456789"
                     value={formPhone}
@@ -980,8 +1110,10 @@ export default function Students() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-semibold text-[var(--color-text-secondary)] block">پست الکترونیک (ایمیل):</label>
-                  <input 
+                  <label className="font-semibold text-[var(--color-text-secondary)] block">
+                    پست الکترونیک (ایمیل):
+                  </label>
+                  <input
                     type="email"
                     placeholder="stud@school.ir"
                     value={formEmail}
@@ -993,29 +1125,32 @@ export default function Students() {
 
               {/* Error messages if form is incomplete */}
               {!formName && (
-                <p className="text-[10px] text-[var(--color-danger)] text-center font-bold">برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.</p>
+                <p className="text-[10px] text-[var(--color-danger)] text-center font-bold">
+                  برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.
+                </p>
               )}
 
               {/* Submit triggers */}
               <div className="flex gap-2.5 pt-4.5 border-t border-[var(--color-glass-light-stroke)] justify-end">
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowAddEditModal(false)}
                   className="px-4 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer"
                 >
                   انصراف
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={!formName}
                   className={`px-5 py-2.5 rounded-xl font-bold text-white shadow-xs transition-colors cursor-pointer ${
-                    formName ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]' : 'bg-indigo-300 cursor-not-allowed'
+                    formName
+                      ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]'
+                      : 'bg-indigo-300 cursor-not-allowed'
                   }`}
                 >
                   {modalMode === 'add' ? 'ثبت و درج نهایی' : 'ذخیره دگرگونی‌ها'}
                 </button>
               </div>
-
             </form>
           </motion.div>
         </div>
@@ -1023,7 +1158,10 @@ export default function Students() {
 
       {/* 4-Step Excel / CSV Import Wizard Modal! */}
       {showImportWizard && (
-        <div className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="wizard-backdrop">
+        <div
+          className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4 text-right"
+          id="wizard-backdrop"
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1055,21 +1193,27 @@ export default function Students() {
                 { s: 1, label: 'مرحله ۱: انتخاب فایل' },
                 { s: 2, label: 'مرحله ۲: پیش‌نمایش اطلاعات' },
                 { s: 3, label: 'مرحله ۳: بررسی خطاها' },
-                { s: 4, label: 'مرحله ۴: تایید نهایی' }
+                { s: 4, label: 'مرحله ۴: تایید نهایی' },
               ].map((stepObj) => (
                 <div key={stepObj.s} className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
-                    wizardStep === stepObj.s 
-                      ? 'bg-[var(--color-accent)] text-white shadow-sm' 
-                      : wizardStep > stepObj.s 
-                      ? 'bg-[var(--color-success)] text-white' 
-                      : 'glx-inset text-[var(--color-text-tertiary)]'
-                  }`}>
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all ${
+                      wizardStep === stepObj.s
+                        ? 'bg-[var(--color-accent)] text-white shadow-sm'
+                        : wizardStep > stepObj.s
+                          ? 'bg-[var(--color-success)] text-white'
+                          : 'glx-inset text-[var(--color-text-tertiary)]'
+                    }`}
+                  >
                     {wizardStep > stepObj.s ? '✓' : toPersianDigits(stepObj.s)}
                   </div>
-                  <span className={`text-[10px] font-bold hidden sm:inline ${
-                    wizardStep === stepObj.s ? 'text-indigo-600 font-extrabold' : 'text-[var(--color-text-tertiary)]'
-                  }`}>
+                  <span
+                    className={`text-[10px] font-bold hidden sm:inline ${
+                      wizardStep === stepObj.s
+                        ? 'text-indigo-600 font-extrabold'
+                        : 'text-[var(--color-text-tertiary)]'
+                    }`}
+                  >
                     {stepObj.label}
                   </span>
                 </div>
@@ -1078,14 +1222,29 @@ export default function Students() {
 
             {/* Modal Core Body according to steps! */}
             <div className="p-6 max-h-120 overflow-y-auto space-y-5">
-              
               {/* Step 1: File selection Drag & Drop */}
               {wizardStep === 1 && (
                 <div className="space-y-4">
                   <div className="space-y-1 glx border p-4.5 rounded-2xl leading-relaxed">
-                    <p className="font-bold text-[var(--color-text-primary)] text-[11px]">ملاحظات قالب فایل بارگذاری شده:</p>
+                    <p className="font-bold text-[var(--color-text-primary)] text-[11px]">
+                      ملاحظات قالب فایل بارگذاری شده:
+                    </p>
                     <p className="text-[var(--color-text-tertiary)]">
-                      فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با <strong className="font-bold text-[var(--color-text-secondary)]">name</strong> (نام و نام خانوادگی)، <strong className="font-bold text-[var(--color-text-secondary)]">national_id</strong> (کدملی)، <strong className="font-bold text-[var(--color-text-secondary)] text-indigo-600">class</strong> (نام کلاس) و <strong className="font-bold text-[var(--color-text-secondary)]">grade</strong> (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
+                      فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با{' '}
+                      <strong className="font-bold text-[var(--color-text-secondary)]">name</strong>{' '}
+                      (نام و نام خانوادگی)،{' '}
+                      <strong className="font-bold text-[var(--color-text-secondary)]">
+                        national_id
+                      </strong>{' '}
+                      (کدملی)،{' '}
+                      <strong className="font-bold text-[var(--color-text-secondary)] text-indigo-600">
+                        class
+                      </strong>{' '}
+                      (نام کلاس) و{' '}
+                      <strong className="font-bold text-[var(--color-text-secondary)]">
+                        grade
+                      </strong>{' '}
+                      (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
                     </p>
                     <p className="text-[var(--color-warning)] font-bold text-[10.5px] mt-1 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
                       در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
@@ -1102,21 +1261,27 @@ export default function Students() {
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center gap-3 transition-colors ${
-                      dragActive ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30' : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105/50'
+                      dragActive
+                        ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30'
+                        : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105/50'
                     }`}
                   >
                     <Upload className="w-12 h-12 text-[var(--color-text-tertiary)] animate-pulse" />
                     <div className="text-center space-y-1.5 select-none">
-                      <p className="font-bold text-[var(--color-text-secondary)] text-[11.5px]">درگ و دراپ مستقیم فایل اکسل (.xlsx) یا فایل کامادار (CSV)</p>
-                      <p className="text-[10px] text-[var(--color-text-tertiary)]">یا برای مرور دستی فایل در حافظه کامپیوتر کلیک کنید</p>
+                      <p className="font-bold text-[var(--color-text-secondary)] text-[11.5px]">
+                        درگ و دراپ مستقیم فایل اکسل (.xlsx) یا فایل کامادار (CSV)
+                      </p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)]">
+                        یا برای مرور دستی فایل در حافظه کامپیوتر کلیک کنید
+                      </p>
                     </div>
 
                     <label className="mt-2.5 px-4.5 py-2 hover:brightness-95 active:scale-98 bg-[var(--color-accent)] text-white text-[10.5px] font-bold rounded-xl cursor-pointer transition-all shadow-xs">
                       جستجو و انتخاب فایل
-                      <input 
-                        type="file" 
-                        accept=".xlsx,.xls,.csv" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
                         onChange={handleFileInputChange}
                       />
                     </label>
@@ -1124,7 +1289,9 @@ export default function Students() {
 
                   {/* Sandboxed Demo Presets triggers so testers don't even need to provide a file! */}
                   <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
-                    <p className="font-bold text-[var(--color-text-secondary)] block text-[10.5px]">بررسی ساده و سریع دمو بدون آپلود فایل واقعی:</p>
+                    <p className="font-bold text-[var(--color-text-secondary)] block text-[10.5px]">
+                      بررسی ساده و سریع دمو بدون آپلود فایل واقعی:
+                    </p>
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -1142,7 +1309,6 @@ export default function Students() {
                       </button>
                     </div>
                   </div>
-
                 </div>
               )}
 
@@ -1150,11 +1316,20 @@ export default function Students() {
               {wizardStep === 2 && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center glx p-3 rounded-xl">
-                    <span className="text-[var(--color-text-tertiary)] font-semibold">فایل دریافتی: <strong className="text-slate-900">{uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}</strong></span>
-                    <span className="font-bold text-indigo-600 bg-[var(--color-accent-soft)] px-2.5 py-1 rounded-full">{toPersianDigits(wizardRawData.length)} ردیف یافت شد</span>
+                    <span className="text-[var(--color-text-tertiary)] font-semibold">
+                      فایل دریافتی:{' '}
+                      <strong className="text-slate-900">
+                        {uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}
+                      </strong>
+                    </span>
+                    <span className="font-bold text-indigo-600 bg-[var(--color-accent-soft)] px-2.5 py-1 rounded-full">
+                      {toPersianDigits(wizardRawData.length)} ردیف یافت شد
+                    </span>
                   </div>
 
-                  <p className="text-[var(--color-text-tertiary)] text-[10px]">لیست سطور خام خوانده‌شده از فایل قبل از اعتبارسنجی:</p>
+                  <p className="text-[var(--color-text-tertiary)] text-[10px]">
+                    لیست سطور خام خوانده‌شده از فایل قبل از اعتبارسنجی:
+                  </p>
 
                   <div className="border border-[var(--color-glass-light-stroke)] rounded-xl overflow-hidden shadow-sm max-h-60 overflow-y-auto">
                     <table className="w-full text-right text-[11px]">
@@ -1170,11 +1345,29 @@ export default function Students() {
                       <tbody className="divide-y divide-slate-100 bg-white">
                         {wizardRawData.map((row, idx) => (
                           <tr key={idx} className="hover:brightness-105">
-                            <td className="p-3 text-center text-[var(--color-text-tertiary)] font-bold">{toPersianDigits(row.row)}</td>
-                            <td className="p-3 font-bold text-[var(--color-text-primary)]">{row.name || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
-                            <td className="p-3 font-mono text-[var(--color-text-secondary)]">{toPersianDigits(row.national_id) || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
-                            <td className="p-3 text-[var(--color-text-secondary)]">{row.grade || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
-                            <td className="p-3 text-[var(--color-text-secondary)] font-semibold">{row.class || <span className="text-[var(--color-danger)] italic">خالی</span>}</td>
+                            <td className="p-3 text-center text-[var(--color-text-tertiary)] font-bold">
+                              {toPersianDigits(row.row)}
+                            </td>
+                            <td className="p-3 font-bold text-[var(--color-text-primary)]">
+                              {row.name || (
+                                <span className="text-[var(--color-danger)] italic">خالی</span>
+                              )}
+                            </td>
+                            <td className="p-3 font-mono text-[var(--color-text-secondary)]">
+                              {toPersianDigits(row.national_id) || (
+                                <span className="text-[var(--color-danger)] italic">خالی</span>
+                              )}
+                            </td>
+                            <td className="p-3 text-[var(--color-text-secondary)]">
+                              {row.grade || (
+                                <span className="text-[var(--color-danger)] italic">خالی</span>
+                              )}
+                            </td>
+                            <td className="p-3 text-[var(--color-text-secondary)] font-semibold">
+                              {row.class || (
+                                <span className="text-[var(--color-danger)] italic">خالی</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -1202,23 +1395,37 @@ export default function Students() {
               {/* Step 3: Error logs & categorized results */}
               {wizardStep === 3 && (
                 <div className="space-y-4">
-                  <h4 className="font-bold text-[var(--color-text-primary)]">گزارش نهایی آنالیز اعتبارسنجی هوشمند:</h4>
-                  
+                  <h4 className="font-bold text-[var(--color-text-primary)]">
+                    گزارش نهایی آنالیز اعتبارسنجی هوشمند:
+                  </h4>
+
                   {/* Category cards summary Grid */}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="p-3.5 bg-[var(--color-success-soft)] border border-[var(--color-success)]/10 rounded-2xl text-center">
-                      <span className="text-[var(--color-success)] font-bold text-lg block">{toPersianDigits(wizardValidationResults.valid.length)}</span>
-                      <span className="text-[10px] text-[var(--color-success)]">عده ردیف‌های صحیح</span>
+                      <span className="text-[var(--color-success)] font-bold text-lg block">
+                        {toPersianDigits(wizardValidationResults.valid.length)}
+                      </span>
+                      <span className="text-[10px] text-[var(--color-success)]">
+                        عده ردیف‌های صحیح
+                      </span>
                     </div>
 
                     <div className="p-3.5 bg-rose-50 border border-[var(--color-danger)]/10 rounded-2xl text-center">
-                      <span className="text-[var(--color-danger)] font-bold text-lg block">{toPersianDigits(wizardValidationResults.errors.length)}</span>
-                      <span className="text-[10px] text-[var(--color-danger)]/80">عده ردیف‌های دارای خطا</span>
+                      <span className="text-[var(--color-danger)] font-bold text-lg block">
+                        {toPersianDigits(wizardValidationResults.errors.length)}
+                      </span>
+                      <span className="text-[10px] text-[var(--color-danger)]/80">
+                        عده ردیف‌های دارای خطا
+                      </span>
                     </div>
 
                     <div className="p-3.5 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 rounded-2xl text-center">
-                      <span className="text-[var(--color-warning)] font-bold text-lg block">{toPersianDigits(wizardValidationResults.duplicates.length)}</span>
-                      <span className="text-[10px] text-[var(--color-warning)]/80">عده ردیف‌های تکراری</span>
+                      <span className="text-[var(--color-warning)] font-bold text-lg block">
+                        {toPersianDigits(wizardValidationResults.duplicates.length)}
+                      </span>
+                      <span className="text-[10px] text-[var(--color-warning)]/80">
+                        عده ردیف‌های تکراری
+                      </span>
                     </div>
                   </div>
 
@@ -1231,8 +1438,15 @@ export default function Students() {
                       </p>
                       <div className="bg-rose-50/50 p-2.5 rounded-xl border border-[var(--color-danger)]/10/60 text-[10px] text-[var(--color-danger)]/80 space-y-1 max-h-36 overflow-y-auto">
                         {wizardValidationResults.errors.map((e, idx) => (
-                          <div key={idx} className="flex justify-between border-b border-[var(--color-danger)]/10/40 pb-1.5" id={`err-wizard-${idx}`}>
-                            <span>ردیف {toPersianDigits(e.row)} - دانش‌آموز {e.student.name || '(نامشخص)'}</span>
+                          <div
+                            key={idx}
+                            className="flex justify-between border-b border-[var(--color-danger)]/10/40 pb-1.5"
+                            id={`err-wizard-${idx}`}
+                          >
+                            <span>
+                              ردیف {toPersianDigits(e.row)} - دانش‌آموز{' '}
+                              {e.student.name || '(نامشخص)'}
+                            </span>
                             <span className="font-bold">{e.reason}</span>
                           </div>
                         ))}
@@ -1249,8 +1463,15 @@ export default function Students() {
                       </p>
                       <div className="bg-[var(--color-warning-soft)]/50 p-2.5 rounded-xl border border-[var(--color-warning)]/10/60 text-[10px] text-[var(--color-warning)]/80 space-y-1 max-h-36 overflow-y-auto">
                         {wizardValidationResults.duplicates.map((d, idx) => (
-                          <div key={idx} className="flex justify-between border-b border-[var(--color-warning)]/10/40 pb-1.5" id={`dupe-wizard-${idx}`}>
-                            <span>ردیف {toPersianDigits(d.row)} - {d.student.name} ({toPersianDigits(d.student.national_id)})</span>
+                          <div
+                            key={idx}
+                            className="flex justify-between border-b border-[var(--color-warning)]/10/40 pb-1.5"
+                            id={`dupe-wizard-${idx}`}
+                          >
+                            <span>
+                              ردیف {toPersianDigits(d.row)} - {d.student.name} (
+                              {toPersianDigits(d.student.national_id)})
+                            </span>
                             <span className="font-bold">{d.reason}</span>
                           </div>
                         ))}
@@ -1276,10 +1497,19 @@ export default function Students() {
                           </thead>
                           <tbody>
                             {wizardValidationResults.valid.map((r, idx) => (
-                              <tr key={idx} className="border-b border-slate-50 hover:bg-[var(--color-success-soft)]/15">
-                                <td className="p-2.5 font-bold text-[var(--color-text-primary)]">{r.name}</td>
-                                <td className="p-2.5 font-mono text-slate-655">{toPersianDigits(r.national_id)}</td>
-                                <td className="p-2.5 text-[var(--color-text-secondary)]">{r.class} (پایه {r.grade})</td>
+                              <tr
+                                key={idx}
+                                className="border-b border-slate-50 hover:bg-[var(--color-success-soft)]/15"
+                              >
+                                <td className="p-2.5 font-bold text-[var(--color-text-primary)]">
+                                  {r.name}
+                                </td>
+                                <td className="p-2.5 font-mono text-slate-655">
+                                  {toPersianDigits(r.national_id)}
+                                </td>
+                                <td className="p-2.5 text-[var(--color-text-secondary)]">
+                                  {r.class} (پایه {r.grade})
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -1288,7 +1518,8 @@ export default function Students() {
                     </div>
                   ) : (
                     <div className="p-6 bg-rose-50 border border-[var(--color-danger)]/10 rounded-2xl text-center text-[var(--color-danger)]/80">
-                      هیچ ردیف معتبری جهت درج در دیتابیسی فعلی یافت نشد. لطفاً قالب فایل زیستی خود را بازبینی و مجدداً بارگذاری کنید.
+                      هیچ ردیف معتبری جهت درج در دیتابیسی فعلی یافت نشد. لطفاً قالب فایل زیستی خود
+                      را بازبینی و مجدداً بارگذاری کنید.
                     </div>
                   )}
 
@@ -1306,7 +1537,10 @@ export default function Students() {
                         className="px-5 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm hover:scale-[1.01] transition-transform cursor-pointer"
                       >
                         <Check className="w-4 h-4" />
-                        <span>انتساب سوابق و واردکردن نهایی {toPersianDigits(wizardValidationResults.valid.length)} دانش‌آموز</span>
+                        <span>
+                          انتساب سوابق و واردکردن نهایی{' '}
+                          {toPersianDigits(wizardValidationResults.valid.length)} دانش‌آموز
+                        </span>
                       </button>
                     ) : (
                       <button
@@ -1317,7 +1551,6 @@ export default function Students() {
                       </button>
                     )}
                   </div>
-
                 </div>
               )}
 
@@ -1328,15 +1561,19 @@ export default function Students() {
                     ✓
                   </div>
                   <div className="space-y-1.5">
-                    <h4 className="text-md font-bold text-[var(--color-text-primary)]">عملیات واردکردن دانش‌آموزان با موفقیت کامل انجام پذیرفت!</h4>
+                    <h4 className="text-md font-bold text-[var(--color-text-primary)]">
+                      عملیات واردکردن دانش‌آموزان با موفقیت کامل انجام پذیرفت!
+                    </h4>
                     <p className="text-[var(--color-text-tertiary)] max-w-sm mx-auto leading-relaxed text-[11px]">
-                      اطلاعات شناسنامه‌ای گله‌ای با کدهای ملی ماسک شده به خوبی به فهرست فیزیکی دیتابیس کلاس‌ها ملحق گردید.
+                      اطلاعات شناسنامه‌ای گله‌ای با کدهای ملی ماسک شده به خوبی به فهرست فیزیکی
+                      دیتابیس کلاس‌ها ملحق گردید.
                     </p>
                   </div>
-                  <p className="text-[10px] text-[var(--color-text-tertiary)] animate-pulse">کادر جادویی تا چند لحظه دیگر به صورت خودکار بسته خواهد شد...</p>
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] animate-pulse">
+                    کادر جادویی تا چند لحظه دیگر به صورت خودکار بسته خواهد شد...
+                  </p>
                 </div>
               )}
-
             </div>
           </motion.div>
         </div>
@@ -1344,8 +1581,11 @@ export default function Students() {
 
       {/* Submodal: Detailed Student Exam Participation logs */}
       {showExamLogsModal && activeLogStudent && (
-        <div className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4 text-right" id="exam-logs-modal-backdrop">
-          <motion.div 
+        <div
+          className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4 text-right"
+          id="exam-logs-modal-backdrop"
+        >
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="glx-strong rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
@@ -1353,7 +1593,7 @@ export default function Students() {
           >
             {/* Header */}
             <div className="px-6 py-5 bg-[var(--color-accent-soft)]/70 border-b border-[var(--color-accent-soft)] flex items-center justify-between">
-              <button 
+              <button
                 onClick={() => setShowExamLogsModal(false)}
                 className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-xs glx px-2.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
               >
@@ -1367,44 +1607,64 @@ export default function Students() {
 
             {/* Logs Body info */}
             <div className="p-6 space-y-5">
-              
               <div className="flex justify-between items-center glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
                 <div>
-                  <p className="font-bold text-[var(--color-text-primary)] text-[11.5px]">{activeLogStudent.name}</p>
-                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}</p>
+                  <p className="font-bold text-[var(--color-text-primary)] text-[11.5px]">
+                    {activeLogStudent.name}
+                  </p>
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
+                    پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}
+                  </p>
                 </div>
                 <div className="text-left font-mono text-[10.5px]">
                   <p className="text-[var(--color-text-tertiary)]">کد ملی ورود:</p>
-                  <p className="font-bold text-[var(--color-text-secondary)]">{toPersianDigits(activeLogStudent.nationalId)}</p>
+                  <p className="font-bold text-[var(--color-text-secondary)]">
+                    {toPersianDigits(activeLogStudent.nationalId)}
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <span className="text-[11px] font-bold text-slate-550 block">امتحانات ثبت شده در دیتابیس کلاس‌ها:</span>
-                
+                <span className="text-[11px] font-bold text-slate-550 block">
+                  امتحانات ثبت شده در دیتابیس کلاس‌ها:
+                </span>
+
                 {activeLogSubmissions.length > 0 ? (
                   <div className="space-y-2.5 max-h-64 overflow-y-auto">
                     {activeLogSubmissions.map((sub, index) => {
-                      const examItem = allExams.find(e => e.id === sub.examId);
+                      const examItem = allExams.find((e) => e.id === sub.examId);
                       return (
-                        <div 
-                          key={sub.id || index} 
+                        <div
+                          key={sub.id || index}
                           className="p-3.5 glx border rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
                         >
                           <div>
-                            <h5 className="font-bold text-[var(--color-text-secondary)] text-[11px]">{examItem?.title || sub.examCode}</h5>
-                            <span className="text-[9.5px] text-[var(--color-text-tertiary)] mt-1 block">کد یکتای برگ پاسخ: {sub.id}</span>
+                            <h5 className="font-bold text-[var(--color-text-secondary)] text-[11px]">
+                              {examItem?.title || sub.examCode}
+                            </h5>
+                            <span className="text-[9.5px] text-[var(--color-text-tertiary)] mt-1 block">
+                              کد یکتای برگ پاسخ: {sub.id}
+                            </span>
                           </div>
 
                           <div className="text-left">
-                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold block mb-1 text-center ${
-                              sub.status === 'graded' ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10' :
-                              'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10 animate-pulse'
-                            }`}>
-                              {sub.status === 'graded' ? 'تصحیح نهایی شده' : 'در حال سنجش یا نیازمند تصحیح'}
+                            <span
+                              className={`px-2 py-0.5 rounded-md text-[9px] font-bold block mb-1 text-center ${
+                                sub.status === 'graded'
+                                  ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
+                                  : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10 animate-pulse'
+                              }`}
+                            >
+                              {sub.status === 'graded'
+                                ? 'تصحیح نهایی شده'
+                                : 'در حال سنجش یا نیازمند تصحیح'}
                             </span>
                             <span className="text-[11px] font-bold text-[var(--color-text-primary)]">
-                              نمره: <strong className="text-xs font-black text-indigo-600">{toPersianDigits(sub.score)}</strong> از {toPersianDigits(sub.maxScore)}
+                              نمره:{' '}
+                              <strong className="text-xs font-black text-indigo-600">
+                                {toPersianDigits(sub.score)}
+                              </strong>{' '}
+                              از {toPersianDigits(sub.maxScore)}
                             </span>
                           </div>
                         </div>
@@ -1414,11 +1674,13 @@ export default function Students() {
                 ) : (
                   <div className="p-8 text-center glx rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)] select-none">
                     <Info className="w-8 h-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-                    <p className="text-[10px] text-[var(--color-text-tertiary)]">هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت نگردیده است.</p>
+                    <p className="text-[10px] text-[var(--color-text-tertiary)]">
+                      هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت
+                      نگردیده است.
+                    </p>
                   </div>
                 )}
               </div>
-
             </div>
           </motion.div>
         </div>
@@ -1434,7 +1696,6 @@ export default function Students() {
         onConfirm={confirmDeleteStudent}
         onCancel={() => setStudentToDelete(null)}
       />
-
     </div>
   );
 }

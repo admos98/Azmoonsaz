@@ -25,15 +25,25 @@ const NewExam = lazy(() => import('./pages/teacher/NewExam'));
 const Settings = lazy(() => import('./pages/teacher/Settings'));
 
 // Toast state shared via simple emitter for App-level toasts
-const toastQueue: Array<{ id: number; message: string; type: 'success' | 'error' | 'warning' | 'info' }> = [];
+const toastQueue: Array<{
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+}> = [];
 let toastNextId = 0;
 const toastListeners: Array<() => void> = [];
-export const showAppToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+export const showAppToast = (
+  message: string,
+  type: 'success' | 'error' | 'warning' | 'info' = 'info',
+) => {
   const id = ++toastNextId;
   toastQueue.push({ id, message, type });
   toastListeners.forEach((l) => l());
   setTimeout(() => {
-    toastQueue.splice(toastQueue.findIndex((t) => t.id === id), 1);
+    toastQueue.splice(
+      toastQueue.findIndex((t) => t.id === id),
+      1,
+    );
     toastListeners.forEach((l) => l());
   }, 4000);
 };
@@ -43,7 +53,7 @@ export default function App() {
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
   const [isOnboarded, setIsOnboarded] = useState(true);
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
-  const [toastSnapshot, setToastSnapshot] = useState<Array<typeof toastQueue[0]>>([]);
+  const [toastSnapshot, setToastSnapshot] = useState<Array<(typeof toastQueue)[0]>>([]);
 
   const flushToasts = () => setToastSnapshot([...toastQueue]);
   useEffect(() => {
@@ -100,7 +110,9 @@ export default function App() {
 
   // Exam sub-routing state
   const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
-  const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>('list');
+  const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>(
+    'list',
+  );
 
   // Handle addition of designed exam
   const [customExams, setCustomExams] = useState<Exam[]>([]);
@@ -149,12 +161,7 @@ export default function App() {
       case 'questions':
         return <Questions />;
       case 'exams/new':
-        return (
-          <NewExam
-            onBack={() => setCurrentTab('exams')}
-            onAddExam={handleAddNewExam}
-          />
-        );
+        return <NewExam onBack={() => setCurrentTab('exams')} onAddExam={handleAddNewExam} />;
       case 'exams':
         return (
           <Exams
@@ -271,9 +278,7 @@ export default function App() {
   }
 
   if (userRole === 'teacher' && isTeacherLoggedIn && !isOnboarded) {
-    return (
-      <Onboarding onComplete={() => setIsOnboarded(true)} />
-    );
+    return <Onboarding onComplete={() => setIsOnboarded(true)} />;
   }
 
   return (
@@ -288,7 +293,10 @@ export default function App() {
         </div>
 
         {/* Main Container — layer 10 (floats above bg stage) */}
-        <div className="relative z-10 flex-1 pt-14 lg:pt-0 flex flex-col min-h-screen" id="main-content-layout">
+        <div
+          className="relative z-10 flex-1 pt-14 lg:pt-0 flex flex-col min-h-screen"
+          id="main-content-layout"
+        >
           <Topbar
             currentTab={currentTab}
             onTabChange={(tab) => {
@@ -302,20 +310,22 @@ export default function App() {
             onSelectExamForResults={handleSelectExamForResults}
           />
 
-          {/* Dynamic Page Router — floats above bg stage */ }
+          {/* Dynamic Page Router — floats above bg stage */}
           <div className="p-4 lg:p-8 flex-1 bg-transparent" id="router-view-box">
-            <Suspense fallback={
-              <div className="space-y-6" id="page-skeleton">
-                <div className="h-8 w-48 bg-white/3 skeleton rounded-xl" />
-                <div className="h-40 bg-white/3 skeleton rounded-3xl" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="h-32 bg-white/3 skeleton rounded-3xl" />
-                  ))}
+            <Suspense
+              fallback={
+                <div className="space-y-6" id="page-skeleton">
+                  <div className="h-8 w-48 bg-white/3 skeleton rounded-xl" />
+                  <div className="h-40 bg-white/3 skeleton rounded-3xl" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-32 bg-white/3 skeleton rounded-3xl" />
+                    ))}
+                  </div>
+                  <div className="h-60 bg-white/3 skeleton rounded-3xl" />
                 </div>
-                <div className="h-60 bg-white/3 skeleton rounded-3xl" />
-              </div>
-            }>
+              }
+            >
               <GlassSheen>{renderTeacherContent()}</GlassSheen>
             </Suspense>
           </div>
@@ -323,14 +333,20 @@ export default function App() {
       </div>
 
       {/* App-level Toast container */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2" id="app-toasts">
+      <div
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2"
+        id="app-toasts"
+      >
         {toastSnapshot.map((t) => (
           <Toast
             key={t.id}
             message={t.message}
             type={t.type}
             onClose={() => {
-              toastQueue.splice(toastQueue.findIndex((q) => q.id === t.id), 1);
+              toastQueue.splice(
+                toastQueue.findIndex((q) => q.id === t.id),
+                1,
+              );
               setToastSnapshot([...toastQueue]);
             }}
           />
