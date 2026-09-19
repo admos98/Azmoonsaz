@@ -30,13 +30,15 @@ export interface NotificationItem {
 }
 
 // TheMark Hamburger — four rounded pills stacked vertically, 3rd gold-filled
-function TheMarkHamburger({ size = 48 }: { size?: number }) {
+function TheMarkHamburger({ size = 48, isHovered = false }: { size?: number; isHovered?: boolean }) {
   const ink = 'var(--color-ink, #221E4A)';
   const gold = 'var(--color-gold, #F5B301)';
-  const pillWidth = size * 0.65;     // horizontal bar width
-  const pillHeight = size * 0.12;    // bar thickness
-  const gap = (size - pillHeight * 4) / 3;  // even spacing
-  const rx = pillHeight / 2.5;       // rounded corners
+  const baseScale = isHovered ? 1.1 : 1;       // pills expand on hover
+  const pillWidth = size * 0.65 * baseScale;   // horizontal bar width
+  const pillHeight = size * 0.10 * baseScale;  // bar thickness (thinner)
+  const gap = (size - pillHeight * 4) / 3;     // pills closer together (vertical gap)
+  const x = (size - pillWidth * baseScale) / 2;
+  const rx = pillHeight / 2.5;                 // rounded corners
   return (
     <svg
       width={size}
@@ -46,9 +48,9 @@ function TheMarkHamburger({ size = 48 }: { size?: number }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* Pill 1 — ink ring */}
+      {/* Pill 1 — ink ring */ }
       <rect
-        x={(size - pillWidth) / 2}
+        x={x}
         y={gap * 0 + pillHeight * 0}
         width={pillWidth}
         height={pillHeight}
@@ -56,9 +58,9 @@ function TheMarkHamburger({ size = 48 }: { size?: number }) {
         stroke={ink}
         strokeWidth={size * 0.035}
       />
-      {/* Pill 2 — ink ring */}
+      {/* Pill 2 — ink ring */ }
       <rect
-        x={(size - pillWidth) / 2}
+        x={x}
         y={gap * 1 + pillHeight * 1}
         width={pillWidth}
         height={pillHeight}
@@ -66,18 +68,18 @@ function TheMarkHamburger({ size = 48 }: { size?: number }) {
         stroke={ink}
         strokeWidth={size * 0.035}
       />
-      {/* Pill 3 — gold filled */}
+      {/* Pill 3 — gold filled */ }
       <rect
-        x={(size - pillWidth) / 2}
+        x={x}
         y={gap * 2 + pillHeight * 2}
         width={pillWidth}
         height={pillHeight}
         rx={rx}
         fill={gold}
       />
-      {/* Pill 4 — ink ring */}
+      {/* Pill 4 — ink ring */ }
       <rect
-        x={(size - pillWidth) / 2}
+        x={x}
         y={gap * 3 + pillHeight * 3}
         width={pillWidth}
         height={pillHeight}
@@ -99,6 +101,7 @@ export default function Topbar({
   const { teacher } = useTeacher();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
+  const [hamburgerHover, setHamburgerHover] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [avatarExpanded, setAvatarExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -277,7 +280,7 @@ export default function Topbar({
 
   return (
     <header
-      className="sticky top-0 z-30 h-14 glx px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse"
+      className="sticky top-0 z-30 h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent"
       id="topbar-wrapper"
     >
       {/* LEFT SIDE: Avatar + Bell cluster */}
@@ -306,11 +309,11 @@ export default function Topbar({
             </div>
           )}
 
-          {/* Bell — slides right when avatar expands (pushed away by name panel) */ }
+          {/* Bell — slides right when avatar expands (pushed by name panel width) */ }
           <div
             className="transition-all duration-300 ease-out"
             style={{
-              transform: avatarExpanded ? 'translateX(56px)' : 'translateX(0)',
+              transform: avatarExpanded ? 'translateX(180px)' : 'translateX(0)',
             }}
           >
             <button
@@ -364,9 +367,24 @@ export default function Topbar({
         </div>
       </div>
 
-      {/* RIGHT SIDE: Hamburger + Search */}
+      {/* RIGHT SIDE: Search + Hamburger */ }
       <div className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`} id="topbar-right-group">
-        {/* Search (collapsed/expanded) */}
+        {/* TheMark Hamburger — rightmost */ }
+        <button
+          ref={hamburgerRef}
+          id="hamburger-menu-btn"
+          onClick={openHamburgerMenu}
+          onMouseEnter={() => setHamburgerHover(true)}
+          onMouseLeave={() => setHamburgerHover(false)}
+          className="p-2 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
+          aria-label="منوی اصلی"
+          aria-expanded={showHamburgerMenu}
+          aria-haspopup="true"
+        >
+          <TheMarkHamburger size={32} isHovered={hamburgerHover} />
+        </button>
+
+        {/* Search (collapsed/expanded) */ }
         <div
           ref={searchRef}
           className="flex items-center"
@@ -397,19 +415,6 @@ export default function Topbar({
             </button>
           )}
         </div>
-
-        {/* TheMark Hamburger — FIRST item on right */}
-        <button
-          ref={hamburgerRef}
-          id="hamburger-menu-btn"
-          onClick={openHamburgerMenu}
-          className="p-2 rounded-xl hover:bg-white/5 transition-all cursor-pointer flex items-center justify-center w-11 h-11"
-          aria-label="منوی اصلی"
-          aria-expanded={showHamburgerMenu}
-          aria-haspopup="true"
-        >
-          <TheMarkHamburger size={32} />
-        </button>
       </div>
 
       {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */}
@@ -495,10 +500,10 @@ export default function Topbar({
           >
             <div className="p-3 min-w-[240px]">
               <div
-                className={`flex items-center gap-3 p-2 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                className={`flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-300 ${
                   currentTab === 'dashboard'
-                    ? 'bg-[var(--color-gold)]/15 text-[var(--color-text-primary)]'
-                    : 'text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)]'
+                    ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
                 }`}
                 onClick={() => { onTabChange('dashboard'); setShowHamburgerMenu(false); }}
                 role="button"
@@ -513,7 +518,7 @@ export default function Topbar({
                 <span>داشبورد مدیریتی</span>
               </div>
               <div
-                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                 onClick={() => { onTabChange('students'); setShowHamburgerMenu(false); }}
                 role="button"
                 tabIndex={0}
@@ -527,7 +532,7 @@ export default function Topbar({
                 <span>دانش‌آموزان</span>
               </div>
               <div
-                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                 onClick={() => { onTabChange('classes'); setShowHamburgerMenu(false); }}
                 role="button"
                 tabIndex={0}
@@ -555,7 +560,7 @@ export default function Topbar({
           >
             <div className="p-3 min-w-[240px]">
               <div
-                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                 onClick={() => { onTabChange('questions'); setShowHamburgerMenu(false); }}
                 role="button"
                 tabIndex={0}
@@ -569,7 +574,7 @@ export default function Topbar({
                 <span>بانک سوالات</span>
               </div>
               <div
-                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                 onClick={() => { onTabChange('exams'); setShowHamburgerMenu(false); }}
                 role="button"
                 tabIndex={0}
@@ -583,7 +588,7 @@ export default function Topbar({
                 <span>آزمون‌ها</span>
               </div>
               <div
-                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-white/3 hover:text-[var(--color-text-primary)] cursor-pointer transition-all"
+                className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                 onClick={() => { onSwitchRole(); setShowHamburgerMenu(false); }}
                 role="button"
                 tabIndex={0}
@@ -597,7 +602,7 @@ export default function Topbar({
                 <span>بخش دانش‌آموزی</span>
               </div>
               <div
-                className="flex items-center gap-3 p-2 rounded-lg text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 cursor-pointer transition-all"
+                className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 cursor-pointer transition-all duration-300"
                 onClick={() => { onLogout(); setShowHamburgerMenu(false); }}
                 role="button"
                 tabIndex={0}
