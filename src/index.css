@@ -77,7 +77,7 @@
 
   /* Text */
   --color-text-primary: #1a1a2e;
-  --color-text-secondary: #6b7280;
+  --color-text-secondary: #525d72;
   --color-text-tertiary: #9ca3af;
   --color-text-on-dark: #f9fafb;
   --color-text-on-dark-secondary: #d1d5db;
@@ -353,6 +353,42 @@ select::-webkit-calendar-picker-indicator {
   100% {
     opacity: 0;
     transform: scale(0.88);
+  }
+}
+
+/* ─── Universal panel open/close: comes up from trigger, sucks back into trigger ─── */
+/* Apply .panel-open on mount (initial), .panel-close on unmount (exit). */
+/* transformOrigin must be set inline via JS relative to the trigger button. */
+@utility panel-open {
+  animation: pan-up 0.3s cubic-bezier(0.25, 1.6, 0.45, 1) both;
+}
+@utility panel-close {
+  animation: pan-down 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+@utility panel-in {
+  animation: pan-up 0.3s cubic-bezier(0.25, 1.6, 0.45, 1) both;
+}
+@utility panel-out {
+  animation: pan-down 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+@keyframes pan-up {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes pan-down {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.92);
   }
 }
 

@@ -1102,8 +1102,11 @@ export default function Questions() {
           id="live-preview-overlay"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
+            initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            style={{ transformOrigin: 'center bottom' }}
+            transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
             className="glx rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[90vh]"
             id="preview-box"
           >

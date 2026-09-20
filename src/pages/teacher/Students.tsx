@@ -774,14 +774,14 @@ export default function Students() {
                         <td className="p-4 text-[var(--color-text-tertiary)]">
                           <div className="space-y-1 text-right">
                             {student.phoneNumber && (
-                              <p className="text-[10px] font-mono flex items-center gap-1">
-                                <Smartphone className="w-3 h-3 text-[var(--color-text-tertiary)]" />
+                              <p className="text-xs font-mono flex items-center gap-1">
+                                <Smartphone className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
                                 <span>{toPersianDigits(student.phoneNumber)}</span>
                               </p>
                             )}
                             {student.email ? (
-                              <p className="text-[10px] font-mono flex items-center gap-1">
-                                <Mail className="w-3 h-3 text-[var(--color-text-tertiary)]" />
+                              <p className="text-xs font-mono flex items-center gap-1">
+                                <Mail className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
                                 <span>{student.email}</span>
                               </p>
                             ) : (
@@ -958,8 +958,11 @@ export default function Students() {
           id="add-edit-modal-backdrop"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            style={{ transformOrigin: 'center bottom' }}
+            transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
             className="glx-strong glx-sheen rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
             id="add-edit-student-box"
           >
@@ -1105,7 +1108,7 @@ export default function Students() {
                     placeholder="مثال: 09123456789"
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full glx border px-3.5 py-2.5 rounded-xl font-mono"
+                    className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-sm font-mono"
                   />
                 </div>
 
@@ -1165,6 +1168,8 @@ export default function Students() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 1, scale: 0.96 }}
+            style={{ transformOrigin: 'center bottom' }}
             className="glx-strong glx-sheen rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl text-xs"
             id="wizard-container"
           >
@@ -1586,8 +1591,11 @@ export default function Students() {
           id="exam-logs-modal-backdrop"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            style={{ transformOrigin: 'center bottom' }}
+            transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
             className="glx-strong rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
             id="exam-logs-box"
           >

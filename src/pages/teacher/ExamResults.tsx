@@ -1134,9 +1134,11 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
           /* Substantive Focused Cinema Mode Workspace interface */
           <motion.div
             key="results-grading-detail"
-            initial={{ opacity: 0, scale: 0.98 }}
+            initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            style={{ transformOrigin: 'center bottom' }}
+            transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
             className="grid grid-cols-1 lg:grid-cols-12 gap-6"
             id="workspace-evaluation-mode"
           >
