@@ -348,7 +348,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           ref={ref}
           type="button"
           onClick={() => setOpen(!open)}
-          className={`w-full flex items-center justify-between glx border px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
+          className={`w-full flex items-center justify-between glx border px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
             error
               ? 'border-rose-350 focus:border-rose-500'
               : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'
@@ -375,7 +375,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="absolute top-full z-[100] mt-1 w-full glx-strong border border-[var(--color-glass-light-stroke)] rounded-xl shadow-2xl max-h-48 overflow-y-auto"
+              className="absolute top-full z-[100] mt-1 w-full bg-[var(--color-paper-warm)]/95 border border-[var(--color-glass-light-stroke)] rounded-xl shadow-2xl max-h-56 overflow-y-auto backdrop-blur-sm"
             >
               {options.map((opt) => (
                 <button
@@ -386,10 +386,10 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                     onChange(opt.value);
                     setOpen(false);
                   }}
-                  className={`w-full text-right px-3 py-2 text-xs md:text-sm font-bold transition-all ${
+                  className={`w-full text-right px-3.5 py-2.5 text-sm font-bold transition-all ${
                     value === opt.value
-                      ? 'bg-[var(--color-accent-soft)]/30 text-[var(--color-accent)]'
-                      : 'text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-sheen)]/20'
+                      ? 'bg-[var(--color-accent-soft)]/40 text-[var(--color-accent)]'
+                      : 'text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20'
                   }} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   {opt.label}

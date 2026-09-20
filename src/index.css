@@ -42,10 +42,10 @@
   --color-ink-stroke: #374151;
 
   /* Glass fills — balanced liquid glass: subtle, readable, not overpowering */
-  --color-glass-light-fill: rgba(255, 255, 255, 0.035);
-  --color-glass-light-stroke: rgba(255, 255, 255, 0.06);
-  --color-glass-light-sheen: rgba(255, 255, 255, 0.14);
-  --color-glass-light-bottom: rgba(0, 0, 0, 0.045);
+  --color-glass-light-fill: rgba(255, 255, 255, 0.08);
+  --color-glass-light-stroke: rgba(255, 255, 255, 0.12);
+  --color-glass-light-sheen: rgba(255, 255, 255, 0.22);
+  --color-glass-light-bottom: rgba(0, 0, 0, 0.06);
 
   --color-glass-ink-fill: rgba(255, 255, 255, 0.035);
   --color-glass-ink-stroke: rgba(255, 255, 255, 0.08);
