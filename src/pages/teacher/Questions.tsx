@@ -537,7 +537,7 @@ export default function Questions() {
 
       {/* Page Title Board */}
       <div
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border"
         id="questions-title-plate"
       >
         <div className="space-y-1">
@@ -592,7 +592,7 @@ export default function Questions() {
 
       {/* COMPREHENSIVE MULTI-FILTER PANEL */}
       <div
-        className="glx p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm space-y-4"
+        className="glx p-5 rounded-3xl border space-y-4"
         id="filters-container"
       >
         <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-2.5 mb-2">
@@ -804,7 +804,7 @@ export default function Questions() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
-                      className="glx rounded-3xl p-5 border border-[var(--color-glass-light-stroke)] hover:border-[var(--color-accent)]/20 hover:shadow-sm transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
+                      className="glx rounded-3xl p-5 border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
                       id={`card-q-${q.id}`}
                     >
                       <div className="space-y-3.5">
@@ -875,12 +875,12 @@ export default function Questions() {
                       </div>
 
                       {/* Card Action footer operations */}
-                      <div className="border-t border-[var(--color-glass-light-stroke)] pt-3.5 flex justify-between items-center glx -m-5 mt-2 px-5 py-3">
+                      <div className="border-t pt-3.5 flex justify-between items-center glx -m-5 mt-2 px-5 py-3">
                         <div className="flex gap-1.5">
                           {q.tags?.slice(0, 2).map((tag, i) => (
                             <span
                               key={i}
-                              className="text-micro text-[var(--color-accent)] glx border border-[var(--color-glass-light-stroke)] px-1.5 py-0.5 rounded-md font-bold"
+                              className="text-micro text-[var(--color-accent)] glx border px-1.5 py-0.5 rounded-md font-bold"
                             >
                               #{tag}
                             </span>
@@ -918,7 +918,7 @@ export default function Questions() {
             ) : (
               /* TABLE ROW VIEW MODE */
               <div
-                className="glx rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs overflow-hidden"
+                className="glx rounded-3xl border overflow-hidden"
                 id="questions-table-view-box"
               >
                 <div className="overflow-x-auto text-right">
@@ -926,7 +926,7 @@ export default function Questions() {
                     className="w-full text-caption text-[var(--color-text-secondary)]"
                     id="questions-table"
                   >
-                    <thead className="glx border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]">
+                    <thead className="glx border-b text-[var(--color-text-tertiary)]">
                       <tr>
                         <th className="p-4 font-bold text-right">خلاصه متن سوال</th>
                         <th className="p-4 font-bold text-right">پایه</th>
@@ -1050,10 +1050,10 @@ export default function Questions() {
           ) : (
             /* EMPTY FILTERED QUESTIONS STATE */
             <div
-              className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-16 text-center text-[var(--color-text-tertiary)] select-none space-y-3"
+              className="glx border rounded-3xl p-16 text-center text-[var(--color-text-tertiary)] select-none space-y-3"
               id="empty-questions"
             >
-              <div className="w-16 h-16 rounded-full glx border mx-auto flex items-center justify-center text-[var(--color-text-primary)] shadow-xs">
+              <div className="w-16 h-16 rounded-full glx border mx-auto flex items-center justify-center text-[var(--color-text-primary)]">
                 <HelpCircle className="w-8 h-8" />
               </div>
               <h4 className="font-bold text-[var(--color-text-secondary)] text-caption">
@@ -1071,7 +1071,7 @@ export default function Questions() {
       {/* REUSABLE live preview question modal overlay */}
       {previewQuestion && (
         <div
-          className="fixed inset-0 z-50 bg-black/25 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4"
           id="live-preview-overlay"
         >
           <motion.div
@@ -1080,11 +1080,11 @@ export default function Questions() {
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[90vh]"
+            className="glx rounded-3xl w-full max-w-2xl overflow-hidden border flex flex-col max-h-[90vh]"
             id="preview-box"
           >
             {/* Header */}
-            <div className="px-6 py-4.5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-4.5 glx border-b flex items-center justify-between">
               <button
                 onClick={() => setPreviewQuestion(null)}
                 className="px-3 py-1.5 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 transition-all font-bold rounded-xl text-micro cursor-pointer"
@@ -1103,7 +1103,7 @@ export default function Questions() {
             </div>
 
             {/* Footer comments */}
-            <div className="glx border-t border-[var(--color-glass-light-stroke)] p-4 flex justify-between items-center text-micro text-[var(--color-text-tertiary)] font-medium">
+            <div className="glx border-t p-4 flex justify-between items-center text-micro text-[var(--color-text-tertiary)] font-medium">
               <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
               <span>
                 بروزرسانی شده در:{' '}
@@ -1117,7 +1117,7 @@ export default function Questions() {
       {/* MEGA ADD / EDIT DRAWER (Saves into state cleanly with live options form build!) */}
       {showAddEditDrawer && (
         <div
-          className="fixed inset-0 z-50 bg-black/25 flex justify-end"
+          className="fixed inset-0 z-50 bgfx flex justify-end"
           id="add-edit-drawer-overlay"
         >
           <div className="fixed inset-0" onClick={() => setShowAddEditDrawer(false)} />
@@ -1127,11 +1127,11 @@ export default function Questions() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 200 }}
             transition={{ type: 'spring', damping: 25 }}
-            className="w-full max-w-3xl glx shadow-2xl z-10 flex flex-col h-full border-l border-[var(--color-glass-light-stroke)] overflow-hidden text-caption text-right"
+            className="w-full max-w-3xl glx z-10 flex flex-col h-full border-l overflow-hidden text-caption text-right"
             id="add-edit-drawer"
           >
             {/* Drawer Header */}
-            <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-5 glx border-b flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setShowAddEditDrawer(false)}
@@ -1217,7 +1217,7 @@ export default function Questions() {
               >
                 <form onSubmit={handleSaveQuestion} className="space-y-4">
                   {/* 1. Grade, Subject, Section, Difficulty */}
-                  <div className="glx p-4 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                  <div className="glx p-4 rounded-2xl border space-y-3">
                     <span className="font-bold text-[var(--color-text-primary)] text-micro block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">
                       شناسنامه علمی سوال
                     </span>
@@ -1260,7 +1260,7 @@ export default function Questions() {
                           value={formSubject}
                           onChange={(e) => setFormSubject(e.target.value)}
                           placeholder="مثال: علوم تجربی، ریاضی"
-                          className="w-full glx border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
+                          className="w-full glx border px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
                         />
                       </div>
 
@@ -1275,7 +1275,7 @@ export default function Questions() {
                           value={formSection}
                           onChange={(e) => setFormSection(e.target.value)}
                           placeholder="مثال: فصل اول یا مبحث فیزیک"
-                          className="w-full glx border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
+                          className="w-full glx border px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
                         />
                       </div>
 
@@ -1307,7 +1307,7 @@ export default function Questions() {
                           step={0.25}
                           value={formPoints}
                           onChange={(e) => setFormPoints(Number(e.target.value))}
-                          className="w-full glx border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
+                          className="w-full glx border p-2 rounded-xl focus:outline-hidden font-bold"
                         />
                       </div>
 
@@ -1321,7 +1321,7 @@ export default function Questions() {
                           value={formTagsString}
                           onChange={(e) => setFormTagsString(e.target.value)}
                           placeholder="کنکوری، تستی، مهم"
-                          className="w-full glx border border-[var(--color-glass-light-stroke)] px-3 py-2 rounded-xl focus:outline-hidden text-[var(--color-accent)] font-bold"
+                          className="w-full glx border px-3 py-2 rounded-xl focus:outline-hidden text-[var(--color-accent)] font-bold"
                         />
                       </div>
                     </div>
@@ -1383,7 +1383,7 @@ export default function Questions() {
                   </div>
 
                   {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
-                  <div className="glx p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2">
+                  <div className="glx p-4 rounded-xl border space-y-2">
                     <span className="text-micro text-[var(--color-text-primary)] font-bold block">
                       الصاق پرونده تصویر برای کل سوال (اختیاری):
                     </span>
@@ -1435,7 +1435,7 @@ export default function Questions() {
                   {(formType === 'single_choice' ||
                     formType === 'multiple_choice' ||
                     formType === 'image_based') && (
-                    <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-4">
+                    <div className="glx p-4.5 rounded-2xl border space-y-4">
                       <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2 mb-1">
                         <span className="font-bold text-[var(--color-text-primary)] text-micro">
                           سازنده گزینه‌های آزمون (تعداد کلید گزینه‌ها)
@@ -1453,7 +1453,7 @@ export default function Questions() {
                         {formOptions.map((opt, oIdx) => (
                           <div
                             key={opt.id}
-                            className="glx p-3 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2 text-right"
+                            className="glx p-3 rounded-xl border space-y-2 text-right"
                           >
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Is correct tick check */}
@@ -1554,7 +1554,7 @@ export default function Questions() {
 
                   {/* True / False picker builder */}
                   {formType === 'true_false' && (
-                    <div className="glx p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-2">
+                    <div className="glx p-4 rounded-xl border space-y-2">
                       <span className="font-bold text-[var(--color-text-secondary)] text-micro block">
                         انتخاب گزینه پاسخ درست:
                       </span>
@@ -1598,7 +1598,7 @@ export default function Questions() {
 
                   {/* Fill blank builder */}
                   {formType === 'fill_blank' && (
-                    <div className="glx p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <div className="glx p-4 rounded-xl border space-y-3">
                       <div className="flex justify-between items-center mb-1 glx p-2 rounded-lg border">
                         <strong className="text-[var(--color-text-primary)] text-micro">
                           کلید واژه‌های صحیح برای جاهای خالی:
@@ -1628,7 +1628,7 @@ export default function Questions() {
                                 setFormFillBlanks(updated);
                               }}
                               placeholder="کلمه کلید صحیح"
-                              className="w-full glx border border-[var(--color-glass-light-stroke)] px-2.5 py-1.5 rounded-md text-micro"
+                              className="w-full glx border px-2.5 py-1.5 rounded-md text-micro"
                             />
                             {formFillBlanks.length > 1 && (
                               <button
@@ -1649,7 +1649,7 @@ export default function Questions() {
 
                   {/* Matching matchingPairs builder */}
                   {formType === 'matching' && (
-                    <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <div className="glx p-4.5 rounded-2xl border space-y-3">
                       <div className="flex justify-between items-center border-b pb-2">
                         <span className="font-bold text-[var(--color-text-primary)] text-micro">
                           پلاس لغات تطبیقی وصل‌کردنی
@@ -1669,7 +1669,7 @@ export default function Questions() {
                         {formMatchingPairs.map((pair, idx) => (
                           <div
                             key={idx}
-                            className="grid grid-cols-2 gap-3 glx p-3 rounded-xl border border-[var(--color-glass-light-stroke)] relative"
+                            className="grid grid-cols-2 gap-3 glx p-3 rounded-xl border relative"
                           >
                             <button
                               type="button"
@@ -1720,7 +1720,7 @@ export default function Questions() {
 
                   {/* Ordering lists builder */}
                   {formType === 'ordering' && (
-                    <div className="glx p-4 rounded-xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <div className="glx p-4 rounded-xl border space-y-3">
                       <div className="flex justify-between items-center pb-2 border-b">
                         <span className="font-bold text-micro text-[var(--color-text-primary)]">
                           سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)
@@ -1896,7 +1896,7 @@ export default function Questions() {
 
                   {/* Reading comprehension & Cloze parts dynamic details */}
                   {(formType === 'reading_comprehension' || formType === 'cloze') && (
-                    <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                    <div className="glx p-4.5 rounded-2xl border space-y-3">
                       <div className="flex justify-between items-center border-b pb-2">
                         <span className="font-bold text-[var(--color-text-primary)] text-micro">
                           بخش‌ها و زیرسوالات تابعه ({formParts.length} مینی‌سوال)
@@ -1914,7 +1914,7 @@ export default function Questions() {
                         {formParts.map((part, idx) => (
                           <div
                             key={part.id}
-                            className="glx p-3 rounded-xl border border-[var(--color-glass-light-stroke)] relative space-y-2"
+                            className="glx p-3 rounded-xl border relative space-y-2"
                           >
                             <button
                               type="button"

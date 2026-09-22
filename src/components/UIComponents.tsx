@@ -117,7 +117,7 @@ export const Card = ({
         whileHover={{ y: -4, scale: 1.01 }}
         whileTap={{ scale: 0.995 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className={`glx rounded-xl p-5 md:p-6 hover:shadow-lg hover:shadow-[var(--color-accent-soft)]/40 transition-all ${className}`}
+        className={`glx rounded-xl p-5 md:p-6 transition-all ${className}`}
         {...spreadProps}
       >
         {children}
@@ -346,21 +346,21 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
         <AnimatePresence>
           {open && (
             /* Static wrapper: the area-blur halo must never sit under an opacity-animated ancestor */
-            <div className="absolute top-full z-[100] mt-1 w-full">
+            <div className="absolute top-full z-[100] mt-1 w-full @container">
               <motion.div
                 aria-hidden="true"
                 initial={{ opacity: 0, scale: 0.95, y: -4 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="absolute -inset-6 rounded-3xl area-blur"
+                className="absolute area-blur"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: -4 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="relative glx-strong rounded-xl shadow-2xl max-h-56 overflow-y-auto"
+                className="relative glx-strong rounded-xl max-h-56 overflow-y-auto"
               >
                 {options.map((opt, i) => (
                   <React.Fragment key={opt.value}>
@@ -494,11 +494,11 @@ export const Modal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/30"
+            className="fixed inset-0 bgfx"
           />
 
           {/* Card + area-blur halo — static wrapper so the halo never sits under an opacity-animated ancestor */}
-          <div className={`relative w-full ${widthStyles[maxWidth]} z-10`}>
+          <div className={`relative w-full ${widthStyles[maxWidth]} z-10 @container`}>
             <motion.div
               aria-hidden="true"
               initial={{ opacity: 0, scale: 0.92 }}
@@ -506,7 +506,7 @@ export const Modal = ({
               exit={{ opacity: 0, scale: 0.92 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               style={originStyle}
-              className="absolute -inset-10 rounded-[44px] area-blur"
+              className="absolute area-blur"
             />
             <motion.div
               ref={panelRef}
@@ -515,7 +515,7 @@ export const Modal = ({
               exit={{ opacity: 0, scale: 0.92 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               style={originStyle}
-              className="relative glx-strong w-full rounded-3xl shadow-2xl flex flex-col max-h-[90vh]"
+              className="relative glx-strong w-full rounded-3xl flex flex-col max-h-[90vh]"
               role="dialog"
               aria-modal="true"
               aria-label={title}
@@ -589,12 +589,12 @@ export const Drawer = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/30"
+            className="absolute inset-0 bgfx"
           />
 
           {/* Drawer container */}
           <div
-            className={`absolute inset-y-0 ${placement === 'right' ? 'right-0' : 'left-0'} max-w-full flex`}
+            className={`absolute inset-y-0 ${placement === 'right' ? 'right-0' : 'left-0'} max-w-full flex @container`}
           >
             {/* Area-blur halo — follows the drawer slide (own transform, static ancestor) */}
             <motion.div
@@ -603,14 +603,14 @@ export const Drawer = ({
               animate={{ x: 0 }}
               exit={{ x: placement === 'right' ? '100%' : '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className="absolute -inset-10 area-blur rounded-[40px]"
+              className="absolute area-blur"
             />
             <motion.div
               initial={{ x: placement === 'right' ? '100%' : '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: placement === 'right' ? '100%' : '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className={`relative w-screen ${widthStyles[width]} glx-strong shadow-2xl flex flex-col divide-y divide-[var(--color-glass-light-stroke)]`}
+              className={`relative w-screen ${widthStyles[width]} glx-strong flex flex-col divide-y divide-[var(--color-glass-light-stroke)]`}
             >
               {/* Head */}
               <div className="p-6 flex items-center justify-between">
@@ -689,7 +689,7 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
   return (
-    <div className="flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed border-[var(--color-glass-light-stroke)] glx rounded-3xl space-y-4">
+    <div className="flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed glx rounded-3xl space-y-4">
       <div className="p-4 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-full">
         {icon || <HelpCircle className="w-8 h-8" />}
       </div>

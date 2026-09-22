@@ -80,7 +80,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
         {/* Form */}
-        <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8">
+        <div className="glx-strong rounded-3xl border p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* School Name */}
             <div>

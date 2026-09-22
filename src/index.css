@@ -32,7 +32,8 @@
    * UNIFIED COLOR SYSTEM — Minimal, calm, eye-pleasing
    * Base: sky white — cool white with subtle blue hint.
    * Brand: deep ink (#1A1A2E) + gold (#F5B301).
-   * Glass: layered white fills (45% chrome / 78% panels) over deep blur.
+   * Glass: gradient white fill (20% → 9%) + ink hairline + lifted shadow;
+   * the blur comes from the veil/halo layers (Liquid Glass recipe below).
    */
   --color-page-bg: #f0f7ff;
   --color-paper-warm: #f0f7ff;
@@ -100,6 +101,63 @@
   --color-text-tertiary: #9ca3af;
 }
 
+/* ─── Liquid Glass recipe — ported from glass-lab.html (user-tuned values) ───
+   Single source of truth for every glass surface: veil, halo, panel fill,
+   hairline, shadow. Change a value here → the whole app follows. */
+:root {
+  /* Full-screen veil (Control-Center style backdrop behind popups) */
+  --glass-bg-blur: 7px;
+  --glass-bg-sat: 1.35;
+  --glass-bg-bright: 0.97;
+  --glass-bg-contrast: 0.92;
+  --glass-scrim-a: 0.15;
+  --glass-scrim-color: 62 62 111;
+
+  /* Area halo — size = ratio × panel width (container-query units) */
+  --glass-h-ratio: 0.17;
+  --glass-h-blur: 5px;
+  --glass-h-sat: 1.6;
+  --glass-h-bright: 1.2;
+  --glass-h-fill: 0.22;
+  --glass-h-tint: 26 26 46;
+  --glass-h-fo: 1.15;
+  --glass-h-bias: 0.7;
+  --glass-h-mid: 0.75;
+  --glass-h-rext: 0px;
+
+  /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill */
+  --glass-p-a1: 0.2;
+  --glass-p-a2: 0.09;
+  --glass-p-angle: 108deg;
+  --glass-p-tint: 255 255 255;
+  --glass-p-blur: 0px;
+  --glass-p-sat: 1.35;
+  --glass-p-bright: 1.04;
+  --glass-p-contrast: 1;
+  --glass-p-radius: 28px;
+  --glass-p-bw: 1px;
+  --glass-p-ba: 0.22;
+  --glass-p-bc: 26 26 46;
+  --glass-shn-t: 0.68;
+  --glass-shn-b: 0;
+
+  /* Drop shadow (lifted) */
+  --glass-sh-x: 0px;
+  --glass-sh-y: 24px;
+  --glass-sh-blur: 70px;
+  --glass-sh-spread: -10px;
+  --glass-sh-a: 0.42;
+  --glass-sh-color: 26 26 46;
+
+  /* Row hover tint (menu / dropdown / list) */
+  --glass-row-hover: 0.2;
+
+  /* Derived halo geometry — falloff stops + ratio inset */
+  --glass-h-f: calc(var(--glass-h-ratio) / (1 + 2 * var(--glass-h-ratio)) * 100% * var(--glass-h-fo));
+  --glass-h-b1: calc(var(--glass-h-f) * var(--glass-h-bias));
+  --glass-h-inset: calc(-1 * var(--glass-h-ratio) * 100 * 1cqw);
+}
+
 /* Dark theme glass overrides */
 :root[data-theme='dark'] {
   --color-glass-light-fill: rgba(255, 255, 255, 0.1);
@@ -109,6 +167,9 @@
   --color-glass-ink-fill: rgba(255, 255, 255, 0.05);
   --color-glass-ink-stroke: rgba(255, 255, 255, 0.06);
   --color-glass-panel-fill: rgba(10, 10, 24, 0.76);
+  /* recipe: the ink hairline vanishes on dark → mirror the white stroke */
+  --glass-p-bc: 255 255 255;
+  --glass-p-ba: 0.14;
 }
 
 /* ─── Base ─── */
@@ -185,31 +246,49 @@ select::-webkit-calendar-picker-indicator {
 /* Light glass — standard cards, topbar, dropdowns, section panels.
    Grounded over warm paper bg. Specular rim + bezel. */
 @utility glx {
-  background: var(--color-glass-light-fill);
-  border: 1px solid var(--color-glass-light-stroke);
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
+    rgb(var(--glass-p-tint) / var(--glass-p-a2))
+  );
+  border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
-    inset 0 1px 0 var(--color-glass-light-sheen),
-    inset 0 -1px 1px var(--color-glass-light-bottom),
-    inset 1px 0 1px rgba(255, 255, 255, 0.0646),
-    inset -1px 0 1px rgba(255, 255, 255, 0.0493),
-    0 6px 30px var(--color-glass-shadow);
-  backdrop-filter: blur(16px) saturate(1.8) brightness(1.02);
-  -webkit-backdrop-filter: blur(16px) saturate(1.8) brightness(1.02);
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-shn-t)),
+    inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
+    var(--glass-sh-x) var(--glass-sh-y) var(--glass-sh-blur) var(--glass-sh-spread)
+      rgb(var(--glass-sh-color) / var(--glass-sh-a));
+  /* In-page surface (cards, topbar): has no halo of its own, so it carries
+     the background-veil blur — scrolling content must never bleed through. */
+  backdrop-filter:
+    blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
+    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
+  -webkit-backdrop-filter:
+    blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
+    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
 }
 
 /* Strong glass — primary modals + hero.
    Adds refraction via SVG displacement filter (Chromium). */
 @utility glx-strong {
-  background: var(--color-glass-panel-fill);
-  border: 1px solid var(--color-glass-light-stroke);
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
+    rgb(var(--glass-p-tint) / var(--glass-p-a2))
+  );
+  border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2571),
-    inset 0 -1px 1px var(--color-glass-light-bottom),
-    inset 1px 0 0px rgba(255, 255, 255, 0.088),
-    inset -1px 0 4px rgba(255, 255, 255, 0.0493),
-    0 40px 100px var(--color-glass-shadow-strong);
-  backdrop-filter: blur(32px) saturate(1.9);
-  -webkit-backdrop-filter: blur(32px) saturate(1.9);
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-shn-t)),
+    inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
+    var(--glass-sh-x) var(--glass-sh-y) var(--glass-sh-blur) var(--glass-sh-spread)
+      rgb(var(--glass-sh-color) / var(--glass-sh-a));
+  /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own
+     blur stays at --glass-p-blur (0) — the double blur comes from the layers. */
+  backdrop-filter:
+    blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
+    brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
+  -webkit-backdrop-filter:
+    blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
+    brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
 }
 
 /* Ink glass — sidebar (dark field with warm gold tint) */
@@ -238,21 +317,46 @@ select::-webkit-calendar-picker-indicator {
   -webkit-backdrop-filter: blur(10px) saturate(1.5) brightness(1.02);
 }
 
-/* Area blur — localized backdrop-blur field behind popup panels (liquid glass).
-   Must sit on a static layer: an ancestor with opacity < 1 disables it. */
+/* Area blur — ratio-sized halo behind popup panels (liquid glass).
+   The parent wrapper MUST be a size container (`@container` class), so 1cqw
+   resolves to the panel's width. Do not put it under an opacity < 1 ancestor.
+   Inherited fixed inset/rounded classes on the halo must NOT be present —
+   this utility owns inset and border-radius. */
 @utility area-blur {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(32px) saturate(1.7) brightness(1.03);
-  -webkit-backdrop-filter: blur(32px) saturate(1.7) brightness(1.03);
-  /* Feathered rim: halo alpha fades to 0 toward every edge (soft, bigger than the panel) */
+  inset: var(--glass-h-inset);
+  border-radius: calc(var(--glass-p-radius) + var(--glass-h-ratio) * 100 * 1cqw + var(--glass-h-rext));
+  pointer-events: none;
+  background: rgb(var(--glass-h-tint) / var(--glass-h-fill));
+  backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat)) brightness(var(--glass-h-bright));
+  -webkit-backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat)) brightness(var(--glass-h-bright));
+  /* Feathered falloff: alpha eases 0 → solid from the rim inward */
   -webkit-mask-image:
-    linear-gradient(to right, transparent, black 7%, black 93%, transparent),
-    linear-gradient(to bottom, transparent, black 7%, black 93%, transparent);
+    linear-gradient(to right, rgb(0 0 0/0) 0%, rgb(0 0 0/var(--glass-h-mid)) var(--glass-h-b1), #000 var(--glass-h-f), #000 calc(100% - var(--glass-h-f)), rgb(0 0 0/var(--glass-h-mid)) calc(100% - var(--glass-h-b1)), rgb(0 0 0/0) 100%),
+    linear-gradient(to bottom, rgb(0 0 0/0) 0%, rgb(0 0 0/var(--glass-h-mid)) var(--glass-h-b1), #000 var(--glass-h-f), #000 calc(100% - var(--glass-h-f)), rgb(0 0 0/var(--glass-h-mid)) calc(100% - var(--glass-h-b1)), rgb(0 0 0/0) 100%);
   mask-image:
-    linear-gradient(to right, transparent, black 7%, black 93%, transparent),
-    linear-gradient(to bottom, transparent, black 7%, black 93%, transparent);
+    linear-gradient(to right, rgb(0 0 0/0) 0%, rgb(0 0 0/var(--glass-h-mid)) var(--glass-h-b1), #000 var(--glass-h-f), #000 calc(100% - var(--glass-h-f)), rgb(0 0 0/var(--glass-h-mid)) calc(100% - var(--glass-h-b1)), rgb(0 0 0/0) 100%),
+    linear-gradient(to bottom, rgb(0 0 0/0) 0%, rgb(0 0 0/var(--glass-h-mid)) var(--glass-h-b1), #000 var(--glass-h-f), #000 calc(100% - var(--glass-h-f)), rgb(0 0 0/var(--glass-h-mid)) calc(100% - var(--glass-h-b1)), rgb(0 0 0/0) 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
+}
+
+/* Background veil — the Control-Center layer behind popups (blur + scrim in
+   one). Use on full-screen backdrop elements instead of a flat bg-black/30. */
+@utility bgfx {
+  background: rgb(var(--glass-scrim-color) / var(--glass-scrim-a));
+  backdrop-filter:
+    blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
+    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
+  -webkit-backdrop-filter:
+    blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
+    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
+}
+
+/* Transparent-fill option: same glass, no tint (pure blur panel).
+   Stack it: `glx glx-clear` or `glx-strong glx-clear`. */
+@utility glx-clear {
+  --glass-p-a1: 0;
+  --glass-p-a2: 0;
 }
 
 /* ─── Sheen overlay ─── */

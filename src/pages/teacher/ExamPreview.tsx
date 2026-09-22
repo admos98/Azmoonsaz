@@ -585,7 +585,7 @@ export default function ExamPreview({
       id="exam-preview-edit-canvas"
     >
       {/* Upper header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glx p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glx p-6 rounded-3xl border">
         <div className="flex items-center gap-3">
           <button
             id="btn-back-to-exams-list"
@@ -681,14 +681,14 @@ export default function ExamPreview({
         {/* Right side specifications details (1/4 width) */}
         <div className="col-span-1 space-y-5" id="specifications-column">
           {/* 1. Exam Static Summary Panel */}
-          <div className="glx p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-4 text-right">
+          <div className="glx p-5 rounded-3xl border space-y-4 text-right">
             <h3 className="text-caption font-extrabold text-[var(--color-text-primary)] pb-2.5 border-b border-[var(--color-glass-light-stroke)] flex items-center gap-1.5">
               <Layers className="w-4.5 h-4.5 text-[var(--color-text-tertiary)]" />
               <span>جزییات شناسنامه آزمون</span>
             </h3>
 
             <div className="space-y-3.5 text-caption text-[var(--color-text-primary)]">
-              <div className="flex justify-between items-center glx p-2 rounded-xl border border-[var(--color-glass-light-stroke)]">
+              <div className="flex justify-between items-center glx p-2 rounded-xl border">
                 <span className="text-[var(--color-text-tertiary)]">عنوان آزمون:</span>
                 <span
                   className="font-extrabold text-[var(--color-text-primary)] text-micro max-w-[130px] truncate"
@@ -783,7 +783,7 @@ export default function ExamPreview({
           </div>
 
           {/* Guidelines info block */}
-          <div className="glx p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-3xs text-caption space-y-3">
+          <div className="glx p-5 rounded-3xl border text-caption space-y-3">
             <h4 className="font-bold text-[var(--color-text-secondary)] flex items-center gap-1.5">
               <Info className="w-4 h-4 text-[var(--color-accent)]" />
               <span>ملاحظات پاسخ‌نامه‌ها</span>
@@ -808,7 +808,7 @@ export default function ExamPreview({
             return (
               <div
                 key={section.id}
-                className="glx p-5 md:p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-5"
+                className="glx p-5 md:p-6 rounded-3xl border space-y-5"
                 id={`pview-section-${section.id}`}
               >
                 {/* Section Header */}
@@ -1051,7 +1051,7 @@ export default function ExamPreview({
                               }
                               value={studentAnswers[q.id] || ''}
                               onChange={(e) => handleStudentAnswerChange(q.id, e.target.value)}
-                              className="w-full glx border border-[var(--color-glass-light-stroke)] text-label text-[var(--color-text-primary)] px-3.5 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-[var(--color-text-tertiary)]"
+                              className="w-full glx border text-label text-[var(--color-text-primary)] px-3.5 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-[var(--color-text-tertiary)]"
                             />
                             {viewMode === 'teacher' && q.correctAnswer && (
                               <div className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-l-2 border-[var(--color-success)]/20 p-2 text-micro rounded-md font-medium">
@@ -1077,7 +1077,7 @@ export default function ExamPreview({
                               }
                               value={studentAnswers[q.id] || ''}
                               onChange={(e) => handleStudentAnswerChange(q.id, e.target.value)}
-                              className="w-full glx border border-[var(--color-glass-light-stroke)] text-label text-[var(--color-text-primary)] p-3.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-[var(--color-text-tertiary)] leading-relaxed text-right"
+                              className="w-full glx border text-label text-[var(--color-text-primary)] p-3.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-[var(--color-text-tertiary)] leading-relaxed text-right"
                             />
 
                             {/* Rubric evaluation criteria info boxes */}
@@ -1090,7 +1090,7 @@ export default function ExamPreview({
                                   {q.rubrics.map((rub: RubricCriterion) => (
                                     <div
                                       key={rub.id}
-                                      className="p-3 glx border border-[var(--color-glass-light-stroke)] rounded-xl space-y-1"
+                                      className="p-3 glx border rounded-xl space-y-1"
                                     >
                                       <div className="flex justify-between items-center text-[var(--color-text-primary)] border-b border-[var(--color-glass-light-stroke)] pb-1">
                                         <strong className="font-bold">{rub.title}</strong>
@@ -1132,7 +1132,7 @@ export default function ExamPreview({
                                         nextList[fIdx] = e.target.value;
                                         handleStudentAnswerChange(q.id, nextList);
                                       }}
-                                      className="glx border border-[var(--color-glass-light-stroke)] px-3 py-1.5 rounded-lg text-caption font-semibold focus:outline-hidden focus:border-[var(--color-accent)]/40 w-28 text-center"
+                                      className="glx border px-3 py-1.5 rounded-lg text-caption font-semibold focus:outline-hidden focus:border-[var(--color-accent)]/40 w-28 text-center"
                                     />
                                   </div>
                                 ))}
@@ -1155,7 +1155,7 @@ export default function ExamPreview({
 
                         {/* 6. Matching Pairs elements rendering */}
                         {q.type === 'matching' && q.matchingPairs && (
-                          <div className="glx rounded-2xl p-4.5 border border-[var(--color-glass-light-stroke)] mt-2 space-y-3.5 text-caption">
+                          <div className="glx rounded-2xl p-4.5 border mt-2 space-y-3.5 text-caption">
                             <span className="block font-bold text-[var(--color-text-secondary)]">
                               تطبیق ستون الف با ب:
                             </span>
@@ -1163,7 +1163,7 @@ export default function ExamPreview({
                               {q.matchingPairs.map((pair, pIdx) => (
                                 <div
                                   key={pIdx}
-                                  className="flex items-center justify-between gap-2.5 glx px-3 py-2 rounded-xl border border-[var(--color-glass-light-stroke)]"
+                                  className="flex items-center justify-between gap-2.5 glx px-3 py-2 rounded-xl border"
                                 >
                                   <span className="glx-inset text-[var(--color-text-secondary)] px-3 py-1.5 rounded-lg font-bold flex-1 text-center">
                                     {pair.right}
@@ -1182,14 +1182,14 @@ export default function ExamPreview({
 
                         {/* 7. Ordering array rendering */}
                         {q.type === 'ordering' && q.orderingItems && (
-                          <div className="glx rounded-2xl p-4.5 border border-[var(--color-glass-light-stroke)] mt-2 text-caption">
+                          <div className="glx rounded-2xl p-4.5 border mt-2 text-caption">
                             <span className="font-bold text-[var(--color-text-primary)] block mb-2.5">
                               ترتیب قرارگیری مراحل صحیح:
                             </span>
                             <div className="flex flex-wrap gap-2 items-center">
                               {q.orderingItems.map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
-                                  <span className="glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)] px-3.5 py-2 font-black rounded-xl shadow-3xs">
+                                  <span className="glx border text-[var(--color-text-primary)] px-3.5 py-2 font-black rounded-xl">
                                     {toPersianDigits(idx + 1)}. {item}
                                   </span>
                                   {idx < (q.orderingItems?.length || 0) - 1 && (
@@ -1287,13 +1287,13 @@ export default function ExamPreview({
 
                         {/* Teacher Edit Controls (ONLY visible in teacher view mode) */}
                         {viewMode === 'teacher' && (
-                          <div className="glx -mx-5 -mb-6 mt-4 p-3.5 border-t border-[var(--color-glass-light-stroke)] flex flex-wrap items-center justify-between gap-3.5 rounded-b-3xl">
+                          <div className="glx -mx-5 -mb-6 mt-4 p-3.5 border-t flex flex-wrap items-center justify-between gap-3.5 rounded-b-3xl">
                             {/* Order Moving Controls */}
                             <div className="flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => moveQuestion(q.id, 'up')}
-                                className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-glass-light-stroke)] cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
+                                className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-lg border cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
                                 title="جابه‌جایی سوال به بالا"
                               >
                                 <ChevronUp className="w-4 h-4 text-[var(--color-accent)]" />
@@ -1302,7 +1302,7 @@ export default function ExamPreview({
                               <button
                                 type="button"
                                 onClick={() => moveQuestion(q.id, 'down')}
-                                className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-lg border border-[var(--color-glass-light-stroke)] cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
+                                className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-lg border cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
                                 title="جابه‌جایی سوال به پایین"
                               >
                                 <ChevronDown className="w-4 h-4 text-[var(--color-accent)]" />
@@ -1363,7 +1363,7 @@ export default function ExamPreview({
 
       {/* FOOTER ACTIONS BAR */}
       <div
-        className="border-t border-[var(--color-glass-light-stroke)] glx p-5 rounded-3xl mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-3xs"
+        className="border-t glx p-5 rounded-3xl mt-6 flex flex-col sm:flex-row justify-between items-center gap-4"
         id="preview-footer-plate"
       >
         <button
@@ -1409,11 +1409,11 @@ export default function ExamPreview({
           id="replace-modal-backdrop"
         >
           <div
-            className="glx-strong rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl border border-[var(--color-glass-light-stroke)] flex flex-col max-h-[85vh] text-right font-sans"
+            className="glx-strong rounded-3xl w-full max-w-3xl overflow-hidden border flex flex-col max-h-[85vh] text-right font-sans"
             dir="rtl"
           >
             {/* Modal Header */}
-            <div className="px-6 py-4.5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-4.5 glx border-b flex items-center justify-between">
               <h3 className="font-extrabold text-[var(--color-text-primary)] text-caption md:text-label flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-[var(--color-accent)] animate-spin-slow" />
                 <span>جایگزینی سوال با مخزن بانک سوالات همگام</span>
@@ -1509,7 +1509,7 @@ export default function ExamPreview({
                 placeholder="جستجو در کل صورت سوال یا موضوعات..."
                 value={replaceSearchQuery}
                 onChange={(e) => setReplaceSearchQuery(e.target.value)}
-                className="w-full glx border border-[var(--color-glass-light-stroke)] text-label text-[var(--color-text-primary)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 text-right"
+                className="w-full glx border text-label text-[var(--color-text-primary)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 text-right"
               />
             </div>
 
@@ -1521,7 +1521,7 @@ export default function ExamPreview({
                   return (
                     <div
                       key={bq.id}
-                      className="glx p-4 rounded-2xl border border-[var(--color-glass-light-stroke)] hover:border-[var(--color-accent)]/20 transition-all shadow-3xs flex flex-col justify-between gap-3"
+                      className="glx p-4 rounded-2xl border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-3"
                     >
                       <div className="space-y-2 text-right">
                         {/* Upper indicators bar */}
@@ -1533,7 +1533,7 @@ export default function ExamPreview({
                             <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-semibold px-2 py-0.5 rounded-md">
                               {bq.category}
                             </span>
-                            <span className="glx text-[var(--color-text-tertiary)] rounded-md px-1.5 py-0.5 font-medium border border-[var(--color-glass-light-stroke)]">
+                            <span className="glx text-[var(--color-text-tertiary)] rounded-md px-1.5 py-0.5 font-medium border">
                               {getTypeNameInPersian(bq.type)}
                             </span>
                           </div>
@@ -1585,7 +1585,7 @@ export default function ExamPreview({
             </div>
 
             {/* Modal Footer comments */}
-            <div className="glx border-t border-[var(--color-glass-light-stroke)] p-3 text-center text-micro text-[var(--color-text-tertiary)] font-semibold">
+            <div className="glx border-t p-3 text-center text-micro text-[var(--color-text-tertiary)] font-semibold">
               <span>تطبیق‌دهنده هوشمند آزمون‌ساز همگام دبیـران</span>
             </div>
           </div>
@@ -1601,12 +1601,12 @@ export default function ExamPreview({
           <div className="fixed inset-0" onClick={() => setEditingQuestion(null)} />
 
           <div
-            className="w-full max-w-xl glx shadow-2xl z-10 flex flex-col h-full border-r border-[var(--color-glass-light-stroke)] overflow-hidden text-caption text-right animate-in slide-in-from-right duration-300 font-sans"
+            className="w-full max-w-xl glx z-10 flex flex-col h-full border-r overflow-hidden text-caption text-right animate-in slide-in-from-right duration-300 font-sans"
             dir="rtl"
             id="drawer-edit-form"
           >
             {/* Drawer Header */}
-            <div className="px-5 py-4 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-5 py-4 glx border-b flex items-center justify-between">
               <h3 className="font-extrabold text-[var(--color-text-primary)] text-caption md:text-label flex items-center gap-1.5">
                 <Sliders className="w-5 h-5 text-[var(--color-accent)]" />
                 <span>
@@ -1625,7 +1625,7 @@ export default function ExamPreview({
             {/* Drawer scrolling form content */}
             <div className="p-5 overflow-y-auto space-y-5 flex-1">
               {/* Type selector */}
-              <div className="space-y-1 glx p-3 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+              <div className="space-y-1 glx p-3 rounded-2xl border">
                 <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                   نوع قالب‌بندی سوال:
                 </label>
@@ -1663,7 +1663,7 @@ export default function ExamPreview({
 
               {/* Title & Points row */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-2 space-y-1 glx p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+                <div className="md:col-span-2 space-y-1 glx p-3.5 rounded-2xl border">
                   <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                     عنوان خلاصه سوال:
                   </label>
@@ -1678,7 +1678,7 @@ export default function ExamPreview({
                   />
                 </div>
 
-                <div className="space-y-1 glx p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)] text-center">
+                <div className="space-y-1 glx p-3.5 rounded-2xl border text-center">
                   <label className="text-micro text-[var(--color-text-tertiary)] font-bold block text-right">
                     بارم (امتیاز عددی):
                   </label>
@@ -1696,7 +1696,7 @@ export default function ExamPreview({
               </div>
 
               {/* Question Text Prompt */}
-              <div className="space-y-1 glx p-4 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+              <div className="space-y-1 glx p-4 rounded-2xl border">
                 <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                   متن اصلی صورت سوال:
                 </label>
@@ -1710,7 +1710,7 @@ export default function ExamPreview({
               </div>
 
               {/* Image URL / media upload simulation */}
-              <div className="space-y-2 glx p-3.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+              <div className="space-y-2 glx p-3.5 rounded-2xl border">
                 <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                   تصویر یا نمودار پیوست سوال:
                 </label>
@@ -1790,7 +1790,7 @@ export default function ExamPreview({
                     {(editingQuestion.options || []).map((opt, oIdx) => (
                       <div
                         key={opt.id}
-                        className="flex gap-2 items-center glx p-2 rounded-xl border border-[var(--color-glass-light-stroke)]"
+                        className="flex gap-2 items-center glx p-2 rounded-xl border"
                       >
                         {/* Correct trigger */}
                         <button
@@ -1895,7 +1895,7 @@ export default function ExamPreview({
                     {(editingQuestion.correctFillBlanks || ['']).map((word, wIdx) => (
                       <div
                         key={wIdx}
-                        className="flex gap-2 items-center glx p-2 rounded-xl border border-[var(--color-glass-light-stroke)]"
+                        className="flex gap-2 items-center glx p-2 rounded-xl border"
                       >
                         <span className="text-[var(--color-text-tertiary)] font-bold font-mono">
                           جای خالی ({toPersianDigits(wIdx + 1)}):
@@ -2060,7 +2060,7 @@ export default function ExamPreview({
             </div>
 
             {/* Save trigger inside drawer */}
-            <div className="p-4 glx border-t border-[var(--color-glass-light-stroke)] flex gap-2">
+            <div className="p-4 glx border-t flex gap-2">
               <button
                 type="button"
                 onClick={handleSaveDrawerQuestion}

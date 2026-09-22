@@ -192,7 +192,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
       {/* 1. Welcome Card Hero — liquid glass with The Mark watermark */}
       <div
-        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx-strong shadow-2xl"
+        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx-strong"
         id="dashboard-hero-banner"
       >
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
@@ -842,7 +842,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <button
               id="sidebar-add-class-dashboard"
               onClick={() => onNavigate('students')}
-              className="w-full py-2.5 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl text-caption font-semibold mt-4 border border-dashed border-[var(--color-glass-light-stroke)] transition-all flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full py-2.5 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl text-caption font-semibold mt-4 border border-dashed transition-all flex items-center justify-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>ایجاد کلاس یا گروه جدید</span>
@@ -880,7 +880,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       {/* 8. Interactively Functional Excel Import Modal Component */}
       {isExcelModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4"
           id="excel-import-modal-backdrop"
         >
           <motion.div
@@ -889,7 +889,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx-strong w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl text-right text-caption glx-sheen"
+            className="glx-strong w-full max-w-lg rounded-3xl overflow-hidden text-right text-caption glx-sheen"
             id="excel-import-dialog"
           >
             {/* Modal Header */}
@@ -1009,7 +1009,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     پیش‌نمایش رکوردهای خوانده‌شده قبل از درج نهایی دیتابیس:
                   </p>
 
-                  <div className="border border-[var(--color-glass-light-stroke)] glx rounded-xl overflow-hidden p-6 text-center">
+                  <div className="border glx rounded-xl overflow-hidden p-6 text-center">
                     <p className="text-label text-[var(--color-text-tertiary)] font-bold">
                       پیش‌نمایش داده‌ها پس از پیاده‌سازی واقعی ورود اکسل نمایش داده خواهد شد.
                     </p>

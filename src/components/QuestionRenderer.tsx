@@ -71,7 +71,7 @@ export default function QuestionRenderer({
 
   return (
     <div
-      className="glx p-5 md:p-6 rounded-2xl border border-[var(--color-glass-light-stroke)] shadow-xs space-y-5 text-right font-sans"
+      className="glx p-5 md:p-6 rounded-2xl border space-y-5 text-right font-sans"
       dir="rtl"
       id={`render-q-${question.id}`}
     >
@@ -126,7 +126,7 @@ export default function QuestionRenderer({
               src={question.imageUrl}
               alt="ضمیمه سوال"
               referrerPolicy="no-referrer"
-              className="rounded-xl border border-[var(--color-glass-light-stroke)] shadow-2xs max-h-64 object-contain max-w-full glx"
+              className="rounded-xl border max-h-64 object-contain max-w-full glx"
             />
             <span className="absolute bottom-2 right-2 bg-black/30 text-white rounded-md px-2 py-0.5 text-micro font-mono">
               پیوست اصلی تصویر سوال
@@ -276,7 +276,7 @@ export default function QuestionRenderer({
             </div>
           )}
           {question.explanation && (
-            <div className="glx rounded-xl p-3 border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] text-micro leading-relaxed">
+            <div className="glx rounded-xl p-3 border text-[var(--color-text-secondary)] text-micro leading-relaxed">
               <span className="font-bold text-[var(--color-text-primary)] block mb-1">
                 توضیح دبیر / راهکار رسیدن به جواب:
               </span>
@@ -352,7 +352,7 @@ export default function QuestionRenderer({
 
       {/* 6. Matching Pair lists */}
       {question.type === 'matching' && question.matchingPairs && (
-        <div className="glx rounded-xl p-4 border border-[var(--color-glass-light-stroke)] mt-3 text-caption">
+        <div className="glx rounded-xl p-4 border mt-3 text-caption">
           <p className="font-bold text-[var(--color-text-primary)] text-micro mb-2 border-b border-[var(--color-glass-light-stroke)] pb-1.5">
             نگاشت وصل‌کردنی صحیح:
           </p>
@@ -377,14 +377,14 @@ export default function QuestionRenderer({
 
       {/* 7. Ordering ordered elements listing */}
       {question.type === 'ordering' && question.orderingItems && (
-        <div className="glx rounded-xl p-4 border border-[var(--color-glass-light-stroke)] mt-3 text-caption">
+        <div className="glx rounded-xl p-4 border mt-3 text-caption">
           <p className="font-bold text-[var(--color-accent)] mb-2.5">
             ترتیب قرارگیری پاسخ‌ها از راست به چپ:
           </p>
           <div className="flex flex-wrap gap-2 items-center">
             {question.orderingItems.map((item, idx) => (
               <div key={idx} className="flex items-center gap-1.5">
-                <span className="glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)] px-3.5 py-2 font-bold rounded-xl shadow-3xs">
+                <span className="glx border text-[var(--color-text-primary)] px-3.5 py-2 font-bold rounded-xl">
                   {idx + 1}. {item}
                 </span>
                 {idx < (question.orderingItems?.length || 0) - 1 && (

@@ -124,7 +124,7 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
         </div>
 
         {/* Card — glx glass surface */}
-        <div className="glx rounded-3xl shadow-xl p-8">
+        <div className="glx rounded-3xl p-8">
           {/* View: Enter Email */}
           {view === 'email' && (
             <form onSubmit={handleEmailSubmit} className="space-y-5">

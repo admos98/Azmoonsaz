@@ -305,6 +305,9 @@ export default function Topbar({
   const unreadCount = notifications.length;
 
   // Notification dropdown position (fixed, anchored to bell — on left side, so use left)
+  // Halo inset mirrors --glass-h-ratio: area-blur owns inset/radius via 1cqw, so the
+  // transform-origin math below must use the same ratio (dropdownWidth 320 × 0.17).
+  const notifHaloInset = 320 * 0.17;
   const notificationStyle: React.CSSProperties = { position: 'fixed' };
   if (bellRect) {
     const dropdownWidth = 320;
@@ -343,6 +346,10 @@ export default function Topbar({
   // panelWidth - hamburgerRect.width/2 from the panel's left edge.
   // The button is above the first panel by hamburgerRect.height/2 + 12 (gap).
   const panelWidth = 280;
+  // Halo pad mirrors --glass-h-ratio: the field wrapper below is @container with
+  // width = panelWidth, so area-blur insets itself by panelWidth × 0.17 via 1cqw.
+  // The transform-origin math must use the same pad (was hardcoded 48 ≈ 0.17×280).
+  const menuHaloPad = panelWidth * 0.17;
   const computeHamburgerTransformOrigin = (index: number) => {
     if (!hamburgerRect) return 'center top';
     const originX = `${panelWidth - hamburgerRect.width / 2}px`;
@@ -498,32 +505,40 @@ export default function Topbar({
       {(showHamburgerMenu || menuClosing) && (
         <>
           {/* Backdrop — blocks interaction; blur is localized to the menu field below */}
-          <div className="fixed inset-0 z-[55] bg-black/30" onClick={closeMenu} />
+          <div className="fixed inset-0 z-[55] bgfx" onClick={closeMenu} />
 
           {/* All panels container (display:contents — must not occupy a flex slot in the header) */}
           <div ref={hamburgerDropdownRef} className="contents">
-            {/* Area-blur field — one continuous glass blur behind the whole menu stack */}
+            {/* Area-blur field — one continuous glass blur behind the whole menu stack.
+                Static @container wrapper sized tight to the panels; the halo inside
+                insets itself by panelWidth × 0.17 via 1cqw (owns inset + radius). */}
             <div
               aria-hidden="true"
-              className="fixed z-[59] pointer-events-none area-blur"
+              className="fixed z-[59] pointer-events-none @container"
               style={{
-                right: `${hamburgerRight - 48}px`,
-                top: `${hamburgerTop - 48}px`,
-                width: `${panelWidth + 96}px`,
-                height: `${panelHeights.reduce((sum, h) => sum + h, 0) + panelGap * 3 + 96}px`,
-                borderRadius: '40px',
-                transformOrigin: hamburgerRect
-                  ? `${panelWidth + 48 - hamburgerRect.width / 2}px ${-hamburgerRect.height / 2 - 12 + 48}px`
-                  : 'center',
-                animation: menuClosing
-                  ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
-                  : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
+                right: `${hamburgerRight}px`,
+                top: `${hamburgerTop}px`,
+                width: `${panelWidth}px`,
+                height: `${panelHeights.reduce((sum, h) => sum + h, 0) + panelGap * 3}px`,
               }}
-            />
+            >
+              <div
+                aria-hidden="true"
+                className="absolute area-blur"
+                style={{
+                  transformOrigin: hamburgerRect
+                    ? `${panelWidth + menuHaloPad - hamburgerRect.width / 2}px ${-hamburgerRect.height / 2 - 12 + menuHaloPad}px`
+                    : 'center',
+                  animation: menuClosing
+                    ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
+                    : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
+                }}
+              />
+            </div>
 
             {/* Panel 1: App info + date */}
             <div
-              className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+              className="fixed z-[60] glx-strong rounded-2xl"
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(0),
@@ -554,7 +569,7 @@ export default function Topbar({
 
             {/* Panel 2: Teacher profile */}
             <div
-              className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+              className="fixed z-[60] glx-strong rounded-2xl"
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(1),
@@ -595,7 +610,7 @@ export default function Topbar({
 
             {/* Panel 3: Management options */}
             <div
-              className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+              className="fixed z-[60] glx-strong rounded-2xl"
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(2),
@@ -667,7 +682,7 @@ export default function Topbar({
 
             {/* Panel 4: Exam panel + settings */}
             <div
-              className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
+              className="fixed z-[60] glx-strong rounded-2xl"
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(3),
@@ -776,14 +791,14 @@ export default function Topbar({
 
       {/* Notifications Dropdown — animates from bell origin */}
       {(showNotifications || notifClosing) && (
-        <div className="fixed z-[60]" style={notificationStyle}>
+        <div className="fixed z-[60] @container" style={notificationStyle}>
           {/* Area-blur halo — liquid-glass ring; own animation under a static wrapper */}
           <div
             aria-hidden="true"
-            className="absolute -inset-10 rounded-[40px] area-blur"
+            className="absolute area-blur"
             style={{
               transformOrigin: bellRect
-                ? `${bellRect.width / 2 + 40}px ${-bellRect.height / 2 - 12 + 40}px`
+                ? `${bellRect.width / 2 + notifHaloInset}px ${-bellRect.height / 2 - 12 + notifHaloInset}px`
                 : 'center',
               animation: notifClosing
                 ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
@@ -792,7 +807,7 @@ export default function Topbar({
           />
           <div
             ref={notifRef}
-            className={`relative w-full glx-strong rounded-2xl shadow-2xl overflow-hidden glx-sheen ${
+            className={`relative w-full glx-strong rounded-2xl overflow-hidden glx-sheen ${
               notifClosing ? 'notification-shrink' : 'notification-grow'
             }`}
             style={{

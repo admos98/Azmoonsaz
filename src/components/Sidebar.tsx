@@ -186,7 +186,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
     <>
       {/* Mobile Hamburger */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl glx shadow-md cursor-pointer"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl glx cursor-pointer"
         onClick={() => setMobileOpen(true)}
         aria-label="باز کردن منو"
       >
@@ -200,7 +200,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="lg:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-[3px]"
+            className="lg:hidden fixed inset-0 z-40 bgfx"
             onClick={() => setMobileOpen(false)}
           />
         )}

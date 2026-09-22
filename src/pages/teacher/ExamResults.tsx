@@ -586,7 +586,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             id="panel-results-list"
           >
             {/* Top Navigation & Action Title Raw header bar */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border">
               <div className="flex items-center gap-4">
                 <button
                   id="btn-return-exams-list-arrow"
@@ -639,7 +639,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             {/* Comprehensive Analytics Metrics Dashboard grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
               {/* Card 1: Total Allocated classes */}
-              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     کل کارنامه تخصصی
@@ -662,7 +662,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 2: Participated */}
-              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     تعداد شرکت‌کنندگان
@@ -685,7 +685,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 3: Absents */}
-              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     غائبین ارزیابی
@@ -708,7 +708,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 4: Average score */}
-              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     میانگین کلی نمرات
@@ -728,7 +728,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 5: Highest score */}
-              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     بالاترین نمره کلاس
@@ -748,7 +748,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 6: Needs correction */}
-              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     نیازمند تصحیح تشریحی
@@ -771,7 +771,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 7: Completed corrections */}
-              <div className="glx border border-[var(--color-glass-light-stroke)] rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     تصحیح‌های تکمیل‌شده
@@ -910,7 +910,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
             {/* Structured Submissions Tables */}
             <div
-              className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-4 md:p-6 shadow-sm overflow-hidden space-y-4"
+              className="glx border rounded-3xl p-4 md:p-6 overflow-hidden space-y-4"
               id="section-structured-submissions"
             >
               <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-2">
@@ -1139,7 +1139,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             {/* Right evaluation control details drawer list (or column top) */}
             <div className="lg:col-span-8 space-y-6">
               {/* Grading panel title row */}
-              <div className="glx p-5 rounded-3xl border border-[var(--color-glass-light-stroke)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+              <div className="glx p-5 rounded-3xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
                   <button
                     id="btn-close-and-return-list"
@@ -1158,7 +1158,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   </div>
                 </div>
 
-                <div className="glx border px-4 py-2.5 rounded-2xl flex items-center gap-4 text-caption shadow-3xs">
+                <div className="glx border px-4 py-2.5 rounded-2xl flex items-center gap-4 text-caption">
                   <div>
                     <span className="text-[var(--color-text-tertiary)] font-bold block text-micro mb-0.5">
                       ثبت نهایی ساعت:
@@ -1212,7 +1212,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   return (
                     <div
                       key={q.id}
-                      className="glx border border-[var(--color-glass-light-stroke)] rounded-3xl p-5 md:p-6 space-y-4 shadow-xs"
+                      className="glx border rounded-3xl p-5 md:p-6 space-y-4"
                       id={`sheet-qscol-${q.id}`}
                     >
                       {/* Section heading bar */}
@@ -1425,7 +1425,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                           </div>
 
                           {/* 5. SPECIFICATION REQ: Rubric criteria table for descriptive evaluation */}
-                          <div className="space-y-2.5 glx p-4 border border-[var(--color-glass-light-stroke)] rounded-xl">
+                          <div className="space-y-2.5 glx p-4 border rounded-xl">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[var(--color-danger)]/10/60 pb-2">
                               <span className="text-micro font-black text-[var(--color-danger)]/80 block">
                                 جدول بارم‌بندی تفصیلی تصحیح (Rubrics):

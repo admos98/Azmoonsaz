@@ -267,7 +267,7 @@ export default function Exams({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="glx rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
+                className="glx rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
                 id={`exam-box-${ex.id}`}
               >
                 {/* Visual Status Indicator Strip on Top */}
@@ -291,7 +291,7 @@ export default function Exams({
                     >
                       {getStatusLabelInPersian(ex.status)}
                     </span>
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-mono font-bold select-all glx px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
+                    <span className="text-micro text-[var(--color-text-tertiary)] font-mono font-bold select-all glx px-2 py-0.5 rounded-md border">
                       کد ورود: {ex.examCode}
                     </span>
                   </div>
@@ -327,7 +327,7 @@ export default function Exams({
                     <button
                       id={`exam-pre-${ex.id}`}
                       onClick={() => navigateToSubView('preview', ex.id)}
-                      className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-glass-light-stroke)] cursor-pointer"
+                      className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border cursor-pointer"
                       title="پیش‌نمایش آزمون"
                     >
                       <Eye className="w-4 h-4" />
@@ -337,7 +337,7 @@ export default function Exams({
                     <button
                       id={`exam-set-${ex.id}`}
                       onClick={() => navigateToSubView('settings', ex.id)}
-                      className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border border-[var(--color-glass-light-stroke)] cursor-pointer"
+                      className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border cursor-pointer"
                       title="تنظیمات فنی آزمون"
                     >
                       <SettingsIcon className="w-4 h-4" />

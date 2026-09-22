@@ -2059,7 +2059,7 @@ export default function ExamPortal({
       <AnimatePresence>
         {isConfirmSubmitOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 select-none"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bgfx select-none"
             dir="rtl"
             id="modal-submit-confirmation"
           >
@@ -2067,7 +2067,7 @@ export default function ExamPortal({
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="glx-strong rounded-3xl border border-[var(--color-glass-light-stroke)] max-w-md w-full p-6 space-y-5 shadow-2xl text-right"
+              className="glx-strong rounded-3xl border max-w-md w-full p-6 space-y-5 text-right"
             >
               <div className="flex items-center gap-2.5 border-b border-[var(--color-glass-light-stroke)] pb-3">
                 <div className="w-9 h-9 rounded-full bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] flex items-center justify-center">
@@ -2146,7 +2146,7 @@ export default function ExamPortal({
       <AnimatePresence>
         {mobileNavOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:hidden"
+            className="fixed inset-0 z-50 flex items-end justify-center bgfx sm:hidden"
             dir="rtl"
             id="mobile-navigation-drawer-backdrop"
           >
@@ -2154,7 +2154,7 @@ export default function ExamPortal({
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="glx-strong rounded-t-3xl max-w-md w-full p-5 space-y-4 shadow-2xl text-right max-h-[70vh] overflow-y-auto"
+              className="glx-strong rounded-t-3xl max-w-md w-full p-5 space-y-4 text-right max-h-[70vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center border-b pb-2">
                 <h3 className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-1.5">

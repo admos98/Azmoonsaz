@@ -687,7 +687,7 @@ export default function Students() {
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
           <table className="w-full text-caption" id="students-desk-table">
-            <thead className="glx border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)]">
+            <thead className="glx border-b text-[var(--color-text-primary)]">
               <tr>
                 <th className="p-4 font-bold text-right">نام و نام خانوادگی</th>
                 <th className="p-4 font-bold text-right">کد ملی (ماسک زنده)</th>
@@ -732,7 +732,7 @@ export default function Students() {
 
                         {/* Masked National ID: ۱۲۳****۸۹۰ */}
                         <td className="p-4">
-                          <span className="font-mono glx px-2 py-1 rounded-md border border-[var(--color-glass-light-stroke)] select-all font-semibold text-[var(--color-text-secondary)] text-micro hover:text-[var(--color-accent)] transition-colors">
+                          <span className="font-mono glx px-2 py-1 rounded-md border select-all font-semibold text-[var(--color-text-secondary)] text-micro hover:text-[var(--color-accent)] transition-colors">
                             {maskNationalIdPersian(student.nationalId)}
                           </span>
                         </td>
@@ -939,7 +939,7 @@ export default function Students() {
                 );
               })
             ) : (
-              <div className="py-12 text-center text-[var(--color-text-tertiary)] font-medium glx rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)]">
+              <div className="py-12 text-center text-[var(--color-text-tertiary)] font-medium glx rounded-2xl border border-dashed">
                 هیچ موردی منطبق با فیلترها و مقادیر بالا یافت نشد.
               </div>
             )}
@@ -950,7 +950,7 @@ export default function Students() {
       {/* Manual Add / Edit Modal Dialouge Room */}
       {showAddEditModal && (
         <div
-          className="fixed inset-0 z-[60] bg-black/20 flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-[60] bgfx flex items-center justify-center p-4 text-right"
           id="add-edit-modal-backdrop"
         >
           <motion.div
@@ -959,11 +959,11 @@ export default function Students() {
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx-strong glx-sheen rounded-3xl w-full max-w-md overflow-hidden shadow-2xl"
+            className="glx-strong glx-sheen rounded-3xl w-full max-w-md overflow-hidden"
             id="add-edit-student-box"
           >
             {/* Modal Header */}
-            <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-5 glx border-b flex items-center justify-between">
               <button
                 onClick={() => setShowAddEditModal(false)}
                 className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] font-bold text-heading-3 cursor-pointer"
@@ -1154,7 +1154,7 @@ export default function Students() {
       {/* 4-Step Excel / CSV Import Wizard Modal! */}
       {showImportWizard && (
         <div
-          className="fixed inset-0 z-50 bg-black/25 flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4 text-right"
           id="wizard-backdrop"
         >
           <motion.div
@@ -1162,11 +1162,11 @@ export default function Students() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 1, scale: 0.96 }}
             style={{ transformOrigin: 'center bottom' }}
-            className="glx-strong glx-sheen rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl text-caption"
+            className="glx-strong glx-sheen rounded-3xl w-full max-w-2xl overflow-hidden text-caption"
             id="wizard-container"
           >
             {/* Header with Close */}
-            <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+            <div className="px-6 py-5 glx border-b flex items-center justify-between">
               <button
                 onClick={() => {
                   setShowImportWizard(false);
@@ -1185,7 +1185,7 @@ export default function Students() {
             </div>
 
             {/* Step Wizard visual track bar! */}
-            <div className="glx border-b border-[var(--color-glass-light-stroke)] px-6 py-3.5 flex items-center justify-around gap-2 select-none">
+            <div className="glx border-b px-6 py-3.5 flex items-center justify-around gap-2 select-none">
               {[
                 { s: 1, label: 'مرحله ۱: انتخاب فایل' },
                 { s: 2, label: 'مرحله ۲: پیش‌نمایش اطلاعات' },
@@ -1285,7 +1285,7 @@ export default function Students() {
                   </div>
 
                   {/* Sandboxed Demo Presets triggers so testers don't even need to provide a file! */}
-                  <div className="glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)] space-y-3">
+                  <div className="glx p-4.5 rounded-2xl border space-y-3">
                     <p className="font-bold text-[var(--color-text-secondary)] block text-micro">
                       بررسی ساده و سریع دمو بدون آپلود فایل واقعی:
                     </p>
@@ -1579,7 +1579,7 @@ export default function Students() {
       {/* Submodal: Detailed Student Exam Participation logs */}
       {showExamLogsModal && activeLogStudent && (
         <div
-          className="fixed inset-0 z-50 bg-black/25 flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4 text-right"
           id="exam-logs-modal-backdrop"
         >
           <motion.div
@@ -1588,14 +1588,14 @@ export default function Students() {
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx-strong rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
+            className="glx-strong rounded-3xl w-full max-w-lg overflow-hidden"
             id="exam-logs-box"
           >
             {/* Header */}
             <div className="px-6 py-5 bg-[var(--color-accent-soft)]/70 border-b border-[var(--color-accent-soft)] flex items-center justify-between">
               <button
                 onClick={() => setShowExamLogsModal(false)}
-                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-caption glx px-2.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-caption glx px-2.5 py-1.5 rounded-xl cursor-pointer"
               >
                 بستن سوابق
               </button>
@@ -1607,7 +1607,7 @@ export default function Students() {
 
             {/* Logs Body info */}
             <div className="p-6 space-y-5">
-              <div className="flex justify-between items-center glx p-4.5 rounded-2xl border border-[var(--color-glass-light-stroke)]">
+              <div className="flex justify-between items-center glx p-4.5 rounded-2xl border">
                 <div>
                   <p className="font-bold text-[var(--color-text-primary)] text-caption">
                     {activeLogStudent.name}
@@ -1672,7 +1672,7 @@ export default function Students() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-8 text-center glx rounded-2xl border border-dashed border-[var(--color-glass-light-stroke)] select-none">
+                  <div className="p-8 text-center glx rounded-2xl border border-dashed select-none">
                     <Info className="w-8 h-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
                     <p className="text-micro text-[var(--color-text-tertiary)]">
                       هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت
