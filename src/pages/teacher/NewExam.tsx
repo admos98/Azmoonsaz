@@ -9,6 +9,7 @@ import { logger } from '../../lib/logger';
 import { useToast } from '../../hooks/useToast';
 import { Exam, Question, ClassGroup } from '../../types';
 import { examService, questionService, classService } from '../../services/api';
+import { Dropdown } from '../../components/UIComponents';
 
 interface NewExamProps {
   onBack: () => void;
@@ -289,32 +290,26 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               >
                 پایه آموزشی مرجع:
               </label>
-              <select
+              <Dropdown
                 id="exam-grade-select"
                 value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                className="w-full glx border text-caption text-[var(--color-text-secondary)] px-3.5 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
-              >
-                <option value="">انتخاب پایه...</option>
-                <optgroup label="دبستان">
-                  <option value="اول">پایه اول</option>
-                  <option value="دوم">پایه دوم</option>
-                  <option value="سوم">پایه سوم</option>
-                  <option value="چهارم">پایه چهارم</option>
-                  <option value="پنجم">پایه پنجم</option>
-                  <option value="ششم">پایه ششم</option>
-                </optgroup>
-                <optgroup label="دوره اول متوسطه">
-                  <option value="هفتم">پایه هفتم</option>
-                  <option value="هشتم">پایه هشتم</option>
-                  <option value="نهم">پایه نهم</option>
-                </optgroup>
-                <optgroup label="دوره دوم متوسطه">
-                  <option value="دهم">پایه دهم</option>
-                  <option value="یازدهم">پایه یازدهم</option>
-                  <option value="دوازدهم">پایه دوازدهم</option>
-                </optgroup>
-              </select>
+                onChange={(v) => setGrade(v)}
+                options={[
+                  { value: '', label: 'انتخاب پایه...' },
+                  { value: 'اول', label: 'پایه اول', group: 'دبستان' },
+                  { value: 'دوم', label: 'پایه دوم', group: 'دبستان' },
+                  { value: 'سوم', label: 'پایه سوم', group: 'دبستان' },
+                  { value: 'چهارم', label: 'پایه چهارم', group: 'دبستان' },
+                  { value: 'پنجم', label: 'پایه پنجم', group: 'دبستان' },
+                  { value: 'ششم', label: 'پایه ششم', group: 'دبستان' },
+                  { value: 'هفتم', label: 'پایه هفتم', group: 'دوره اول متوسطه' },
+                  { value: 'هشتم', label: 'پایه هشتم', group: 'دوره اول متوسطه' },
+                  { value: 'نهم', label: 'پایه نهم', group: 'دوره اول متوسطه' },
+                  { value: 'دهم', label: 'پایه دهم', group: 'دوره دوم متوسطه' },
+                  { value: 'یازدهم', label: 'پایه یازدهم', group: 'دوره دوم متوسطه' },
+                  { value: 'دوازدهم', label: 'پایه دوازدهم', group: 'دوره دوم متوسطه' },
+                ]}
+              />
             </div>
 
             <div className="space-y-2">

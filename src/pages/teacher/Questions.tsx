@@ -27,7 +27,7 @@ import { logger } from '../../lib/logger';
 import { Question, QuestionType, QuestionPart, RubricCriterion } from '../../types';
 import QuestionRenderer from '../../components/QuestionRenderer';
 import { questionService } from '../../services/api';
-import { ConfirmDialog } from '../../components/UIComponents';
+import { ConfirmDialog, Dropdown } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 
 // Local enhanced interface to handle optional tags, chapters, difficulty, and completeness statuses
@@ -625,24 +625,25 @@ export default function Questions() {
             <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
               نوع قالب‌بندی سوال:
             </label>
-            <select
+            <Dropdown
+              compact
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full glx border text-label text-[var(--color-text-primary)] p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
-            >
-              <option value="all">همه قالب‌ها (۱۱ نوع)</option>
-              <option value="single_choice">چهارگزینه‌ای تک‌پاسخ</option>
-              <option value="multiple_choice">چندگزینه‌ای چندپاسخ</option>
-              <option value="true_false">درست / نادرست</option>
-              <option value="matching">وصل‌کردنی / تطبیقی</option>
-              <option value="ordering">مرتب‌سازی ترتیبی</option>
-              <option value="fill_blank">جای خالی (تک کلمه‌ای)</option>
-              <option value="short_answer">پاسخ کوتاه تشریحی</option>
-              <option value="long_answer">تشریحی بلند</option>
-              <option value="cloze">کلوز تست (Cloze)</option>
-              <option value="reading_comprehension">درک مطلب متنی</option>
-              <option value="image_based">سوال تصویری</option>
-            </select>
+              onChange={(v) => setSelectedType(v)}
+              options={[
+                { value: 'all', label: 'همه قالب‌ها (۱۱ نوع)' },
+                { value: 'single_choice', label: 'چهارگزینه‌ای تک‌پاسخ' },
+                { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
+                { value: 'true_false', label: 'درست / نادرست' },
+                { value: 'matching', label: 'وصل‌کردنی / تطبیقی' },
+                { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
+                { value: 'fill_blank', label: 'جای خالی (تک کلمه‌ای)' },
+                { value: 'short_answer', label: 'پاسخ کوتاه تشریحی' },
+                { value: 'long_answer', label: 'تشریحی بلند' },
+                { value: 'cloze', label: 'کلوز تست (Cloze)' },
+                { value: 'reading_comprehension', label: 'درک مطلب متنی' },
+                { value: 'image_based', label: 'سوال تصویری' },
+              ]}
+            />
           </div>
 
           {/* Grade Filter */}
@@ -650,31 +651,26 @@ export default function Questions() {
             <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
               پایه تحصیلی:
             </label>
-            <select
+            <Dropdown
+              compact
               value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
-              className="w-full glx border text-label text-[var(--color-text-primary)] p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
-            >
-              <option value="all">همه پایه‌ها</option>
-              <optgroup label="دبستان">
-                <option value="اول">اول</option>
-                <option value="دوم">دوم</option>
-                <option value="سوم">سوم</option>
-                <option value="چهارم">چهارم</option>
-                <option value="پنجم">پنجم</option>
-                <option value="ششم">ششم</option>
-              </optgroup>
-              <optgroup label="دوره اول متوسطه">
-                <option value="هفتم">هفتم</option>
-                <option value="هشتم">هشتم</option>
-                <option value="نهم">نهم</option>
-              </optgroup>
-              <optgroup label="دوره دوم متوسطه">
-                <option value="دهم">دهم</option>
-                <option value="یازدهم">یازدهم</option>
-                <option value="دوازدهم">دوازدهم</option>
-              </optgroup>
-            </select>
+              onChange={(v) => setSelectedGrade(v)}
+              options={[
+                { value: 'all', label: 'همه پایه‌ها' },
+                { value: 'اول', label: 'اول', group: 'دبستان' },
+                { value: 'دوم', label: 'دوم', group: 'دبستان' },
+                { value: 'سوم', label: 'سوم', group: 'دبستان' },
+                { value: 'چهارم', label: 'چهارم', group: 'دبستان' },
+                { value: 'پنجم', label: 'پنجم', group: 'دبستان' },
+                { value: 'ششم', label: 'ششم', group: 'دبستان' },
+                { value: 'هفتم', label: 'هفتم', group: 'دوره اول متوسطه' },
+                { value: 'هشتم', label: 'هشتم', group: 'دوره اول متوسطه' },
+                { value: 'نهم', label: 'نهم', group: 'دوره اول متوسطه' },
+                { value: 'دهم', label: 'دهم', group: 'دوره دوم متوسطه' },
+                { value: 'یازدهم', label: 'یازدهم', group: 'دوره دوم متوسطه' },
+                { value: 'دوازدهم', label: 'دوازدهم', group: 'دوره دوم متوسطه' },
+              ]}
+            />
           </div>
 
           {/* Subject Filter */}
@@ -682,18 +678,15 @@ export default function Questions() {
             <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
               درس یا موضوع:
             </label>
-            <select
+            <Dropdown
+              compact
               value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full glx border text-label text-[var(--color-text-primary)] p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
-            >
-              <option value="all">همه درس‌ها</option>
-              {uniqueSubjects.map((sub) => (
-                <option key={sub} value={sub}>
-                  {sub}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setSelectedSubject(v)}
+              options={[
+                { value: 'all', label: 'همه درس‌ها' },
+                ...uniqueSubjects.map((sub) => ({ value: sub, label: sub })),
+              ]}
+            />
           </div>
 
           {/* Section/Chapter Filter */}
@@ -701,18 +694,15 @@ export default function Questions() {
             <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
               بخش یا فصل کتاب:
             </label>
-            <select
+            <Dropdown
+              compact
               value={selectedSection}
-              onChange={(e) => setSelectedSection(e.target.value)}
-              className="w-full glx border text-label text-[var(--color-text-primary)] p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
-            >
-              <option value="all">همه فصل‌ها</option>
-              {uniqueSections.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setSelectedSection(v)}
+              options={[
+                { value: 'all', label: 'همه فصل‌ها' },
+                ...uniqueSections.map((s) => ({ value: s, label: s })),
+              ]}
+            />
           </div>
 
           {/* Difficulty Filter */}
@@ -720,16 +710,17 @@ export default function Questions() {
             <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
               سطح سختی سوال:
             </label>
-            <select
+            <Dropdown
+              compact
               value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="w-full glx border text-label text-[var(--color-text-primary)] p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
-            >
-              <option value="all">همه سطوح</option>
-              <option value="easy">آسان</option>
-              <option value="medium">متوسط</option>
-              <option value="hard">سخت</option>
-            </select>
+              onChange={(v) => setSelectedDifficulty(v)}
+              options={[
+                { value: 'all', label: 'همه سطوح' },
+                { value: 'easy', label: 'آسان' },
+                { value: 'medium', label: 'متوسط' },
+                { value: 'hard', label: 'سخت' },
+              ]}
+            />
           </div>
 
           {/* Selective Tag Filter */}
@@ -737,18 +728,15 @@ export default function Questions() {
             <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
               برچسب‌ها (هشتگ):
             </label>
-            <select
+            <Dropdown
+              compact
               value={selectedTag}
-              onChange={(e) => setSelectedTag(e.target.value)}
-              className="w-full glx border text-label text-[var(--color-text-primary)] p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
-            >
-              <option value="all">همه برچسب‌ها</option>
-              {uniqueTags.map((t) => (
-                <option key={t} value={t}>
-                  #{t}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setSelectedTag(v)}
+              options={[
+                { value: 'all', label: 'همه برچسب‌ها' },
+                ...uniqueTags.map((t) => ({ value: t, label: `#${t}` })),
+              ]}
+            />
           </div>
 
           {/* Completeness Status Filter */}
@@ -756,15 +744,16 @@ export default function Questions() {
             <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
               وضعیت کاملی سوال:
             </label>
-            <select
+            <Dropdown
+              compact
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full glx border text-label text-[var(--color-text-primary)] p-2 rounded-xl focus:outline-hidden font-medium cursor-pointer"
-            >
-              <option value="all">همه وضعیت‌ها</option>
-              <option value="complete">کامل (دارای جواب معتبر)</option>
-              <option value="incomplete">ناقص (پیشنویس)</option>
-            </select>
+              onChange={(v) => setSelectedStatus(v)}
+              options={[
+                { value: 'all', label: 'همه وضعیت‌ها' },
+                { value: 'complete', label: 'کامل (دارای جواب معتبر)' },
+                { value: 'incomplete', label: 'ناقص (پیشنویس)' },
+              ]}
+            />
           </div>
         </div>
 
@@ -1082,7 +1071,7 @@ export default function Questions() {
       {/* REUSABLE live preview question modal overlay */}
       {previewQuestion && (
         <div
-          className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/25 flex items-center justify-center p-4"
           id="live-preview-overlay"
         >
           <motion.div
@@ -1128,7 +1117,7 @@ export default function Questions() {
       {/* MEGA ADD / EDIT DRAWER (Saves into state cleanly with live options form build!) */}
       {showAddEditDrawer && (
         <div
-          className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex justify-end"
+          className="fixed inset-0 z-50 bg-black/25 flex justify-end"
           id="add-edit-drawer-overlay"
         >
           <div className="fixed inset-0" onClick={() => setShowAddEditDrawer(false)} />
@@ -1239,31 +1228,25 @@ export default function Questions() {
                         <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                           پایه تحصیلی:
                         </label>
-                        <select
+                        <Dropdown
                           value={formGrade}
-                          onChange={(e) => setFormGrade(e.target.value)}
-                          className="w-full glx border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
-                        >
-                          <option value="">انتخاب پایه...</option>
-                          <optgroup label="دبستان">
-                            <option value="اول">اول</option>
-                            <option value="دوم">دوم</option>
-                            <option value="سوم">سوم</option>
-                            <option value="چهارم">چهارم</option>
-                            <option value="پنجم">پنجم</option>
-                            <option value="ششم">ششم</option>
-                          </optgroup>
-                          <optgroup label="دوره اول متوسطه">
-                            <option value="هفتم">هفتم</option>
-                            <option value="هشتم">هشتم</option>
-                            <option value="نهم">نهم</option>
-                          </optgroup>
-                          <optgroup label="دوره دوم متوسطه">
-                            <option value="دهم">دهم</option>
-                            <option value="یازدهم">یازدهم</option>
-                            <option value="دوازدهم">دوازدهم</option>
-                          </optgroup>
-                        </select>
+                          onChange={(v) => setFormGrade(v)}
+                          options={[
+                            { value: '', label: 'انتخاب پایه...' },
+                            { value: 'اول', label: 'اول', group: 'دبستان' },
+                            { value: 'دوم', label: 'دوم', group: 'دبستان' },
+                            { value: 'سوم', label: 'سوم', group: 'دبستان' },
+                            { value: 'چهارم', label: 'چهارم', group: 'دبستان' },
+                            { value: 'پنجم', label: 'پنجم', group: 'دبستان' },
+                            { value: 'ششم', label: 'ششم', group: 'دبستان' },
+                            { value: 'هفتم', label: 'هفتم', group: 'دوره اول متوسطه' },
+                            { value: 'هشتم', label: 'هشتم', group: 'دوره اول متوسطه' },
+                            { value: 'نهم', label: 'نهم', group: 'دوره اول متوسطه' },
+                            { value: 'دهم', label: 'دهم', group: 'دوره دوم متوسطه' },
+                            { value: 'یازدهم', label: 'یازدهم', group: 'دوره دوم متوسطه' },
+                            { value: 'دوازدهم', label: 'دوازدهم', group: 'دوره دوم متوسطه' },
+                          ]}
+                        />
                       </div>
 
                       {/* Subject */}
@@ -1301,17 +1284,15 @@ export default function Questions() {
                         <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                           سطح سختی علمی:
                         </label>
-                        <select
+                        <Dropdown
                           value={formDifficulty}
-                          onChange={(e) =>
-                            setFormDifficulty(e.target.value as 'easy' | 'medium' | 'hard')
-                          }
-                          className="w-full glx border border-[var(--color-glass-light-stroke)] p-2 rounded-xl focus:outline-hidden font-bold"
-                        >
-                          <option value="easy">آسان</option>
-                          <option value="medium">متوسط</option>
-                          <option value="hard">سخت / استعداد درخشان</option>
-                        </select>
+                          onChange={(v) => setFormDifficulty(v as 'easy' | 'medium' | 'hard')}
+                          options={[
+                            { value: 'easy', label: 'آسان' },
+                            { value: 'medium', label: 'متوسط' },
+                            { value: 'hard', label: 'سخت / استعداد درخشان' },
+                          ]}
+                        />
                       </div>
 
                       {/* Points / Barom */}
@@ -1351,23 +1332,23 @@ export default function Questions() {
                     <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                       انتخاب قالب بندی ساختاری سوال (۱۱ نوع):
                     </label>
-                    <select
+                    <Dropdown
                       value={formType}
-                      onChange={(e) => setFormType(e.target.value as QuestionType)}
-                      className="w-full bg-[var(--color-accent-soft)]/30 border border-[var(--color-accent)]/20 p-2.5 rounded-xl font-bold text-[var(--color-accent)] focus:outline-white cursor-pointer"
-                    >
-                      <option value="single_choice">چهارگزینه‌ای تک‌پاسخ</option>
-                      <option value="multiple_choice">چندگزینه‌ای چندپاسخ</option>
-                      <option value="true_false">درست / نادرست</option>
-                      <option value="fill_blank">جای خالی</option>
-                      <option value="short_answer">پاسخ کوتاه تشریحی</option>
-                      <option value="long_answer">پاسخ تشریحی بلند</option>
-                      <option value="matching">وصل‌کردنی</option>
-                      <option value="ordering">مرتب‌سازی ترتیبی</option>
-                      <option value="cloze">کلوز تست (Cloze)</option>
-                      <option value="reading_comprehension">درک مطلب passage</option>
-                      <option value="image_based">سوال تصویری اختصاصی</option>
-                    </select>
+                      onChange={(v) => setFormType(v as QuestionType)}
+                      options={[
+                        { value: 'single_choice', label: 'چهارگزینه‌ای تک‌پاسخ' },
+                        { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
+                        { value: 'true_false', label: 'درست / نادرست' },
+                        { value: 'fill_blank', label: 'جای خالی' },
+                        { value: 'short_answer', label: 'پاسخ کوتاه تشریحی' },
+                        { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
+                        { value: 'matching', label: 'وصل‌کردنی' },
+                        { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
+                        { value: 'cloze', label: 'کلوز تست (Cloze)' },
+                        { value: 'reading_comprehension', label: 'درک مطلب passage' },
+                        { value: 'image_based', label: 'سوال تصویری اختصاصی' },
+                      ]}
+                    />
                   </div>
 
                   {/* 3. Title & Text prompts */}

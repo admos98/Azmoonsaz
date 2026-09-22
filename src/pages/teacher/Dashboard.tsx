@@ -880,7 +880,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       {/* 8. Interactively Functional Excel Import Modal Component */}
       {isExcelModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[3px] flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/20 flex items-center justify-center p-4"
           id="excel-import-modal-backdrop"
         >
           <motion.div

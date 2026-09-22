@@ -235,6 +235,14 @@ select::-webkit-calendar-picker-indicator {
   -webkit-backdrop-filter: blur(1.33px) saturate(1) brightness(1.03);
 }
 
+/* Area blur — localized backdrop-blur field behind popup panels (liquid glass).
+   Must sit on a static layer: an ancestor with opacity < 1 disables it. */
+@utility area-blur {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(22px) saturate(1.35) brightness(1.05);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35) brightness(1.05);
+}
+
 /* ─── Sheen overlay ─── */
 .glx-sheen {
   position: relative;

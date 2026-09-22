@@ -1405,7 +1405,7 @@ export default function ExamPreview({
       {/* MODAL 1: REPLACE QUESTION BANK */}
       {replacingQuestionId && (
         <div
-          className="fixed inset-0 z-50 bg-[var(--color-glass-light-fill)]/60 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[var(--color-glass-light-fill)]/60 flex items-center justify-center p-4"
           id="replace-modal-backdrop"
         >
           <div
@@ -1489,16 +1489,17 @@ export default function ExamPreview({
                   <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                     سطح سختی:
                   </label>
-                  <select
+                  <Dropdown
+                    compact
                     value={replaceFilterDifficulty}
-                    onChange={(e) => setReplaceFilterDifficulty(e.target.value)}
-                    className="w-full glx border border-[var(--color-glass-light-stroke)] text-micro p-1.5 rounded-lg text-[var(--color-text-secondary)] cursor-pointer focus:outline-hidden"
-                  >
-                    <option value="all">همه سطوح</option>
-                    <option value="easy">آسان</option>
-                    <option value="medium">متوسط</option>
-                    <option value="hard">سخت</option>
-                  </select>
+                    onChange={setReplaceFilterDifficulty}
+                    options={[
+                      { value: 'all', label: 'همه سطوح' },
+                      { value: 'easy', label: 'آسان' },
+                      { value: 'medium', label: 'متوسط' },
+                      { value: 'hard', label: 'سخت' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -1594,7 +1595,7 @@ export default function ExamPreview({
       {/* MODAL 2: MEGA ADD/EDIT MANUAL QUESTION PANEL (SIDE DRAWER DESIGN) */}
       {editingQuestion && (
         <div
-          className="fixed inset-0 z-50 bg-[var(--color-glass-light-fill)]/50 backdrop-blur-xs flex justify-end"
+          className="fixed inset-0 z-50 bg-[var(--color-glass-light-fill)]/50 flex justify-end"
           id="drawer-container-backdrop"
         >
           <div className="fixed inset-0" onClick={() => setEditingQuestion(null)} />
@@ -1628,10 +1629,10 @@ export default function ExamPreview({
                 <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                   نوع قالب‌بندی سوال:
                 </label>
-                <select
+                <Dropdown
                   value={editingQuestion.type}
-                  onChange={(e) => {
-                    const nextVal = e.target.value as QuestionType;
+                  onChange={(v) => {
+                    const nextVal = v as QuestionType;
                     setEditingQuestion({
                       ...editingQuestion,
                       type: nextVal,
@@ -1646,18 +1647,18 @@ export default function ExamPreview({
                       parts: nextVal === 'reading_comprehension' ? [] : undefined,
                     });
                   }}
-                  className="w-full glx border text-caption text-[var(--color-text-secondary)] p-2 rounded-xl focus:outline-hidden font-bold cursor-pointer"
-                >
-                  <option value="single_choice">چهارگزینه‌ای یا کتبی تستی</option>
-                  <option value="multiple_choice">چندگزینه‌ای چندپاسخ</option>
-                  <option value="true_false">درست / نادرست</option>
-                  <option value="short_answer">پاسخ کوتاه (نیم‌تشریحی)</option>
-                  <option value="long_answer">پاسخ تشریحی بلند</option>
-                  <option value="fill_blank">پر کردن جاهای خالی</option>
-                  <option value="matching">وصل‌کردنی ارتباطی</option>
-                  <option value="ordering">مرتب‌سازی ترتیبی</option>
-                  <option value="image_based">سوال تصویری یا تحلیلی</option>
-                </select>
+                  options={[
+                    { value: 'single_choice', label: 'چهارگزینه‌ای یا کتبی تستی' },
+                    { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
+                    { value: 'true_false', label: 'درست / نادرست' },
+                    { value: 'short_answer', label: 'پاسخ کوتاه (نیم‌تشریحی)' },
+                    { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
+                    { value: 'fill_blank', label: 'پر کردن جاهای خالی' },
+                    { value: 'matching', label: 'وصل‌کردنی ارتباطی' },
+                    { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
+                    { value: 'image_based', label: 'سوال تصویری یا تحلیلی' },
+                  ]}
+                />
               </div>
 
               {/* Title & Points row */}

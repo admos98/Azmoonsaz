@@ -276,7 +276,8 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   });
 
   // Start evaluating a single submission
-  const startGrading = (row: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const startGrading = (row: any) => {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     if (row.status === 'absent') {
       alert('این دانش‌آموز غایب بوده و پاسخ‌برگی ارسال نکرده است.');
       return;

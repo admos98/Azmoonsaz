@@ -5,7 +5,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Edit3, AlertCircle } from 'lucide-react';
-import { Button, Card, Modal, Table, Badge, ConfirmDialog } from '../../components/UIComponents';
+import {
+  Button,
+  Card,
+  Modal,
+  Table,
+  Badge,
+  ConfirmDialog,
+  Dropdown,
+} from '../../components/UIComponents';
 import { classService } from '../../services/api';
 import { ClassGroup } from '../../types';
 import { formatPersianNumber } from '../../services/persianHelpers';
@@ -208,31 +216,25 @@ export default function Classes() {
             <label className="text-caption font-bold text-[var(--color-text-secondary)] block">
               پایه تحصیلی
             </label>
-            <select
+            <Dropdown
               value={formData.grade}
-              onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] glx text-label focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
-            >
-              <option value="">انتخاب پایه...</option>
-              <optgroup label="دبستان">
-                <option value="اول">اول</option>
-                <option value="دوم">دوم</option>
-                <option value="سوم">سوم</option>
-                <option value="چهارم">چهارم</option>
-                <option value="پنجم">پنجم</option>
-                <option value="ششم">ششم</option>
-              </optgroup>
-              <optgroup label="دوره اول متوسطه">
-                <option value="هفتم">هفتم</option>
-                <option value="هشتم">هشتم</option>
-                <option value="نهم">نهم</option>
-              </optgroup>
-              <optgroup label="دوره دوم متوسطه">
-                <option value="دهم">دهم</option>
-                <option value="یازدهم">یازدهم</option>
-                <option value="دوازدهم">دوازدهم</option>
-              </optgroup>
-            </select>
+              onChange={(v) => setFormData({ ...formData, grade: v })}
+              options={[
+                { value: '', label: 'انتخاب پایه...' },
+                { value: 'اول', label: 'اول', group: 'دبستان' },
+                { value: 'دوم', label: 'دوم', group: 'دبستان' },
+                { value: 'سوم', label: 'سوم', group: 'دبستان' },
+                { value: 'چهارم', label: 'چهارم', group: 'دبستان' },
+                { value: 'پنجم', label: 'پنجم', group: 'دبستان' },
+                { value: 'ششم', label: 'ششم', group: 'دبستان' },
+                { value: 'هفتم', label: 'هفتم', group: 'دوره اول متوسطه' },
+                { value: 'هشتم', label: 'هشتم', group: 'دوره اول متوسطه' },
+                { value: 'نهم', label: 'نهم', group: 'دوره اول متوسطه' },
+                { value: 'دهم', label: 'دهم', group: 'دوره دوم متوسطه' },
+                { value: 'یازدهم', label: 'یازدهم', group: 'دوره دوم متوسطه' },
+                { value: 'دوازدهم', label: 'دوازدهم', group: 'دوره دوم متوسطه' },
+              ]}
+            />
           </div>
           <div className="pt-4 flex justify-end gap-3">
             <Button onClick={() => setIsModalOpen(false)} variant="ghost">

@@ -267,59 +267,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 );
 
 /* ==========================================
-   6. SELECT COMPONENT
-   ========================================== */
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string;
-  error?: string;
-  options: { value: string; label: string }[];
-  wrapperClassName?: string;
-}
-
-export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, id, className = '', wrapperClassName = '', ...props }, ref) => {
-    const generatedId = useId();
-    const selectId = id || generatedId;
-    return (
-      <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
-        {label && (
-          <label
-            htmlFor={selectId}
-            className="block text-caption md:text-label font-bold text-[var(--color-text-secondary)]"
-          >
-            {label}
-          </label>
-        )}
-        <select
-          id={selectId}
-          ref={ref}
-          className={`w-full text-label px-4 py-2.5 glx-inset hover:brightness-105 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${className}`}
-          {...props}
-        >
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        {error && (
-          <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span>{error}</span>
-          </p>
-        )}
-      </div>
-    );
-  },
-);
-
-/* ==========================================
    6B. DROPDOWN COMPONENT
    ========================================== */
 interface DropdownOption {
   value: string;
   label: string;
   disabled?: boolean;
+  /** Renders a sticky group header above this option when it differs from the previous one */
+  group?: string;
 }
 interface DropdownProps {
   value: string;
@@ -330,9 +285,14 @@ interface DropdownProps {
   label?: string;
   error?: string;
   id?: string;
+  /** Compact variant for inline filter pills */
+  compact?: boolean;
 }
 export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
-  ({ value, onChange, options, placeholder, label, error, className = '', id }, ref) => {
+  (
+    { value, onChange, options, placeholder, label, error, className = '', id, compact = false },
+    ref,
+  ) => {
     const generatedId = useId();
     const dropdownId = id || generatedId;
     const [open, setOpen] = useState(false);
@@ -351,7 +311,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
     const selectedLabel = options.find((o) => o.value === value)?.label || placeholder || '';
 
     return (
-      <div className={`relative w-full text-right ${className}`} ref={dropdownRef}>
+      <div className={`relative text-right ${className}`} ref={dropdownRef}>
         {label && (
           <label
             htmlFor={dropdownId}
@@ -365,7 +325,9 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           ref={ref}
           type="button"
           onClick={() => setOpen(!open)}
-          className={`w-full flex items-center justify-between glx border px-3.5 py-2.5 rounded-xl text-label font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'}`}
+          className={`w-full flex items-center justify-between glx border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
+            compact ? 'px-2.5 py-1.5 text-caption' : 'px-3.5 py-2.5 text-label'
+          } ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'}`}
         >
           <span
             className={
@@ -383,28 +345,45 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
         </button>
         <AnimatePresence>
           {open && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -4 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="absolute top-full z-[100] mt-1 w-full bg-[var(--color-paper-warm)]/95 border border-[var(--color-glass-light-stroke)] rounded-xl shadow-2xl max-h-56 overflow-y-auto backdrop-blur-sm"
-            >
-              {options.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={opt.disabled}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
-                  className={`w-full text-right px-3.5 py-2.5 text-label font-bold transition-all ${value === opt.value ? 'bg-[var(--color-accent-soft)]/40 text-[var(--color-accent)]' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </motion.div>
+            /* Static wrapper: the area-blur halo must never sit under an opacity-animated ancestor */
+            <div className="absolute top-full z-[100] mt-1 w-full">
+              <motion.div
+                aria-hidden="true"
+                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute -inset-2.5 rounded-2xl area-blur"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="relative glx-strong rounded-xl shadow-2xl max-h-56 overflow-y-auto"
+              >
+                {options.map((opt, i) => (
+                  <React.Fragment key={opt.value}>
+                    {opt.group && options[i - 1]?.group !== opt.group && (
+                      <div className="px-3.5 pt-2.5 pb-1 text-micro font-black text-[var(--color-text-tertiary)] sticky top-0 bg-[var(--color-paper-warm)]/90 backdrop-blur-sm">
+                        {opt.group}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      disabled={opt.disabled}
+                      onClick={() => {
+                        onChange(opt.value);
+                        setOpen(false);
+                      }}
+                      className={`w-full text-right px-3.5 py-2.5 text-label font-bold transition-all ${value === opt.value ? 'bg-[var(--color-accent-soft)]/40 text-[var(--color-accent)]' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
         {error && (
@@ -509,53 +488,64 @@ export const Modal = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
+          {/* Backdrop — dim only; blur is localized to the halo below */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/30"
           />
 
-          {/* Modal Card */}
-          <motion.div
-            ref={panelRef}
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            style={originStyle}
-            className={`relative glx-strong w-full ${widthStyles[maxWidth]} rounded-3xl shadow-2xl flex flex-col max-h-[90vh] z-10`}
-            role="dialog"
-            aria-modal="true"
-            aria-label={title}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-glass-light-stroke)]">
-              <h3 className="text-label md:text-md font-black text-[var(--color-text-primary)] text-right">
-                {title}
-              </h3>
-              <button
-                onClick={onClose}
-                className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:glx-inset hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Scrollable Body */}
-            <div className="p-6 overflow-y-auto text-caption md:text-label text-[var(--color-text-secondary)] leading-relaxed text-right">
-              {children}
-            </div>
-
-            {/* Footer */}
-            {footer && (
-              <div className="px-6 py-4 glx-inset border-t border-[var(--color-glass-light-stroke)] flex items-center justify-end gap-3">
-                {footer}
+          {/* Card + area-blur halo — static wrapper so the halo never sits under an opacity-animated ancestor */}
+          <div className={`relative w-full ${widthStyles[maxWidth]} z-10`}>
+            <motion.div
+              aria-hidden="true"
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              style={originStyle}
+              className="absolute -inset-4 rounded-[36px] area-blur"
+            />
+            <motion.div
+              ref={panelRef}
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              style={originStyle}
+              className="relative glx-strong w-full rounded-3xl shadow-2xl flex flex-col max-h-[90vh]"
+              role="dialog"
+              aria-modal="true"
+              aria-label={title}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-glass-light-stroke)]">
+                <h3 className="text-label md:text-md font-black text-[var(--color-text-primary)] text-right">
+                  {title}
+                </h3>
+                <button
+                  onClick={onClose}
+                  className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:glx-inset hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-            )}
-          </motion.div>
+
+              {/* Scrollable Body */}
+              <div className="p-6 overflow-y-auto text-caption md:text-label text-[var(--color-text-secondary)] leading-relaxed text-right">
+                {children}
+              </div>
+
+              {/* Footer */}
+              {footer && (
+                <div className="px-6 py-4 glx-inset border-t border-[var(--color-glass-light-stroke)] flex items-center justify-end gap-3">
+                  {footer}
+                </div>
+              )}
+            </motion.div>
+          </div>
         </div>
       )}
     </AnimatePresence>
@@ -593,25 +583,34 @@ export const Drawer = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
-          {/* Backdrop */}
+          {/* Backdrop — dim only; blur is localized to the halo below */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/30"
           />
 
           {/* Drawer container */}
           <div
             className={`absolute inset-y-0 ${placement === 'right' ? 'right-0' : 'left-0'} max-w-full flex`}
           >
+            {/* Area-blur halo — follows the drawer slide (own transform, static ancestor) */}
+            <motion.div
+              aria-hidden="true"
+              initial={{ x: placement === 'right' ? '100%' : '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: placement === 'right' ? '100%' : '-100%' }}
+              transition={{ type: 'tween', duration: 0.3 }}
+              className="absolute -inset-4 area-blur rounded-[28px]"
+            />
             <motion.div
               initial={{ x: placement === 'right' ? '100%' : '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: placement === 'right' ? '100%' : '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className={`w-screen ${widthStyles[width]} glx-strong shadow-2xl flex flex-col divide-y divide-[var(--color-glass-light-stroke)]`}
+              className={`relative w-screen ${widthStyles[width]} glx-strong shadow-2xl flex flex-col divide-y divide-[var(--color-glass-light-stroke)]`}
             >
               {/* Head */}
               <div className="p-6 flex items-center justify-between">

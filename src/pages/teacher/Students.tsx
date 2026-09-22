@@ -610,17 +610,18 @@ export default function Students() {
             <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
               پایه تحصیلی:
             </span>
-            <select
+            <Dropdown
               id="filter-grade"
+              compact
               value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
-              className="bg-transparent text-caption text-[var(--color-text-secondary)] focus:outline-hidden font-bold cursor-pointer"
-            >
-              <option value="all">همه پایه‌ها</option>
-              <option value="هفتم">پایه هفتم</option>
-              <option value="هشتم">پایه هشتم</option>
-              <option value="نهم">پایه نهم</option>
-            </select>
+              onChange={(v) => setSelectedGrade(v)}
+              options={[
+                { value: 'all', label: 'همه پایه‌ها' },
+                { value: 'هفتم', label: 'پایه هفتم' },
+                { value: 'هشتم', label: 'پایه هشتم' },
+                { value: 'نهم', label: 'پایه نهم' },
+              ]}
+            />
           </div>
 
           {/* Class Group filter */}
@@ -629,19 +630,16 @@ export default function Students() {
             <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
               گروه کلاسی:
             </span>
-            <select
+            <Dropdown
               id="filter-class"
+              compact
               value={selectedClassGroup}
-              onChange={(e) => setSelectedClassGroup(e.target.value)}
-              className="bg-transparent text-caption text-[var(--color-text-secondary)] focus:outline-hidden font-bold cursor-pointer"
-            >
-              <option value="all">همه کلاس‌ها</option>
-              {classGroups.map((cg) => (
-                <option key={cg.id} value={cg.id}>
-                  {cg.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setSelectedClassGroup(v)}
+              options={[
+                { value: 'all', label: 'همه کلاس‌ها' },
+                ...classGroups.map((cg) => ({ value: cg.id, label: cg.name })),
+              ]}
+            />
           </div>
 
           {/* Status filter */}
@@ -650,17 +648,18 @@ export default function Students() {
             <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
               وضعیت دانش‌آموز:
             </span>
-            <select
+            <Dropdown
               id="filter-status"
+              compact
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-transparent text-caption text-[var(--color-text-secondary)] focus:outline-hidden font-bold cursor-pointer"
-            >
-              <option value="all">همه وضعیت‌ها</option>
-              <option value="active">فعال</option>
-              <option value="examining">در حال آزمون</option>
-              <option value="suspended">کاربر غیرفعال</option>
-            </select>
+              onChange={(v) => setSelectedStatus(v)}
+              options={[
+                { value: 'all', label: 'همه وضعیت‌ها' },
+                { value: 'active', label: 'فعال' },
+                { value: 'examining', label: 'در حال آزمون' },
+                { value: 'suspended', label: 'کاربر غیرفعال' },
+              ]}
+            />
           </div>
 
           {/* Clear Filter button if active */}
@@ -951,7 +950,7 @@ export default function Students() {
       {/* Manual Add / Edit Modal Dialouge Room */}
       {showAddEditModal && (
         <div
-          className="fixed inset-0 z-[60] bg-black/20 backdrop-blur-[3px] flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-[60] bg-black/20 flex items-center justify-center p-4 text-right"
           id="add-edit-modal-backdrop"
         >
           <motion.div
@@ -1155,7 +1154,7 @@ export default function Students() {
       {/* 4-Step Excel / CSV Import Wizard Modal! */}
       {showImportWizard && (
         <div
-          className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-50 bg-black/25 flex items-center justify-center p-4 text-right"
           id="wizard-backdrop"
         >
           <motion.div
@@ -1580,7 +1579,7 @@ export default function Students() {
       {/* Submodal: Detailed Student Exam Participation logs */}
       {showExamLogsModal && activeLogStudent && (
         <div
-          className="fixed inset-0 z-50 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-50 bg-black/25 flex items-center justify-center p-4 text-right"
           id="exam-logs-modal-backdrop"
         >
           <motion.div

@@ -33,6 +33,7 @@ import {
 import { logger } from '../../lib/logger';
 import { Exam, Question, Submission, Student } from '../../types';
 import { examService, studentService } from '../../services/api';
+import { Dropdown } from '../../components/UIComponents';
 
 interface ExamPortalProps {
   onBackToTeacher: () => void;
@@ -1359,24 +1360,21 @@ export default function ExamPortal({
                                 <span className="text-micro text-[var(--color-text-primary)] font-bold">
                                   معادل با:
                                 </span>
-                                <select
+                                <Dropdown
+                                  compact
+                                  className="min-w-36"
                                   value={selectedVal}
-                                  onChange={(e) =>
-                                    handleMatchingChange(
-                                      activeQuestion.id,
-                                      pair.right,
-                                      e.target.value,
-                                    )
+                                  onChange={(v) =>
+                                    handleMatchingChange(activeQuestion.id, pair.right, v)
                                   }
-                                  className="bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-micro font-bold py-1 px-2 rounded-lg focus:outline-hidden"
-                                >
-                                  <option value="">-- انتخاب جفت کلمه --</option>
-                                  {activeQuestion.matchingPairs?.map((mp) => (
-                                    <option key={mp.left} value={mp.left}>
-                                      {mp.left}
-                                    </option>
-                                  ))}
-                                </select>
+                                  options={[
+                                    { value: '', label: '-- انتخاب جفت کلمه --' },
+                                    ...(activeQuestion.matchingPairs || []).map((mp) => ({
+                                      value: mp.left,
+                                      label: mp.left,
+                                    })),
+                                  ]}
+                                />
                               </div>
                             </div>
                           );
@@ -2061,7 +2059,7 @@ export default function ExamPortal({
       <AnimatePresence>
         {isConfirmSubmitOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs select-none"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 select-none"
             dir="rtl"
             id="modal-submit-confirmation"
           >
@@ -2069,7 +2067,7 @@ export default function ExamPortal({
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className=" bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] max-w-md w-full p-6 space-y-5 shadow-2xl text-right"
+              className="glx-strong rounded-3xl border border-[var(--color-glass-light-stroke)] max-w-md w-full p-6 space-y-5 shadow-2xl text-right"
             >
               <div className="flex items-center gap-2.5 border-b border-[var(--color-glass-light-stroke)] pb-3">
                 <div className="w-9 h-9 rounded-full bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] flex items-center justify-center">
@@ -2148,7 +2146,7 @@ export default function ExamPortal({
       <AnimatePresence>
         {mobileNavOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-xs sm:hidden"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:hidden"
             dir="rtl"
             id="mobile-navigation-drawer-backdrop"
           >
@@ -2156,7 +2154,7 @@ export default function ExamPortal({
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className=" bg-[var(--color-surface)] rounded-t-3xl max-w-md w-full p-5 space-y-4 shadow-2xl text-right max-h-[70vh] overflow-y-auto"
+              className="glx-strong rounded-t-3xl max-w-md w-full p-5 space-y-4 shadow-2xl text-right max-h-[70vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center border-b pb-2">
                 <h3 className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-1.5">

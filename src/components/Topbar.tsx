@@ -311,7 +311,7 @@ export default function Topbar({
   // Panel offset — each panel drops below the previous one
   const panelGap = 12; // px between panels
   // Estimated panel heights for stacking (actual content may vary slightly)
-  const panelHeights = [95, 85, 125, 180];
+  const panelHeights = [95, 85, 125, 221];
   const computePanelTop = (index: number) => {
     let offset = 0;
     for (let i = 0; i < index; i++) {
@@ -481,11 +481,30 @@ export default function Topbar({
       {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */}
       {(showHamburgerMenu || menuClosing) && (
         <>
-          {/* Backdrop — blocks interaction with underlying UI, full blur */}
-          <div className="fixed inset-0 z-[55] bg-black/10 backdrop-blur-sm" onClick={closeMenu} />
+          {/* Backdrop — blocks interaction; blur is localized to the menu field below */}
+          <div className="fixed inset-0 z-[55] bg-black/10" onClick={closeMenu} />
 
           {/* All panels container (for click-outside detection) */}
           <div ref={hamburgerDropdownRef}>
+            {/* Area-blur field — one continuous glass blur behind the whole menu stack */}
+            <div
+              aria-hidden="true"
+              className="fixed z-[59] pointer-events-none area-blur"
+              style={{
+                right: `${hamburgerRight - 16}px`,
+                top: `${hamburgerTop - 16}px`,
+                width: `${panelWidth + 32}px`,
+                height: `${panelHeights.reduce((sum, h) => sum + h, 0) + panelGap * 3 + 32}px`,
+                borderRadius: '28px',
+                transformOrigin: hamburgerRect
+                  ? `${panelWidth + 16 - hamburgerRect.width / 2}px ${-hamburgerRect.height / 2 - 12 + 16}px`
+                  : 'center',
+                animation: menuClosing
+                  ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
+                  : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
+              }}
+            />
+
             {/* Panel 1: App info + date */}
             <div
               className="fixed z-[60] glx-strong rounded-2xl shadow-2xl"
@@ -679,6 +698,27 @@ export default function Topbar({
                   <span>آزمون‌ها</span>
                 </div>
                 <div
+                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
+                    currentTab === 'settings'
+                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
+                  }`}
+                  onClick={() => {
+                    onTabChange('settings');
+                    closeMenu();
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      onTabChange('settings');
+                      closeMenu();
+                    }
+                  }}
+                >
+                  <span>تنظیمات</span>
+                </div>
+                <div
                   className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onSwitchRole();
@@ -720,76 +760,85 @@ export default function Topbar({
 
       {/* Notifications Dropdown — animates from bell origin */}
       {(showNotifications || notifClosing) && (
-        <div
-          ref={notifRef}
-          className={`fixed glx-strong rounded-2xl shadow-2xl z-[60] overflow-hidden glx-sheen ${
-            notifClosing ? 'notification-shrink' : 'notification-grow'
-          }`}
-          style={{
-            ...notificationStyle,
-            // Scale animates from bell center. Bell is above dropdown, left-aligned.
-            // transformOrigin computed relative to dropdown element:
-            // X = bell center X - dropdown left = bellWidth/2 (since dropdown.left = bellRect.left)
-            // Y = bell center Y - dropdown top = (bellRect.top + bellHeight/2) - (bellRect.bottom + 12)
-            //   = -bellHeight/2 - 12 (negative = above element)
-            transformOrigin: bellRect
-              ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`
-              : 'center',
-            animation: notifClosing
-              ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
-              : 'growFromBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both',
-          }}
-          id="notification-dropdown"
-        >
-          <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
-            <span className="text-caption font-bold text-[var(--color-text-primary)]">
-              اعلان‌ها
-            </span>
-            {unreadCount > 0 && (
-              <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
-                {formatPersianNumber(unreadCount.toString())} جدید
+        <div className="fixed z-[60]" style={notificationStyle}>
+          {/* Area-blur halo — liquid-glass ring; own animation under a static wrapper */}
+          <div
+            aria-hidden="true"
+            className="absolute -inset-4 rounded-3xl area-blur"
+            style={{
+              transformOrigin: bellRect
+                ? `${bellRect.width / 2 + 16}px ${-bellRect.height / 2 - 12 + 16}px`
+                : 'center',
+              animation: notifClosing
+                ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
+                : 'growFromBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both',
+            }}
+          />
+          <div
+            ref={notifRef}
+            className={`relative w-full glx-strong rounded-2xl shadow-2xl overflow-hidden glx-sheen ${
+              notifClosing ? 'notification-shrink' : 'notification-grow'
+            }`}
+            style={{
+              transformOrigin: bellRect
+                ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`
+                : 'center',
+              animation: notifClosing
+                ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
+                : 'growFromBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both',
+            }}
+            id="notification-dropdown"
+          >
+            <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
+              <span className="text-caption font-bold text-[var(--color-text-primary)]">
+                اعلان‌ها
               </span>
-            )}
-          </div>
+              {unreadCount > 0 && (
+                <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
+                  {formatPersianNumber(unreadCount.toString())} جدید
+                </span>
+              )}
+            </div>
 
-          <div className="max-h-60 overflow-y-auto text-caption divide-y divide-[var(--color-glass-light-stroke)]">
-            {loadingNotifs ? (
-              <div className="p-4 text-center text-[var(--color-text-tertiary)]">
-                در حال بارگذاری...
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="p-6 text-center text-[var(--color-text-tertiary)]">
-                هیچ اعلانی نیست.
-              </div>
-            ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
-                  onClick={() => {
-                    if (n.onClick) n.onClick();
-                    closeNotifications();
-                  }}
-                >
-                  <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
-                  <p className="text-micro text-[var(--color-text-secondary)] mt-1">
-                    {n.description}
-                  </p>
-                  <span className="text-micro text-[var(--color-text-tertiary)] mt-2 block">
-                    {n.timeAgo}
-                  </span>
+            <div className="max-h-60 overflow-y-auto text-caption divide-y divide-[var(--color-glass-light-stroke)]">
+              {loadingNotifs ? (
+                <div className="p-4 text-center text-[var(--color-text-tertiary)]">
+                  در حال بارگذاری...
                 </div>
-              ))
-            )}
-          </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-6 text-center text-[var(--color-text-tertiary)]">
+                  هیچ اعلانی نیست.
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
+                    onClick={() => {
+                      if (n.onClick) n.onClick();
+                      closeNotifications();
+                    }}
+                  >
+                    <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
+                    <p className="text-micro text-[var(--color-text-secondary)] mt-1">
+                      {n.description}
+                    </p>
+                    <span className="text-micro text-[var(--color-text-tertiary)] mt-2 block">
+                      {n.timeAgo}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
 
-          <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
-            <button
-              onClick={closeNotifications}
-              className="text-micro text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
-            >
-              بستن
-            </button>
+            <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
+              <button
+                onClick={closeNotifications}
+                className="text-micro text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
+              >
+                بستن
+              </button>
+            </div>
           </div>
         </div>
       )}

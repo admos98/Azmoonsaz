@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { GraduationCap, Building2, BookOpen } from 'lucide-react';
 import { authService } from '../../services/api';
+import { Dropdown } from '../../components/UIComponents';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -103,18 +104,14 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 <BookOpen className="w-3.5 h-3.5 inline-block ml-1" />
                 رشته تدریس
               </label>
-              <select
+              <Dropdown
                 value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="w-full glx border text-label text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all appearance-none cursor-pointer"
-              >
-                <option value="">انتخاب کنید...</option>
-                {SUBJECTS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setSubject(v)}
+                options={[
+                  { value: '', label: 'انتخاب کنید...' },
+                  ...SUBJECTS.map((s) => ({ value: s, label: s })),
+                ]}
+              />
             </div>
 
             {/* Custom Subject */}
