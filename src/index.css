@@ -32,7 +32,7 @@
    * UNIFIED COLOR SYSTEM — Minimal, calm, eye-pleasing
    * Base: sky white — cool white with subtle blue hint.
    * Brand: deep ink (#1A1A2E) + gold (#F5B301).
-   * Glass: whisper-thin white/8% — feels like looking through thin glass.
+   * Glass: layered white fills (45% chrome / 78% panels) over deep blur.
    */
   --color-page-bg: #f0f7ff;
   --color-paper-warm: #f0f7ff;
@@ -43,11 +43,13 @@
   --color-ink-field: #1a1a2e;
   --color-ink-stroke: #374151;
 
-  /* Glass fills — balanced liquid glass: subtle, readable, not overpowering */
-  --color-glass-light-fill: rgba(255, 255, 255, 0.08);
-  --color-glass-light-stroke: rgba(255, 255, 255, 0.12);
+  /* Glass fills — liquid glass, research-tuned: chrome 45%, content panels 78%
+     (Sitka overlay/chrome band: 16-20px blur + 180% sat + 72-92% fill) */
+  --color-glass-light-fill: rgba(255, 255, 255, 0.45);
+  --color-glass-light-stroke: rgba(26, 26, 46, 0.1);
   --color-glass-light-sheen: rgba(255, 255, 255, 0.22);
   --color-glass-light-bottom: rgba(0, 0, 0, 0.06);
+  --color-glass-panel-fill: rgba(255, 255, 255, 0.78);
 
   --color-glass-ink-fill: rgba(255, 255, 255, 0.035);
   --color-glass-ink-stroke: rgba(255, 255, 255, 0.08);
@@ -100,12 +102,13 @@
 
 /* Dark theme glass overrides */
 :root[data-theme='dark'] {
-  --color-glass-light-fill: rgba(255, 255, 255, 0.03);
-  --color-glass-light-stroke: rgba(255, 255, 255, 0.07);
+  --color-glass-light-fill: rgba(255, 255, 255, 0.1);
+  --color-glass-light-stroke: rgba(255, 255, 255, 0.14);
   --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
   --color-glass-light-bottom: rgba(0, 0, 0, 0.15);
   --color-glass-ink-fill: rgba(255, 255, 255, 0.05);
   --color-glass-ink-stroke: rgba(255, 255, 255, 0.06);
+  --color-glass-panel-fill: rgba(10, 10, 24, 0.76);
 }
 
 /* ─── Base ─── */
@@ -190,14 +193,14 @@ select::-webkit-calendar-picker-indicator {
     inset 1px 0 1px rgba(255, 255, 255, 0.0646),
     inset -1px 0 1px rgba(255, 255, 255, 0.0493),
     0 6px 30px var(--color-glass-shadow);
-  backdrop-filter: blur(6px) saturate(1.17) brightness(1.04);
-  -webkit-backdrop-filter: blur(6px) saturate(1.17) brightness(1.04);
+  backdrop-filter: blur(16px) saturate(1.8) brightness(1.02);
+  -webkit-backdrop-filter: blur(16px) saturate(1.8) brightness(1.02);
 }
 
 /* Strong glass — primary modals + hero.
    Adds refraction via SVG displacement filter (Chromium). */
 @utility glx-strong {
-  background: rgba(255, 255, 255, 0.104);
+  background: var(--color-glass-panel-fill);
   border: 1px solid var(--color-glass-light-stroke);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.2571),
@@ -205,8 +208,8 @@ select::-webkit-calendar-picker-indicator {
     inset 1px 0 0px rgba(255, 255, 255, 0.088),
     inset -1px 0 4px rgba(255, 255, 255, 0.0493),
     0 40px 100px var(--color-glass-shadow-strong);
-  backdrop-filter: blur(12px) saturate(1.31);
-  -webkit-backdrop-filter: blur(12px) saturate(1.31);
+  backdrop-filter: blur(32px) saturate(1.9);
+  -webkit-backdrop-filter: blur(32px) saturate(1.9);
 }
 
 /* Ink glass — sidebar (dark field with warm gold tint) */
@@ -218,29 +221,38 @@ select::-webkit-calendar-picker-indicator {
     inset 0 1px 0 var(--color-glass-ink-sheen),
     inset 0 -1px 4px var(--color-glass-ink-bottom),
     0 4px 24px var(--color-glass-shadow);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(14px) saturate(1.35);
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
 }
 
 /* Inset/concave glass — inputs, wells */
 @utility glx-inset {
-  background: rgba(240, 247, 255, 0.508);
+  background: rgba(240, 247, 255, 0.62);
   border: 1px solid var(--color-glass-light-stroke);
   box-shadow:
     inset 0 1px 0 var(--color-glass-light-sheen),
     inset 0 -1px 1px var(--color-glass-light-bottom),
     inset 2px 0 2px rgba(255, 255, 255, 0.0342),
     inset -2px 0 2px rgba(255, 255, 255, 0.0186);
-  backdrop-filter: blur(1.33px) saturate(1) brightness(1.03);
-  -webkit-backdrop-filter: blur(1.33px) saturate(1) brightness(1.03);
+  backdrop-filter: blur(10px) saturate(1.5) brightness(1.02);
+  -webkit-backdrop-filter: blur(10px) saturate(1.5) brightness(1.02);
 }
 
 /* Area blur — localized backdrop-blur field behind popup panels (liquid glass).
    Must sit on a static layer: an ancestor with opacity < 1 disables it. */
 @utility area-blur {
-  background: rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(22px) saturate(1.35) brightness(1.05);
-  -webkit-backdrop-filter: blur(22px) saturate(1.35) brightness(1.05);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(32px) saturate(1.7) brightness(1.03);
+  -webkit-backdrop-filter: blur(32px) saturate(1.7) brightness(1.03);
+  /* Feathered rim: halo alpha fades to 0 toward every edge (soft, bigger than the panel) */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, black 7%, black 93%, transparent),
+    linear-gradient(to bottom, transparent, black 7%, black 93%, transparent);
+  mask-image:
+    linear-gradient(to right, transparent, black 7%, black 93%, transparent),
+    linear-gradient(to bottom, transparent, black 7%, black 93%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 /* ─── Sheen overlay ─── */

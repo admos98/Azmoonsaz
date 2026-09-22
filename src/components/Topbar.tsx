@@ -29,22 +29,30 @@ export interface NotificationItem {
   onClick?: () => void;
 }
 
-// TheMark Hamburger — four rounded pills stacked vertically, 3rd gold-filled
+// TheMark Hamburger — four rounded pills stacked vertically, 3rd gold-filled.
+// When open, the pills fold away and the button becomes the brand X:
+// "/" as a hollow ink stroke, "\" as a solid gold bar.
 function TheMarkHamburger({
   size = 48,
   isHovered = false,
+  isOpen = false,
 }: {
   size?: number;
   isHovered?: boolean;
+  isOpen?: boolean;
 }) {
   const ink = 'var(--color-ink, #221E4A)';
   const gold = 'var(--color-gold, #F5B301)';
-  const baseScale = isHovered ? 1.1 : 1; // pills expand on hover
+  const baseScale = isHovered && !isOpen ? 1.1 : 1; // pills expand on hover
   const pillWidth = size * 0.65 * baseScale; // horizontal bar width
   const pillHeight = size * 0.1 * baseScale; // bar thickness (thinner)
   const gap = ((size - pillHeight * 4) / 3) * 0.5; // pills closer together
   const x = (size - pillWidth * baseScale) / 2;
   const rx = pillHeight / 2.5; // rounded corners
+  const barLen = size * 0.74;
+  const barTh = size * 0.1;
+  const barRx = barTh / 2.5;
+  const morph = 'transform 0.45s cubic-bezier(0.25, 1, 0.35, 1), opacity 0.25s ease';
   return (
     <svg
       width={size}
@@ -54,44 +62,88 @@ function TheMarkHamburger({
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* Pill 1 — ink ring */}
+      {/* Pills — fold into center when open */}
+      <g
+        style={{
+          opacity: isOpen ? 0 : 1,
+          transform: isOpen ? 'scale(0.55)' : 'scale(1)',
+          transformBox: 'fill-box',
+          transformOrigin: 'center',
+          transition: morph,
+        }}
+      >
+        {/* Pill 1 — ink ring */}
+        <rect
+          x={x}
+          y={gap * 0 + pillHeight * 0}
+          width={pillWidth}
+          height={pillHeight}
+          rx={rx}
+          stroke={ink}
+          strokeWidth={size * 0.035}
+        />
+        {/* Pill 2 — ink ring */}
+        <rect
+          x={x}
+          y={gap * 1 + pillHeight * 1}
+          width={pillWidth}
+          height={pillHeight}
+          rx={rx}
+          stroke={ink}
+          strokeWidth={size * 0.035}
+        />
+        {/* Pill 3 — gold filled */}
+        <rect
+          x={x}
+          y={gap * 2 + pillHeight * 2}
+          width={pillWidth}
+          height={pillHeight}
+          rx={rx}
+          fill={gold}
+        />
+        {/* Pill 4 — ink ring */}
+        <rect
+          x={x}
+          y={gap * 3 + pillHeight * 3}
+          width={pillWidth}
+          height={pillHeight}
+          rx={rx}
+          stroke={ink}
+          strokeWidth={size * 0.035}
+        />
+      </g>
+      {/* Brand X — "/" hollow ink ring, "\" solid gold fill */}
       <rect
-        x={x}
-        y={gap * 0 + pillHeight * 0}
-        width={pillWidth}
-        height={pillHeight}
-        rx={rx}
+        x={(size - barLen) / 2}
+        y={size / 2 - barTh / 2}
+        width={barLen}
+        height={barTh}
+        rx={barRx}
         stroke={ink}
         strokeWidth={size * 0.035}
+        fill="none"
+        style={{
+          opacity: isOpen ? 1 : 0,
+          transform: isOpen ? 'rotate(-45deg)' : 'rotate(0deg)',
+          transformBox: 'fill-box',
+          transformOrigin: 'center',
+          transition: morph,
+        }}
       />
-      {/* Pill 2 — ink ring */}
       <rect
-        x={x}
-        y={gap * 1 + pillHeight * 1}
-        width={pillWidth}
-        height={pillHeight}
-        rx={rx}
-        stroke={ink}
-        strokeWidth={size * 0.035}
-      />
-      {/* Pill 3 — gold filled */}
-      <rect
-        x={x}
-        y={gap * 2 + pillHeight * 2}
-        width={pillWidth}
-        height={pillHeight}
-        rx={rx}
+        x={(size - barLen) / 2}
+        y={size / 2 - barTh / 2}
+        width={barLen}
+        height={barTh}
+        rx={barRx}
         fill={gold}
-      />
-      {/* Pill 4 — ink ring */}
-      <rect
-        x={x}
-        y={gap * 3 + pillHeight * 3}
-        width={pillWidth}
-        height={pillHeight}
-        rx={rx}
-        stroke={ink}
-        strokeWidth={size * 0.035}
+        style={{
+          opacity: isOpen ? 1 : 0,
+          transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+          transformBox: 'fill-box',
+          transformOrigin: 'center',
+          transition: morph,
+        }}
       />
     </svg>
   );
@@ -427,10 +479,7 @@ export default function Topbar({
       </div>
 
       {/* RIGHT SIDE: Search + Hamburger */}
-      <div
-        className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`}
-        id="topbar-right-group"
-      >
+      <div className="flex items-center gap-3" id="topbar-right-group">
         {/* TheMark Hamburger — rightmost */}
         <button
           ref={hamburgerRef}
@@ -443,7 +492,7 @@ export default function Topbar({
           aria-expanded={showHamburgerMenu}
           aria-haspopup="true"
         >
-          <TheMarkHamburger size={32} isHovered={hamburgerHover} />
+          <TheMarkHamburger size={32} isHovered={hamburgerHover} isOpen={showHamburgerMenu} />
         </button>
 
         {/* Search — smooth pill expand from icon */}
@@ -482,22 +531,22 @@ export default function Topbar({
       {(showHamburgerMenu || menuClosing) && (
         <>
           {/* Backdrop — blocks interaction; blur is localized to the menu field below */}
-          <div className="fixed inset-0 z-[55] bg-black/10" onClick={closeMenu} />
+          <div className="fixed inset-0 z-[55] bg-black/30" onClick={closeMenu} />
 
-          {/* All panels container (for click-outside detection) */}
-          <div ref={hamburgerDropdownRef}>
+          {/* All panels container (display:contents — must not occupy a flex slot in the header) */}
+          <div ref={hamburgerDropdownRef} className="contents">
             {/* Area-blur field — one continuous glass blur behind the whole menu stack */}
             <div
               aria-hidden="true"
               className="fixed z-[59] pointer-events-none area-blur"
               style={{
-                right: `${hamburgerRight - 16}px`,
-                top: `${hamburgerTop - 16}px`,
-                width: `${panelWidth + 32}px`,
-                height: `${panelHeights.reduce((sum, h) => sum + h, 0) + panelGap * 3 + 32}px`,
-                borderRadius: '28px',
+                right: `${hamburgerRight - 48}px`,
+                top: `${hamburgerTop - 48}px`,
+                width: `${panelWidth + 96}px`,
+                height: `${panelHeights.reduce((sum, h) => sum + h, 0) + panelGap * 3 + 96}px`,
+                borderRadius: '40px',
                 transformOrigin: hamburgerRect
-                  ? `${panelWidth + 16 - hamburgerRect.width / 2}px ${-hamburgerRect.height / 2 - 12 + 16}px`
+                  ? `${panelWidth + 48 - hamburgerRect.width / 2}px ${-hamburgerRect.height / 2 - 12 + 48}px`
                   : 'center',
                 animation: menuClosing
                   ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
@@ -764,10 +813,10 @@ export default function Topbar({
           {/* Area-blur halo — liquid-glass ring; own animation under a static wrapper */}
           <div
             aria-hidden="true"
-            className="absolute -inset-4 rounded-3xl area-blur"
+            className="absolute -inset-10 rounded-[40px] area-blur"
             style={{
               transformOrigin: bellRect
-                ? `${bellRect.width / 2 + 16}px ${-bellRect.height / 2 - 12 + 16}px`
+                ? `${bellRect.width / 2 + 40}px ${-bellRect.height / 2 - 12 + 40}px`
                 : 'center',
               animation: notifClosing
                 ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'

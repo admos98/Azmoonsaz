@@ -223,12 +223,12 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="lg:hidden fixed inset-y-0 right-0 z-50 w-72 flex flex-col glx-strong text-[var(--color-text-on-dark)] select-none"
+            className="lg:hidden fixed inset-y-0 right-0 z-50 w-72 flex flex-col glx-dark text-[var(--color-text-on-dark)] select-none"
             id="sidebar-container-mobile"
           >
             {/* Close button */}
             <button
-              className="absolute top-4 left-4 p-1 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-fill)] cursor-pointer"
+              className="absolute top-4 left-4 p-1 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-on-dark)] hover:bg-white/15 cursor-pointer"
               onClick={() => setMobileOpen(false)}
               aria-label="بستن منو"
             >

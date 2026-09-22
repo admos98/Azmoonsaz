@@ -353,7 +353,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="absolute -inset-2.5 rounded-2xl area-blur"
+                className="absolute -inset-6 rounded-3xl area-blur"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: -4 }}
@@ -376,7 +376,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                         onChange(opt.value);
                         setOpen(false);
                       }}
-                      className={`w-full text-right px-3.5 py-2.5 text-label font-bold transition-all ${value === opt.value ? 'bg-[var(--color-accent-soft)]/40 text-[var(--color-accent)]' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      className={`w-full text-right px-3.5 py-2.5 text-label font-bold transition-all ${value === opt.value ? 'bg-[var(--color-accent-soft)]/60 text-[var(--color-accent)]' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]/70'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       {opt.label}
                     </button>
@@ -506,7 +506,7 @@ export const Modal = ({
               exit={{ opacity: 0, scale: 0.92 }}
               transition={{ type: 'spring', damping: 25, stiffness: 350 }}
               style={originStyle}
-              className="absolute -inset-4 rounded-[36px] area-blur"
+              className="absolute -inset-10 rounded-[44px] area-blur"
             />
             <motion.div
               ref={panelRef}
@@ -603,7 +603,7 @@ export const Drawer = ({
               animate={{ x: 0 }}
               exit={{ x: placement === 'right' ? '100%' : '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className="absolute -inset-4 area-blur rounded-[28px]"
+              className="absolute -inset-10 area-blur rounded-[40px]"
             />
             <motion.div
               initial={{ x: placement === 'right' ? '100%' : '-100%' }}
