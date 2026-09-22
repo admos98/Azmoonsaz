@@ -30,8 +30,9 @@ export interface NotificationItem {
 }
 
 // TheMark Hamburger — four rounded pills stacked vertically, 3rd gold-filled.
-// When open, the pills fold away and the button becomes the brand X:
-// "/" as a hollow ink stroke, "\" as a solid gold bar.
+// When open, the pills form the brand X IN PLACE: the three ink rings travel to
+// center and land inside one another as the hollow "/" arm, the gold pill swings
+// into the solid "\" arm — the menu lines literally become the close button.
 function TheMarkHamburger({
   size = 48,
   isHovered = false,
@@ -49,10 +50,16 @@ function TheMarkHamburger({
   const gap = ((size - pillHeight * 4) / 3) * 0.5; // pills closer together
   const x = (size - pillWidth * baseScale) / 2;
   const rx = pillHeight / 2.5; // rounded corners
-  const barLen = size * 0.74;
-  const barTh = size * 0.1;
-  const barRx = barTh / 2.5;
-  const morph = 'transform 0.45s cubic-bezier(0.25, 1, 0.35, 1), opacity 0.25s ease';
+  const stretch = 0.74 / 0.65; // pill width -> full X-arm length
+  const morph = 'transform 0.5s cubic-bezier(0.25, 1, 0.35, 1)';
+  const armAt = (i: number, angle: number) => ({
+    transformBox: 'fill-box' as const,
+    transformOrigin: 'center',
+    transition: morph,
+    transform: isOpen
+      ? `translateY(${size / 2 - ((gap + pillHeight) * i + pillHeight / 2)}px) rotate(${angle}deg) scaleX(${stretch})`
+      : 'none',
+  });
   return (
     <svg
       width={size}
@@ -62,88 +69,48 @@ function TheMarkHamburger({
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      {/* Pills — fold into center when open */}
-      <g
-        style={{
-          opacity: isOpen ? 0 : 1,
-          transform: isOpen ? 'scale(0.55)' : 'scale(1)',
-          transformBox: 'fill-box',
-          transformOrigin: 'center',
-          transition: morph,
-        }}
-      >
-        {/* Pill 1 — ink ring */}
-        <rect
-          x={x}
-          y={gap * 0 + pillHeight * 0}
-          width={pillWidth}
-          height={pillHeight}
-          rx={rx}
-          stroke={ink}
-          strokeWidth={size * 0.035}
-        />
-        {/* Pill 2 — ink ring */}
-        <rect
-          x={x}
-          y={gap * 1 + pillHeight * 1}
-          width={pillWidth}
-          height={pillHeight}
-          rx={rx}
-          stroke={ink}
-          strokeWidth={size * 0.035}
-        />
-        {/* Pill 3 — gold filled */}
-        <rect
-          x={x}
-          y={gap * 2 + pillHeight * 2}
-          width={pillWidth}
-          height={pillHeight}
-          rx={rx}
-          fill={gold}
-        />
-        {/* Pill 4 — ink ring */}
-        <rect
-          x={x}
-          y={gap * 3 + pillHeight * 3}
-          width={pillWidth}
-          height={pillHeight}
-          rx={rx}
-          stroke={ink}
-          strokeWidth={size * 0.035}
-        />
-      </g>
-      {/* Brand X — "/" hollow ink ring, "\" solid gold fill */}
+      {/* Pill 1 — ink ring → "/" arm */}
       <rect
-        x={(size - barLen) / 2}
-        y={size / 2 - barTh / 2}
-        width={barLen}
-        height={barTh}
-        rx={barRx}
+        x={x}
+        y={gap * 0 + pillHeight * 0}
+        width={pillWidth}
+        height={pillHeight}
+        rx={rx}
         stroke={ink}
         strokeWidth={size * 0.035}
-        fill="none"
-        style={{
-          opacity: isOpen ? 1 : 0,
-          transform: isOpen ? 'rotate(-45deg)' : 'rotate(0deg)',
-          transformBox: 'fill-box',
-          transformOrigin: 'center',
-          transition: morph,
-        }}
+        style={armAt(0, -45)}
       />
+      {/* Pill 2 — ink ring → "/" arm (lands inside pill 1) */}
       <rect
-        x={(size - barLen) / 2}
-        y={size / 2 - barTh / 2}
-        width={barLen}
-        height={barTh}
-        rx={barRx}
+        x={x}
+        y={gap * 1 + pillHeight * 1}
+        width={pillWidth}
+        height={pillHeight}
+        rx={rx}
+        stroke={ink}
+        strokeWidth={size * 0.035}
+        style={armAt(1, -45)}
+      />
+      {/* Pill 3 — gold filled → "\" arm */}
+      <rect
+        x={x}
+        y={gap * 2 + pillHeight * 2}
+        width={pillWidth}
+        height={pillHeight}
+        rx={rx}
         fill={gold}
-        style={{
-          opacity: isOpen ? 1 : 0,
-          transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
-          transformBox: 'fill-box',
-          transformOrigin: 'center',
-          transition: morph,
-        }}
+        style={armAt(2, 45)}
+      />
+      {/* Pill 4 — ink ring → "/" arm (lands inside the others) */}
+      <rect
+        x={x}
+        y={gap * 3 + pillHeight * 3}
+        width={pillWidth}
+        height={pillHeight}
+        rx={rx}
+        stroke={ink}
+        strokeWidth={size * 0.035}
+        style={armAt(3, -45)}
       />
     </svg>
   );
@@ -386,7 +353,7 @@ export default function Topbar({
 
   return (
     <header
-      className="sticky top-0 z-30 h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent"
+      className={`sticky top-0 ${showHamburgerMenu || menuClosing ? 'z-[65]' : 'z-30'} h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent`}
       id="topbar-wrapper"
     >
       {/* LEFT SIDE: Bell then Avatar */}
