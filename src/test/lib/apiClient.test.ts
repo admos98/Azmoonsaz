@@ -52,10 +52,13 @@ describe('apiPost', () => {
 
     const result = await apiPost('/api/create', { name: 'test' });
     expect(result).toEqual({ created: true });
-    expect(fetch).toHaveBeenCalledWith('/api/create', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ name: 'test' }),
-    }));
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/create',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ name: 'test' }),
+      }),
+    );
     vi.restoreAllMocks();
   });
 
@@ -63,8 +66,11 @@ describe('apiPost', () => {
     vi.stubGlobal('fetch', mockFetch({}));
 
     await apiPost('/api/auth', {}, { Authorization: 'Bearer my-token' });
-    const callArgs = (fetch as any).mock.calls[0];
-    expect(callArgs[1].headers).toEqual(expect.objectContaining({ Authorization: 'Bearer my-token' }));
+    const mockFn = fetch as unknown as ReturnType<typeof vi.fn>;
+    const callArgs = mockFn.mock.calls[0];
+    expect(callArgs[1].headers).toEqual(
+      expect.objectContaining({ Authorization: 'Bearer my-token' }),
+    );
     vi.restoreAllMocks();
   });
 });

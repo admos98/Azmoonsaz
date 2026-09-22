@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Student — Glass Panel Tuner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Vazirmatn', system-ui, sans-serif;
+      direction: rtl; text-align: right;
+      background: #f0f7ff;
+      padding: 32px; min-height: 100vh;
+      color: #1a1a2e;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page-fake-content { position: relative; z-index: 0; pointer-events: none; }
+    .page-fake-content h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .page-fake-content p { font-size: 14px; opacity: 0.6; margin-bottom: 24px; }
+    .page-fake-content .bg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 32px; }
+    .page-fake-content .bg-card { height: 80px; background: #e0f2ff; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 13px; opacity: 0.5; }
+
+    /* Liquid Glass — base styles (JS overrides inline for live tuning) */
+    .glx, .glx-strong, .glx-inset { border: 1px solid rgba(255, 255, 255, 0.12); }
+    .glx-strong {
+      background: rgba(255, 255, 255, 0.10);
+      border-radius: 32px;
+      backdrop-filter: blur(12px) saturate(1.31);
+      -webkit-backdrop-filter: blur(12px) saturate(1.31);
+    }
+    .glx { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(6px) saturate(1.17) brightness(1.04); -webkit-backdrop-filter: blur(6px) saturate(1.17) brightness(1.04); }
+    .glx-inset { background: rgba(245, 250, 255, 0.09); backdrop-filter: blur(1.33px) saturate(1) brightness(1.03); -webkit-backdrop-filter: blur(1.33px) saturate(1) brightness(1.03); }
+
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .modal-panel { width: 100%; max-width: 460px; overflow: hidden; }
+    .panel-header { padding: 22px 28px; display: flex; justify-content: space-between; align-items: center; }
+    .panel-header h3 { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+    .panel-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; }
+    .form-field { display: flex; flex-direction: column; }
+    .form-label { font-size: 11px; font-weight: 700; color: #525d72; margin-bottom: 4px; }
+    .form-input {
+      width: 100%; padding: 10px 14px;
+      font-size: 14px; font-family: 'Vazirmatn', sans-serif; font-weight: 600;
+      color: #1a1a2e;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px; outline: none;
+      transition: all 0.2s ease; text-align: right;
+    }
+    .form-input::placeholder { color: #9ca3af; }
+    .select-trigger {
+      width: 100%; padding: 10px 14px;
+      font-size: 14px; font-weight: 600;
+      color: #1a1a2e;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px; cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .btn-group { display: flex; gap: 16px; justify-content: flex-end; padding: 20px 28px; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+    .btn-secondary { padding: 8px 20px; font-size: 13px; font-weight: 600; color: #525d72; border-radius: 14px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.12); cursor: pointer; transition: all 0.2s ease; }
+    .btn-secondary:hover { filter: brightness(1.05); }
+    .btn-primary { padding: 8px 20px; font-size: 13px; font-weight: 700; color: #fff; border-radius: 14px; background: #6366f1; border: none; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+    .btn-primary:hover { background: #4f46e5; transform: scale(0.97); }
+    .error-text { font-size: 11px; font-weight: 700; text-align: center; margin-top: 8px; color: #ef4444; }
+
+    .controls {
+      position: fixed; top: 0; left: 400px; right: 20px;
+      max-height: 100vh; overflow-y: auto;
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px; padding: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      font-size: 13px; z-index: 100; max-width: 360px;
+    }
+    .controls h2 { font-size: 15px; font-weight: 700; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #d1d5db; }
+    .ctrl-group { margin-bottom: 18px; }
+    .ctrl-group h3 { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 10px; }
+    .slider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .slider-row label { font-size: 11px; color: #9ca3af; min-width: 160px; }
+    .slider-row input[type="range"] { flex: 1; height: 6px; -webkit-appearance: none; }
+    .slider-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #6366f1; cursor: pointer; }
+    .slider-row span { font-size: 11px; color: #6b7280; min-width: 50px; text-align: center; }
+    .slider-row input[type="color"] { width: 36px; height: 26px; padding: 0; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; }
+    .tab-switch { display: flex; gap: 4px; margin-bottom: 16px; }
+    .tab-btn { flex: 1; padding: 8px; font-size: 13px; font-weight: 600; border-radius: 10px; border: 1px solid #d1d5db; cursor: pointer; background: #f9fafb; color: #374151; }
+    .tab-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .copy-hint { font-size: 11px; color: #9ca3af; margin-top: 6px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="page-fake-content">
+      <h1>دانش‌آموزان</h1>
+      <p>مدیریت دانش‌آموزان کلاس‌های شما</p>
+      <div class="bg-grid">
+        <div class="bg-card">علی احمدی — کلاس ۷۰۱</div>
+        <div class="bg-card">فاطمه رضایی — کلاس ۷۰۲</div>
+        <div class="bg-card">محمد کریمی — گروه پیشرفته</div>
+        <div class="bg-card">زهرا صادقی — کلاس ۹۰۲</div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop">
+      <div class="modal-panel glx-strong" id="panel">
+        <div class="panel-header glx" id="header">
+          <button id="close-btn" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af;">×</button>
+          <h3>افزودن دانش‌آموز جدید</h3>
+          <div style="width:34px;"></div>
+        </div>
+        <div class="panel-body">
+          <div class="form-field">
+            <label class="form-label">نام (به فینگلیشی بنویسید)</label>
+            <input type="text" class="form-input glx-inset" placeholder="مثلاً: ali reza" value="ali">
+          </div>
+          <div class="form-field">
+            <label class="form-label">نام خانوادگی (به فینگلیشی بنویسید)</label>
+            <input type="text" class="form-input glx-inset" placeholder="مثلاً: ahadi" value="ahadi">
+          </div>
+          <div class="form-field">
+            <label class="form-label">کد ملی</label>
+            <input type="text" class="form-input glx-inset" placeholder="مثلاً: ۰۰۱۲۳۴۵۶۷۸" value="۰۰۱۲۳۴۵۶۷۸">
+          </div>
+          <div class="form-field">
+            <label class="form-label">شماره موبایل</label>
+            <input type="text" class="form-input glx-inset" placeholder="مثلاً: ۰۹۱۲۳۴۵۶۷۸۹" value="۰۹۱۲۳۴۵۶۷۸۹">
+          </div>
+          <div class="form-field">
+            <label class="form-label">پایه تحصیلی</label>
+            <select class="select-trigger glx-inset">
+              <option>انتخاب پایه...</option>
+              <option selected>نهم</option>
+              <option>هفتم</option>
+              <option>هشتم</option>
+              <option>دهم</option>
+            </select>
+          </div>
+          <p class="error-text" style="display:none;">برای ذخیره، فیلد نام و فامیل الزامی است.</p>
+        </div>
+        <div class="btn-group glx" id="btngroup">
+          <button class="btn-secondary">انصراف</button>
+          <button class="btn-primary">ذخیره دانش‌آموز</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <h2>Student Modal Glass Tuner</h2>
+    <div class="tab-switch">
+      <div class="tab-btn active" onclick="switchTab(event,'glass')">Glass</div>
+      <div class="tab-btn" onclick="switchTab(event,'text')">Text</div>
+      <div class="tab-btn" onclick="switchTab(event,'shadow')">Shadow</div>
+      <div class="tab-btn" onclick="switchTab(event,'radius')">Radius</div>
+    </div>
+
+    <div id="tab-glass" class="tab-content active">
+      <div class="ctrl-group">
+        <h3>Panel Glass (glx-strong)</h3>
+        <div class="slider-row"><label>Fill Opacity</label><input type="range" id="fill" min="0" max="100" step="1" value="10"><span id="v-fill">10%</span></div>
+        <div class="slider-row"><label>Border Opacity</label><input type="range" id="stroke" min="0" max="100" step="1" value="14"><span id="v-stroke">14%</span></div>
+        <div class="slider-row"><label>Sheen Opacity</label><input type="range" id="sheen" min="0" max="100" step="1" value="24"><span id="v-sheen">24%</span></div>
+        <div class="slider-row"><label>Bottom Opacity</label><input type="range" id="bottom" min="0" max="50" step="1" value="6"><span id="v-bottom">6%</span></div>
+        <div class="slider-row"><label>Panel Blur</label><input type="range" id="blur" min="0" max="30" step="1" value="12"><span id="v-blur">12px</span></div>
+        <div class="slider-row"><label>Saturate</label><input type="range" id="saturate" min="0.5" max="2" step="0.05" value="1.31"><span id="v-saturate">1.31</span></div>
+        <div class="slider-row"><label>Brightness</label><input type="range" id="brightness" min="0.8" max="1.3" step="0.01" value="1.05"><span id="v-brightness">1.05</span></div>
+        <div class="slider-row"><label>Input Fill</label><input type="range" id="inputFill" min="0" max="100" step="1" value="16"><span id="v-inputFill">16%</span></div>
+        <div class="slider-row"><label>Header Fill</label><input type="range" id="headerFill" min="0" max="100" step="1" value="12"><span id="v-headerFill">12%</span></div>
+        <div class="slider-row"><label>Btn Fill</label><input type="range" id="btnFill" min="0" max="100" step="1" value="15"><span id="v-btnFill">15%</span></div>
+      </div>
+      <div class="ctrl-group">
+        <h3>Backdrop</h3>
+        <div class="slider-row"><label>Darkness</label><input type="range" id="backAlpha" min="0" max="80" step="1" value="45"><span id="v-backAlpha">0.45</span></div>
+        <div class="slider-row"><label>Blur</label><input type="range" id="backBlur" min="0" max="20" step="1" value="8"><span id="v-backBlur">8px</span></div>
+      </div>
+    </div>
+
+    <div id="tab-text" class="tab-content">
+      <div class="ctrl-group">
+        <h3>Text Colors</h3>
+        <div class="slider-row"><label>Primary</label><input type="color" id="c-primary" value="#1a1a2e"></div>
+        <div class="slider-row"><label>Secondary</label><input type="color" id="c-secondary" value="#525d72"></div>
+        <div class="slider-row"><label>Tertiary</label><input type="color" id="c-tertiary" value="#9ca3af"></div>
+      </div>
+      <div class="ctrl-group">
+        <h3>Font Sizes (px)</h3>
+        <div class="slider-row"><label>Input/Dropdown</label><input type="range" id="sz-input" min="10" max="20" step="1" value="14"><span id="v-sz-input">14px</span></div>
+        <div class="slider-row"><label>Label</label><input type="range" id="sz-label" min="8" max="16" step="1" value="11"><span id="v-sz-label">11px</span></div>
+        <div class="slider-row"><label>Header</label><input type="range" id="sz-header" min="12" max="24" step="1" value="15"><span id="v-sz-header">15px</span></div>
+        <div class="slider-row"><label>Button</label><input type="range" id="sz-btn" min="10" max="18" step="1" value="13"><span id="v-sz-btn">13px</span></div>
+        <div class="slider-row"><label>Error</label><input type="range" id="sz-error" min="9" max="14" step="1" value="11"><span id="v-sz-error">11px</span></div>
+      </div>
+    </div>
+
+    <div id="tab-shadow" class="tab-content">
+      <div class="ctrl-group">
+        <h3>Panel Shadow (glx-strong)</h3>
+        <div class="slider-row"><label>Opacity</label><input type="range" id="sh-strong" min="0" max="100" step="1" value="18"><span id="v-sh-strong">0.18</span></div>
+        <div class="slider-row"><label>Y-Offset</label><input type="range" id="sh-y" min="0" max="80" step="1" value="40"><span id="v-sh-y">40px</span></div>
+        <div class="slider-row"><label>Blur</label><input type="range" id="sh-blur" min="0" max="120" step="1" value="100"><span id="v-sh-blur">100px</span></div>
+      </div>
+    </div>
+
+    <div id="tab-radius" class="tab-content">
+      <div class="ctrl-group">
+        <h3>Border Radius (px)</h3>
+        <div class="slider-row"><label>Panel Corner</label><input type="range" id="r-panel" min="16" max="48" step="1" value="32"><span id="v-r-panel">32px</span></div>
+        <div class="slider-row"><label>Input Corner</label><input type="range" id="r-input" min="8" max="24" step="1" value="14"><span id="v-r-input">14px</span></div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;padding-top:12px;border-top:1px solid #d1d5db;">
+      <div class="copy-hint">Drag sliders — changes apply live. Hit Dump to log.</div>
+      <button id="dump" style="width:100%;padding:10px;border:none;border-radius:8px;background:#6366f1;color:#fff;font-weight:600;cursor:pointer;margin-top:8px;">📋 Dump Values</button>
+      <button id="reset" style="width:100%;padding:8px;border:none;border-radius:8px;background:#f3f4f6;color:#374151;font-size:12px;cursor:pointer;margin-top:6px;">Reset Defaults</button>
+    </div>
+  </div>
+
+  <script>
+    // Sliders: [id, labelId, formatter]
+    const sliders = [
+      ['fill','v-fill', v=>v+'%'],
+      ['stroke','v-stroke', v=>v+'%'],
+      ['sheen','v-sheen', v=>v+'%'],
+      ['bottom','v-bottom', v=>v+'%'],
+      ['blur','v-blur', v=>v+'px'],
+      ['saturate','v-saturate', v=>v],
+      ['brightness','v-brightness', v=>v],
+      ['inputFill','v-inputFill', v=>v+'%'],
+      ['headerFill','v-headerFill', v=>v+'%'],
+      ['btnFill','v-btnFill', v=>v+'%'],
+      ['backAlpha','v-backAlpha', v=>(parseFloat(v)/100).toFixed(2)],
+      ['backBlur','v-backBlur', v=>v+'px'],
+      ['sh-strong','v-sh-strong', v=>(parseFloat(v)/100).toFixed(2)],
+      ['sh-y','v-sh-y', v=>v+'px'],
+      ['sh-blur','v-sh-blur', v=>v+'px'],
+      ['r-panel','v-r-panel', v=>v+'px'],
+      ['r-input','v-r-input', v=>v+'px'],
+      ['sz-input','v-sz-input', v=>v+'px'],
+      ['sz-label','v-sz-label', v=>v+'px'],
+      ['sz-header','v-sz-header', v=>v+'px'],
+      ['sz-btn','v-sz-btn', v=>v+'px'],
+      ['sz-error','v-sz-error', v=>v+'px'],
+    ];
+    const colors = ['c-primary','c-secondary','c-tertiary'];
+
+    sliders.forEach(([id, labelId, fmt]) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => {
+        document.getElementById(labelId).textContent = fmt(el.value);
+        apply();
+      });
+    });
+    colors.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => apply());
+    });
+
+    function f(id) { return parseFloat(document.getElementById(id).value); }
+    function c(id) { return document.getElementById(id).value; }
+
+    function apply() {
+      const panel = document.getElementById('panel');
+      const header = document.getElementById('header');
+      const btngroup = document.getElementById('btngroup');
+      const backdrop = document.querySelector('.modal-backdrop');
+
+      const fill = f('fill') / 100;
+      const stroke = f('stroke') / 100;
+      const sheen = f('sheen') / 100;
+      const bottom = f('bottom') / 100;
+
+      panel.style.background = `rgba(255, 255, 255, ${fill})`;
+      panel.style.border = `1px solid rgba(255, 255, 255, ${stroke})`;
+      panel.style.boxShadow =
+        `inset 0 1px 0 rgba(255, 255, 255, ${sheen * 0.9}),` +
+        `inset 0 -1px 1px rgba(0, 0, 0, ${bottom}),` +
+        `inset 3px 0 4px rgba(255, 255, 255, ${sheen * 0.4}),` +
+        `inset -3px 0 4px rgba(255, 255, 255, ${sheen * 0.2}),` +
+        `0 ${f('sh-y')}px ${f('sh-blur')}px rgba(26, 26, 46, ${f('sh-strong')/100})`;
+      panel.style.backdropFilter = `blur(${f('blur')}px) saturate(${f('saturate')}) brightness(${f('brightness')})`;
+      panel.style.webkitBackdropFilter = `blur(${f('blur')}px) saturate(${f('saturate')}) brightness(${f('brightness')})`;
+
+      header.style.background = `rgba(255, 255, 255, ${f('headerFill') / 100})`;
+      document.querySelectorAll('.form-input, .select-trigger').forEach(e => {
+        e.style.background = `rgba(255, 255, 255, ${f('inputFill') / 100})`;
+      });
+      btngroup.style.background = `rgba(255, 255, 255, ${f('btnFill') / 100})`;
+
+      const bdAlpha = f('backAlpha') / 100;
+      backdrop.style.background = `rgba(0, 0, 0, ${bdAlpha})`;
+      backdrop.style.backdropFilter = `blur(${f('backBlur')}px)`;
+      backdrop.style.webkitBackdropFilter = `blur(${f('backBlur')}px)`;
+
+      // Text colors
+      document.querySelector('.panel-header h3').style.color = c('c-primary');
+      document.querySelectorAll('.form-label').forEach(e => e.style.color = c('c-secondary'));
+      document.querySelectorAll('.form-input, .select-trigger').forEach(e => e.style.color = c('c-primary'));
+      document.getElementById('close-btn').style.color = c('c-tertiary');
+      document.querySelectorAll('.btn-secondary').forEach(e => e.style.color = c('c-secondary'));
+
+      // Font sizes
+      const si = f('sz-input') + 'px';
+      document.querySelectorAll('.form-input, .select-trigger').forEach(e => e.style.fontSize = si);
+      document.querySelectorAll('.form-label').forEach(e => e.style.fontSize = f('sz-label') + 'px');
+      document.querySelector('.panel-header h3').style.fontSize = f('sz-header') + 'px';
+      document.querySelectorAll('.btn-secondary, .btn-primary').forEach(e => e.style.fontSize = f('sz-btn') + 'px');
+      document.querySelectorAll('.error-text').forEach(e => e.style.fontSize = f('sz-error') + 'px');
+
+      // Radius
+      panel.style.borderRadius = f('r-panel') + 'px';
+      header.style.borderTopLeftRadius = f('r-panel') + 'px';
+      header.style.borderTopRightRadius = f('r-panel') + 'px';
+      document.querySelectorAll('.form-input, .select-trigger').forEach(e => e.style.borderRadius = f('r-input') + 'px');
+    }
+
+    document.getElementById('dump').addEventListener('click', () => {
+      const data = {};
+      sliders.forEach(([id]) => data[id] = document.getElementById(id).value);
+      colors.forEach(id => data[id] = document.getElementById(id).value);
+      console.clear();
+      console.log('=== Add Student Modal — Tuned Values ===');
+      console.log(JSON.stringify(data, null, 2));
+      alert('✅ Dumped to console!\n\nMaps to src/index.css vars:\n--color-glass-light-fill (opacity: ' + data['fill'] + '%)\n--color-glass-light-stroke (opacity: ' + data['stroke'] + '%)\n--color-glass-light-sheen (opacity: ' + data['sheen'] + '%)\n--color-glass-light-bottom (opacity: ' + data['bottom'] + '%)\nbackdrop: blur(' + data['blur'] + 'px)');
+    });
+
+    document.getElementById('reset').addEventListener('click', () => {
+      const defaults = {
+        fill: 10, stroke: 14, sheen: 24, bottom: 6, blur: 12, saturate: 1.31, brightness: 1.05,
+        inputFill: 16, headerFill: 12, btnFill: 15,
+        backAlpha: 45, backBlur: 8,
+        shStrong: 18, shY: 40, shBlur: 100,
+        rPanel: 32, rInput: 14,
+        szInput: 14, szLabel: 11, szHeader: 15, szBtn: 13, szError: 11,
+        'c-primary': '#1a1a2e', 'c-secondary': '#525d72', 'c-tertiary': '#9ca3af',
+      };
+      sliders.forEach(([id, labelId, fmt]) => {
+        const el = document.getElementById(id);
+        el.value = defaults[id];
+        document.getElementById(labelId).textContent = fmt(el.value);
+      });
+      colors.forEach(id => { document.getElementById(id).value = defaults[id]; });
+      apply();
+    });
+
+    function switchTab(evt, tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+
+    document.getElementById('close-btn').addEventListener('click', () => {
+      document.querySelector('.modal-backdrop').style.display = 'none';
+    });
+
+    apply();
+  </script>
+</body>
+</html>

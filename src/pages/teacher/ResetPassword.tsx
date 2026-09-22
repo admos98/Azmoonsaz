@@ -64,8 +64,8 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
       // Sign out after password change so user must log in again
       await supabase.auth.signOut();
       setDone(true);
-    } catch (err: any) {
-      setError(err?.message || 'خطا در تغییر رمز عبور');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'خطا در تغییر رمز عبور');
     } finally {
       setLoading(false);
     }
@@ -73,12 +73,12 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
 
   if (validating) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[var(--color-accent-soft)] via-[var(--color-surface)] to-[var(--color-info-soft)] flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4 animate-pulse">
-            <GraduationCap className="w-10 h-10 text-indigo-600" />
+            <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
           </div>
-          <p className="text-sm text-[var(--color-text-tertiary)]">در حال بررسی لینک...</p>
+          <p className="text-label text-[var(--color-text-tertiary)]">در حال بررسی لینک...</p>
         </div>
       </div>
     );
@@ -86,27 +86,29 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[var(--color-accent-soft)] via-[var(--color-surface)] to-[var(--color-info-soft)] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
-              <GraduationCap className="w-10 h-10 text-indigo-600" />
+              <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">آزمون‌ساز</h1>
+            <h1 className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+              آزمون‌ساز
+            </h1>
           </div>
           <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+              <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
             </div>
-            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+            <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
               رمز عبور با موفقیت تغییر کرد
             </h2>
-            <p className="text-sm text-[var(--color-text-tertiary)]">
+            <p className="text-label text-[var(--color-text-tertiary)]">
               حالا می‌توانید با رمز جدید وارد شوید.
             </p>
             <button
               onClick={onDone}
-              className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer"
+              className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-label py-3 rounded-xl transition-colors cursor-pointer"
             >
               ورود
             </button>
@@ -118,21 +120,23 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
 
   if (!tokenValid) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[var(--color-accent-soft)] via-[var(--color-surface)] to-[var(--color-info-soft)] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
-              <GraduationCap className="w-10 h-10 text-indigo-600" />
+              <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">آزمون‌ساز</h1>
+            <h1 className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+              آزمون‌ساز
+            </h1>
           </div>
           <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
-            <p className="text-sm text-red-600">
+            <p className="text-label text-[var(--color-danger)]">
               {error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}
             </p>
             <button
               onClick={onDone}
-              className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer"
+              className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
             >
               بازگشت به ورود
             </button>
@@ -143,20 +147,22 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--color-accent-soft)] via-[var(--color-surface)] to-[var(--color-info-soft)] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4 shadow-lg shadow-indigo-100">
-            <GraduationCap className="w-10 h-10 text-indigo-600" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4 shadow-lg shadow-lg">
+            <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">آزمون‌ساز</h1>
-          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">تغییر رمز عبور</p>
+          <h1 className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+            آزمون‌ساز
+          </h1>
+          <p className="text-label text-[var(--color-text-tertiary)] mt-1">تغییر رمز عبور</p>
         </div>
 
         <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">
+              <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
                 رمز عبور جدید
               </label>
               <div className="relative">
@@ -167,7 +173,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="حداقل ۶ کاراکتر"
-                  className="w-full glx border text-sm text-[var(--color-text-primary)] pr-10 pl-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-slate-400"
+                  className="w-full glx border text-label text-[var(--color-text-primary)] pr-10 pl-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-[var(--color-text-tertiary)]"
                   autoFocus
                 />
                 <button
@@ -181,7 +187,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             </div>
 
             {error && (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/20 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}
@@ -189,7 +195,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:bg-indigo-400 text-white font-bold text-sm py-3 rounded-xl transition-colors shadow-lg shadow-indigo-200 cursor-pointer"
+              className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-soft)]/40 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-lg shadow-lg cursor-pointer"
             >
               {loading ? 'در حال ذخیره...' : 'ذخیره رمز جدید'}
             </button>
@@ -197,7 +203,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <button
               type="button"
               onClick={onDone}
-              className="w-full text-center text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
+              className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
             >
               بازگشت به ورود
             </button>

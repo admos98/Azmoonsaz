@@ -163,13 +163,7 @@ export function MarkBubble({
       aria-pressed={onClick ? answered : undefined}
     >
       {answered ? (
-        <circle
-          className={animated ? 'goldpop' : ''}
-          cx={r}
-          cy={r}
-          r={r - stroke}
-          fill={gold}
-        />
+        <circle className={animated ? 'goldpop' : ''} cx={r} cy={r} r={r - stroke} fill={gold} />
       ) : (
         <circle cx={r} cy={r} r={r - stroke} stroke={ink} strokeWidth={stroke} />
       )}

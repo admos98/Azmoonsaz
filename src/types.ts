@@ -75,6 +75,10 @@ export interface Question {
   grade: string;
   language?: 'fa' | 'en';
   direction?: 'rtl' | 'ltr';
+  difficulty?: 'easy' | 'medium' | 'hard';
+  section?: string;
+  tags?: string[];
+  completenessStatus?: 'complete' | 'incomplete';
   options?: QuestionOption[];
   matchingPairs?: { left: string; right: string }[];
   orderingItems?: string[];

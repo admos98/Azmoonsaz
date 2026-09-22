@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'motion/react';
 
 export default function CustomCursor() {
@@ -57,7 +57,7 @@ export default function CustomCursor() {
           opacity: isHovering ? 0.6 : 0.35,
         }}
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-        className="rounded-full bg-white"
+        className="rounded-full  bg-[var(--color-surface)]"
       />
     </motion.div>
   );

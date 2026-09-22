@@ -12,7 +12,7 @@ import { logger } from '../lib/logger';
  */
 export function validateIranianNationalId(code: string): boolean {
   if (!code) return false;
-  
+
   // Clean english/persian numerals to english digits
   const cleanCode = String(code)
     .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
@@ -29,7 +29,7 @@ export function validateIranianNationalId(code: string): boolean {
 
   const digits = cleanCode.split('').map(Number);
   const checkDigit = digits[9];
-  
+
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     sum += digits[i] * (10 - i);
@@ -65,12 +65,15 @@ export function formatPersianNumber(str: string | number): string {
 /**
  * Formats standard ISO/Date strings to Persian Solar Hijri calendar date.
  */
-export function formatPersianDate(dateInput: string | Date | null | undefined, includeTime = false): string {
+export function formatPersianDate(
+  dateInput: string | Date | null | undefined,
+  includeTime = false,
+): string {
   if (!dateInput) return '—';
-  
+
   try {
     const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-    
+
     if (isNaN(date.getTime())) {
       return '—';
     }
@@ -128,4 +131,3 @@ export function formatExamDuration(minutes: number): string {
   if (!minutes) return '—';
   return `${toPersianDigits(minutes)} دقیقه`;
 }
-

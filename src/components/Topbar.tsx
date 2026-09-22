@@ -230,7 +230,7 @@ export default function Topbar({
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onClick);
     };
-  }, [showHamburgerMenu]);
+  }, [showHamburgerMenu]); // eslint-disable-line react-hooks/exhaustive-deps -- onKey/onClick are recreated each render intentionally
 
   // Close notifications when avatar expands (bell gets pushed)
   const closeNotifications = useCallback(() => {
@@ -363,7 +363,7 @@ export default function Topbar({
             <Bell className="w-4.5 h-4.5" />
             {unreadCount > 0 && (
               <span
-                className="absolute top-1.5 right-1.5 flex items-center justify-center text-[9px] font-bold text-white bg-[var(--color-danger)] rounded-full ring-2 ring-white"
+                className="absolute top-1.5 right-1.5 flex items-center justify-center text-micro font-bold text-white bg-[var(--color-danger)] rounded-full ring-2 ring-white"
                 style={{ width: '18px', height: '18px' }}
                 aria-label={`${unreadCount} اعلان خوانه‌نشده`}
               >
@@ -407,7 +407,7 @@ export default function Topbar({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-xs">{teacher?.name?.[0] || '?'}</span>
+                <span className="text-caption">{teacher?.name?.[0] || '?'}</span>
               )}
             </div>
 
@@ -418,7 +418,7 @@ export default function Topbar({
               }`}
               style={{ direction: 'rtl', textAlign: 'right' }}
             >
-              <p className="text-xs font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
+              <p className="text-caption font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
                 {teacher?.name || '...'}
               </p>
             </div>
@@ -438,7 +438,7 @@ export default function Topbar({
           onClick={openHamburgerMenu}
           onMouseEnter={() => setHamburgerHover(true)}
           onMouseLeave={() => setHamburgerHover(false)}
-          className="p-2 rounded-xl hover:bg-white/5 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
+          className="p-2 rounded-xl hover: bg-[var(--color-surface)]/5 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
           aria-label="منوی اصلی"
           aria-expanded={showHamburgerMenu}
           aria-haspopup="true"
@@ -472,7 +472,7 @@ export default function Topbar({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جستجو..."
-              className="outline-none bg-transparent text-xs md:text-sm w-full text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] pr-2"
+              className="outline-none bg-transparent text-caption md:text-label w-full text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] pr-2"
             />
           )}
         </div>
@@ -503,13 +503,15 @@ export default function Topbar({
                 <div className="flex items-center gap-3">
                   <TheMark variant="row" size={36} animated={false} />
                   <div>
-                    <p className="text-xs font-bold text-[var(--color-text-primary)]">آزمون‌ساز</p>
-                    <p className="text-[9px] text-[var(--color-text-secondary)]">
+                    <p className="text-caption font-bold text-[var(--color-text-primary)]">
+                      آزمون‌ساز
+                    </p>
+                    <p className="text-micro text-[var(--color-text-secondary)]">
                       پنل مدیریت دبیران
                     </p>
                   </div>
                 </div>
-                <div className="mt-2 text-[10px] text-[var(--color-text-tertiary)]">
+                <div className="mt-2 text-micro text-[var(--color-text-tertiary)]">
                   {formatPersianDate(new Date().toISOString())}
                 </div>
               </div>
@@ -539,16 +541,16 @@ export default function Topbar({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-[10px] text-[var(--color-accent)] font-bold">
+                      <span className="text-micro text-[var(--color-accent)] font-bold">
                         {teacher?.name?.[0] || '?'}
                       </span>
                     )}
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
+                    <p className="text-caption font-bold text-[var(--color-text-primary)] truncate">
                       {teacher?.name || '...'}
                     </p>
-                    <p className="text-[9px] text-[var(--color-text-secondary)] truncate">
+                    <p className="text-micro text-[var(--color-text-secondary)] truncate">
                       {teacher?.schoolName || ''}
                     </p>
                   </div>
@@ -571,7 +573,7 @@ export default function Topbar({
             >
               <div className="p-3 min-w-[240px]">
                 <div
-                  className={`flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-300 ${
+                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
                     currentTab === 'dashboard'
                       ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
                       : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
@@ -592,7 +594,7 @@ export default function Topbar({
                   <span>داشبورد مدیریتی</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onTabChange('students');
                     closeMenu();
@@ -609,7 +611,7 @@ export default function Topbar({
                   <span>دانش‌آموزان</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onTabChange('classes');
                     closeMenu();
@@ -643,7 +645,7 @@ export default function Topbar({
             >
               <div className="p-3 min-w-[240px]">
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onTabChange('questions');
                     closeMenu();
@@ -660,7 +662,7 @@ export default function Topbar({
                   <span>بانک سوالات</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onTabChange('exams');
                     closeMenu();
@@ -677,7 +679,7 @@ export default function Topbar({
                   <span>آزمون‌ها</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onSwitchRole();
                     closeMenu();
@@ -694,7 +696,7 @@ export default function Topbar({
                   <span>بخش دانش‌آموزی</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 cursor-pointer transition-all duration-300"
+                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onLogout();
                     closeMenu();
@@ -740,15 +742,17 @@ export default function Topbar({
           id="notification-dropdown"
         >
           <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
-            <span className="text-xs font-bold text-[var(--color-text-primary)]">اعلان‌ها</span>
+            <span className="text-caption font-bold text-[var(--color-text-primary)]">
+              اعلان‌ها
+            </span>
             {unreadCount > 0 && (
-              <span className="text-[10px] bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
+              <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
                 {formatPersianNumber(unreadCount.toString())} جدید
               </span>
             )}
           </div>
 
-          <div className="max-h-60 overflow-y-auto text-xs divide-y divide-[var(--color-glass-light-stroke)]">
+          <div className="max-h-60 overflow-y-auto text-caption divide-y divide-[var(--color-glass-light-stroke)]">
             {loadingNotifs ? (
               <div className="p-4 text-center text-[var(--color-text-tertiary)]">
                 در حال بارگذاری...
@@ -768,10 +772,10 @@ export default function Topbar({
                   }}
                 >
                   <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
-                  <p className="text-[11px] text-[var(--color-text-secondary)] mt-1">
+                  <p className="text-micro text-[var(--color-text-secondary)] mt-1">
                     {n.description}
                   </p>
-                  <span className="text-[9px] text-[var(--color-text-tertiary)] mt-2 block">
+                  <span className="text-micro text-[var(--color-text-tertiary)] mt-2 block">
                     {n.timeAgo}
                   </span>
                 </div>
@@ -782,7 +786,7 @@ export default function Topbar({
           <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
             <button
               onClick={closeNotifications}
-              className="text-[11px] text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
+              className="text-micro text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
             >
               بستن
             </button>

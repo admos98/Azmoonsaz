@@ -52,9 +52,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'تنظیمات',
-    items: [
-      { id: 'settings', label: 'تنظیمات سامانه', icon: Settings },
-    ],
+    items: [{ id: 'settings', label: 'تنظیمات سامانه', icon: Settings }],
   },
 ];
 
@@ -71,13 +69,20 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       <div className="h-20 flex items-center gap-3 px-6" id="logo-section">
         <TheMark variant="row" size={48} animated={true} />
         <div>
-          <h1 className="text-lg font-black text-[var(--color-text-on-dark)] tracking-tight">آزمون‌ساز</h1>
-          <p className="text-[10px] font-medium text-[var(--color-text-on-dark-secondary)]">پنل مدیریت دبیران</p>
+          <h1 className="text-heading-3 font-black text-[var(--color-text-on-dark)] tracking-tight">
+            آزمون‌ساز
+          </h1>
+          <p className="text-micro font-medium text-[var(--color-text-on-dark-secondary)]">
+            پنل مدیریت دبیران
+          </p>
         </div>
       </div>
 
       {/* Teacher Profile */}
-      <div className="mx-4 my-4 p-3 rounded-xl bg-white/4 border border-white/8 flex items-center gap-3" id="sidebar-profile">
+      <div
+        className="mx-4 my-4 p-3 rounded-xl bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] flex items-center gap-3"
+        id="sidebar-profile"
+      >
         {teacher?.avatarUrl ? (
           <img
             src={teacher.avatarUrl}
@@ -86,13 +91,17 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
             className="w-10 h-10 rounded-full object-cover border-2 border-[var(--color-glass-ink-stroke)]"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-[var(--color-accent)]/20 border-2 border-[var(--color-glass-ink-stroke)] flex items-center justify-center text-[var(--color-accent)] text-sm font-bold">
+          <div className="w-10 h-10 rounded-full bg-[var(--color-accent)]/20 border-2 border-[var(--color-glass-ink-stroke)] flex items-center justify-center text-[var(--color-accent)] text-label font-bold">
             {teacher?.name?.[0] || '?'}
           </div>
         )}
         <div className="flex-1 overflow-hidden">
-          <h4 className="text-xs font-bold text-[var(--color-text-on-dark)] truncate">{teacher?.name || '...'}</h4>
-          <p className="text-[10px] text-[var(--color-text-on-dark-secondary)] truncate mt-0.5">{teacher?.schoolName || ''}</p>
+          <h4 className="text-caption font-bold text-[var(--color-text-on-dark)] truncate">
+            {teacher?.name || '...'}
+          </h4>
+          <p className="text-micro text-[var(--color-text-on-dark-secondary)] truncate mt-0.5">
+            {teacher?.schoolName || ''}
+          </p>
         </div>
       </div>
 
@@ -100,7 +109,9 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       <nav className="px-4 space-y-5 flex-1" id="sidebar-nav">
         {navGroups.map((group) => (
           <div key={group.label}>
-            <p className="px-3 mb-2 text-[10px] font-bold tracking-wider text-[var(--color-text-on-dark-secondary)] uppercase">{group.label}</p>
+            <p className="px-3 mb-2 text-micro font-bold tracking-wider text-[var(--color-text-on-dark-secondary)] uppercase">
+              {group.label}
+            </p>
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
@@ -115,13 +126,15 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
                       onTabChange(item.id);
                       setMobileOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all relative cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-label font-semibold transition-all relative cursor-pointer ${
                       active
                         ? 'bg-[var(--color-gold)]/15 text-[var(--color-text-on-dark)] shadow-sm'
                         : 'text-[var(--color-text-on-dark-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-on-dark)]'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 transition-transform ${active ? 'text-[var(--color-gold)]' : ''}`} />
+                    <Icon
+                      className={`w-4 h-4 transition-transform ${active ? 'text-[var(--color-gold)]' : ''}`}
+                    />
                     <span>{item.label}</span>
                     {active && (
                       <motion.div
@@ -140,12 +153,15 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
   );
 
   const footerContent = (
-    <div className="p-4 space-y-2 border-t border-white/8">
+    <div className="p-4 space-y-2 border-t border-[var(--color-glass-light-stroke)]">
       {/* Switch Role */}
       <button
         id="btn-switch-role"
-        onClick={() => { onSwitchRole(); setMobileOpen(false); }}
-        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs text-[var(--color-text-on-dark-secondary)] bg-white/4 hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-on-dark)] transition-all font-bold cursor-pointer"
+        onClick={() => {
+          onSwitchRole();
+          setMobileOpen(false);
+        }}
+        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-caption text-[var(--color-text-on-dark-secondary)] bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-on-dark)] transition-all font-bold cursor-pointer"
       >
         <ArrowLeftRight className="w-3.5 h-3.5" />
         <span>بخش دانش‌آموزی</span>
@@ -154,8 +170,11 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       {/* Logout */}
       <button
         id="btn-logout"
-        onClick={() => { onLogout(); setMobileOpen(false); }}
-        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors font-semibold cursor-pointer"
+        onClick={() => {
+          onLogout();
+          setMobileOpen(false);
+        }}
+        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-caption text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors font-semibold cursor-pointer"
       >
         <LogOut className="w-3.5 h-3.5" />
         <span>خروج از سامانه</span>
@@ -190,7 +209,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       {/* Desktop Sidebar */}
       <aside
         className="hidden lg:flex fixed inset-y-0 right-0 z-30 w-60 flex-col glx-dark text-[var(--color-text-on-dark)] select-none"
-                id="sidebar-container"
+        id="sidebar-container"
       >
         {navContent}
         {footerContent}
@@ -205,11 +224,11 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="lg:hidden fixed inset-y-0 right-0 z-50 w-72 flex flex-col glx-strong text-[var(--color-text-on-dark)] select-none"
-                        id="sidebar-container-mobile"
+            id="sidebar-container-mobile"
           >
             {/* Close button */}
             <button
-              className="absolute top-4 left-4 p-1 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-white/4 cursor-pointer"
+              className="absolute top-4 left-4 p-1 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-fill)] cursor-pointer"
               onClick={() => setMobileOpen(false)}
               aria-label="بستن منو"
             >

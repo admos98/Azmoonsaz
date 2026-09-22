@@ -29,9 +29,10 @@ async function teacherRequest<T>(path: string, init: RequestInit = {}): Promise<
   const payload = contentType.includes('application/json') ? await res.json() : await res.text();
 
   if (!res.ok) {
-    const message = typeof payload === 'object' && payload && 'error' in payload
-      ? String((payload as { error: unknown }).error)
-      : 'teacher_api_failed';
+    const message =
+      typeof payload === 'object' && payload && 'error' in payload
+        ? String((payload as { error: unknown }).error)
+        : 'teacher_api_failed';
     throw new ApiError(message, res.status, payload);
   }
 

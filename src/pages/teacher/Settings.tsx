@@ -16,10 +16,9 @@ import {
   WifiOff,
   Info,
   CheckCircle,
-  AlertTriangle,
   Edit3,
   Save,
-  X
+  X,
 } from 'lucide-react';
 import { Card, Button, Input, Badge } from '../../components/UIComponents';
 import { useTeacher } from '../../contexts/TeacherContext';
@@ -59,9 +58,9 @@ export default function Settings() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-48 bg-white/6 rounded-xl animate-pulse" />
-        <div className="h-40 bg-white/4 rounded-3xl animate-pulse" />
-        <div className="h-40 bg-white/4 rounded-3xl animate-pulse" />
+        <div className="h-8 w-48 bg-[var(--color-glass-light-stroke)] rounded-xl animate-pulse" />
+        <div className="h-40 bg-[var(--color-glass-light-fill)] rounded-3xl animate-pulse" />
+        <div className="h-40 bg-[var(--color-glass-light-fill)] rounded-3xl animate-pulse" />
       </div>
     );
   }
@@ -76,12 +75,14 @@ export default function Settings() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-[var(--color-accent-soft)] rounded-xl text-indigo-600">
+          <div className="p-2.5 bg-[var(--color-accent-soft)] rounded-xl text-[var(--color-accent)]">
             <SettingsIcon className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-black text-[var(--color-text-primary)]">تنظیمات سامانه</h2>
-            <p className="text-xs text-[var(--color-text-tertiary)] font-medium mt-0.5">
+            <h2 className="text-heading-3 font-black text-[var(--color-text-primary)]">
+              تنظیمات سامانه
+            </h2>
+            <p className="text-caption text-[var(--color-text-tertiary)] font-medium mt-0.5">
               مدیریت پروفایل و وضعیت سیستم
             </p>
           </div>
@@ -91,12 +92,17 @@ export default function Settings() {
       {/* Teacher Profile Card */}
       <Card>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+          <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <User className="w-4 h-4 text-[var(--color-accent)]" />
             پروفایل دبیر
           </h3>
           {!isEditing && (
-            <Button variant="ghost" size="sm" icon={<Edit3 className="w-3.5 h-3.5" />} onClick={handleStartEdit}>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Edit3 className="w-3.5 h-3.5" />}
+              onClick={handleStartEdit}
+            >
               ویرایش
             </Button>
           )}
@@ -104,12 +110,12 @@ export default function Settings() {
 
         {teacher && (
           <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 bg-white/3 rounded-2xl">
+            <div className="flex items-center gap-4 p-4 bg-[var(--color-glass-light-fill)] rounded-2xl">
               <img
                 src={teacher.avatarUrl}
                 alt={teacher.name}
                 referrerPolicy="no-referrer"
-                className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
+                className="w-14 h-14 rounded-full object-cover border-2 border-[var(--color-glass-light-stroke)] shadow-md"
               />
               <div className="flex-1">
                 {isEditing ? (
@@ -127,18 +133,33 @@ export default function Settings() {
                       icon={<School className="w-4 h-4" />}
                     />
                     <div className="flex items-center gap-2 pt-1">
-                      <Button variant="primary" size="sm" isLoading={saving} icon={<Save className="w-3.5 h-3.5" />} onClick={handleSave}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        isLoading={saving}
+                        icon={<Save className="w-3.5 h-3.5" />}
+                        onClick={handleSave}
+                      >
                         ذخیره
                       </Button>
-                      <Button variant="ghost" size="sm" icon={<X className="w-3.5 h-3.5" />} onClick={handleCancelEdit}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<X className="w-3.5 h-3.5" />}
+                        onClick={handleCancelEdit}
+                      >
                         انصراف
                       </Button>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <h4 className="text-sm font-bold text-[var(--color-text-primary)]">{teacher.name}</h4>
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{teacher.schoolName}</p>
+                    <h4 className="text-label font-bold text-[var(--color-text-primary)]">
+                      {teacher.name}
+                    </h4>
+                    <p className="text-caption text-[var(--color-text-tertiary)] mt-0.5">
+                      {teacher.schoolName}
+                    </p>
                   </>
                 )}
               </div>
@@ -146,18 +167,27 @@ export default function Settings() {
 
             {!isEditing && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-3 bg-white/3 rounded-xl">
+                <div className="flex items-center gap-3 p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
                   <Mail className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                   <div>
-                    <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">ایمیل</p>
-                    <p className="text-xs text-[var(--color-text-secondary)] font-semibold">{teacher.email}</p>
+                    <p className="text-micro text-[var(--color-text-tertiary)] font-bold">ایمیل</p>
+                    <p className="text-caption text-[var(--color-text-secondary)] font-semibold">
+                      {teacher.email}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white/3 rounded-xl">
+                <div className="flex items-center gap-3 p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
                   <School className="w-4 h-4 text-[var(--color-text-tertiary)]" />
                   <div>
-                    <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">شناسه دبیر</p>
-                    <p className="text-xs text-[var(--color-text-secondary)] font-semibold font-mono" dir="ltr">{teacher.id}</p>
+                    <p className="text-micro text-[var(--color-text-tertiary)] font-bold">
+                      شناسه دبیر
+                    </p>
+                    <p
+                      className="text-caption text-[var(--color-text-secondary)] font-semibold font-mono"
+                      dir="ltr"
+                    >
+                      {teacher.id}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -168,43 +198,47 @@ export default function Settings() {
 
       {/* Runtime Status Card */}
       <Card>
-        <h3 className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-5">
+        <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-5">
           <Server className="w-4 h-4 text-[var(--color-accent)]" />
           وضعیت سیستم
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-3 p-4 bg-white/3 rounded-2xl">
-            <div className={`p-2 rounded-full ${isSecure ? 'bg-[var(--color-success-soft)] text-emerald-600' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]'}`}>
+          <div className="flex items-center gap-3 p-4 bg-[var(--color-glass-light-fill)] rounded-2xl">
+            <div
+              className={`p-2 rounded-full ${isSecure ? 'bg-[var(--color-success-soft)] text-[var(--color-success)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]'}`}
+            >
               {isSecure ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
             </div>
             <div>
-              <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">حالت اجرا</p>
-              <p className="text-xs text-[var(--color-text-secondary)] font-bold">{modeLabel}</p>
+              <p className="text-micro text-[var(--color-text-tertiary)] font-bold">حالت اجرا</p>
+              <p className="text-caption text-[var(--color-text-secondary)] font-bold">
+                {modeLabel}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-4 bg-white/3 rounded-2xl">
-            <div className={`p-2 rounded-full ${supabaseConfigured ? 'bg-[var(--color-success-soft)] text-emerald-600' : 'bg-white/4 text-[var(--color-text-tertiary)]'}`}>
+          <div className="flex items-center gap-3 p-4 bg-[var(--color-glass-light-fill)] rounded-2xl">
+            <div
+              className={`p-2 rounded-full ${supabaseConfigured ? 'bg-[var(--color-success-soft)] text-[var(--color-success)]' : 'bg-[var(--color-glass-light-fill)] text-[var(--color-text-tertiary)]'}`}
+            >
               <Shield className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">سوپابیس</p>
+              <p className="text-micro text-[var(--color-text-tertiary)] font-bold">سوپابیس</p>
               <Badge variant={supabaseConfigured ? 'success' : 'slate'}>
                 {supabaseConfigured ? 'پیکربندی شده' : 'پیکربندی نشده'}
               </Badge>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-4 bg-white/3 rounded-2xl">
-            <div className="p-2 rounded-full bg-[var(--color-success-soft)] text-emerald-600">
+          <div className="flex items-center gap-3 p-4 bg-[var(--color-glass-light-fill)] rounded-2xl">
+            <div className="p-2 rounded-full bg-[var(--color-success-soft)] text-[var(--color-success)]">
               <CheckCircle className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">حالت آزمایشی</p>
-              <Badge variant="success">
-                غیرفعال
-              </Badge>
+              <p className="text-micro text-[var(--color-text-tertiary)] font-bold">حالت آزمایشی</p>
+              <Badge variant="success">غیرفعال</Badge>
             </div>
           </div>
         </div>
@@ -212,26 +246,30 @@ export default function Settings() {
 
       {/* App Info Card */}
       <Card>
-        <h3 className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
+        <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
           <Info className="w-4 h-4 text-[var(--color-accent)]" />
           درباره برنامه
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-          <div className="p-3 bg-white/3 rounded-xl">
-            <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">نام سامانه</p>
-            <p className="text-xs text-[var(--color-text-secondary)] font-bold mt-1">آزمون‌ساز</p>
+          <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
+            <p className="text-micro text-[var(--color-text-tertiary)] font-bold">نام سامانه</p>
+            <p className="text-caption text-[var(--color-text-secondary)] font-bold mt-1">
+              آزمون‌ساز
+            </p>
           </div>
-          <div className="p-3 bg-white/3 rounded-xl">
-            <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">نسخه</p>
-            <p className="text-xs text-[var(--color-text-secondary)] font-bold mt-1">۰.۱.۰</p>
+          <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
+            <p className="text-micro text-[var(--color-text-tertiary)] font-bold">نسخه</p>
+            <p className="text-caption text-[var(--color-text-secondary)] font-bold mt-1">۰.۱.۰</p>
           </div>
-          <div className="p-3 bg-white/3 rounded-xl">
-            <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">فریمورک</p>
-            <p className="text-xs text-[var(--color-text-secondary)] font-bold mt-1">React 19 + Vite</p>
+          <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
+            <p className="text-micro text-[var(--color-text-tertiary)] font-bold">فریمورک</p>
+            <p className="text-caption text-[var(--color-text-secondary)] font-bold mt-1">
+              React 19 + Vite
+            </p>
           </div>
-          <div className="p-3 bg-white/3 rounded-xl">
-            <p className="text-[10px] text-[var(--color-text-tertiary)] font-bold">میزبانی</p>
-            <p className="text-xs text-[var(--color-text-secondary)] font-bold mt-1">Vercel</p>
+          <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
+            <p className="text-micro text-[var(--color-text-tertiary)] font-bold">میزبانی</p>
+            <p className="text-caption text-[var(--color-text-secondary)] font-bold mt-1">Vercel</p>
           </div>
         </div>
       </Card>

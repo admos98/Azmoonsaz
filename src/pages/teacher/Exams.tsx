@@ -5,9 +5,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FileText, Plus, Eye, Settings as SettingsIcon, Award, Clock, ArrowLeft, Check, CheckSquare, Calendar, Users, Flame, Play, Trash2, ArrowRight } from 'lucide-react';
+import {
+  FileText,
+  Plus,
+  Eye,
+  Settings as SettingsIcon,
+  Clock,
+  CheckSquare,
+  Calendar,
+  Play,
+} from 'lucide-react';
 import { logger } from '../../lib/logger';
-import { Exam, ClassGroup, Question, Teacher } from '../../types';
+import { Exam, ClassGroup } from '../../types';
 import { classService, examService } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
 
@@ -23,10 +32,15 @@ interface ExamsProps {
   onSubViewChange?: (view: 'list' | 'settings' | 'preview' | 'results', id?: string) => void;
 }
 
-export default function Exams({ onNavigate, selectedExamId: propExamId, subView: propSubView = 'list', onSubViewChange }: ExamsProps) {
+export default function Exams({
+  onNavigate,
+  selectedExamId: propExamId,
+  subView: propSubView = 'list',
+  onSubViewChange,
+}: ExamsProps) {
   const { showToast, toastElement } = useToast();
   const [exams, setExams] = useState<Exam[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
 
   useEffect(() => {
@@ -42,11 +56,18 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       }
     };
     fetchExams();
-    classService.getClassGroups().then(setClassGroups).catch(() => {});
+    classService
+      .getClassGroups()
+      .then(setClassGroups)
+      .catch(() => {});
   }, []);
 
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'scheduled' | 'draft' | 'completed'>('all');
-  const [localSubView, setLocalSubView] = useState<'list' | 'settings' | 'preview' | 'results'>(propSubView);
+  const [activeTab, setActiveTab] = useState<
+    'all' | 'active' | 'scheduled' | 'draft' | 'completed'
+  >('all');
+  const [localSubView, setLocalSubView] = useState<'list' | 'settings' | 'preview' | 'results'>(
+    propSubView,
+  );
   const [selectedExamId, setSelectedExamId] = useState<string | null>(propExamId || null);
 
   // Sync prop changes
@@ -55,13 +76,13 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
     if (propExamId) setSelectedExamId(propExamId);
   }, [propSubView, propExamId]);
 
-  const currentExam = exams.find(e => e.id === selectedExamId);
+  const currentExam = exams.find((e) => e.id === selectedExamId);
 
   const handleStatusChange = async (examId: string, newStatus: Exam['status']) => {
     try {
       const updated = await examService.updateExam(examId, { status: newStatus });
-      setExams(exams.map(e => e.id === examId ? { ...e, ...updated } : e));
-    } catch (err) {
+      setExams(exams.map((e) => (e.id === examId ? { ...e, ...updated } : e)));
+    } catch (_err) {
       showToast('خطا در تغییر وضعیت آزمون', 'error');
     }
   };
@@ -69,26 +90,26 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
   const handleUpdateExam = async (updatedExam: Exam) => {
     try {
       const updated = await examService.updateExam(updatedExam.id, updatedExam);
-      setExams(exams.map(e => e.id === updatedExam.id ? { ...e, ...updated } : e));
+      setExams(exams.map((e) => (e.id === updatedExam.id ? { ...e, ...updated } : e)));
       showToast('تنظیمات آزمون ذخیره شد.', 'success');
       setLocalSubView('list');
       if (onSubViewChange) onSubViewChange('list');
-    } catch (err) {
+    } catch (_err) {
       showToast('خطا در بروزرسانی آزمون', 'error');
     }
   };
 
-  const handleDeleteExam = async (examId: string) => {
+  const _handleDeleteExam = async (examId: string) => {
     try {
       await examService.deleteExam(examId);
-      setExams(exams.filter(e => e.id !== examId));
-    } catch (err) {
+      setExams(exams.filter((e) => e.id !== examId));
+    } catch (_err) {
       showToast('خطا در حذف آزمون', 'error');
     }
   };
 
   // Filter exams by tab
-  const filteredExams = exams.filter(e => {
+  const filteredExams = exams.filter((e) => {
     if (activeTab === 'all') return true;
     return e.status === activeTab;
   });
@@ -105,17 +126,21 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
 
   const getStatusBadgeStyles = (status: Exam['status']) => {
     const styles = {
-      draft: 'glx-inset text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]',
-      scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
-      active: 'bg-orange-500/10 text-orange-600 border-orange-500/20 animate-pulse',
-      completed: 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/20',
+      draft:
+        'glx-inset text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]',
+      scheduled:
+        'bg-[var(--color-info-soft)] text-[var(--color-info)] border-[var(--color-info)]/20',
+      active:
+        'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/20 animate-pulse',
+      completed:
+        'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/20',
     };
     return styles[status] || 'glx-inset text-[var(--color-text-secondary)]';
   };
 
   const getClassNamesForExam = (classGroupIds: string[]) => {
     return classGroupIds
-      .map(id => classGroups.find(c => c.id === id)?.name)
+      .map((id) => classGroups.find((c) => c.id === id)?.name)
       .filter(Boolean)
       .join(' و ');
   };
@@ -149,11 +174,11 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
           if (onSubViewChange) onSubViewChange('list');
         }}
         onSave={(updatedExam) => {
-          setExams(prev => prev.map(e => e.id === updatedExam.id ? updatedExam : e));
+          setExams((prev) => prev.map((e) => (e.id === updatedExam.id ? updatedExam : e)));
           showToast('تغییرات پیش‌نویس ذخیره شد.', 'success');
         }}
         onNavigateToSettings={(updatedExam) => {
-          setExams(prev => prev.map(e => e.id === updatedExam.id ? updatedExam : e));
+          setExams((prev) => prev.map((e) => (e.id === updatedExam.id ? updatedExam : e)));
           setLocalSubView('settings');
           if (onSubViewChange) onSubViewChange('settings', currentExam.id);
         }}
@@ -177,18 +202,20 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
     <div className="space-y-6 animate-in fade-in duration-300" id="exams-tab-view">
       {toastElement}
       {/* Upper Panel Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glass-1 p-6 rounded-2xl">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx p-6 rounded-2xl">
         <div>
           <h2 className="text-md font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[var(--color-accent)]" />
             <span>مدیریت آزمون‌های دوره‌ای و هماهنگ کشوری</span>
           </h2>
-          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-1">امکان تعریف، زمان‌بندی، فعال‌سازی با یک کلیک و ارجاع به کلاس‌ها و ثبت نمره‌برگ نهایی</p>
+          <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
+            امکان تعریف، زمان‌بندی، فعال‌سازی با یک کلیک و ارجاع به کلاس‌ها و ثبت نمره‌برگ نهایی
+          </p>
         </div>
         <button
           id="btn-create-exam-trigger"
           onClick={() => onNavigate('exams/new')}
-          className="px-4 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+          className="px-4 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>طراحی آزمون نو</span>
@@ -196,21 +223,26 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
       </div>
 
       {/* Tabs list for Status categories */}
-      <div className="flex items-center space-x-2 space-x-reverse border-b border-[var(--color-glass-light-stroke)] pb-1" id="exam-status-tabs">
+      <div
+        className="flex items-center space-x-2 space-x-reverse border-b border-[var(--color-glass-light-stroke)] pb-1"
+        id="exam-status-tabs"
+      >
         {[
           { id: 'all', label: 'همه آزمون‌ها' },
           { id: 'active', label: 'در حال برگزاری (زنده)' },
           { id: 'scheduled', label: 'برنامه‌ریزی شده' },
           { id: 'draft', label: 'پیش‌نویس‌ها' },
           { id: 'completed', label: 'برگزار شده' },
-        ].map(tab => (
+        ].map((tab) => (
           <button
             key={tab.id}
             id={`tab-status-${tab.id}`}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-3.5 py-2 text-xs font-bold transition-all relative cursor-pointer ${
+            onClick={() =>
+              setActiveTab(tab.id as 'all' | 'active' | 'scheduled' | 'draft' | 'completed')
+            }
+            className={`px-3.5 py-2 text-caption font-bold transition-all relative cursor-pointer ${
               activeTab === tab.id
-                ? 'text-indigo-600'
+                ? 'text-[var(--color-accent)]'
                 : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
             }`}
           >
@@ -235,40 +267,56 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="glass-1 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
+                className="glx rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
                 id={`exam-box-${ex.id}`}
               >
                 {/* Visual Status Indicator Strip on Top */}
-                <span className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-l ${
-                  ex.status === 'active' ? 'from-amber-500 to-orange-500' :
-                  ex.status === 'completed' ? 'from-emerald-500 to-teal-500' :
-                  ex.status === 'scheduled' ? 'from-indigo-500 to-blue-500' : 'from-slate-400 to-slate-500'
-                }`} />
+                <span
+                  className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-l ${
+                    ex.status === 'active'
+                      ? 'from-[var(--color-warning)] to-[var(--color-danger)]'
+                      : ex.status === 'completed'
+                        ? 'from-[var(--color-success)] to-teal-500'
+                        : ex.status === 'scheduled'
+                          ? 'from-[var(--color-info)] to-[var(--color-accent)]'
+                          : 'from-slate-400 to-slate-500'
+                  }`}
+                />
 
                 {/* Box details top */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${getStatusBadgeStyles(ex.status)}`}>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-micro font-bold border ${getStatusBadgeStyles(ex.status)}`}
+                    >
                       {getStatusLabelInPersian(ex.status)}
                     </span>
-                    <span className="text-[10px] text-[var(--color-text-tertiary)] font-mono font-bold select-all glx px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
+                    <span className="text-micro text-[var(--color-text-tertiary)] font-mono font-bold select-all glx px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
                       کد ورود: {ex.examCode}
                     </span>
                   </div>
 
-                  <h3 className="text-xs font-bold text-[var(--color-text-primary)] leading-snug line-clamp-1">{ex.title}</h3>
-                  <p className="text-[11px] text-[var(--color-text-tertiary)] leading-relaxed line-clamp-2 h-[34px]">{ex.description || 'توضیحاتی برای این آزمون ثبت نگردیده است.'}</p>
+                  <h3 className="text-caption font-bold text-[var(--color-text-primary)] leading-snug line-clamp-1">
+                    {ex.title}
+                  </h3>
+                  <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed line-clamp-2 h-[34px]">
+                    {ex.description || 'توضیحاتی برای این آزمون ثبت نگردیده است.'}
+                  </p>
                 </div>
 
                 {/* Sub Metadata parameters */}
-                <div className="py-2 border-y border-[var(--color-glass-light-stroke)] grid grid-cols-2 gap-2 text-[10px] text-[var(--color-text-tertiary)]">
+                <div className="py-2 border-y border-[var(--color-glass-light-stroke)] grid grid-cols-2 gap-2 text-micro text-[var(--color-text-tertiary)]">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-                    <span>پایه {ex.grade} (در کلاس: {getClassNamesForExam(ex.classGroupIds)})</span>
+                    <span>
+                      پایه {ex.grade} (در کلاس: {getClassNamesForExam(ex.classGroupIds)})
+                    </span>
                   </span>
                   <span className="flex items-center gap-1 justify-end">
                     <Clock className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-                    <span>مدت زمان: <b>{ex.duration} دقیقه</b></span>
+                    <span>
+                      مدت زمان: <b>{ex.duration} دقیقه</b>
+                    </span>
                   </span>
                 </div>
 
@@ -299,7 +347,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                     <button
                       id={`exam-res-${ex.id}`}
                       onClick={() => navigateToSubView('results', ex.id)}
-                      className="p-2 glx hover:brightness-105 text-indigo-600 rounded-xl transition-colors border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] cursor-pointer"
+                      className="p-2 glx hover:brightness-105 text-[var(--color-accent)] rounded-xl transition-colors border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] cursor-pointer"
                       title="مشاهده کارنامه‌ها و نتایج"
                     >
                       <CheckSquare className="w-4 h-4" />
@@ -312,7 +360,7 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                       <button
                         id={`ex-act-${ex.id}`}
                         onClick={() => handleStatusChange(ex.id, 'active')}
-                        className="px-2.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-indigo-105 text-[var(--color-accent)] font-bold text-[10px] rounded-lg border border-indigo-150 flex items-center gap-1 cursor-pointer animate-pulse"
+                        className="px-2.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)]/50 text-[var(--color-accent)] font-bold text-micro rounded-lg border border-[var(--color-accent)]/20 flex items-center gap-1 cursor-pointer animate-pulse"
                       >
                         <Play className="w-3 h-3" />
                         <span>فعال‌سازی آزمون</span>
@@ -322,13 +370,13 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
                       <button
                         id={`ex-comp-${ex.id}`}
                         onClick={() => handleStatusChange(ex.id, 'completed')}
-                        className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-[var(--color-danger)] font-bold text-[10px] rounded-lg border border-[var(--color-danger)]/10 flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 bg-[var(--color-danger-soft)] hover:bg-[var(--color-danger-soft)]/50 text-[var(--color-danger)] font-bold text-micro rounded-lg border border-[var(--color-danger)]/10 flex items-center gap-1 cursor-pointer"
                       >
                         <span>اتمام برگزاری آزمون</span>
                       </button>
                     )}
                     {ex.status === 'completed' && (
-                      <span className="text-[10px] text-emerald-600 font-semibold bg-[var(--color-success-soft)] px-2.5 py-1 rounded-md">
+                      <span className="text-micro text-[var(--color-success)] font-semibold bg-[var(--color-success-soft)] px-2.5 py-1 rounded-md">
                         ثبت نهایی شده
                       </span>
                     )}
@@ -337,8 +385,9 @@ export default function Exams({ onNavigate, selectedExamId: propExamId, subView:
               </motion.div>
             ))
           ) : (
-            <div className="col-span-full py-16 text-center glass-1 rounded-2xl text-[var(--color-text-tertiary)]">
-              هیچ آزمونی با ویژگی‌های بالا یافت نشد. می‌توانید با «طراحی آزمون نو» اولین سنجش خود را راه‌اندازی کنید.
+            <div className="col-span-full py-16 text-center glx rounded-2xl text-[var(--color-text-tertiary)]">
+              هیچ آزمونی با ویژگی‌های بالا یافت نشد. می‌توانید با «طراحی آزمون نو» اولین سنجش خود را
+              راه‌اندازی کنید.
             </div>
           )}
         </AnimatePresence>

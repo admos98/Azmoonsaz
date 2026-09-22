@@ -19,7 +19,7 @@
   --spacing-12: 48px;
   --spacing-16: 64px;
 
-  /* Border Radius */
+  /* Border Radius — Apple signature radius */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -36,6 +36,8 @@
    */
   --color-page-bg: #f0f7ff;
   --color-paper-warm: #f0f7ff;
+  --color-surface: #f8fafc;
+  --color-surface-secondary: #e0f2fe;
 
   /* Ink field — sidebar, hero on dark */
   --color-ink-field: #1a1a2e;
@@ -74,6 +76,8 @@
   --color-warning-soft: #fef3c7;
   --color-danger: #ef4444;
   --color-danger-soft: #fee2e2;
+  --color-info: #3b82f6;
+  --color-info-soft: #dbeafe;
 
   /* Text */
   --color-text-primary: #1a1a2e;
@@ -87,29 +91,47 @@
 :root[data-theme='dark'] {
   --color-page-bg: #0a0a12;
   --color-paper-warm: #0a0a12;
+  --color-surface: #141420;
+  --color-surface-secondary: #1e293b;
   --color-text-primary: #f9fafb;
   --color-text-secondary: #d1d5db;
   --color-text-tertiary: #9ca3af;
 }
 
+/* Dark theme glass overrides */
+:root[data-theme='dark'] {
+  --color-glass-light-fill: rgba(255, 255, 255, 0.03);
+  --color-glass-light-stroke: rgba(255, 255, 255, 0.07);
+  --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
+  --color-glass-light-bottom: rgba(0, 0, 0, 0.15);
+  --color-glass-ink-fill: rgba(255, 255, 255, 0.05);
+  --color-glass-ink-stroke: rgba(255, 255, 255, 0.06);
+}
+
 /* ─── Base ─── */
 
+* {
+  border-color: transparent;
+  scroll-behavior: smooth;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  font-size: 16px;
+}
+
 body {
+  margin: 0;
   font-family: var(--font-sans);
+  font-size: var(--font-size-base, 0.9375rem);
+  font-weight: 400;
+  line-height: 1.6;
   direction: rtl;
   text-align: right;
   background: var(--color-paper-warm);
   background-image:
-    radial-gradient(
-      circle at 10% 18%,
-      color-mix(in srgb, var(--color-ink) 1%, transparent) 0%,
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 90% 80%,
-      color-mix(in srgb, var(--color-gold) 1.2%, transparent) 0%,
-      transparent 26%
-    );
+    radial-gradient(circle at 10% 18%, rgba(26, 26, 46, 0.01) 0%, transparent 32%),
+    radial-gradient(circle at 90% 80%, rgba(245, 179, 1, 0.012) 0%, transparent 26%);
   background-size: 160% 160%;
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
@@ -117,10 +139,11 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-gold) 30%, transparent);
+  background: rgba(245, 179, 1, 0.3);
   color: var(--color-ink);
 }
 
+/* Scrollbars — cross-browser (Chromium + Firefox) */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -129,14 +152,19 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--color-ink) 15%, transparent);
+  background: rgba(26, 26, 46, 0.15);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--color-ink) 25%, transparent);
+  background: rgba(26, 26, 46, 0.25);
+}
+/* Firefox native scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 26, 46, 0.15) transparent;
 }
 
-/* ─── Base reset for native <select> (replaced by custom Dropdown) ─── */
+/* ─── Base reset for native <select> ─── */
 select {
   @apply appearance-none;
   background-image: none;
@@ -149,7 +177,7 @@ select::-webkit-calendar-picker-indicator {
 /* Defined once at app root via <GlassFilters /> component.
    Uses url(#lg-displace) in backdrop-filter on .glx-strong. */
 
-/* ─── Liquid Glass surfaces ─── */
+/* ─── Liquid Glass surfaces — pre-computed rgba (no color-mix for Firefox/Safari) ─── */
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
    Grounded over warm paper bg. Specular rim + bezel. */
@@ -159,8 +187,8 @@ select::-webkit-calendar-picker-indicator {
   box-shadow:
     inset 0 1px 0 var(--color-glass-light-sheen),
     inset 0 -1px 1px var(--color-glass-light-bottom),
-    inset 1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 70%, transparent),
-    inset -1px 0 1px color-mix(in srgb, var(--color-glass-light-sheen) 35%, transparent),
+    inset 1px 0 1px rgba(255, 255, 255, 0.0646),
+    inset -1px 0 1px rgba(255, 255, 255, 0.0493),
     0 6px 30px var(--color-glass-shadow);
   backdrop-filter: blur(6px) saturate(1.17) brightness(1.04);
   -webkit-backdrop-filter: blur(6px) saturate(1.17) brightness(1.04);
@@ -169,16 +197,16 @@ select::-webkit-calendar-picker-indicator {
 /* Strong glass — primary modals + hero.
    Adds refraction via SVG displacement filter (Chromium). */
 @utility glx-strong {
-  background: color-mix(in srgb, var(--color-glass-light-fill) 130%, transparent);
+  background: rgba(255, 255, 255, 0.104);
   border: 1px solid var(--color-glass-light-stroke);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-glass-light-sheen) 90%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2571),
     inset 0 -1px 1px var(--color-glass-light-bottom),
-    inset 3px 0 4px color-mix(in srgb, var(--color-glass-light-sheen) 40%, transparent),
-    inset -3px 0 4px color-mix(in srgb, var(--color-glass-light-sheen) 20%, transparent),
+    inset 1px 0 0px rgba(255, 255, 255, 0.088),
+    inset -1px 0 4px rgba(255, 255, 255, 0.0493),
     0 40px 100px var(--color-glass-shadow-strong);
-  backdrop-filter: url(#lg-displace) blur(12px) saturate(1.31);
-  -webkit-backdrop-filter: url(#lg-displace) blur(12px) saturate(1.31);
+  backdrop-filter: blur(12px) saturate(1.31);
+  -webkit-backdrop-filter: blur(12px) saturate(1.31);
 }
 
 /* Ink glass — sidebar (dark field with warm gold tint) */
@@ -196,13 +224,13 @@ select::-webkit-calendar-picker-indicator {
 
 /* Inset/concave glass — inputs, wells */
 @utility glx-inset {
-  background: color-mix(in srgb, var(--color-paper-warm) 55%, var(--color-glass-light-fill) 45%);
+  background: rgba(240, 247, 255, 0.508);
   border: 1px solid var(--color-glass-light-stroke);
   box-shadow:
     inset 0 1px 0 var(--color-glass-light-sheen),
     inset 0 -1px 1px var(--color-glass-light-bottom),
-    inset 2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 18%, transparent),
-    inset -2px 0 2px color-mix(in srgb, var(--color-glass-light-sheen) 10%, transparent);
+    inset 2px 0 2px rgba(255, 255, 255, 0.0342),
+    inset -2px 0 2px rgba(255, 255, 255, 0.0186);
   backdrop-filter: blur(1.33px) saturate(1) brightness(1.03);
   -webkit-backdrop-filter: blur(1.33px) saturate(1) brightness(1.03);
 }
@@ -229,43 +257,6 @@ select::-webkit-calendar-picker-indicator {
 }
 .glx-sheen:hover::before {
   opacity: 1;
-}
-
-/* ─── Dark theme glass overrides ─── */
-:root[data-theme='dark'] {
-  --color-glass-light-fill: rgba(255, 255, 255, 0.03);
-  --color-glass-light-stroke: rgba(255, 255, 255, 0.07);
-  --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
-  --color-glass-light-bottom: rgba(0, 0, 0, 0.15);
-  --color-glass-ink-fill: rgba(255, 255, 255, 0.05);
-  --color-glass-ink-stroke: rgba(255, 255, 255, 0.06);
-}
-
-/* ─── Skeleton shimmer ─── */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-.skeleton {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-  border-radius: var(--radius-sm);
-}
-
-/* ─── Legacy aliases (backward compat → glx system) ─── */
-@utility glass-1 {
-  @apply glx;
-}
-@utility glass-2 {
-  @apply glx-strong;
-}
-@utility glass-3 {
-  @apply glx-dark;
 }
 
 /* ─── The Mark gold pop ─── */
@@ -390,6 +381,70 @@ select::-webkit-calendar-picker-indicator {
     opacity: 0;
     transform: scale(0.92);
   }
+}
+
+/* ─── Typography utilities ─── */
+@utility text-display {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+@utility text-heading-1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+@utility text-heading-2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+@utility text-heading-3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+@utility text-body {
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+@utility text-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+@utility text-caption {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+@utility text-micro {
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ─── Skeleton shimmer ─── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 25%,
+    var(--color-surface-secondary) 50%,
+    var(--color-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
 }
 
 /* ─── Reduced motion ─── */

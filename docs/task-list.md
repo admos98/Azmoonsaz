@@ -2,43 +2,27 @@
 
 ## Status: Active (do not stop until all done)
 
-## Tasks
+## Completed
+1. ✅ Menu closing animation — panels shrink back into hamburger button (CSS keyframes pan-up/pan-down + inline transformOrigin)
+2. ✅ Panel blur/strength increased — glx backdrop 6px, glx-strong blur 12px, stronger shadows (0.12-0.18 vs 0.20)
+3. ✅ Sky white background (`#f0f7ff`)
+4. ✅ Topbar separation removed (transparent router-view-box)
+5. ✅ Custom Dropdown component — replaces all native `<select>` (no more Windows OS dropdown)
+6. ✅ Dropdown readability — solid paper-warm bg (95% opacity), `text-sm` font, improved hover/selected contrast
+7. ✅ Modal depth — `panel-in`/`panel-out` scale animation with `transformOrigin: center bottom`, deeper shadows
+8. ✅ Button styling — consistent spacing, hover brightness, press-down active:scale, proper focus states
+9. ✅ Form input unification — `Input` component with `text-sm`, matching Dropdown trigger
+10. ✅ Darker `--color-text-secondary` — `#525d72` (was `#6b7280`)
 
-### 1. Fix menu closing animation — panels suck back into hamburger button
-- **Problem**: Hamburger panels use `dropOut` (translate down + fade). User wants them to scale/shrink back INTO the hamburger button origin (like the notification bell pattern).
-- **Fix**: Added `shrinkToHamburger` + `growFromHamburger` keyframes in `index.css`, computed `transformOrigin` from hamburger button Rect, applied to all 4 panels during close.
-- **File**: `src/components/Topbar.tsx`, `src/index.css`
-- **Status**: ✅ DONE (committed local, not pushed)
+## Remaining Issues
+### Global input font consistency
+- ExamResults.tsx: inline inputs still use `text-xs`
+- ExamPreview.tsx: inline inputs use `text-xs` and `text-[10.5px]`
+- Students.tsx: ExamLogs modal inline inputs still `text-xs`
 
-### 2. Fix shallow/flat panels — replace `bg-white/3` and `bg-white/4` with proper `glx*` classes
-Replaced ~300 instances of hardcoded `bg-white/3`, `bg-white/4`, `bg-white/3/70`, `bg-white/4/60` that bypass the 4-layer lens stack across all teacher pages and shared components.
+### Topbar notification panel animation
+- Still uses separate `growFromBell`/`shrinkToBell` — could unify with panel animation system
 
-**Files modified**:
-- ✅ `src/components/UIComponents.tsx` — Button, Badge, Input, Select, Tabs, Modal, EmptyState, Dropzone, Table
-- ✅ `src/components/QuestionRenderer.tsx` — question option containers, pair inputs
-- ✅ `src/pages/teacher/Dashboard.tsx` — hero card, stat cards, exam rows, modals
-- ✅ `src/pages/teacher/Students.tsx` — student table, form modals
-- ✅ `src/pages/teacher/Classes.tsx` — class cards, forms
-- ✅ `src/pages/teacher/Questions.tsx` — question cards, category panels
-- ✅ `src/pages/teacher/Exams.tsx` — exam rows
-- ✅ `src/pages/teacher/ExamResults.tsx` — results table, filter panels
-- ✅ `src/pages/teacher/ExamSettings.tsx` — settings panels
-- ✅ `src/pages/teacher/NewExam.tsx` — form fields
-- ✅ `src/pages/teacher/ExamPreview.tsx` — preview cards, modals
-- **Status**: ✅ DONE (committed local, not pushed)
-
-### 3. Verify all changes
-- [x] `npm run typecheck` — passed
-- [x] `npm run build` — passed (5.99s)
-- [ ] git push to Vercel — awaiting user approval
-
-### 4. Remaining issues
-- **Topbar separation**: Removed `glx` from `#router-view-box` in App.tsx, replaced with `bg-transparent`. Need user to verify this fixed the line-under-topbar.
-- **Standalone `bg-white` panels** in ExamPreview.tsx still need conversion to `glx` (86 remaining instances).
-- Student-facing pages (`ExamPortal.tsx`, `SecureExamPortal.tsx`) not touched per exclusion.
-
-## Next steps
-1. Wait for user to verify the border/topbar fix on deployed URL
-2. If confirmed, push the commit
-3. Fix remaining standalone `bg-white` panels in ExamPreview.tsx
-4. Address any new bugs the user finds
+## Next
+1. Global sweep: convert all inline input `text-xs` → `text-sm` in teacher pages
+2. Verify all dropdowns use the custom Dropdown component (not native select)

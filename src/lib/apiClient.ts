@@ -14,7 +14,11 @@ export async function apiGet<T>(path: string): Promise<T> {
   return apiRequest<T>(path, { method: 'GET' });
 }
 
-export async function apiPost<T>(path: string, body?: unknown, headers?: Record<string, string>): Promise<T> {
+export async function apiPost<T>(
+  path: string,
+  body?: unknown,
+  headers?: Record<string, string>,
+): Promise<T> {
   return apiRequest<T>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(headers || {}) },
@@ -33,9 +37,10 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   const payload = contentType.includes('application/json') ? await res.json() : await res.text();
 
   if (!res.ok) {
-    const message = typeof payload === 'object' && payload && 'error' in payload
-      ? String((payload as { error: unknown }).error)
-      : 'api_request_failed';
+    const message =
+      typeof payload === 'object' && payload && 'error' in payload
+        ? String((payload as { error: unknown }).error)
+        : 'api_request_failed';
     throw new ApiError(message, res.status, payload);
   }
 

@@ -33,21 +33,29 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
       return (
-        <div className="min-h-screen flex items-center justify-center bg-white/3 p-8" dir="rtl">
-          <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-red-200 p-8 text-center">
+        <div
+          className="min-h-screen flex items-center justify-center bg-[var(--color-glass-light-fill)] p-8"
+          dir="rtl"
+        >
+          <div className="max-w-md w-full  bg-[var(--color-surface)] rounded-xl shadow-lg border border-[var(--color-danger)]/20 p-8 text-center">
             <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">خطایی رخ داد</h2>
-            <p className="text-[var(--color-text-secondary)] mb-1 text-sm">
+            <h2 className="text-heading-2 font-bold text-[var(--color-text-primary)] mb-2">
+              خطایی رخ داد
+            </h2>
+            <p className="text-[var(--color-text-secondary)] mb-1 text-label">
               بخشی از برنامه با خطا مواجه شد. لطفاً دوباره تلاش کنید.
             </p>
             {this.state.error && (
-              <p className="text-xs text-[var(--color-text-tertiary)] mb-4 font-mono" dir="ltr">
+              <p
+                className="text-caption text-[var(--color-text-tertiary)] mb-4 font-mono"
+                dir="ltr"
+              >
                 {this.state.error.message}
               </p>
             )}
             <button
               onClick={this.handleReset}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="px-6 py-2 bg-[var(--color-info-soft)] text-white rounded-lg hover:bg-[var(--color-info-soft)] transition-colors font-medium"
             >
               تلاش مجدد
             </button>

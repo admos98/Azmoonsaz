@@ -7,7 +7,7 @@
  * transformOrigin computed relative to the trigger button.
  *
  * Usage:
- *   const { ref, open, triggerOpen, close } = usePanelAnimation<HTMLButtonElement>();
+ *   const { panelRef, triggerRef, open, setOpen, toggle, transformOriginStyle } = usePanelAnimation<HTMLDivElement>();
  *   // triggerRef = the button that opens the panel
  */
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -16,6 +16,9 @@ export function usePanelAnimation<T extends HTMLElement = HTMLElement>() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<T>(null);
   const triggerRef = useRef<HTMLElement>(null);
+  const [transformOriginStyle, setTransformOriginStyle] = useState<React.CSSProperties | undefined>(
+    undefined,
+  );
 
   const triggerOpen = useCallback(() => setOpen(true), []);
   const close = useCallback(() => setOpen(false), []);
@@ -41,13 +44,18 @@ export function usePanelAnimation<T extends HTMLElement = HTMLElement>() {
     };
   }, []);
 
-  // Set transformOrigin when panel opens
+  // Set transformOrigin when panel opens — via effect, not render
   useEffect(() => {
-    if (!open || !panelRef.current || !triggerRef.current) return;
-    const style = computeTransformOrigin();
-    if (style && panelRef.current) {
-      panelRef.current.style.transformOrigin = style.transformOrigin;
+    if (!open) {
+      setTransformOriginStyle(undefined);
+      return;
     }
+    // Wait a tick for the panel to mount and measure
+    const raf = requestAnimationFrame(() => {
+      const style = computeTransformOrigin();
+      if (style) setTransformOriginStyle(style);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [open, computeTransformOrigin]);
 
   // Close on outside click
@@ -75,6 +83,6 @@ export function usePanelAnimation<T extends HTMLElement = HTMLElement>() {
     triggerOpen,
     close,
     toggle,
-    transformOriginStyle: open ? computeTransformOrigin() : undefined,
+    transformOriginStyle,
   };
 }

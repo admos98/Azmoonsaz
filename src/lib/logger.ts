@@ -5,6 +5,8 @@
  * In development, all levels are visible.
  */
 
+/* eslint-disable no-console */
+
 const isProd = import.meta.env.PROD;
 
 export const logger = {

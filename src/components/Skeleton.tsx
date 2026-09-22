@@ -12,7 +12,13 @@ export function SkeletonLine({ className = '' }: { className?: string }) {
   return <div className={`skeleton h-4 ${className}`} />;
 }
 
-export function SkeletonCircle({ size = 40, className = '' }: { size?: number; className?: string }) {
+export function SkeletonCircle({
+  size = 40,
+  className = '',
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
     <div
       className={`skeleton rounded-full shrink-0 ${className}`}
@@ -23,7 +29,7 @@ export function SkeletonCircle({ size = 40, className = '' }: { size?: number; c
 
 export function SkeletonCard({ className = '' }: { className?: string }) {
   return (
-    <div className={`glass-1 rounded-xl p-6 space-y-4 ${className}`}>
+    <div className={`glx rounded-xl p-6 space-y-4 ${className}`}>
       <div className="flex items-center justify-between">
         <SkeletonLine className="w-1/3" />
         <SkeletonCircle size={32} />
@@ -57,11 +63,11 @@ export function DashboardSkeleton() {
 export function PageSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="h-8 w-48 bg-white/6 rounded-xl" />
-      <div className="h-40 bg-white/4 rounded-2xl" />
+      <div className="h-8 w-48 bg-[var(--color-glass-light-stroke)] rounded-xl" />
+      <div className="h-40 bg-[var(--color-glass-light-fill)] rounded-2xl" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-32 bg-white/4 rounded-2xl" />
+          <div key={i} className="h-32 bg-[var(--color-glass-light-fill)] rounded-2xl" />
         ))}
       </div>
     </div>

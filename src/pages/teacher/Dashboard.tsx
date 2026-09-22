@@ -8,38 +8,22 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   FileText,
   Users,
-  HelpCircle,
   CheckSquare,
   Plus,
-  ArrowUpRight,
-  ArrowDownRight,
   Clock,
   Award,
-  ShieldAlert,
   ChevronLeft,
   Upload,
   FileSpreadsheet,
   AlertTriangle,
   CheckCircle,
-  Flame,
   Eye,
   BookOpen,
-  Trash2,
-  ListFilter,
 } from 'lucide-react';
 
 import { logger } from '../../lib/logger';
-import { Student, Exam, Submission, Question, Teacher, ClassGroup } from '../../types';
-import {
-  Button,
-  Card,
-  Badge,
-  StatusBadge,
-  Modal,
-  EmptyState,
-  FileDropzone,
-  Table,
-} from '../../components/UIComponents';
+import { Student, Exam, Submission, Question, ClassGroup } from '../../types';
+import { Button, Card, StatusBadge, EmptyState, Table } from '../../components/UIComponents';
 import { TheMark } from '../../components/TheMark';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
 import {
@@ -64,7 +48,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   const [localStudents, setLocalStudents] = useState<Student[]>([]);
   const [localExams, setLocalExams] = useState<Exam[]>([]);
   const [localSubmissions, setLocalSubmissions] = useState<Submission[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   const [localQuestions, setLocalQuestions] = useState<Question[]>([]);
 
@@ -99,7 +83,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
   // Excel import simulator state
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
-  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [_excelFile, setExcelFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [importStep, setImportStep] = useState<'idle' | 'reading' | 'mapping' | 'preview' | 'done'>(
     'idle',
@@ -216,13 +200,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="text-right">
-            <span className="bg-[var(--color-glass-light-fill)] text-[var(--color-text-secondary)] text-[11px] font-bold px-3 py-1 rounded-full border border-[var(--color-glass-light-stroke)]">
+            <span className="bg-[var(--color-glass-light-fill)] text-[var(--color-text-secondary)] text-micro font-bold px-3 py-1 rounded-full border border-[var(--color-glass-light-stroke)]">
               {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
-            <h2 className="text-xl md:text-2xl font-black mt-3 leading-snug text-[var(--color-text-primary)]">
+            <h2 className="text-heading-2 md:text-heading-1 font-black mt-3 leading-snug text-[var(--color-text-primary)]">
               سلام، استاد {teacher?.name || 'گرمی'} عزیز
             </h2>
-            <p className="text-xs md:text-sm mt-2 max-w-2xl leading-relaxed text-[var(--color-text-secondary)]">
+            <p className="text-caption md:text-label mt-2 max-w-2xl leading-relaxed text-[var(--color-text-secondary)]">
               {formatPersianNumber(totalExams)} آزمون جاری فعال و{' '}
               {formatPersianNumber(pendingGradings)} پاسخ‌برگ در صف تصحیح.
             </p>
@@ -241,7 +225,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               <button
                 id="hero-btn-new-exam"
                 onClick={() => onNavigate('exams/new')}
-                className="px-5 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
+                className="px-5 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>طراحی آزمون نو</span>
@@ -249,7 +233,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               <button
                 id="hero-btn-questions"
                 onClick={() => onNavigate('questions')}
-                className="px-5 py-3 bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-glass-light-fill)]/30 text-[var(--color-text-primary)] border border-[var(--color-glass-light-stroke)] rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                className="px-5 py-3 bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-glass-light-fill)]/30 text-[var(--color-text-primary)] border border-[var(--color-glass-light-stroke)] rounded-xl text-caption font-semibold transition-all cursor-pointer"
               >
                 افزودن سوال جدید
               </button>
@@ -266,17 +250,19 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         {/* Card 1: Students */}
         <Card hoverable className="flex flex-col justify-between" id="stat-card-total-students">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-[var(--color-text-tertiary)]">
+            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
               تعداد دانش‌آموزان
             </span>
-            <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-indigo-600">
+            <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
               {formatPersianNumber(totalStudents)}{' '}
-              <span className="text-xs font-normal text-[var(--color-text-tertiary)]">نفر</span>
+              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                نفر
+              </span>
             </span>
           </div>
         </Card>
@@ -284,19 +270,21 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         {/* Card 2: Total Questions */}
         <Card hoverable className="flex flex-col justify-between" id="stat-card-total-questions">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-[var(--color-text-tertiary)]">
+            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
               تعداد کل سوالات
             </span>
-            <div className="p-2.5 rounded-xl bg-[var(--color-success-soft)] text-emerald-600">
+            <div className="p-2.5 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)]">
               <BookOpen className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
               {formatPersianNumber(qBankTotal)}{' '}
-              <span className="text-xs font-normal text-[var(--color-text-tertiary)]">سوال</span>
+              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                سوال
+              </span>
             </span>
-            <span className="text-[10px] text-[var(--color-text-tertiary)] mt-1.5 block">
+            <span className="text-micro text-[var(--color-text-tertiary)] mt-1.5 block">
               منطبق با کتب درسی جدید
             </span>
           </div>
@@ -305,7 +293,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         {/* Card 3: Active Exams */}
         <Card hoverable className="flex flex-col justify-between" id="stat-card-active-exams">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-[var(--color-text-tertiary)]">
+            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
               آزمون‌های فعال در کلاس
             </span>
             <div className="p-2.5 rounded-xl bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
@@ -313,12 +301,14 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
               {formatPersianNumber(activeExams)}{' '}
-              <span className="text-xs font-normal text-[var(--color-text-tertiary)]">آزمون</span>
+              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                آزمون
+              </span>
             </span>
             <span
-              className={`text-[10px] font-bold mt-1.5 block ${activeExams > 0 ? 'text-[var(--color-warning)] animate-pulse' : 'text-[var(--color-text-tertiary)]'}`}
+              className={`text-micro font-bold mt-1.5 block ${activeExams > 0 ? 'text-[var(--color-warning)] animate-pulse' : 'text-[var(--color-text-tertiary)]'}`}
             >
               {activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمون در حال برگذاری نیست'}
             </span>
@@ -328,7 +318,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         {/* Card 4: Submissions Pending Grading */}
         <Card hoverable className="flex flex-col justify-between" id="stat-card-pending-reviews">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-[var(--color-text-tertiary)]">
+            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
               نیازمند تصحیح تشریحی
             </span>
             <div className="p-2.5 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
@@ -336,11 +326,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
               {formatPersianNumber(pendingGradings)}{' '}
-              <span className="text-xs font-normal text-[var(--color-text-tertiary)]">برگه</span>
+              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                برگه
+              </span>
             </span>
-            <span className="text-[10px] text-[var(--color-danger)] font-bold mt-1.5 block">
+            <span className="text-micro text-[var(--color-danger)] font-bold mt-1.5 block">
               پاسخ‌های تشریحی چشم‌براه نمره
             </span>
           </div>
@@ -349,7 +341,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         {/* Card 5: Scheduled Exams */}
         <Card hoverable className="flex flex-col justify-between" id="stat-card-scheduled-exams">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-[var(--color-text-tertiary)]">
+            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
               آزمون‌های زمان‌بندی‌شده
             </span>
             <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
@@ -357,11 +349,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </div>
           </div>
           <div className="mt-4">
-            <span className="text-2xl font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
               {formatPersianNumber(scheduledExams)}{' '}
-              <span className="text-xs font-normal text-[var(--color-text-tertiary)]">مورد</span>
+              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                مورد
+              </span>
             </span>
-            <span className="text-[10px] text-[var(--color-text-tertiary)] mt-1.5 block">
+            <span className="text-micro text-[var(--color-text-tertiary)] mt-1.5 block">
               برنامه‌ریزی آغاز در روزهای آتی
             </span>
           </div>
@@ -370,7 +364,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
       {/* 3. Quick Actions Row */}
       <div className="glx p-6 rounded-2xl text-right" id="quick-actions-section">
-        <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+        <h3 className="text-label font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
           <span>اقدامات سریع</span>
         </h3>
 
@@ -383,7 +377,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
               <Upload className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-[var(--color-text-secondary)]">
+            <span className="text-caption font-bold text-[var(--color-text-secondary)]">
               ورود از اکسل
             </span>
           </button>
@@ -396,7 +390,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <div className="p-2.5 bg-[var(--color-success-soft)] text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
               <Plus className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-[var(--color-text-secondary)]">سوال جدید</span>
+            <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+              سوال جدید
+            </span>
           </button>
 
           <button
@@ -407,7 +403,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <div className="p-2.5 bg-[var(--color-warning-soft)] text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
               <FileText className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-[var(--color-text-secondary)]">آزمون جدید</span>
+            <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+              آزمون جدید
+            </span>
           </button>
 
           <button
@@ -418,7 +416,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
               <Eye className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-[var(--color-text-secondary)]">
+            <span className="text-caption font-bold text-[var(--color-text-secondary)]">
               مشاهده نتایج
             </span>
           </button>
@@ -431,7 +429,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <div className="p-2.5 bg-[var(--color-danger)]/10 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
               <CheckSquare className="w-5 h-5" />
             </div>
-            <span className="text-xs font-bold text-[var(--color-danger)]">تصحیح تشریحی</span>
+            <span className="text-caption font-bold text-[var(--color-danger)]">تصحیح تشریحی</span>
           </button>
         </div>
       </div>
@@ -444,16 +442,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <div className="glx p-6 rounded-2xl" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+                <h3 className="text-label font-bold text-[var(--color-text-primary)]">
                   آزمون‌های زمان‌بندی‌شده مابعد و پیش‌رو
                 </h3>
-                <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+                <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
                   سنجش‌های در حال آماده‌سازی یا فعال کنونی
                 </p>
               </div>
               <button
                 onClick={() => onNavigate('exams')}
-                className="text-[11px] text-indigo-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-micro text-[var(--color-accent)] font-bold hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>مدیریت کلیه آزمون‌ها</span>
                 <ChevronLeft className="w-3 h-3" />
@@ -470,22 +468,22 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-xs font-bold text-[var(--color-text-primary)]">
+                          <h4 className="text-caption font-bold text-[var(--color-text-primary)]">
                             {ex.title}
                           </h4>
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[9px] font-bold ${
+                            className={`px-2 py-0.5 rounded-md text-micro font-bold ${
                               ex.settings.mode === 'official'
-                                ? 'bg-orange-50 text-orange-700 border border-orange-100'
+                                ? 'bg-[var(--color-warning-soft)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/20'
                                 : 'glx-inset text-[var(--color-text-secondary)]'
                             }`}
                           >
                             {ex.settings.mode === 'official' ? 'رسمی' : 'تمرینی'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-[var(--color-text-tertiary)]">
+                        <div className="flex items-center gap-3 text-micro text-[var(--color-text-tertiary)]">
                           <span>پایه: {ex.grade}</span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-white/3" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-glass-light-stroke)]" />
                           <span>
                             کلاس:{' '}
                             {ex.classGroupIds
@@ -493,7 +491,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                               .filter(Boolean)
                               .join(' و ')}
                           </span>
-                          <span className="w-1.5 h-1.5 rounded-full bg-white/3" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-glass-light-stroke)]" />
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3 text-[var(--color-text-tertiary)]" />
                             {formatPersianNumber(ex.duration)} دقیقه
@@ -503,10 +501,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
                       <div className="flex items-center justify-between sm:justify-end gap-3 pt-3 sm:pt-0 border-t sm:border-t-0 border-[var(--color-glass-light-stroke)]">
                         <div className="text-right sm:text-left">
-                          <p className="text-[10px] text-[var(--color-text-tertiary)] font-medium">
+                          <p className="text-micro text-[var(--color-text-tertiary)] font-medium">
                             مهلت شروع/ثبت شده
                           </p>
-                          <p className="text-[10px] text-[var(--color-text-secondary)] font-semibold mt-0.5 dir-ltr">
+                          <p className="text-micro text-[var(--color-text-secondary)] font-semibold mt-0.5 dir-ltr">
                             {ex.settings.startTime
                               ? new Date(ex.settings.startTime).toLocaleTimeString('fa-IR', {
                                   hour: '2-digit',
@@ -540,16 +538,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <div className="glx rounded-2xl overflow-hidden" id="section-recent-submissions">
             <div className="p-6 border-b border-[var(--color-glass-light-stroke)] flex justify-between items-center">
               <div>
-                <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+                <h3 className="text-label font-bold text-[var(--color-text-primary)]">
                   آخرین پاسخ‌برگ‌های ارسال شده دانش‌آموزان
                 </h3>
-                <p className="text-[10px] text-[var(--color-text-tertiary)] mt-1">
+                <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
                   سنجش‌های زنده با قابلیت تصحیح سریع معلم
                 </p>
               </div>
               <button
                 onClick={() => onNavigate('results')}
-                className="text-[11px] text-indigo-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-micro text-[var(--color-accent)] font-bold hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>مشاهده کلیه نتایج</span>
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -577,7 +575,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                       return (
                         <tr
                           key={sub.id}
-                          className="hover:brightness-105 transition-colors text-xs md:text-sm"
+                          className="hover:brightness-105 transition-colors text-caption md:text-label"
                         >
                           <td className="p-4 font-bold text-[var(--color-text-secondary)]">
                             {sub.studentName}
@@ -613,7 +611,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                                   onNavigate('results');
                                 }
                               }}
-                              variant={isGraded ? 'indigo' : 'danger'}
+                              variant={isGraded ? 'primary' : 'danger'}
                               size="sm"
                               disabled={isOngoing}
                             >
@@ -638,13 +636,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                           className="p-4 space-y-3"
                           id={`submission-mob-card-${sub.id}`}
                         >
-                          <div className="flex justify-between items-center text-xs">
+                          <div className="flex justify-between items-center text-caption">
                             <span className="font-bold text-[var(--color-text-primary)]">
                               {sub.studentName}
                             </span>
                             <StatusBadge status={sub.status} />
                           </div>
-                          <div className="text-[11px] text-[var(--color-text-tertiary)] space-y-1">
+                          <div className="text-micro text-[var(--color-text-tertiary)] space-y-1">
                             <p>کلاس: {getStudentClassLabel(sub.studentId)}</p>
                             <p>آزمون: {getExamTitle(sub.examId)}</p>
                             <p>
@@ -672,7 +670,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                                   onNavigate('results');
                                 }
                               }}
-                              variant={isGraded ? 'indigo' : 'danger'}
+                              variant={isGraded ? 'primary' : 'danger'}
                               size="sm"
                               disabled={isOngoing}
                               className="w-full"
@@ -710,7 +708,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="space-y-6" id="dashboard-right-sidebar">
           {/* 6. Question Bank Health Section */}
           <div className="glx p-6 rounded-2xl text-right" id="section-q-bank-health">
-            <h3 className="text-xs font-black text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+            <h3 className="text-caption font-black text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
               <span>وضعیت بانک سوالات</span>
             </h3>
 
@@ -718,10 +716,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <div className="space-y-5" id="charts-q-bank">
               {/* Chart A: Question Count by base/grade */}
               <div className="space-y-2">
-                <span className="text-[11px] font-bold text-[var(--color-text-tertiary)] block">
+                <span className="text-micro font-bold text-[var(--color-text-tertiary)] block">
                   پراکندگی سوالات بر اساس پایه‌های درسی
                 </span>
-                <div className="flex bg-white/4 h-6 rounded-lg overflow-hidden text-[9px] font-semibold text-white">
+                <div className="flex bg-[var(--color-glass-light-fill)] h-6 rounded-lg overflow-hidden text-micro font-semibold text-white">
                   <div
                     className="bg-[var(--color-accent)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(grade7QCount / qBankTotal) * 100}%` }}
@@ -744,7 +742,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     {grade9QCount > 0 && `نهم (${grade9QCount})`}
                   </div>
                 </div>
-                <div className="flex justify-between text-[9px] text-[var(--color-text-tertiary)] px-1">
+                <div className="flex justify-between text-micro text-[var(--color-text-tertiary)] px-1">
                   <span>هفتم: {grade7QCount}س</span>
                   <span>هشتم: {grade8QCount}س</span>
                   <span>نهم: {grade9QCount}س</span>
@@ -753,33 +751,33 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
               {/* Chart B: Count by Type */}
               <div className="space-y-2">
-                <span className="text-[11px] font-bold text-[var(--color-text-tertiary)] block">
+                <span className="text-micro font-bold text-[var(--color-text-tertiary)] block">
                   تفکیک ساختاری نوع سوالات بانک
                 </span>
-                <div className="flex bg-white/4 h-6 rounded-lg overflow-hidden text-[9px] font-semibold text-white">
+                <div className="flex bg-[var(--color-glass-light-fill)] h-6 rounded-lg overflow-hidden text-micro font-semibold text-white">
                   <div
-                    className="bg-rose-500 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
+                    className="bg-[var(--color-danger)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(typeMultiChoiceCount / qBankTotal) * 100}%` }}
                     title={`تستی: ${typeMultiChoiceCount} سوال`}
                   >
                     {typeMultiChoiceCount > 0 && `تستی (${typeMultiChoiceCount})`}
                   </div>
                   <div
-                    className="bg-[var(--color-accent-soft)]0 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
+                    className="bg-[var(--color-accent-soft)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(typeEssayCount / qBankTotal) * 100}%` }}
                     title={`تشریحی: ${typeEssayCount} سوال`}
                   >
                     {typeEssayCount > 0 && `تشریحی (${typeEssayCount})`}
                   </div>
                   <div
-                    className="bg-[var(--color-warning-soft)]0 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
+                    className="bg-[var(--color-warning-soft)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
                     style={{ width: `${(typeRestCount / qBankTotal) * 100}%` }}
                     title={`سایر: ${typeRestCount} سوال`}
                   >
                     {typeRestCount > 0 && `سایر (${typeRestCount})`}
                   </div>
                 </div>
-                <div className="flex justify-between text-[9px] text-[var(--color-text-tertiary)] px-1">
+                <div className="flex justify-between text-micro text-[var(--color-text-tertiary)] px-1">
                   <span>تستی: {typeMultiChoiceCount} مورد</span>
                   <span>تشریحی: {typeEssayCount} مورد</span>
                   <span>سایر: {typeRestCount} مورد</span>
@@ -789,18 +787,20 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
             {/* Custom Beast Mode Prompt Warning Box */}
             <div
-              className="mt-5 p-4 bg-orange-50 border border-orange-100 rounded-2xl flex items-start gap-3"
+              className="mt-5 p-4 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 rounded-2xl flex items-start gap-3"
               id="beast-mode-alert"
             >
-              <AlertTriangle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h5 className="text-[11px] font-bold text-orange-800">کمبود جدی بانک سوالات</h5>
-                <p className="text-[10px] text-[var(--color-warning)] leading-relaxed">
+              <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] shrink-0 mt-0.5" />
+              <div className="space-y-1.5">
+                <h5 className="text-micro font-bold text-[var(--color-warning)]">
+                  کمبود جدی بانک سوالات
+                </h5>
+                <p className="text-micro text-[var(--color-warning)] leading-relaxed">
                   برای حالت Beast Mode سوالات کافی نیست.
                 </p>
                 <button
                   onClick={() => onNavigate('questions')}
-                  className="text-[9px] font-black text-indigo-600 hover:text-indigo-800 hover:underline block pt-1 cursor-pointer"
+                  className="text-micro font-black text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] hover:underline block pt-1 cursor-pointer"
                 >
                   بهبود بانک سوالات
                 </button>
@@ -810,7 +810,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
           {/* Active Class Groups List */}
           <div className="glx p-6 rounded-2xl" id="section-class-groups-list">
-            <h3 className="text-xs font-black text-[var(--color-text-primary)] mb-4">
+            <h3 className="text-caption font-black text-[var(--color-text-primary)] mb-4">
               آمار کلاس‌های تحت پوشش پایه‌ها
             </h3>
             <div className="space-y-3">
@@ -820,19 +820,19 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   className="p-3.5 rounded-2xl glx flex justify-between items-center hover:brightness-105 transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[var(--color-accent-soft)] border border-[var(--color-accent-soft)] flex items-center justify-center text-indigo-600 text-xs font-bold">
+                    <div className="w-9 h-9 rounded-xl bg-[var(--color-accent-soft)] border border-[var(--color-accent-soft)] flex items-center justify-center text-[var(--color-accent)] text-caption font-bold">
                       {cg.grade.slice(0, 2)}
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-[var(--color-text-primary)]">
+                      <h4 className="text-caption font-bold text-[var(--color-text-primary)]">
                         {cg.name}
                       </h4>
-                      <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
+                      <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
                         پایه {cg.grade}
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] glx-inset text-[var(--color-text-secondary)] px-2.5 py-1 rounded-full font-bold">
+                  <span className="text-micro glx-inset text-[var(--color-text-secondary)] px-2.5 py-1 rounded-full font-bold">
                     {cg.studentCount} دانش‌آموز
                   </span>
                 </div>
@@ -842,7 +842,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <button
               id="sidebar-add-class-dashboard"
               onClick={() => onNavigate('students')}
-              className="w-full py-2.5 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl text-xs font-semibold mt-4 border border-dashed border-[var(--color-glass-light-stroke)] transition-all flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full py-2.5 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl text-caption font-semibold mt-4 border border-dashed border-[var(--color-glass-light-stroke)] transition-all flex items-center justify-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>ایجاد کلاس یا گروه جدید</span>
@@ -856,17 +856,17 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 <Award className="w-5 h-5" />
               </div>
               <div className="space-y-1.5 flex-1">
-                <h4 className="text-xs font-bold text-[var(--color-text-primary)]">
+                <h4 className="text-caption font-bold text-[var(--color-text-primary)]">
                   راهنمای هوشمند آزمون‌ساز
                 </h4>
-                <p className="text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
+                <p className="text-micro text-[var(--color-text-secondary)] leading-relaxed">
                   آیا می‌دانید با فعال‌سازی گزینه «قفل کردن مرورگر (حالت حفاظتی)»، دانش‌آموز در صورت
                   خارج شدن دائم از تب امتحان، پاسخ‌برگش به صورت خودکار بایگانی خواهد شد؟
                 </p>
                 <div className="pt-2">
                   <button
                     onClick={() => onNavigate('exams')}
-                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+                    className="text-micro font-bold text-[var(--color-accent)] hover:text-[var(--color-accent)] hover:underline cursor-pointer"
                   >
                     تنظیمات تخصصی آزمون
                   </button>
@@ -889,7 +889,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx-strong w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl text-right text-xs glx-sheen"
+            className="glx-strong w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl text-right text-caption glx-sheen"
             id="excel-import-dialog"
           >
             {/* Modal Header */}
@@ -904,8 +904,8 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               >
                 بستن ×
               </button>
-              <span className="font-bold text-[var(--color-text-primary)] text-sm flex items-center gap-1.5">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+              <span className="font-bold text-[var(--color-text-primary)] text-label flex items-center gap-1.5">
+                <FileSpreadsheet className="w-5 h-5 text-[var(--color-success)]" />
                 ورود اطلاعات دانش‌آموزان از طریق فایل اکسل / CSV
               </span>
             </div>
@@ -914,7 +914,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <div className="p-6 space-y-5">
               {importStep === 'idle' && (
                 <div className="space-y-4">
-                  <p className="text-[var(--color-text-tertiary)] leading-relaxed text-[11px]">
+                  <p className="text-[var(--color-text-tertiary)] leading-relaxed text-micro">
                     برای ورود فله‌ای مشخصات دانش‌آموزان و قراردهی آن‌ها در کلاس‌ها، می‌توانید فایل
                     خروجی سناد یا فایل دستی اکسل با پسوندهای{' '}
                     <strong className="font-semibold text-[var(--color-text-secondary)]">
@@ -926,7 +926,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     </strong>{' '}
                     را بارگذاری کنید.
                   </p>
-                  <p className="text-[var(--color-warning)] font-bold text-[10.5px] bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
+                  <p className="text-[var(--color-warning)] font-bold text-micro bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
                     در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
                   </p>
 
@@ -946,12 +946,12 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                       <p className="font-bold text-[var(--color-text-secondary)]">
                         فایل خود را به این قسمت بکشید و رها کنید
                       </p>
-                      <p className="text-[10px] text-[var(--color-text-tertiary)]">
+                      <p className="text-micro text-[var(--color-text-tertiary)]">
                         یا برای انتخاب فایل از روی حافظه کلیک کنید
                       </p>
                     </div>
 
-                    <label className="mt-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-[10px] cursor-pointer shadow-xs transition-all">
+                    <label className="mt-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-micro cursor-pointer shadow-xs transition-all">
                       انتخاب فایل اکسل
                       <input
                         type="file"
@@ -962,7 +962,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     </label>
                   </div>
 
-                  <div className="p-3.5 bg-[var(--color-accent-soft)]/30 border border-[var(--color-accent-soft)]/40 rounded-xl text-indigo-800 flex items-start gap-2 text-[10px]">
+                  <div className="p-3.5 bg-[var(--color-accent-soft)]/30 border border-[var(--color-accent-soft)]/40 rounded-xl text-[var(--color-accent)] flex items-start gap-2 text-micro">
                     <span className="font-bold">نکته راهنما:</span>
                     <span>
                       ستون‌های الزامی در فایل اکسل باید شامل «نام و نام خانوادگی»، «کد ملی» و «پایه
@@ -975,14 +975,14 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               {/* Progress Loading Simulated Screen */}
               {(importStep === 'reading' || importStep === 'mapping') && (
                 <div className="py-8 space-y-4 text-center">
-                  <div className="w-12 h-12 rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-indigo-600 animate-spin mx-auto" />
+                  <div className="w-12 h-12 rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-accent)] animate-spin mx-auto" />
                   <div className="space-y-1.5">
                     <p className="font-bold text-[var(--color-text-primary)]">
                       {importStep === 'reading'
                         ? 'درحال بارگذاری و استخراج بیت‌های فایل...'
                         : 'درحال قرینه‌سازی با سطوح سنادی استان...'}
                     </p>
-                    <p className="text-[10px] text-[var(--color-text-tertiary)]">
+                    <p className="text-micro text-[var(--color-text-tertiary)]">
                       لطفاً از بستن این کادر یا رفرش تب مرورگر خود خودداری نمایید.
                     </p>
                   </div>
@@ -1005,12 +1005,12 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     </span>
                   </div>
 
-                  <p className="text-[var(--color-text-tertiary)] text-[11px]">
+                  <p className="text-[var(--color-text-tertiary)] text-micro">
                     پیش‌نمایش رکوردهای خوانده‌شده قبل از درج نهایی دیتابیس:
                   </p>
 
                   <div className="border border-[var(--color-glass-light-stroke)] glx rounded-xl overflow-hidden p-6 text-center">
-                    <p className="text-sm text-[var(--color-text-tertiary)] font-bold">
+                    <p className="text-label text-[var(--color-text-tertiary)] font-bold">
                       پیش‌نمایش داده‌ها پس از پیاده‌سازی واقعی ورود اکسل نمایش داده خواهد شد.
                     </p>
                   </div>
@@ -1039,13 +1039,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               {/* SUCCESS final Simulation state */}
               {importStep === 'done' && (
                 <div className="py-8 space-y-3 text-center">
-                  <div className="w-14 h-14 bg-[var(--color-success-soft)] text-emerald-600 border border-[var(--color-success)]/10 rounded-full flex items-center justify-center mx-auto">
+                  <div className="w-14 h-14 bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle className="w-8 h-8" />
                   </div>
-                  <h4 className="text-sm font-bold text-[var(--color-text-primary)]">
+                  <h4 className="text-label font-bold text-[var(--color-text-primary)]">
                     عملیات انتقال پرونده‌ها پیروز بود!
                   </h4>
-                  <p className="text-[11px] text-[var(--color-text-tertiary)] leading-relaxed max-w-xs mx-auto">
+                  <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed max-w-xs mx-auto">
                     تعداد ۳ دانش‌آموز جدید وارد بانک اطلاعاتی گردید و اینک در بخش آمار و کلاس‌بندی
                     سازماندهی شده‌اند.
                   </p>

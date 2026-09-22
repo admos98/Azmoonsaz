@@ -5,7 +5,9 @@ let client: SupabaseClient | null = null;
 
 export function getSupabasePublicClient(): SupabaseClient {
   if (!publicEnv.isSupabaseConfigured) {
-    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local.');
+    throw new Error(
+      'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local.',
+    );
   }
 
   if (!client) {

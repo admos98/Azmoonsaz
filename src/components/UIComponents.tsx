@@ -1,15 +1,13 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * @license SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
   Loader2,
   UploadCloud,
-  CheckCircle2,
   CheckCircle,
   AlertCircle,
   HelpCircle,
@@ -26,8 +24,9 @@ import { formatPersianNumber } from '../services/persianHelpers';
    1. BUTTON COMPONENT
    ========================================== */
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'indigo';
-  size?: 'sm' | 'md' | 'glx';
+  variant?:
+    'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'gold' | 'indigo';
+  size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
   iconPosition?: 'start' | 'end';
@@ -51,8 +50,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyle =
       'inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none';
 
-    const variants = {
+    const variants: Record<ButtonProps['variant'] & {}, string> = {
       primary: 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-sm',
+      indigo: 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-sm',
       secondary: 'glx-inset hover:brightness-105 text-[var(--color-text-primary)]',
       outline:
         'bg-transparent hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)]',
@@ -62,10 +62,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       gold: 'bg-[var(--color-gold)] hover:bg-[var(--color-gold)]/90 text-[var(--color-ink)] shadow-sm',
     };
 
-    const sizes = {
-      sm: 'px-3 py-1.5 text-xs',
-      md: 'px-4.5 py-2.5 text-xs md:text-sm',
-      lg: 'px-6 py-3.5 text-sm md:text-md',
+    const sizes: Record<ButtonProps['size'] & {}, string> = {
+      sm: 'px-3 py-1.5 text-caption',
+      md: 'px-4.5 py-2.5 text-caption md:text-label',
+      lg: 'px-6 py-3.5 text-label md:text-md',
     };
 
     return (
@@ -89,28 +89,43 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
    ========================================== */
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   hoverable?: boolean;
+  glassLayer?: 'light' | 'strong' | 'inset';
   children?: React.ReactNode;
   className?: string;
   id?: string;
   key?: React.Key;
 }
 
-export const Card = ({ children, hoverable = false, className = '', ...props }: CardProps) => {
+export const Card = ({
+  children,
+  hoverable = false,
+  glassLayer = 'light',
+  className = '',
+  ...props
+}: CardProps) => {
+  const glassClass = {
+    light: 'glx',
+    strong: 'glx-strong',
+    inset: 'glx-inset',
+  }[glassLayer];
+
   if (hoverable) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const spreadProps = props as any;
     return (
       <motion.div
         whileHover={{ y: -4, scale: 1.01 }}
         whileTap={{ scale: 0.995 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className={`glass-1 rounded-xl p-5 md:p-6 hover:shadow-lg hover:shadow-[var(--color-accent-soft)]/40 transition-all ${className}`}
-        {...(props as any)}
+        className={`glx rounded-xl p-5 md:p-6 hover:shadow-lg hover:shadow-[var(--color-accent-soft)]/40 transition-all ${className}`}
+        {...spreadProps}
       >
         {children}
       </motion.div>
     );
   }
   return (
-    <div className={`glass-1 rounded-xl p-5 md:p-6 ${className}`} {...props}>
+    <div className={`${glassClass} rounded-xl p-5 md:p-6 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -120,27 +135,32 @@ export const Card = ({ children, hoverable = false, className = '', ...props }: 
    3. BADGE COMPONENT
    ========================================== */
 interface BadgeProps {
-  variant?: 'primary' | 'success' | 'warning' | 'danger' | 'slate' | 'info';
+  variant?: 'primary' | 'slate' | 'success' | 'warning' | 'danger' | 'info' | 'accent';
   children: React.ReactNode;
   className?: string;
 }
 
-export const Badge = ({ variant = 'slate', children, className = '' }: BadgeProps) => {
-  const styles = {
+export const Badge = ({ variant = 'info', children, className = '' }: BadgeProps) => {
+  const variantStyles: Record<NonNullable<BadgeProps['variant']>, string> = {
     primary:
       'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[var(--color-accent-soft)]',
+    slate: 'glx-inset text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]',
     success:
       'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/10',
     warning:
       'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/10',
-    danger: 'bg-rose-50 text-[var(--color-danger)] border-[var(--color-danger)]/10',
-    slate: 'glx-inset text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]',
-    info: 'bg-blue-50 text-blue-700 border-blue-100',
+    danger:
+      'bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)]/10',
+    info: 'bg-[var(--color-info-soft)] text-[var(--color-info)] border-[var(--color-info)]/10',
+    accent:
+      'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[var(--color-accent)]/10',
   };
+
+  const styleString = variantStyles[variant];
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg border leading-none ${styles[variant]} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-micro font-bold rounded-lg border leading-none ${styleString} ${className}`}
     >
       {children}
     </span>
@@ -157,18 +177,21 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge = ({ status, className = '' }: StatusBadgeProps) => {
-  const config = {
-    draft: { variant: 'slate' as const, label: 'پیش‌نویس' },
-    scheduled: { variant: 'info' as const, label: 'زمان‌بندی شده' },
-    active: { variant: 'success' as const, label: 'فعال / در حال برگزاری' },
-    completed: { variant: 'primary' as const, label: 'پایان یافته' },
-    ongoing: { variant: 'warning' as const, label: 'در حال آزمون' },
-    submitted: { variant: 'info' as const, label: 'تحویل داده شده' },
-    graded: { variant: 'success' as const, label: 'تصحیح شده' },
-    absent: { variant: 'danger' as const, label: 'غایب' },
+  const config: Record<
+    StatusBadgeProps['status'],
+    { variant: BadgeProps['variant']; label: string }
+  > = {
+    draft: { variant: 'info', label: 'پیش\u200cنویس' },
+    scheduled: { variant: 'info', label: 'زمان\u200cبندی شده' },
+    active: { variant: 'success', label: 'فعال / در حال برگزاری' },
+    completed: { variant: 'primary', label: 'پایان یافته' },
+    ongoing: { variant: 'warning', label: 'در حال آزمون' },
+    submitted: { variant: 'info', label: 'تحویل داده شده' },
+    graded: { variant: 'success', label: 'تصحیح شده' },
+    absent: { variant: 'danger', label: 'غایب' },
   };
 
-  const item = config[status] || { variant: 'slate' as const, label: String(status) };
+  const item = config[status] || { variant: 'info' as const, label: String(status) };
 
   return (
     <Badge variant={item.variant} className={className}>
@@ -203,13 +226,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
-    const inputId = id || `input-${Date.now()}`;
+    const generatedId = useId();
+    const inputId = id || generatedId;
     return (
       <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs md:text-sm font-bold text-[var(--color-text-secondary)]"
+            className="block text-caption md:text-label font-bold text-[var(--color-text-secondary)]"
           >
             {label}
           </label>
@@ -219,11 +243,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             type={type}
-            className={`w-full text-xs md:text-sm px-4 py-2.5 glx-inset hover:brightness-105 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-slate-400 ${
-              error
-                ? 'border-rose-350 focus:border-rose-500'
-                : 'border-[var(--color-glass-light-stroke)]'
-            } ${icon ? 'pr-11' : ''} ${className}`}
+            className={`w-full text-label px-4 py-2.5 glx-inset hover:brightness-105 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${icon ? 'pr-11' : ''} ${className}`}
             {...props}
           />
           {icon && (
@@ -233,15 +253,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="text-[11px] text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
+          <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{error}</span>
           </p>
         )}
         {!error && helperText && (
-          <p className="text-[11px] text-[var(--color-text-tertiary)] font-semibold">
-            {helperText}
-          </p>
+          <p className="text-micro text-[var(--color-text-tertiary)] font-semibold">{helperText}</p>
         )}
       </div>
     );
@@ -260,13 +278,14 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, id, className = '', wrapperClassName = '', ...props }, ref) => {
-    const selectId = id || `select-${Date.now()}`;
+    const generatedId = useId();
+    const selectId = id || generatedId;
     return (
       <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-xs md:text-sm font-bold text-[var(--color-text-secondary)]"
+            className="block text-caption md:text-label font-bold text-[var(--color-text-secondary)]"
           >
             {label}
           </label>
@@ -274,11 +293,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <select
           id={selectId}
           ref={ref}
-          className={`w-full text-xs md:text-sm px-4 py-2.5 glx-inset hover:brightness-105 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] ${
-            error
-              ? 'border-rose-350 focus:border-rose-500'
-              : 'border-[var(--color-glass-light-stroke)]'
-          } ${className}`}
+          className={`w-full text-label px-4 py-2.5 glx-inset hover:brightness-105 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${className}`}
           {...props}
         >
           {options.map((opt) => (
@@ -288,7 +303,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && (
-          <p className="text-[11px] text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
+          <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{error}</span>
           </p>
@@ -299,7 +314,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 );
 
 /* ==========================================
-   6B. DROPDOWN COMPONENT (custom, replaces native <select>)
+   6B. DROPDOWN COMPONENT
    ========================================== */
 interface DropdownOption {
   value: string;
@@ -318,6 +333,8 @@ interface DropdownProps {
 }
 export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
   ({ value, onChange, options, placeholder, label, error, className = '', id }, ref) => {
+    const generatedId = useId();
+    const dropdownId = id || generatedId;
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -337,22 +354,18 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
       <div className={`relative w-full text-right ${className}`} ref={dropdownRef}>
         {label && (
           <label
-            htmlFor={id || `dropdown-${Date.now()}`}
-            className="block text-xs md:text-sm font-bold text-[var(--color-text-secondary)] mb-1"
+            htmlFor={dropdownId}
+            className="block text-caption md:text-label font-bold text-[var(--color-text-secondary)] mb-1"
           >
             {label}
           </label>
         )}
         <button
-          id={id || `dropdown-${Date.now()}`}
+          id={dropdownId}
           ref={ref}
           type="button"
           onClick={() => setOpen(!open)}
-          className={`w-full flex items-center justify-between glx border px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
-            error
-              ? 'border-rose-350 focus:border-rose-500'
-              : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'
-          }`}
+          className={`w-full flex items-center justify-between glx border px-3.5 py-2.5 rounded-xl text-label font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'}`}
         >
           <span
             className={
@@ -386,11 +399,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                     onChange(opt.value);
                     setOpen(false);
                   }}
-                  className={`w-full text-right px-3.5 py-2.5 text-sm font-bold transition-all ${
-                    value === opt.value
-                      ? 'bg-[var(--color-accent-soft)]/40 text-[var(--color-accent)]'
-                      : 'text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20'
-                  }} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                  className={`w-full text-right px-3.5 py-2.5 text-label font-bold transition-all ${value === opt.value ? 'bg-[var(--color-accent-soft)]/40 text-[var(--color-accent)]' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   {opt.label}
                 </button>
@@ -399,7 +408,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           )}
         </AnimatePresence>
         {error && (
-          <p className="text-[11px] text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
+          <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{error}</span>
           </p>
@@ -421,7 +430,7 @@ interface TabItem {
 interface TabsProps {
   tabs: TabItem[];
   activeTab: string;
-  onChange: (id: string | any) => void;
+  onChange: (id: string) => void;
   className?: string;
 }
 
@@ -434,11 +443,7 @@ export const Tabs = ({ tabs, activeTab, onChange, className = '' }: TabsProps) =
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-bold rounded-xl transition-all cursor-pointer select-none ${
-              isActive
-                ? 'bg-[var(--color-gold)]/10 text-[var(--color-ink)] shadow-sm border border-[var(--color-glass-light-stroke)]'
-                : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-white/20'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 text-caption md:text-label font-bold rounded-xl transition-all cursor-pointer select-none ${isActive ? 'bg-[var(--color-gold)]/10 text-[var(--color-ink)] shadow-sm border border-[var(--color-glass-light-stroke)]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-glass-light-stroke)]/20'}`}
           >
             {tab.icon && tab.icon}
             <span>{tab.label}</span>
@@ -458,7 +463,9 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'glx' | 'xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Optional trigger button ref — modal animates from/into this button */
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
 export const Modal = ({
@@ -468,13 +475,35 @@ export const Modal = ({
   children,
   footer,
   maxWidth = 'md',
+  triggerRef,
 }: ModalProps) => {
-  const widthStyles = {
+  const widthStyles: Record<NonNullable<ModalProps['maxWidth']>, string> = {
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
   };
+
+  const [originStyle, setOriginStyle] = useState<React.CSSProperties | undefined>(undefined);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen || !triggerRef?.current || !panelRef.current) {
+      setOriginStyle(undefined);
+      return;
+    }
+    const raf = requestAnimationFrame(() => {
+      const panel = panelRef.current;
+      const trigger = triggerRef.current;
+      if (!panel || !trigger) return;
+      const panelRect = panel.getBoundingClientRect();
+      const triggerRect = trigger.getBoundingClientRect();
+      const cx = triggerRect.left + triggerRect.width / 2 - panelRect.left;
+      const cy = triggerRect.top + triggerRect.height / 2 - panelRect.top;
+      setOriginStyle({ transformOrigin: `${cx}px ${cy}px` });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [isOpen, triggerRef]);
 
   return (
     <AnimatePresence>
@@ -486,15 +515,17 @@ export const Modal = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-ink/40/40 backdrop-blur-md"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm"
           />
 
           {/* Modal Card */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            ref={panelRef}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+            style={originStyle}
             className={`relative glx-strong w-full ${widthStyles[maxWidth]} rounded-3xl shadow-2xl flex flex-col max-h-[90vh] z-10`}
             role="dialog"
             aria-modal="true"
@@ -502,7 +533,7 @@ export const Modal = ({
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-glass-light-stroke)]">
-              <h3 className="text-sm md:text-md font-black text-[var(--color-text-primary)] text-right">
+              <h3 className="text-label md:text-md font-black text-[var(--color-text-primary)] text-right">
                 {title}
               </h3>
               <button
@@ -514,7 +545,7 @@ export const Modal = ({
             </div>
 
             {/* Scrollable Body */}
-            <div className="p-6 overflow-y-auto text-xs md:text-sm text-[var(--color-text-secondary)] leading-relaxed text-right">
+            <div className="p-6 overflow-y-auto text-caption md:text-label text-[var(--color-text-secondary)] leading-relaxed text-right">
               {children}
             </div>
 
@@ -532,17 +563,32 @@ export const Modal = ({
 };
 
 /* ==========================================
-   9. CONSTANT DRAWER COMPONENT
+   9. DRAWER COMPONENT
    ========================================== */
 interface DrawerProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   placement?: 'left' | 'right';
+  width?: 'sm' | 'md' | 'lg' | 'xl';
   children: React.ReactNode;
 }
 
-export const Drawer = ({ isOpen, onClose, title, placement = 'right', children }: DrawerProps) => {
+export const Drawer = ({
+  isOpen,
+  onClose,
+  title,
+  placement = 'right',
+  width = 'md',
+  children,
+}: DrawerProps) => {
+  const widthStyles: Record<NonNullable<DrawerProps['width']>, string> = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -553,10 +599,10 @@ export const Drawer = ({ isOpen, onClose, title, placement = 'right', children }
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-ink/40/40 backdrop-blur-md"
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
           />
 
-          {/* Drawer container body */}
+          {/* Drawer container */}
           <div
             className={`absolute inset-y-0 ${placement === 'right' ? 'right-0' : 'left-0'} max-w-full flex`}
           >
@@ -565,7 +611,7 @@ export const Drawer = ({ isOpen, onClose, title, placement = 'right', children }
               animate={{ x: 0 }}
               exit={{ x: placement === 'right' ? '100%' : '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className="w-screen max-w-md glx-strong shadow-2xl flex flex-col divide-y divide-slate-200"
+              className={`w-screen ${widthStyles[width]} glx-strong shadow-2xl flex flex-col divide-y divide-[var(--color-glass-light-stroke)]`}
             >
               {/* Head */}
               <div className="p-6 flex items-center justify-between">
@@ -579,7 +625,7 @@ export const Drawer = ({ isOpen, onClose, title, placement = 'right', children }
               </div>
 
               {/* Children scroll */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs md:text-sm">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-caption md:text-label">
                 {children}
               </div>
             </motion.div>
@@ -616,18 +662,12 @@ export const Stepper = ({ steps, activeStep }: StepperProps) => {
         return (
           <div key={idx} className="flex flex-col items-center gap-2 z-10 relative">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs select-none ring-4 ring-white transition-all duration-300 ${
-                isCompleted
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : isActive
-                    ? 'glx border-2 border-[var(--color-accent)] text-[var(--color-accent)] font-extrabold'
-                    : 'glx border-2 border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'
-              }`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-caption select-none ring-4 ring-white transition-all duration-300 ${isCompleted ? 'bg-[var(--color-accent)] text-white' : isActive ? 'glx border-2 border-[var(--color-accent)] text-[var(--color-accent)] font-extrabold' : 'glx border-2 border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'}`}
             >
               {isCompleted ? '✓' : formatPersianNumber(idx + 1)}
             </div>
             <span
-              className={`text-[10px] md:text-xs font-bold transition-all duration-300 ${isActive ? 'text-indigo-600 font-black' : isCompleted ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-tertiary)]'}`}
+              className={`text-micro md:text-caption font-bold transition-all duration-300 ${isActive ? 'text-[var(--color-accent)] font-black' : isCompleted ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-tertiary)]'}`}
             >
               {step}
             </span>
@@ -655,8 +695,10 @@ export const EmptyState = ({ icon, title, description, action }: EmptyStateProps
         {icon || <HelpCircle className="w-8 h-8" />}
       </div>
       <div className="space-y-1 w-full max-w-sm">
-        <h4 className="text-sm md:text-md font-bold text-[var(--color-text-primary)]">{title}</h4>
-        <p className="text-xs text-[var(--color-text-tertiary)] font-medium leading-relaxed">
+        <h4 className="text-label md:text-md font-bold text-[var(--color-text-primary)]">
+          {title}
+        </h4>
+        <p className="text-caption text-[var(--color-text-tertiary)] font-medium leading-relaxed">
           {description}
         </p>
       </div>
@@ -689,6 +731,11 @@ export const ConfirmDialog = ({
   onCancel,
   variant = 'danger',
 }: ConfirmDialogProps) => {
+  const iconBg =
+    variant === 'danger'
+      ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]'
+      : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]';
+
   return (
     <Modal
       isOpen={isOpen}
@@ -706,14 +753,14 @@ export const ConfirmDialog = ({
       }
     >
       <div className="flex items-start gap-4 text-right">
-        <div
-          className={`p-2.5 rounded-full ${variant === 'danger' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}
-        >
+        <div className={`p-2.5 rounded-full ${iconBg}`}>
           <AlertTriangle className="w-5 h-5 text-current" />
         </div>
         <div className="space-y-1">
-          <p className="font-bold text-[var(--color-text-primary)] text-xs md:text-sm">{title}</p>
-          <p className="text-xs text-[var(--color-text-tertiary)] leading-relaxed font-semibold">
+          <p className="font-bold text-[var(--color-text-primary)] text-caption md:text-label">
+            {title}
+          </p>
+          <p className="text-caption text-[var(--color-text-tertiary)] leading-relaxed font-semibold">
             {message}
           </p>
         </div>
@@ -735,7 +782,7 @@ interface FileDropzoneProps {
 export const FileDropzone = ({
   onFileSelect,
   accept = '.csv, .xlsx, .xls',
-  label = 'بارگذاری فایل اکسل و اسناد اکسل دانش‌آموزان',
+  label = 'بارگذاری فایل اکسل و اسناد اکسل دانش\u200cآموزان',
   description = 'فایل را به اینجا بکشید یا برای انتخاب فایل کلیک کنید',
 }: FileDropzoneProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -755,7 +802,6 @@ export const FileDropzone = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       onFileSelect(e.dataTransfer.files[0]);
     }
@@ -779,11 +825,7 @@ export const FileDropzone = ({
       onDragLeave={handleDrag}
       onDrop={handleDrop}
       onClick={triggerInput}
-      className={`border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:brightness-105 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${
-        isDragActive
-          ? 'border-[var(--color-accent)]/100 glx'
-          : 'border-[var(--color-glass-light-stroke)] glx'
-      }`}
+      className={`border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:brightness-105 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${isDragActive ? 'border-[var(--color-accent)]/100 glx' : 'border-[var(--color-glass-light-stroke)] glx'}`}
     >
       <input
         ref={fileInputRef}
@@ -796,8 +838,10 @@ export const FileDropzone = ({
         <UploadCloud className="w-6 h-6" />
       </div>
       <div>
-        <p className="text-xs md:text-sm font-bold text-[var(--color-text-primary)]">{label}</p>
-        <p className="text-[11px] text-[var(--color-text-tertiary)] font-medium mt-1">
+        <p className="text-caption md:text-label font-bold text-[var(--color-text-primary)]">
+          {label}
+        </p>
+        <p className="text-micro text-[var(--color-text-tertiary)] font-medium mt-1">
           {description}
         </p>
       </div>
@@ -814,10 +858,14 @@ interface TableColumn {
   align?: 'right' | 'center' | 'left';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TableRow = any;
 interface TableProps {
   headers: TableColumn[];
-  data: any[];
+  data: TableRow[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderRow: (row: any, idx: number) => React.ReactNode;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderMobileCard?: (row: any, idx: number) => React.ReactNode;
   emptyTitle?: string;
   emptyDesc?: string;
@@ -841,11 +889,11 @@ export const Table = ({
       <div
         className={`overflow-x-auto rounded-2xl border border-[var(--color-glass-light-stroke)] hidden ${renderMobileCard ? 'md:block' : 'block'}`}
       >
-        <table className="w-full text-right border-collapse text-xs md:text-sm glx-inset">
+        <table className="w-full text-right border-collapse text-caption md:text-label glx-inset">
           <thead>
-            <tr className="glx-inset border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)] font-bold text-[11px] md:text-xs">
+            <tr className="glx-inset border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)] font-bold text-micro md:text-caption">
               {headers.map((col, idx) => {
-                const alignStyles = {
+                const alignStyles: Record<NonNullable<TableColumn['align']>, string> = {
                   right: 'text-right',
                   center: 'text-center',
                   left: 'text-left',
@@ -861,7 +909,7 @@ export const Table = ({
               })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-[var(--color-text-secondary)]">
+          <tbody className="divide-y divide-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]">
             {data.map((row, idx) => renderRow(row, idx))}
           </tbody>
         </table>
@@ -897,7 +945,6 @@ export const ExamTimer = ({
   const onTimeoutRef = useRef(onTimeout);
   const onWarningRef = useRef(onWarning);
 
-  // Sync refs to prevent resetting timer on prop changes
   useEffect(() => {
     onTimeoutRef.current = onTimeout;
   }, [onTimeout]);
@@ -905,6 +952,10 @@ export const ExamTimer = ({
   useEffect(() => {
     onWarningRef.current = onWarning;
   }, [onWarning]);
+
+  useEffect(() => {
+    setSecondsLeft(durationMinutes * 60);
+  }, [durationMinutes]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -934,11 +985,7 @@ export const ExamTimer = ({
 
   return (
     <div
-      className={`inline-flex items-center gap-2.5 px-3 py-1.5 md:px-4 md:py-2.5 rounded-2xl border font-mono font-bold text-xs select-none transition-all ${
-        isWarning
-          ? 'bg-rose-50 text-[var(--color-danger)] border-rose-200 animate-pulse ring-2 ring-rose-500/20'
-          : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[var(--color-accent-soft)]'
-      }`}
+      className={`inline-flex items-center gap-2.5 px-3 py-1.5 md:px-4 md:py-2.5 rounded-2xl border font-mono font-bold text-caption select-none transition-all ${isWarning ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)]/10 animate-pulse ring-2 ring-[var(--color-danger)]/20' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[var(--color-accent-soft)]'}`}
     >
       <Clock
         className={`w-4 h-4 ${isWarning ? 'text-[var(--color-danger)]' : 'text-[var(--color-accent)]'}`}
@@ -954,9 +1001,37 @@ export const ExamTimer = ({
         <span className="animate-pulse">:</span>
         <span>{formatPersianNumber(formatTime(secs))}</span>
       </div>
-      <span className="text-[10px] text-current font-sans leading-none pb-0.5">
-        زمان باقی‌مانده
-      </span>
+      <span className="text-micro text-current font-sans leading-none pb-0.5">زمان باقی‌مانده</span>
+    </div>
+  );
+};
+
+/* ==========================================
+   16. PROGRESS BAR COMPONENT
+   ========================================== */
+interface ProgressBarProps {
+  value: number;
+  max?: number;
+  className?: string;
+  label?: string;
+}
+
+export const ProgressBar = ({ value, max = 100, className = '', label }: ProgressBarProps) => {
+  const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+  return (
+    <div className={`w-full text-right ${className}`}>
+      {label && (
+        <div className="flex justify-between text-caption font-bold text-[var(--color-text-secondary)] mb-1">
+          <span>{label}</span>
+          <span>{formatPersianNumber(Math.round(percentage))}%</span>
+        </div>
+      )}
+      <div className="w-full h-2 bg-[var(--color-glass-light-stroke)] rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[var(--color-accent)] transition-all duration-300 rounded-full"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
     </div>
   );
 };
@@ -982,14 +1057,14 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000 }: Toas
     return () => clearTimeout(timer);
   }, [duration, onClose]);
 
-  const styles = {
+  const styles: Record<ToastProps['type'] & {}, string> = {
     success: 'bg-[var(--color-success)] text-white',
     error: 'bg-[var(--color-danger)] text-white',
     warning: 'bg-[var(--color-warning)] text-white',
     info: 'bg-[var(--color-ink)] text-white',
   };
 
-  const icons = {
+  const icons: Record<ToastProps['type'] & {}, React.ReactNode> = {
     success: <CheckCircle className="w-4 h-4" />,
     error: <AlertTriangle className="w-4 h-4" />,
     warning: <AlertTriangle className="w-4 h-4" />,
@@ -998,7 +1073,7 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000 }: Toas
 
   return (
     <div
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-3 rounded-xl shadow-lg text-sm font-bold flex items-center gap-2 transition-all duration-300 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-3 rounded-xl shadow-lg text-label font-bold flex items-center gap-2 transition-all duration-300 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
       role="alert"
       aria-live="polite"
     >
@@ -1012,3 +1087,6 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000 }: Toas
     </div>
   );
 };
+
+/* Re-export ChevronLeft and ChevronRight for consumers */
+export { ChevronLeft, ChevronRight };

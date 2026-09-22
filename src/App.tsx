@@ -13,7 +13,7 @@ import ResetPassword from './pages/teacher/ResetPassword';
 import ExamPortal from './pages/student/ExamPortal';
 import SecureExamPortal from './pages/student/SecureExamPortal';
 import { Toast } from './components/UIComponents';
-import { Exam, Teacher } from './types';
+import { Exam } from './types';
 
 // Lazy-loaded teacher pages (code-split)
 const Dashboard = lazy(() => import('./pages/teacher/Dashboard'));
@@ -32,6 +32,7 @@ const toastQueue: Array<{
 }> = [];
 let toastNextId = 0;
 const toastListeners: Array<() => void> = [];
+// eslint-disable-next-line react-refresh/only-export-components
 export const showAppToast = (
   message: string,
   type: 'success' | 'error' | 'warning' | 'info' = 'info',
@@ -183,7 +184,7 @@ export default function App() {
             }}
           />
         );
-      case 'results':
+      case 'results': {
         const firstExam = customExams[0];
         return (
           <Exams
@@ -205,6 +206,7 @@ export default function App() {
             }}
           />
         );
+      }
       case 'settings':
         return <Settings />;
       default:
@@ -315,14 +317,17 @@ export default function App() {
             <Suspense
               fallback={
                 <div className="space-y-6" id="page-skeleton">
-                  <div className="h-8 w-48 bg-white/3 skeleton rounded-xl" />
-                  <div className="h-40 bg-white/3 skeleton rounded-3xl" />
+                  <div className="h-8 w-48 bg-[var(--color-glass-light-fill)] skeleton rounded-xl" />
+                  <div className="h-40 bg-[var(--color-glass-light-fill)] skeleton rounded-3xl" />
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="h-32 bg-white/3 skeleton rounded-3xl" />
+                      <div
+                        key={i}
+                        className="h-32 bg-[var(--color-glass-light-fill)] skeleton rounded-3xl"
+                      />
                     ))}
                   </div>
-                  <div className="h-60 bg-white/3 skeleton rounded-3xl" />
+                  <div className="h-60 bg-[var(--color-glass-light-fill)] skeleton rounded-3xl" />
                 </div>
               }
             >

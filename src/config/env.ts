@@ -20,6 +20,8 @@ export const publicEnv: PublicEnv = {
 
 export function assertPublicSupabaseConfigured(): void {
   if (!publicEnv.isSupabaseConfigured) {
-    throw new Error('Supabase public env is not configured. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    throw new Error(
+      'Supabase public env is not configured. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+    );
   }
 }

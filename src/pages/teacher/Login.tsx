@@ -23,7 +23,8 @@ interface LoginProps {
   onSwitchToStudent: () => void;
 }
 
-type View = 'email' | 'password' | 'signup' | 'signup-sent' | 'forgot-password' | 'forgot-password-sent';
+type View =
+  'email' | 'password' | 'signup' | 'signup-sent' | 'forgot-password' | 'forgot-password-sent';
 
 export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps) {
   const [view, setView] = useState<View>('email');
@@ -50,8 +51,8 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
     try {
       await authService.loginTeacher(email, password);
       onLoginSuccess();
-    } catch (err: any) {
-      const msg = err?.message || '';
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
       if (msg.includes('تایید') || msg.includes('confirm')) {
         setError('حساب شما هنوز تأیید نشده. لطفاً ایمیل خود را بررسی کنید.');
       } else {
@@ -73,11 +74,11 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
     try {
       await authService.signupTeacher(email, password);
       setView('signup-sent');
-    } catch (err: any) {
-      if (err?.message?.includes('ثبت شده')) {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message?.includes('ثبت شده')) {
         setError('این ایمیل قبلاً ثبت شده است.');
       } else {
-        setError(err?.message || 'خطا در ثبت‌نام');
+        setError(err instanceof Error ? err.message : 'خطا در ثبت‌نام');
       }
     } finally {
       setLoading(false);
@@ -91,8 +92,8 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
     try {
       await authService.resetPassword(email);
       setView('forgot-password-sent');
-    } catch (err: any) {
-      setError(err?.message || 'خطا در ارسال ایمیل');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'خطا در ارسال ایمیل');
     } finally {
       setLoading(false);
     }
@@ -105,7 +106,8 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
     setError(null);
   };
 
-  const inputBase = "w-full text-sm text-[var(--color-text-primary)] pr-10 pl-4 py-3 rounded-xl glx-inset focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:brightness-105 transition-all placeholder-[var(--color-text-tertiary)]";
+  const inputBase =
+    'w-full text-label text-[var(--color-text-primary)] pr-10 pl-4 py-3 rounded-xl glx-inset focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:brightness-105 transition-all placeholder-[var(--color-text-tertiary)]';
 
   return (
     <div className="min-h-screen bg-[var(--color-paper-warm)] flex items-center justify-center p-4">
@@ -115,18 +117,21 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
           <div className="inline-flex items-center justify-center w-20 h-20 glx-dark rounded-2xl mb-4 shadow-xl flex-shrink-0">
             <TheMark variant="core" size={48} animated={false} />
           </div>
-          <h1 className="text-2xl font-black text-[var(--color-ink)] tracking-tight">آزمون‌ساز</h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mt-1">پنل مدیریت اساتید</p>
+          <h1 className="text-heading-1 font-black text-[var(--color-ink)] tracking-tight">
+            آزمون‌ساز
+          </h1>
+          <p className="text-label text-[var(--color-text-secondary)] mt-1">پنل مدیریت اساتید</p>
         </div>
 
         {/* Card — glx glass surface */}
         <div className="glx rounded-3xl shadow-xl p-8">
-
           {/* View: Enter Email */}
           {view === 'email' && (
             <form onSubmit={handleEmailSubmit} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">ایمیل</label>
+                <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
+                  ایمیل
+                </label>
                 <div className="relative">
                   <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
                   <input
@@ -142,12 +147,14 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
               </div>
 
               {error && (
-                <p className="text-xs text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">{error}</p>
+                <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">
+                  {error}
+                </p>
               )}
 
               <button
                 type="submit"
-                className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 text-white font-bold text-sm py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer flex items-center justify-center gap-2"
               >
                 ادامه
                 <ArrowRight className="w-4 h-4" />
@@ -159,19 +166,27 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
           {view === 'password' && (
             <form onSubmit={handlePasswordSubmit} className="space-y-5">
               <div className="text-center">
-                <p className="text-xs text-[var(--color-text-tertiary)]">ورود با</p>
-                <p className="text-sm font-bold text-[var(--color-text-primary)]" dir="ltr">{email}</p>
+                <p className="text-caption text-[var(--color-text-tertiary)]">ورود با</p>
+                <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                  {email}
+                </p>
                 <button
                   type="button"
-                  onClick={() => { setView('email'); setError(null); setPassword(''); }}
-                  className="text-[10px] text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
+                  onClick={() => {
+                    setView('email');
+                    setError(null);
+                    setPassword('');
+                  }}
+                  className="text-micro text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
                 >
                   تغییر ایمیل
                 </button>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">رمز عبور</label>
+                <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
+                  رمز عبور
+                </label>
                 <div className="relative">
                   <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
                   <input
@@ -194,21 +209,27 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
               </div>
 
               {error && (
-                <p className="text-xs text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">{error}</p>
+                <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">
+                  {error}
+                </p>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 disabled:opacity-60 text-white font-bold text-sm py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer"
+                className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 disabled:opacity-60 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer"
               >
                 {loading ? 'در حال بررسی...' : 'ورود'}
               </button>
 
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-micro">
                 <button
                   type="button"
-                  onClick={() => { setView('forgot-password'); setError(null); setPassword(''); }}
+                  onClick={() => {
+                    setView('forgot-password');
+                    setError(null);
+                    setPassword('');
+                  }}
                   className="text-[var(--color-accent)] hover:underline cursor-pointer flex items-center gap-1"
                 >
                   <KeyRound className="w-3 h-3" />
@@ -216,7 +237,11 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setView('signup'); setError(null); setPassword(''); }}
+                  onClick={() => {
+                    setView('signup');
+                    setError(null);
+                    setPassword('');
+                  }}
                   className="text-[var(--color-success)] hover:underline cursor-pointer"
                 >
                   ایجاد حساب جدید
@@ -232,20 +257,32 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-[var(--color-success-soft)] rounded-full mb-2">
                   <CheckCircle2 className="w-6 h-6 text-[var(--color-success)]" />
                 </div>
-                <h2 className="text-base font-bold text-[var(--color-text-primary)]">ایجاد حساب جدید</h2>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-1">یک رمز عبور برای حساب خود انتخاب کنید</p>
-                <p className="text-sm font-bold text-[var(--color-text-primary)] mt-2" dir="ltr">{email}</p>
+                <h2 className="text-body font-bold text-[var(--color-text-primary)]">
+                  ایجاد حساب جدید
+                </h2>
+                <p className="text-caption text-[var(--color-text-tertiary)] mt-1">
+                  یک رمز عبور برای حساب خود انتخاب کنید
+                </p>
+                <p className="text-label font-bold text-[var(--color-text-primary)] mt-2" dir="ltr">
+                  {email}
+                </p>
                 <button
                   type="button"
-                  onClick={() => { setView('password'); setError(null); setPassword(''); }}
-                  className="text-[10px] text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
+                  onClick={() => {
+                    setView('password');
+                    setError(null);
+                    setPassword('');
+                  }}
+                  className="text-micro text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
                 >
                   تغییر ایمیل
                 </button>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[var(--color-text-secondary)] mb-2">رمز عبور</label>
+                <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
+                  رمز عبور
+                </label>
                 <div className="relative">
                   <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
                   <input
@@ -268,21 +305,27 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
               </div>
 
               {error && (
-                <p className="text-xs text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">{error}</p>
+                <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">
+                  {error}
+                </p>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 disabled:opacity-60 text-white font-bold text-sm py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-success)]/10 cursor-pointer"
+                className="w-full bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 disabled:opacity-60 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-success)]/10 cursor-pointer"
               >
                 {loading ? 'در حال ثبت‌نام...' : 'ساخت حساب'}
               </button>
 
               <button
                 type="button"
-                onClick={() => { setView('password'); setError(null); setPassword(''); }}
-                className="w-full text-center text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
+                onClick={() => {
+                  setView('password');
+                  setError(null);
+                  setPassword('');
+                }}
+                className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
               >
                 بازگشت به ورود
               </button>
@@ -295,19 +338,23 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
               <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full mb-2">
                 <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
               </div>
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">ایمیل تأیید ارسال شد</h2>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+                ایمیل تأیید ارسال شد
+              </h2>
+              <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
                 لطفاً ایمیل خود را بررسی کنید و لینک تأیید را کلیک کنید.
                 <br />
                 پس از تأیید، با همین ایمیل و رمز عبور وارد شوید.
               </p>
               <div className="glx-inset rounded-xl px-4 py-3">
-                <p className="text-xs text-[var(--color-text-tertiary)]">ارسال شده به:</p>
-                <p className="text-sm font-bold text-[var(--color-text-primary)]" dir="ltr">{email}</p>
+                <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
+                <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                  {email}
+                </p>
               </div>
               <button
                 onClick={resetAll}
-                className="text-xs text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
+                className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
               >
                 بازگشت به ورود
               </button>
@@ -321,21 +368,27 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-[var(--color-warning-soft)] rounded-full mb-2">
                   <KeyRound className="w-6 h-6 text-[var(--color-warning)]" />
                 </div>
-                <h2 className="text-base font-bold text-[var(--color-text-primary)]">بازیابی رمز عبور</h2>
-                <p className="text-xs text-[var(--color-text-tertiary)] mt-1">
+                <h2 className="text-body font-bold text-[var(--color-text-primary)]">
+                  بازیابی رمز عبور
+                </h2>
+                <p className="text-caption text-[var(--color-text-tertiary)] mt-1">
                   لینک بازیابی رمز عبور به ایمیل شما ارسال می‌شود
                 </p>
-                <p className="text-sm font-bold text-[var(--color-text-primary)] mt-2" dir="ltr">{email}</p>
+                <p className="text-label font-bold text-[var(--color-text-primary)] mt-2" dir="ltr">
+                  {email}
+                </p>
               </div>
 
               {error && (
-                <p className="text-xs text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">{error}</p>
+                <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">
+                  {error}
+                </p>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--color-warning)] hover:bg-[var(--color-warning)]/90 disabled:opacity-60 text-white font-bold text-sm py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-warning)]/10 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full bg-[var(--color-warning)] hover:bg-[var(--color-warning)]/90 disabled:opacity-60 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-warning)]/10 cursor-pointer flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 {loading ? 'در حال ارسال...' : 'ارسال لینک بازیابی'}
@@ -343,8 +396,12 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
 
               <button
                 type="button"
-                onClick={() => { setView('password'); setError(null); setPassword(''); }}
-                className="w-full text-center text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
+                onClick={() => {
+                  setView('password');
+                  setError(null);
+                  setPassword('');
+                }}
+                className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
               >
                 بازگشت به ورود
               </button>
@@ -357,19 +414,23 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
               <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-warning-soft)] rounded-full mb-2">
                 <CheckCircle2 className="w-8 h-8 text-[var(--color-warning)]" />
               </div>
-              <h2 className="text-lg font-bold text-[var(--color-text-primary)]">لینک بازیابی ارسال شد</h2>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+                لینک بازیابی ارسال شد
+              </h2>
+              <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
                 ایمیلی حاوی لینک بازیابی رمز عبور برای شما ارسال شد.
                 <br />
                 لینک را باز کنید و رمز جدید انتخاب کنید.
               </p>
               <div className="glx-inset rounded-xl px-4 py-3">
-                <p className="text-xs text-[var(--color-text-tertiary)]">ارسال شده به:</p>
-                <p className="text-sm font-bold text-[var(--color-text-primary)]" dir="ltr">{email}</p>
+                <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
+                <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                  {email}
+                </p>
               </div>
               <button
                 onClick={resetAll}
-                className="text-xs text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
+                className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
               >
                 بازگشت به ورود
               </button>
@@ -381,7 +442,7 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
         <div className="mt-6 text-center">
           <button
             onClick={onSwitchToStudent}
-            className="inline-flex items-center gap-2 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
             ورود دانش‌آموز
