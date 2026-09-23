@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowRight,
   Eye,
@@ -38,6 +38,8 @@ import {
 } from '../../types';
 import { classService, questionService } from '../../services/api';
 import { Dropdown } from '../../components/UIComponents';
+import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface ExamPreviewProps {
   exam: Exam;
@@ -76,6 +78,9 @@ export default function ExamPreview({
 
   // Active question being edited in drawer/modal (null means closed)
   const [editingQuestion, setEditingQuestion] = useState<Partial<Question> | null>(null);
+  const drawerPanelRef = useRef<HTMLDivElement>(null);
+  const drawerTriggerRef = useRef<HTMLElement | null>(null);
+  const drawerOrigin = useOriginFromTrigger(drawerTriggerRef, drawerPanelRef, editingQuestion !== null);
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
   const [targetSectionIdForNew, setTargetSectionIdForNew] = useState<string>('');
 
@@ -342,12 +347,14 @@ export default function ExamPreview({
   };
 
   // Open Edit Dialog Drawer for existing question, or create new question representation
-  const triggerEditQuestion = (q: Question) => {
+  const triggerEditQuestion = (q: Question, trigger?: HTMLElement) => {
+    drawerTriggerRef.current = trigger ?? null;
     setEditingQuestion({ ...q });
     setIsAddingNew(false);
   };
 
-  const triggerAddManualQuestion = (sectionId: string) => {
+  const triggerAddManualQuestion = (sectionId: string, trigger?: HTMLElement) => {
+    drawerTriggerRef.current = trigger ?? null;
     setTargetSectionIdForNew(sectionId);
     setEditingQuestion({
       id: `q-man-${Date.now()}`,
@@ -833,7 +840,7 @@ export default function ExamPreview({
                   {viewMode === 'teacher' && (
                     <button
                       type="button"
-                      onClick={() => triggerAddManualQuestion(section.id)}
+                      onClick={(e) => triggerAddManualQuestion(section.id, e.currentTarget as HTMLElement)}
                       className="px-3.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl text-micro font-bold border border-[var(--color-accent-soft)] flex items-center gap-1.5 cursor-pointer transition-all self-end md:self-center"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
@@ -1314,7 +1321,7 @@ export default function ExamPreview({
                             <div className="flex flex-wrap items-center gap-1.5">
                               <button
                                 type="button"
-                                onClick={() => triggerEditQuestion(q)}
+                                onClick={(e) => triggerEditQuestion(q, e.currentTarget as HTMLElement)}
                                 className="p-2 glx-inset hover:brightness-105 text-[var(--color-accent)] hover:text-[var(--color-accent)] rounded-lg border border-[var(--color-accent-soft)] hover:border-[var(--color-accent)]/20 cursor-pointer text-micro font-bold flex items-center gap-1.5 transition-all"
                               >
                                 <Edit className="w-3.5 h-3.5 text-[var(--color-accent)]" />
@@ -1593,18 +1600,57 @@ export default function ExamPreview({
       )}
 
       {/* MODAL 2: MEGA ADD/EDIT MANUAL QUESTION PANEL (SIDE DRAWER DESIGN) */}
-      {editingQuestion && (
-        <div
-          className="fixed inset-0 z-50 bg-[var(--color-glass-light-fill)]/50 flex justify-end"
-          id="drawer-container-backdrop"
-        >
-          <div className="fixed inset-0" onClick={() => setEditingQuestion(null)} />
+      <AnimatePresence>
+        {editingQuestion && (
+        <div className="fixed inset-0 z-50" id="drawer-container-backdrop">
+          {/* Scrim — opacity-only: a backdrop-filter under an opacity animation
+              freezes its last frame, which lingers after close. */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            onClick={() => setEditingQuestion(null)}
+            className="fixed inset-0 scrim"
+          />
+          {/* Veil blur — static: full blur on frame 1 (no latency), ramped off on exit */}
+          <motion.div
+            aria-hidden="true"
+            initial={false}
+            exit={{
+              backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+              transition: { duration: 0.18 },
+            }}
+            className="fixed inset-0 pointer-events-none veil-blur"
+          />
 
-          <div
-            className="w-full max-w-xl glx z-10 flex flex-col h-full border-r overflow-hidden text-caption text-right animate-in slide-in-from-right duration-300 font-sans"
-            dir="rtl"
-            id="drawer-edit-form"
-          >
+          {/* Container sized to the panel (left dock preserved) so the ratio halo resolves */}
+          <div className="absolute left-0 top-0 h-full w-full max-w-xl @container z-10">
+            <motion.div
+              aria-hidden="true"
+              initial={false}
+              exit={{
+                backdropFilter: 'blur(0px) saturate(1) brightness(1)',
+                backgroundColor: 'rgba(26, 28, 34, 0)',
+                transition: { duration: 0.18 },
+              }}
+              className="absolute area-blur"
+            />
+            <motion.div
+              ref={drawerPanelRef}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{
+                opacity: 0,
+                scale: 0.8,
+                transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+              }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              style={drawerOrigin}
+              className="relative w-full h-full glx-strong z-10 flex flex-col border-r overflow-hidden text-caption text-right font-sans"
+              dir="rtl"
+              id="drawer-edit-form"
+            >
             {/* Drawer Header */}
             <div className="px-5 py-4 glx border-b flex items-center justify-between">
               <h3 className="font-extrabold text-[var(--color-text-primary)] text-caption md:text-label flex items-center gap-1.5">
@@ -2076,9 +2122,11 @@ export default function ExamPreview({
                 لغو تغییرات
               </button>
             </div>
+          </motion.div>
           </div>
         </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -377,6 +377,19 @@ select::-webkit-calendar-picker-indicator {
     brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
 }
 
+/* Veil, split into two layers. NEVER animate opacity on an element that has a
+   backdrop-filter: the filtered layer freezes on its last frame and that frozen
+   frame survives the unmount — it is the ghost "print" left on screen after a
+   panel closes. Animate .scrim (color only); keep .veil-blur static so the blur
+   exists on the first frame (no latency) and ramp its filter off on exit. */
+@utility scrim {
+  background: rgb(var(--glass-scrim-color) / var(--glass-scrim-a));
+}
+@utility veil-blur {
+  backdrop-filter: blur(var(--glass-veil-blur)) saturate(var(--glass-bg-sat))
+    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
+}
+
 /* Transparent-fill option: same glass, no tint (pure blur panel).
    Stack it: `glx glx-clear` or `glx-strong glx-clear`. */
 @utility glx-clear {
@@ -425,38 +438,11 @@ select::-webkit-calendar-picker-indicator {
   }
 }
 
-/* ─── Panel drop-in animation (open) ─── */
-@keyframes dropIn {
-  0% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Panel drop-out animation (close) — opposite of dropIn */
-@keyframes dropOut {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-}
-.panel-drop-out {
-  animation: dropOut 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) both;
-}
-
 /* ─── Notification dropdown: grows from bell origin (open) / shrinks to bell (close) ─── */
 @keyframes growFromBell {
   0% {
     opacity: 0;
-    transform: scale(0.85);
+    transform: scale(0.72);
   }
   100% {
     opacity: 1;
@@ -470,7 +456,7 @@ select::-webkit-calendar-picker-indicator {
   }
   100% {
     opacity: 0;
-    transform: scale(0.85);
+    transform: scale(0.72);
   }
 }
 
@@ -478,7 +464,7 @@ select::-webkit-calendar-picker-indicator {
 @keyframes growFromHamburger {
   0% {
     opacity: 0;
-    transform: scale(0.88);
+    transform: scale(0.78);
   }
   100% {
     opacity: 1;
@@ -492,43 +478,7 @@ select::-webkit-calendar-picker-indicator {
   }
   100% {
     opacity: 0;
-    transform: scale(0.88);
-  }
-}
-
-/* ─── Universal panel open/close: comes up from trigger, sucks back into trigger ─── */
-/* Apply .panel-open on mount (initial), .panel-close on unmount (exit). */
-/* transformOrigin must be set inline via JS relative to the trigger button. */
-@utility panel-open {
-  animation: pan-up 0.3s cubic-bezier(0.25, 1.6, 0.45, 1) both;
-}
-@utility panel-close {
-  animation: pan-down 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) both;
-}
-@utility panel-in {
-  animation: pan-up 0.3s cubic-bezier(0.25, 1.6, 0.45, 1) both;
-}
-@utility panel-out {
-  animation: pan-down 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) both;
-}
-@keyframes pan-up {
-  0% {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-@keyframes pan-down {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.92);
+    transform: scale(0.78);
   }
 }
 

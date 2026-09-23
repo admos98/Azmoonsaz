@@ -515,25 +515,57 @@ export const Modal = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop — dim only; blur is localized to the halo below */}
+          {/* Scrim — fades via opacity, carries NO backdrop-filter. Animating opacity
+              on a filtered layer freezes its last frame, and that frozen frame
+              outlives the unmount — the ghost print left behind after closing. */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={onClose}
-            className="fixed inset-0 bgfx"
+            className="fixed inset-0 scrim"
           />
 
-          {/* Card + area-blur halo — static wrapper so the halo never sits under an opacity-animated ancestor */}
+          {/* Veil blur — static sibling: full blur exists on the first frame (no
+              latency); its exit ramps the filter to none before unmount. */}
+          <motion.div
+            aria-hidden="true"
+            initial={false}
+            exit={{
+              backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+              transition: { duration: 0.18 },
+            }}
+            className="fixed inset-0 pointer-events-none veil-blur"
+          />
+
           <div className={`relative w-full ${widthStyles[maxWidth]} z-10 @container`}>
-            {/* Static halo — the panel animates, the halo stays at opacity 1 so its blur survives */}
-            <div aria-hidden="true" className="absolute area-blur" />
+            {/* Halo — static while the panel grows (an opacity/transform on a filtered
+                layer would kill the blur); its exit dissolves blur + fill behind the
+                shrinking panel instead of hard-cutting at unmount. */}
+            <motion.div
+              aria-hidden="true"
+              initial={false}
+              exit={{
+                backdropFilter: 'blur(0px) saturate(1) brightness(1)',
+                backgroundColor: 'rgba(26, 28, 34, 0)',
+                transition: { duration: 0.18 },
+              }}
+              className="absolute area-blur"
+            />
+            {/* Grows out of the trigger button and collapses back into it:
+                0.72 start scale reads as a stretch from the button; 0.28s open /
+                0.2s close keeps popup transitions under the perception threshold. */}
             <motion.div
               ref={panelRef}
-              initial={{ opacity: 0, scale: 0.92 }}
+              initial={{ opacity: 0, scale: 0.72 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              exit={{
+                opacity: 0,
+                scale: 0.72,
+                transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+              }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               style={originStyle}
               className="relative glx-strong w-full rounded-3xl flex flex-col max-h-[90vh]"
               role="dialog"

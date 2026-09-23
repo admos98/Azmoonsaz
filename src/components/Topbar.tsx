@@ -137,6 +137,7 @@ export default function Topbar({
   const [hamburgerRect, setHamburgerRect] = useState<DOMRect | null>(null);
   const [notifClosing, setNotifClosing] = useState(false);
   const bellRef = useRef<HTMLButtonElement>(null);
+  const avatarLeaveTimer = useRef<number | null>(null);
 
   // --- Notifications ---
   const notifRef = useRef<HTMLDivElement>(null);
@@ -258,7 +259,7 @@ export default function Topbar({
       setShowNotifications(false);
       setBellRect(null);
       setNotifClosing(false);
-    }, 400);
+    }, 300);
   }, []);
 
   useEffect(() => {
@@ -367,7 +368,7 @@ export default function Topbar({
         id="topbar-left-group"
       >
         {/* Bell */}
-        <div className="transition-all duration-500 ease-out">
+        <div className="transition-all duration-300 ease-out">
           <button
             ref={bellRef}
             id="notifications-bell-btn"
@@ -400,19 +401,26 @@ export default function Topbar({
         {/* Avatar pill — pic absolutely pinned (never moves), only pill width animates */}
         <div className="relative flex items-center">
           <div
-            className={`relative h-10 rounded-full overflow-hidden glx-strong cursor-pointer transition-[width] duration-500 ease-out ${
+            className={`relative h-10 rounded-full overflow-hidden glx-strong cursor-pointer transition-[width] duration-300 ease-out ${
               avatarExpanded ? 'w-[200px]' : 'w-10'
             }`}
-            onMouseEnter={() => !showHamburgerMenu && setAvatarExpanded(true)}
+            onMouseEnter={() => {
+              // Clear any pending collapse — stacked mouseleave timers used to
+              // re-close the pill right after a re-enter (hover flicker).
+              if (avatarLeaveTimer.current) window.clearTimeout(avatarLeaveTimer.current);
+              if (!showHamburgerMenu) setAvatarExpanded(true);
+            }}
             onMouseLeave={() => {
-              setTimeout(() => {
+              avatarLeaveTimer.current = window.setTimeout(() => {
                 if (!showHamburgerMenu) setAvatarExpanded(false);
               }, 200);
             }}
           >
-            {/* Pic — absolute, pinned left-1/top-1: centered in collapsed 40px pill, stays put when expanded */}
+            {/* Pic — pinned to the pill's static (right) edge: 1px border + 3px = the
+                exact 4px gap that centers it in the collapsed 40px pill, and since the
+                pill grows leftward (right edge fixed) it does not move when expanded. */}
             <div
-              className="absolute left-1 top-1 w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden"
+              className="absolute right-[3px] top-[3px] w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden"
               onClick={() => setAvatarExpanded(!avatarExpanded)}
               role="button"
               tabIndex={0}
@@ -437,7 +445,7 @@ export default function Topbar({
 
             {/* Name panel — absolute, fade only (no width/layout change, zero pic movement) */}
             <div
-              className={`absolute left-[42px] top-1/2 -translate-y-1/2 transition-opacity duration-500 ease-out ${
+              className={`absolute right-[42px] top-1/2 -translate-y-1/2 transition-opacity duration-300 ease-out ${
                 avatarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}
               style={{ direction: 'rtl', textAlign: 'right' }}
@@ -477,7 +485,7 @@ export default function Topbar({
         {/* Search — smooth pill expand from icon */}
         <div
           ref={searchRef}
-          className={`relative flex items-center overflow-hidden rounded-full transition-all duration-500 ease-out ${
+          className={`relative h-11 flex items-center overflow-hidden rounded-full transition-all duration-300 ease-out ${
             showSearch ? 'w-[200px] glx-inset' : 'w-11 glx-inset'
           }`}
           onMouseEnter={() => !showHamburgerMenu && setShowSearch(true)}
@@ -486,7 +494,7 @@ export default function Topbar({
           <button
             id="search-toggle-btn"
             onClick={() => setShowSearch(!showSearch)}
-            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-full hover:bg-[var(--color-glass-light-stroke)]/20 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11 flex-shrink-0"
+            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-full hover:bg-[var(--color-glass-light-stroke)]/20 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-full"
             aria-label="جستجو"
             aria-expanded={showSearch}
             style={{ marginRight: showSearch ? '-1px' : '0' }}
@@ -539,7 +547,7 @@ export default function Topbar({
                 top: computePanelTop(0),
                 transformOrigin: computeHamburgerTransformOrigin(0),
                 animation: menuClosing
-                  ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
+                  ? 'shrinkToHamburger 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
                   : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
               }}
               id="hamburger-panel-1"
@@ -570,7 +578,7 @@ export default function Topbar({
                 top: computePanelTop(1),
                 transformOrigin: computeHamburgerTransformOrigin(1),
                 animation: menuClosing
-                  ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both'
+                  ? 'shrinkToHamburger 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
                   : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
               }}
               id="hamburger-panel-2"
@@ -611,7 +619,7 @@ export default function Topbar({
                 top: computePanelTop(2),
                 transformOrigin: computeHamburgerTransformOrigin(2),
                 animation: menuClosing
-                  ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both'
+                  ? 'shrinkToHamburger 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
                   : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
               }}
               id="hamburger-panel-3"
@@ -691,7 +699,7 @@ export default function Topbar({
                 top: computePanelTop(3),
                 transformOrigin: computeHamburgerTransformOrigin(3),
                 animation: menuClosing
-                  ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both'
+                  ? 'shrinkToHamburger 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
                   : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
               }}
               id="hamburger-panel-4"
@@ -805,22 +813,20 @@ export default function Topbar({
         <>
           {/* Background veil — the same Control-Center layer the menu uses (blur + scrim
               behind the panel). Without it only the halo ring blurs, so the notif reads flat. */}
-          <div className="fixed inset-0 z-[55] bgfx" />
+          <div className="fixed inset-0 z-[55] bgfx" onClick={closeNotifications} />
           <div className="fixed z-[60] @container" style={notificationStyle}>
             {/* Static halo — the panel animates, the halo stays at opacity 1 so its blur survives */}
             <div aria-hidden="true" className="absolute area-blur" />
             <div
               ref={notifRef}
-              className={`relative w-full glx-strong rounded-2xl overflow-hidden glx-sheen ${
-                notifClosing ? 'notification-shrink' : 'notification-grow'
-              }`}
+              className="relative w-full glx-strong rounded-2xl overflow-hidden glx-sheen"
               style={{
                 transformOrigin: bellRect
                   ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`
                   : 'center',
                 animation: notifClosing
-                  ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
-                  : 'growFromBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both',
+                  ? 'shrinkToBell 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) both'
+                  : 'growFromBell 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) both',
               }}
               id="notification-dropdown"
             >

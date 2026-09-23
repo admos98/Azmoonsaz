@@ -9,7 +9,7 @@
  * default origin (e.g. 'center bottom'). Kept out of UIComponents on purpose:
  * a non-component export there would break React Fast Refresh.
  */
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 export function useOriginFromTrigger(
   triggerRef: { current: HTMLElement | null } | undefined,
@@ -18,22 +18,22 @@ export function useOriginFromTrigger(
 ): React.CSSProperties | undefined {
   const [originStyle, setOriginStyle] = useState<React.CSSProperties | undefined>(undefined);
 
-  useEffect(() => {
+  // Layout effect, measured synchronously: the origin must be known BEFORE the
+  // first animated frame. The previous rAF-in-effect version set it a frame late,
+  // so panels started at the default origin and jumped to the button center —
+  // read as lag on open.
+  useLayoutEffect(() => {
     if (!active || !triggerRef?.current || !panelRef.current) {
       setOriginStyle(undefined);
       return;
     }
-    const raf = requestAnimationFrame(() => {
-      const panel = panelRef.current;
-      const trigger = triggerRef.current;
-      if (!panel || !trigger) return;
-      const panelRect = panel.getBoundingClientRect();
-      const triggerRect = trigger.getBoundingClientRect();
-      const cx = triggerRect.left + triggerRect.width / 2 - panelRect.left;
-      const cy = triggerRect.top + triggerRect.height / 2 - panelRect.top;
-      setOriginStyle({ transformOrigin: `${cx}px ${cy}px` });
-    });
-    return () => cancelAnimationFrame(raf);
+    const panel = panelRef.current;
+    const trigger = triggerRef.current;
+    const panelRect = panel.getBoundingClientRect();
+    const triggerRect = trigger.getBoundingClientRect();
+    const cx = triggerRect.left + triggerRect.width / 2 - panelRect.left;
+    const cy = triggerRect.top + triggerRect.height / 2 - panelRect.top;
+    setOriginStyle({ transformOrigin: `${cx}px ${cy}px` });
   }, [active, triggerRef, panelRef]);
 
   return originStyle;
