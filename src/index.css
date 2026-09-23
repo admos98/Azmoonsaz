@@ -35,10 +35,13 @@
    * Glass: gradient white fill (20% → 9%) + ink hairline + lifted shadow;
    * the blur comes from the veil/halo layers (Liquid Glass recipe below).
    */
-  --color-page-bg: #dcf0ff;
-  --color-paper-warm: #dcf0ff;
+  /* Was #dcf0ff (HSL sat 100% / light 93% — fully saturated blue, read as
+     "blue page"). Pulled to a near-white with just enough cast to still read
+     as a cool white rather than paper. */
+  --color-page-bg: #f0f6fd;
+  --color-paper-warm: #f0f6fd;
   --color-surface: #f8fafc;
-  --color-surface-secondary: #e0f2fe;
+  --color-surface-secondary: #eef5fc;
 
   /* Ink field — sidebar, hero on dark */
   --color-ink-field: #1a1a2e;
@@ -58,8 +61,8 @@
   --color-glass-ink-bottom: rgba(0, 0, 0, 0.2);
 
   /* Shared shadow — balanced for the new lighter glass */
-  --color-glass-shadow: rgba(32, 66, 104, 0.12);
-  --color-glass-shadow-strong: rgba(32, 66, 104, 0.18);
+  --color-glass-shadow: rgba(26, 28, 34, 0.12);
+  --color-glass-shadow-strong: rgba(26, 28, 34, 0.18);
 
   /* Brand — The Mark */
   --color-ink: #1a1a2e;
@@ -111,21 +114,22 @@
      and the screen one is what should stay subtle. */
   --glass-bg-blur: 7px;
   --glass-veil-blur: 4px;
-  --glass-bg-sat: 1.35;
+  --glass-bg-sat: 1.1;
   --glass-bg-bright: 0.97;
   --glass-bg-contrast: 0.92;
   --glass-scrim-a: 0.15;
-  /* Sky-blue family: the page is #dcf0ff, so every tint that shows through or
-     sits behind glass must be blue — the old indigo read as a mismatched patch. */
-  --glass-scrim-color: 64 108 156;
+  /* Neutral, not blue. The veil covers the WHOLE screen behind a panel, so any
+     blue here multiplies across the entire page — this is what made the
+     background look bluer the moment a panel opened. */
+  --glass-scrim-color: 56 60 68;
 
   /* Area halo — size = ratio × panel width (container-query units) */
   --glass-h-ratio: 0.17;
   --glass-h-blur: 5px;
-  --glass-h-sat: 1.6;
+  --glass-h-sat: 1.1;
   --glass-h-bright: 1.2;
   --glass-h-fill: 0.22;
-  --glass-h-tint: 32 66 104;
+  --glass-h-tint: 26 28 34;
   --glass-h-fo: 1.15;
   --glass-h-bias: 0.7;
   --glass-h-mid: 0.75;
@@ -137,13 +141,13 @@
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 0px;
-  --glass-p-sat: 1.35;
+  --glass-p-sat: 1.1;
   --glass-p-bright: 1.04;
   --glass-p-contrast: 1;
   --glass-p-radius: 28px;
   --glass-p-bw: 1px;
   --glass-p-ba: 0.22;
-  --glass-p-bc: 32 66 104;
+  --glass-p-bc: 26 28 34;
   --glass-shn-t: 0.68;
   --glass-shn-b: 0;
 
@@ -153,7 +157,7 @@
   --glass-sh-blur: 70px;
   --glass-sh-spread: -10px;
   --glass-sh-a: 0.42;
-  --glass-sh-color: 32 66 104;
+  --glass-sh-color: 26 28 34;
 
   /* Row hover tint (menu / dropdown / list) */
   --glass-row-hover: 0.2;
