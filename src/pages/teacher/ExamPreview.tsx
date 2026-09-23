@@ -1626,26 +1626,36 @@ export default function ExamPreview({
 
           {/* Container sized to the panel (left dock preserved) so the ratio halo resolves */}
           <div className="absolute left-0 top-0 h-full w-full max-w-xl @container z-10">
+            {/* Halo rides the panel's grow/shrink (same origin + curves) so no detached
+                glow floats where the panel lands; NO opacity — that would freeze the
+                filter's last frame past unmount. */}
             <motion.div
               aria-hidden="true"
-              initial={false}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
               exit={{
+                scale: 0,
                 backdropFilter: 'blur(0px) saturate(1) brightness(1)',
                 backgroundColor: 'rgba(26, 28, 34, 0)',
-                transition: { duration: 0.18 },
+                transition: { duration: 0.26, ease: [0.4, 0, 1, 1] },
               }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              style={drawerOrigin}
               className="absolute area-blur"
             />
             <motion.div
               ref={drawerPanelRef}
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{
                 opacity: 0,
-                scale: 0.8,
-                transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+                scale: 0,
+                transition: { duration: 0.26, ease: [0.4, 0, 1, 1] },
               }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              transition={{
+                opacity: { duration: 0.16 },
+                scale: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+              }}
               style={drawerOrigin}
               className="relative w-full h-full glx-strong z-10 flex flex-col border-r overflow-hidden text-caption text-right font-sans"
               dir="rtl"

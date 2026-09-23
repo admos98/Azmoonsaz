@@ -540,32 +540,40 @@ export const Modal = ({
           />
 
           <div className={`relative w-full ${widthStyles[maxWidth]} z-10 @container`}>
-            {/* Halo — static while the panel grows (an opacity/transform on a filtered
-                layer would kill the blur); its exit dissolves blur + fill behind the
-                shrinking panel instead of hard-cutting at unmount. */}
+            {/* Halo rides the panel's grow/shrink with the same origin and curves, so
+                no detached glow patch floats where the panel will land. NO opacity on
+                it — opacity on a backdrop-filter layer freezes its frame. Exit ramps
+                blur + fill off while it collapses; nothing hard-cuts at unmount. */}
             <motion.div
               aria-hidden="true"
-              initial={false}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
               exit={{
+                scale: 0,
                 backdropFilter: 'blur(0px) saturate(1) brightness(1)',
                 backgroundColor: 'rgba(26, 28, 34, 0)',
-                transition: { duration: 0.18 },
+                transition: { duration: 0.26, ease: [0.4, 0, 1, 1] },
               }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              style={originStyle}
               className="absolute area-blur"
             />
-            {/* Grows out of the trigger button and collapses back into it:
-                0.72 start scale reads as a stretch from the button; 0.28s open /
-                0.2s close keeps popup transitions under the perception threshold. */}
+            {/* Grows out of the trigger button and collapses ALL the way back into it —
+                scale endpoints at 0.x made panels vanish mid-travel. Opacity resolves
+                faster than scale so the small panel is visible from the first frames. */}
             <motion.div
               ref={panelRef}
-              initial={{ opacity: 0, scale: 0.72 }}
+              initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{
                 opacity: 0,
-                scale: 0.72,
-                transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+                scale: 0,
+                transition: { duration: 0.26, ease: [0.4, 0, 1, 1] },
               }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              transition={{
+                opacity: { duration: 0.16 },
+                scale: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+              }}
               style={originStyle}
               className="relative glx-strong w-full rounded-3xl flex flex-col max-h-[90vh]"
               role="dialog"

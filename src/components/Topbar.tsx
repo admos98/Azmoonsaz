@@ -416,11 +416,11 @@ export default function Topbar({
               }, 200);
             }}
           >
-            {/* Pic — pinned to the pill's static (right) edge: 1px border + 3px = the
-                exact 4px gap that centers it in the collapsed 40px pill, and since the
-                pill grows leftward (right edge fixed) it does not move when expanded. */}
+            {/* Pic — pinned to the pill's static (left) edge: 1px border + 3px = the
+                exact gap that centers it in the collapsed 40px pill, and since the
+                pill grows rightward (left edge fixed) it never moves when expanded. */}
             <div
-              className="absolute right-[3px] top-[3px] w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden"
+              className="absolute left-[3px] top-[3px] w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden"
               onClick={() => setAvatarExpanded(!avatarExpanded)}
               role="button"
               tabIndex={0}
@@ -445,7 +445,7 @@ export default function Topbar({
 
             {/* Name panel — absolute, fade only (no width/layout change, zero pic movement) */}
             <div
-              className={`absolute right-[42px] top-1/2 -translate-y-1/2 transition-opacity duration-300 ease-out ${
+              className={`absolute left-[42px] top-1/2 -translate-y-1/2 transition-opacity duration-300 ease-out ${
                 avatarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}
               style={{ direction: 'rtl', textAlign: 'right' }}

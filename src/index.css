@@ -442,7 +442,7 @@ select::-webkit-calendar-picker-indicator {
 @keyframes growFromBell {
   0% {
     opacity: 0;
-    transform: scale(0.72);
+    transform: scale(0);
   }
   100% {
     opacity: 1;
@@ -456,7 +456,7 @@ select::-webkit-calendar-picker-indicator {
   }
   100% {
     opacity: 0;
-    transform: scale(0.72);
+    transform: scale(0);
   }
 }
 
@@ -464,7 +464,7 @@ select::-webkit-calendar-picker-indicator {
 @keyframes growFromHamburger {
   0% {
     opacity: 0;
-    transform: scale(0.78);
+    transform: scale(0);
   }
   100% {
     opacity: 1;
@@ -478,7 +478,7 @@ select::-webkit-calendar-picker-indicator {
   }
   100% {
     opacity: 0;
-    transform: scale(0.78);
+    transform: scale(0);
   }
 }
 
