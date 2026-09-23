@@ -510,9 +510,14 @@ export const Modal = ({
 
   const panelRef = useRef<HTMLDivElement>(null);
   // Area-blur halo: bigger negative-inset box, same viewport origin point —
-  // the hook writes its transformOrigin directly (style prop carries none).
+  // the hook measures and returns its origin alongside the panel's.
   const haloRef = useRef<HTMLDivElement>(null);
-  const originStyle = useOriginFromTrigger(triggerRef, panelRef, isOpen, haloRef);
+  const [originStyle, haloOriginStyle] = useOriginFromTrigger(
+    triggerRef,
+    panelRef,
+    isOpen,
+    haloRef,
+  );
 
   return (
     <AnimatePresence>
@@ -563,6 +568,7 @@ export const Modal = ({
               }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               ref={haloRef}
+              style={haloOriginStyle}
               className="pointer-events-none absolute area-blur"
             />
             {/* Grows out of the trigger button and collapses ALL the way back into it —

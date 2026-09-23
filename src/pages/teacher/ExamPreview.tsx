@@ -81,9 +81,9 @@ export default function ExamPreview({
   const drawerPanelRef = useRef<HTMLDivElement>(null);
   const drawerTriggerRef = useRef<HTMLElement | null>(null);
   // Area-blur halo: bigger negative-inset box, same viewport origin point —
-  // the hook writes its transformOrigin directly (style prop carries none).
+  // the hook measures and returns its origin alongside the panel's.
   const drawerHaloRef = useRef<HTMLDivElement>(null);
-  const drawerOrigin = useOriginFromTrigger(
+  const [drawerOrigin, drawerHaloOrigin] = useOriginFromTrigger(
     drawerTriggerRef,
     drawerPanelRef,
     editingQuestion !== null,
@@ -1653,6 +1653,7 @@ export default function ExamPreview({
               }}
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               ref={drawerHaloRef}
+              style={drawerHaloOrigin}
               className="pointer-events-none absolute area-blur"
             />
             <motion.div

@@ -89,7 +89,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   // opened it (quick action or empty state), so it is captured at click time.
   const excelTriggerRef = useRef<HTMLElement | null>(null);
   const excelPanelRef = useRef<HTMLDivElement>(null);
-  const excelOrigin = useOriginFromTrigger(excelTriggerRef, excelPanelRef, isExcelModalOpen);
+  const [excelOrigin] = useOriginFromTrigger(excelTriggerRef, excelPanelRef, isExcelModalOpen);
   const [_excelFile, setExcelFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [importStep, setImportStep] = useState<'idle' | 'reading' | 'mapping' | 'preview' | 'done'>(

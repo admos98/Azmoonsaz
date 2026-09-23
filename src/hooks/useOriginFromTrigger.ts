@@ -1,13 +1,14 @@
 /**
  * useOriginFromTrigger — shared transformOrigin for grow-from / shrink-to panels.
  *
- * Measures the trigger button and the panel it opened and returns a
- * transformOrigin in panel-local coordinates so an overlay appears to grow out
- * of — and collapse back into — the button that opened it.
+ * Measures the trigger button and the panel it opened and returns origins in
+ * panel-local coordinates so an overlay appears to grow out of — and collapse
+ * back into — the button that opened it.
  *
- * Returns undefined until measured, so callers can fall back to their own
- * default origin (e.g. 'center bottom'). Kept out of UIComponents on purpose:
- * a non-component export there would break React Fast Refresh.
+ * Returns a tuple `[panelOrigin, companionOrigin]`; both are undefined until
+ * measured, so callers can fall back to their own default origin
+ * (e.g. 'center bottom'). Kept out of UIComponents on purpose: a non-component
+ * export there would break React Fast Refresh.
  *
  * Three subtleties this implementation exists to get right:
  *
@@ -24,18 +25,19 @@
  *
  * 3. `companionRef` (the area-blur halo sibling) has a larger, negative-inset
  *    box than the panel, so the same viewport point maps to different local
- *    coordinates. Its origin is measured here and written directly — the React
- *    style prop on the halo intentionally carries no transformOrigin.
+ *    coordinates — its origin is measured too and returned separately.
  */
 import { useLayoutEffect, useState } from 'react';
+
+type Origins = readonly [React.CSSProperties | undefined, React.CSSProperties | undefined];
 
 export function useOriginFromTrigger(
   triggerRef: { current: HTMLElement | null } | undefined,
   panelRef: { current: HTMLElement | null },
   active: boolean,
   companionRef?: { current: HTMLElement | null },
-): React.CSSProperties | undefined {
-  const [originStyle, setOriginStyle] = useState<React.CSSProperties | undefined>(undefined);
+): Origins {
+  const [origins, setOrigins] = useState<Origins>([undefined, undefined]);
 
   // Layout effect, measured synchronously: the origin must be known BEFORE the
   // first animated frame. The previous rAF-in-effect version set it a frame late,
@@ -68,16 +70,18 @@ export function useOriginFromTrigger(
     const panelRect = measureLaidOut(panel);
     const cx = triggerRect.left + triggerRect.width / 2 - panelRect.left;
     const cy = triggerRect.top + triggerRect.height / 2 - panelRect.top;
-    setOriginStyle({ transformOrigin: `${cx}px ${cy}px` });
+    const panelOrigin: React.CSSProperties = { transformOrigin: `${cx}px ${cy}px` };
 
     const companion = companionRef?.current;
+    let companionOrigin: React.CSSProperties | undefined;
     if (companion) {
       const companionRect = measureLaidOut(companion);
       const hx = cx + panelRect.left - companionRect.left;
       const hy = cy + panelRect.top - companionRect.top;
-      companion.style.transformOrigin = `${hx}px ${hy}px`;
+      companionOrigin = { transformOrigin: `${hx}px ${hy}px` };
     }
+    setOrigins([panelOrigin, companionOrigin]);
   }, [active, triggerRef, panelRef, companionRef]);
 
-  return originStyle;
+  return origins;
 }

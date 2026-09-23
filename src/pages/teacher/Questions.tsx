@@ -60,12 +60,12 @@ export default function Questions() {
   const drawerTriggerRef = useRef<HTMLElement | null>(null);
   const previewPanelRef = useRef<HTMLDivElement>(null);
   const drawerPanelRef = useRef<HTMLDivElement>(null);
-  const previewOrigin = useOriginFromTrigger(
+  const [previewOrigin] = useOriginFromTrigger(
     previewTriggerRef,
     previewPanelRef,
     previewQuestion !== null,
   );
-  const drawerOrigin = useOriginFromTrigger(drawerTriggerRef, drawerPanelRef, showAddEditDrawer);
+  const [drawerOrigin] = useOriginFromTrigger(drawerTriggerRef, drawerPanelRef, showAddEditDrawer);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filters state
