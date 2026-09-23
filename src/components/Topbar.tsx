@@ -305,9 +305,6 @@ export default function Topbar({
   const unreadCount = notifications.length;
 
   // Notification dropdown position (fixed, anchored to bell — on left side, so use left)
-  // Halo inset mirrors --glass-h-ratio: area-blur owns inset/radius via 1cqw, so the
-  // transform-origin math below must use the same ratio (dropdownWidth 320 × 0.17).
-  const notifHaloInset = 320 * 0.17;
   const notificationStyle: React.CSSProperties = { position: 'fixed' };
   if (bellRect) {
     const dropdownWidth = 320;
@@ -346,10 +343,6 @@ export default function Topbar({
   // panelWidth - hamburgerRect.width/2 from the panel's left edge.
   // The button is above the first panel by hamburgerRect.height/2 + 12 (gap).
   const panelWidth = 280;
-  // Halo pad mirrors --glass-h-ratio: the field wrapper below is @container with
-  // width = panelWidth, so area-blur insets itself by panelWidth × 0.17 via 1cqw.
-  // The transform-origin math must use the same pad (was hardcoded 48 ≈ 0.17×280).
-  const menuHaloPad = panelWidth * 0.17;
   const computeHamburgerTransformOrigin = (index: number) => {
     if (!hamburgerRect) return 'center top';
     const originX = `${panelWidth - hamburgerRect.width / 2}px`;
@@ -522,18 +515,8 @@ export default function Topbar({
                 height: `${panelHeights.reduce((sum, h) => sum + h, 0) + panelGap * 3}px`,
               }}
             >
-              <div
-                aria-hidden="true"
-                className="absolute area-blur"
-                style={{
-                  transformOrigin: hamburgerRect
-                    ? `${panelWidth + menuHaloPad - hamburgerRect.width / 2}px ${-hamburgerRect.height / 2 - 12 + menuHaloPad}px`
-                    : 'center',
-                  animation: menuClosing
-                    ? 'shrinkToHamburger 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
-                    : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
-                }}
-              />
+              {/* Static halo — panels animate around it; opacity/transform here would kill the blur */}
+              <div aria-hidden="true" className="absolute area-blur" />
             </div>
 
             {/* Panel 1: App info + date */}
@@ -792,19 +775,8 @@ export default function Topbar({
       {/* Notifications Dropdown — animates from bell origin */}
       {(showNotifications || notifClosing) && (
         <div className="fixed z-[60] @container" style={notificationStyle}>
-          {/* Area-blur halo — liquid-glass ring; own animation under a static wrapper */}
-          <div
-            aria-hidden="true"
-            className="absolute area-blur"
-            style={{
-              transformOrigin: bellRect
-                ? `${bellRect.width / 2 + notifHaloInset}px ${-bellRect.height / 2 - 12 + notifHaloInset}px`
-                : 'center',
-              animation: notifClosing
-                ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
-                : 'growFromBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both',
-            }}
-          />
+          {/* Static halo — the panel animates, the halo stays at opacity 1 so its blur survives */}
+          <div aria-hidden="true" className="absolute area-blur" />
           <div
             ref={notifRef}
             className={`relative w-full glx-strong rounded-2xl overflow-hidden glx-sheen ${

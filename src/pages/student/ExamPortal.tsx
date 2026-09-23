@@ -2063,11 +2063,14 @@ export default function ExamPortal({
             dir="rtl"
             id="modal-submit-confirmation"
           >
+            <div className="relative w-full max-w-md @container">
+              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+              <div aria-hidden="true" className="absolute area-blur" />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="glx-strong rounded-3xl border max-w-md w-full p-6 space-y-5 text-right"
+              className="relative glx-strong rounded-3xl border w-full p-6 space-y-5 text-right"
             >
               <div className="flex items-center gap-2.5 border-b border-[var(--color-glass-light-stroke)] pb-3">
                 <div className="w-9 h-9 rounded-full bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] flex items-center justify-center">
@@ -2138,6 +2141,7 @@ export default function ExamPortal({
                 </button>
               </div>
             </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>
@@ -2150,11 +2154,14 @@ export default function ExamPortal({
             dir="rtl"
             id="mobile-navigation-drawer-backdrop"
           >
+            <div className="relative w-full max-w-md @container">
+              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+              <div aria-hidden="true" className="absolute area-blur" />
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
-              className="glx-strong rounded-t-3xl max-w-md w-full p-5 space-y-4 text-right max-h-[70vh] overflow-y-auto"
+              className="relative glx-strong rounded-t-3xl w-full p-5 space-y-4 text-right max-h-[70vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center border-b pb-2">
                 <h3 className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
@@ -2213,6 +2220,7 @@ export default function ExamPortal({
                 <span>تحویل و پایان آزمون برخط</span>
               </button>
             </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>

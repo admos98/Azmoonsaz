@@ -883,13 +883,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4"
           id="excel-import-modal-backdrop"
         >
-          <motion.div
+                              <div className="relative w-full max-w-lg @container">
+            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+            <div aria-hidden="true" className="absolute area-blur" />
+            <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx-strong w-full max-w-lg rounded-3xl overflow-hidden text-right text-caption glx-sheen"
+            className="relative glx-strong w-full rounded-3xl overflow-hidden text-right text-caption glx-sheen"
             id="excel-import-dialog"
           >
             {/* Modal Header */}
@@ -1053,6 +1056,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               )}
             </div>
           </motion.div>
+          </div>
         </div>
       )}
     </div>

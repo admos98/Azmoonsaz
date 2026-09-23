@@ -347,14 +347,8 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           {open && (
             /* Static wrapper: the area-blur halo must never sit under an opacity-animated ancestor */
             <div className="absolute top-full z-[100] mt-1 w-full @container">
-              <motion.div
-                aria-hidden="true"
-                initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="absolute area-blur"
-              />
+              {/* Static halo — never animate opacity on a backdrop-filter element */}
+              <div aria-hidden="true" className="absolute area-blur" />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: -4 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -499,15 +493,8 @@ export const Modal = ({
 
           {/* Card + area-blur halo — static wrapper so the halo never sits under an opacity-animated ancestor */}
           <div className={`relative w-full ${widthStyles[maxWidth]} z-10 @container`}>
-            <motion.div
-              aria-hidden="true"
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              style={originStyle}
-              className="absolute area-blur"
-            />
+            {/* Static halo — the panel animates, the halo stays at opacity 1 so its blur survives */}
+            <div aria-hidden="true" className="absolute area-blur" />
             <motion.div
               ref={panelRef}
               initial={{ opacity: 0, scale: 0.92 }}

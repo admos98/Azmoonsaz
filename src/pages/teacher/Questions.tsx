@@ -1074,13 +1074,16 @@ export default function Questions() {
           className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4"
           id="live-preview-overlay"
         >
-          <motion.div
+                              <div className="relative w-full max-w-2xl @container">
+            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+            <div aria-hidden="true" className="absolute area-blur" />
+            <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx rounded-3xl w-full max-w-2xl overflow-hidden border flex flex-col max-h-[90vh]"
+            className="relative glx rounded-3xl w-full overflow-hidden border flex flex-col max-h-[90vh]"
             id="preview-box"
           >
             {/* Header */}
@@ -1111,6 +1114,7 @@ export default function Questions() {
               </span>
             </div>
           </motion.div>
+          </div>
         </div>
       )}
 
@@ -1122,12 +1126,15 @@ export default function Questions() {
         >
           <div className="fixed inset-0" onClick={() => setShowAddEditDrawer(false)} />
 
-          <motion.div
+                              <div className="relative h-full w-full max-w-3xl @container">
+            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+            <div aria-hidden="true" className="absolute area-blur" />
+            <motion.div
             initial={{ opacity: 0, x: 200 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 200 }}
             transition={{ type: 'spring', damping: 25 }}
-            className="w-full max-w-3xl glx z-10 flex flex-col h-full border-l overflow-hidden text-caption text-right"
+            className="relative w-full glx z-10 flex flex-col h-full border-l overflow-hidden text-caption text-right"
             id="add-edit-drawer"
           >
             {/* Drawer Header */}
@@ -2001,6 +2008,7 @@ export default function Questions() {
               </div>
             </div>
           </motion.div>
+          </div>
         </div>
       )}
 

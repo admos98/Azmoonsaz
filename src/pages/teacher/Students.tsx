@@ -953,13 +953,16 @@ export default function Students() {
           className="fixed inset-0 z-[60] bgfx flex items-center justify-center p-4 text-right"
           id="add-edit-modal-backdrop"
         >
-          <motion.div
+                              <div className="relative w-full max-w-md @container">
+            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+            <div aria-hidden="true" className="absolute area-blur" />
+            <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx-strong glx-sheen rounded-3xl w-full max-w-md overflow-hidden"
+            className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden"
             id="add-edit-student-box"
           >
             {/* Modal Header */}
@@ -1148,6 +1151,7 @@ export default function Students() {
               </div>
             </form>
           </motion.div>
+          </div>
         </div>
       )}
 
@@ -1157,12 +1161,15 @@ export default function Students() {
           className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4 text-right"
           id="wizard-backdrop"
         >
-          <motion.div
+                              <div className="relative w-full max-w-2xl @container">
+            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+            <div aria-hidden="true" className="absolute area-blur" />
+            <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 1, scale: 0.96 }}
             style={{ transformOrigin: 'center bottom' }}
-            className="glx-strong glx-sheen rounded-3xl w-full max-w-2xl overflow-hidden text-caption"
+            className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden text-caption"
             id="wizard-container"
           >
             {/* Header with Close */}
@@ -1573,6 +1580,7 @@ export default function Students() {
               )}
             </div>
           </motion.div>
+          </div>
         </div>
       )}
 
@@ -1582,13 +1590,16 @@ export default function Students() {
           className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4 text-right"
           id="exam-logs-modal-backdrop"
         >
-          <motion.div
+                              <div className="relative w-full max-w-lg @container">
+            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+            <div aria-hidden="true" className="absolute area-blur" />
+            <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             style={{ transformOrigin: 'center bottom' }}
             transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="glx-strong rounded-3xl w-full max-w-lg overflow-hidden"
+            className="relative glx-strong rounded-3xl w-full overflow-hidden"
             id="exam-logs-box"
           >
             {/* Header */}
@@ -1683,6 +1694,7 @@ export default function Students() {
               </div>
             </div>
           </motion.div>
+          </div>
         </div>
       )}
 
