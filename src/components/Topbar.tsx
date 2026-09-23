@@ -456,7 +456,14 @@ export default function Topbar({
         <button
           ref={hamburgerRef}
           id="hamburger-menu-btn"
-          onClick={openHamburgerMenu}
+          onClick={() => {
+            // The mark morphs into an X while open, so this must toggle.
+            // An open-with-no-op left the X dead: the outside-click handler
+            // deliberately excludes this button, so nothing else closed it.
+            if (menuClosing) return;
+            if (showHamburgerMenu) closeMenu();
+            else openHamburgerMenu();
+          }}
           onMouseEnter={() => setHamburgerHover(true)}
           onMouseLeave={() => setHamburgerHover(false)}
           className="relative z-[70] p-2 rounded-xl hover: bg-[var(--color-surface)]/5 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"

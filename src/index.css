@@ -58,8 +58,8 @@
   --color-glass-ink-bottom: rgba(0, 0, 0, 0.2);
 
   /* Shared shadow — balanced for the new lighter glass */
-  --color-glass-shadow: rgba(26, 26, 46, 0.12);
-  --color-glass-shadow-strong: rgba(26, 26, 46, 0.18);
+  --color-glass-shadow: rgba(32, 66, 104, 0.12);
+  --color-glass-shadow-strong: rgba(32, 66, 104, 0.18);
 
   /* Brand — The Mark */
   --color-ink: #1a1a2e;
@@ -106,12 +106,18 @@
    hairline, shadow. Change a value here → the whole app follows. */
 :root {
   /* Full-screen veil (Control-Center style backdrop behind popups) */
+  /* Full-screen veil blur. Separate token from --glass-bg-blur on purpose:
+     dimming the whole screen and glassing an in-page card are different jobs,
+     and the screen one is what should stay subtle. */
   --glass-bg-blur: 7px;
+  --glass-veil-blur: 4px;
   --glass-bg-sat: 1.35;
   --glass-bg-bright: 0.97;
   --glass-bg-contrast: 0.92;
   --glass-scrim-a: 0.15;
-  --glass-scrim-color: 62 62 111;
+  /* Sky-blue family: the page is #dcf0ff, so every tint that shows through or
+     sits behind glass must be blue — the old indigo read as a mismatched patch. */
+  --glass-scrim-color: 64 108 156;
 
   /* Area halo — size = ratio × panel width (container-query units) */
   --glass-h-ratio: 0.17;
@@ -119,7 +125,7 @@
   --glass-h-sat: 1.6;
   --glass-h-bright: 1.2;
   --glass-h-fill: 0.22;
-  --glass-h-tint: 26 26 46;
+  --glass-h-tint: 32 66 104;
   --glass-h-fo: 1.15;
   --glass-h-bias: 0.7;
   --glass-h-mid: 0.75;
@@ -137,7 +143,7 @@
   --glass-p-radius: 28px;
   --glass-p-bw: 1px;
   --glass-p-ba: 0.22;
-  --glass-p-bc: 26 26 46;
+  --glass-p-bc: 32 66 104;
   --glass-shn-t: 0.68;
   --glass-shn-b: 0;
 
@@ -147,13 +153,15 @@
   --glass-sh-blur: 70px;
   --glass-sh-spread: -10px;
   --glass-sh-a: 0.42;
-  --glass-sh-color: 26 26 46;
+  --glass-sh-color: 32 66 104;
 
   /* Row hover tint (menu / dropdown / list) */
   --glass-row-hover: 0.2;
 
   /* Derived halo geometry — falloff stops + ratio inset */
-  --glass-h-f: calc(var(--glass-h-ratio) / (1 + 2 * var(--glass-h-ratio)) * 100% * var(--glass-h-fo));
+  --glass-h-f: calc(
+    var(--glass-h-ratio) / (1 + 2 * var(--glass-h-ratio)) * 100% * var(--glass-h-fo)
+  );
   --glass-h-b1: calc(var(--glass-h-f) * var(--glass-h-bias));
   --glass-h-inset: calc(-1 * var(--glass-h-ratio) * 100 * 1cqw);
 }
@@ -259,8 +267,7 @@ select::-webkit-calendar-picker-indicator {
       rgb(var(--glass-sh-color) / var(--glass-sh-a));
   /* In-page surface (cards, topbar): has no halo of its own, so it carries
      the background-veil blur — scrolling content must never bleed through. */
-  backdrop-filter:
-    blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
+  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
     brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
 }
 
@@ -280,8 +287,7 @@ select::-webkit-calendar-picker-indicator {
       rgb(var(--glass-sh-color) / var(--glass-sh-a));
   /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own
      blur stays at --glass-p-blur (0) — the double blur comes from the layers. */
-  backdrop-filter:
-    blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
     brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
 }
 
@@ -316,18 +322,45 @@ select::-webkit-calendar-picker-indicator {
    this utility owns inset and border-radius. */
 @utility area-blur {
   inset: var(--glass-h-inset);
-  border-radius: calc(var(--glass-p-radius) + var(--glass-h-ratio) * 100 * 1cqw + var(--glass-h-rext));
+  border-radius: calc(
+    var(--glass-p-radius) + var(--glass-h-ratio) * 100 * 1cqw + var(--glass-h-rext)
+  );
   pointer-events: none;
   background: rgb(var(--glass-h-tint) / var(--glass-h-fill));
-  backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat)) brightness(var(--glass-h-bright));
+  backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat))
+    brightness(var(--glass-h-bright));
   /* Feathered falloff: linear ease 0 → solid across the rim band (no mid
      plateau = no visible edge line once the blur is alive) */
   -webkit-mask-image:
-    linear-gradient(to right, rgb(0 0 0/0) 0%, #000 var(--glass-h-f), #000 calc(100% - var(--glass-h-f)), rgb(0 0 0/0) 100%),
-    linear-gradient(to bottom, rgb(0 0 0/0) 0%, #000 var(--glass-h-f), #000 calc(100% - var(--glass-h-f)), rgb(0 0 0/0) 100%);
+    linear-gradient(
+      to right,
+      rgb(0 0 0/0) 0%,
+      #000 var(--glass-h-f),
+      #000 calc(100% - var(--glass-h-f)),
+      rgb(0 0 0/0) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgb(0 0 0/0) 0%,
+      #000 var(--glass-h-f),
+      #000 calc(100% - var(--glass-h-f)),
+      rgb(0 0 0/0) 100%
+    );
   mask-image:
-    linear-gradient(to right, rgb(0 0 0/0) 0%, #000 var(--glass-h-f), #000 calc(100% - var(--glass-h-f)), rgb(0 0 0/0) 100%),
-    linear-gradient(to bottom, rgb(0 0 0/0) 0%, #000 var(--glass-h-f), #000 calc(100% - var(--glass-h-f)), rgb(0 0 0/0) 100%);
+    linear-gradient(
+      to right,
+      rgb(0 0 0/0) 0%,
+      #000 var(--glass-h-f),
+      #000 calc(100% - var(--glass-h-f)),
+      rgb(0 0 0/0) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgb(0 0 0/0) 0%,
+      #000 var(--glass-h-f),
+      #000 calc(100% - var(--glass-h-f)),
+      rgb(0 0 0/0) 100%
+    );
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
@@ -336,8 +369,7 @@ select::-webkit-calendar-picker-indicator {
    one). Use on full-screen backdrop elements instead of a flat bg-black/30. */
 @utility bgfx {
   background: rgb(var(--glass-scrim-color) / var(--glass-scrim-a));
-  backdrop-filter:
-    blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
+  backdrop-filter: blur(var(--glass-veil-blur)) saturate(var(--glass-bg-sat))
     brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
 }
 

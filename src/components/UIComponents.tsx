@@ -2,7 +2,9 @@
  * @license SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useState, useEffect, useId } from 'react';
+import React, { useRef, useState, useEffect, useLayoutEffect, useId } from 'react';
+import { createPortal } from 'react-dom';
+import { useOriginFromTrigger } from '../hooks/useOriginFromTrigger';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -297,16 +299,59 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
     const dropdownId = id || generatedId;
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
       const handleClickOutside = (e: MouseEvent) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        const t = e.target as Node;
+        // The options list is portaled to <body>, so it sits OUTSIDE dropdownRef —
+        // without this clause the list would close on mousedown, before the click
+        // on an option ever fired.
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(t) &&
+          !(listRef.current && listRef.current.contains(t))
+        ) {
           setOpen(false);
         }
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Portal geometry: anchored to the trigger button and measured in a layout
+    // effect so the list never flashes at the document origin before first paint.
+    const [listStyle, setListStyle] = useState<React.CSSProperties>({
+      position: 'fixed',
+      left: 0,
+      top: 0,
+      width: 0,
+      zIndex: 9999,
+    });
+
+    useLayoutEffect(() => {
+      if (!open) return;
+      const measure = () => {
+        const btn = dropdownRef.current?.querySelector('button');
+        if (!btn) return;
+        const r = btn.getBoundingClientRect();
+        setListStyle({
+          position: 'fixed',
+          left: r.left,
+          top: r.bottom + 4,
+          width: r.width,
+          zIndex: 9999,
+        });
+      };
+      measure();
+      window.addEventListener('resize', measure);
+      // capture: re-anchor when any scrollable ancestor moves the trigger
+      window.addEventListener('scroll', measure, true);
+      return () => {
+        window.removeEventListener('resize', measure);
+        window.removeEventListener('scroll', measure, true);
+      };
+    }, [open]);
 
     const selectedLabel = options.find((o) => o.value === value)?.label || placeholder || '';
 
@@ -343,18 +388,23 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
             style={{ transform: open ? 'rotate(180deg)' : 'none' }}
           />
         </button>
-        <AnimatePresence>
-          {open && (
-            /* Static wrapper: the area-blur halo must never sit under an opacity-animated ancestor */
-            <div className="absolute top-full z-[100] mt-1 w-full @container">
-              {/* Static halo — never animate opacity on a backdrop-filter element */}
-              <div aria-hidden="true" className="absolute area-blur" />
+        {/* Portal to body: a list rendered inside a z-50/z-60 panel inherits that
+            panel's stacking context, so a sibling panel could paint over it.
+            Body level + a high z-index makes it topmost, always. */}
+        {createPortal(
+          <AnimatePresence>
+            {open && (
               <motion.div
+                key="dropdown-options"
+                ref={listRef}
                 initial={{ opacity: 0, scale: 0.95, y: -4 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="relative glx-strong rounded-xl max-h-56 overflow-y-auto"
+                /* No area-blur halo and no drop shadow: the trigger button already
+                   carries the glass, and a floating list needs neither. */
+                style={{ ...listStyle, boxShadow: 'none', transformOrigin: 'top center' }}
+                className="glx-strong rounded-xl max-h-56 overflow-y-auto"
               >
                 {options.map((opt, i) => (
                   <React.Fragment key={opt.value}>
@@ -377,9 +427,10 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                   </React.Fragment>
                 ))}
               </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )}
         {error && (
           <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
             <AlertCircle className="w-3.5 h-3.5" />
@@ -457,26 +508,8 @@ export const Modal = ({
     xl: 'max-w-4xl',
   };
 
-  const [originStyle, setOriginStyle] = useState<React.CSSProperties | undefined>(undefined);
   const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen || !triggerRef?.current || !panelRef.current) {
-      setOriginStyle(undefined);
-      return;
-    }
-    const raf = requestAnimationFrame(() => {
-      const panel = panelRef.current;
-      const trigger = triggerRef.current;
-      if (!panel || !trigger) return;
-      const panelRect = panel.getBoundingClientRect();
-      const triggerRect = trigger.getBoundingClientRect();
-      const cx = triggerRect.left + triggerRect.width / 2 - panelRect.left;
-      const cy = triggerRect.top + triggerRect.height / 2 - panelRect.top;
-      setOriginStyle({ transformOrigin: `${cx}px ${cy}px` });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [isOpen, triggerRef]);
+  const originStyle = useOriginFromTrigger(triggerRef, panelRef, isOpen);
 
   return (
     <AnimatePresence>

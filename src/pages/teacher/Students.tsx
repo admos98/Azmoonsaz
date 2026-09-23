@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Users,
@@ -32,6 +32,7 @@ import { logger } from '../../lib/logger';
 import { Student, Submission, ClassGroup, Exam } from '../../types';
 import { studentService, classService, gradingService, examService } from '../../services/api';
 import { ConfirmDialog, Dropdown, Input } from '../../components/UIComponents';
+import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
 import { useToast } from '../../hooks/useToast';
 
 export default function Students() {
@@ -89,6 +90,26 @@ export default function Students() {
   const [showExamLogsModal, setShowExamLogsModal] = useState(false);
   const [activeLogSubmissions, setActiveLogSubmissions] = useState<Submission[]>([]);
   const [activeLogStudent, setActiveLogStudent] = useState<Student | null>(null);
+
+  // Panel origins — each overlay grows out of / collapses back into the button
+  // that opened it instead of popping from its own centre.
+  const addEditTriggerRef = useRef<HTMLElement | null>(null);
+  const wizardTriggerRef = useRef<HTMLElement | null>(null);
+  const logsTriggerRef = useRef<HTMLElement | null>(null);
+  const addEditPanelRef = useRef<HTMLDivElement>(null);
+  const wizardPanelRef = useRef<HTMLDivElement>(null);
+  const logsPanelRef = useRef<HTMLDivElement>(null);
+  const addEditOrigin = useOriginFromTrigger(addEditTriggerRef, addEditPanelRef, showAddEditModal);
+  const wizardOrigin = useOriginFromTrigger(wizardTriggerRef, wizardPanelRef, showImportWizard);
+  const logsOrigin = useOriginFromTrigger(logsTriggerRef, logsPanelRef, showExamLogsModal);
+
+  // Browsers focus a button on click, so the active element is the opener —
+  // lets every call site report its trigger without threading a ref through
+  // each one. Falls back to the panel's own centre when there is no element.
+  const captureActiveTrigger = (): HTMLElement | null => {
+    const el = document.activeElement;
+    return el instanceof HTMLElement && el !== document.body ? el : null;
+  };
 
   // Manual Add/Edit form state
   const [formName, setFormName] = useState('');
@@ -152,6 +173,7 @@ export default function Students() {
 
   // Open Add Student Modal
   const openAddModal = () => {
+    addEditTriggerRef.current = captureActiveTrigger();
     setModalMode('add');
     setSelectedStudentId(null);
     setFormName('');
@@ -166,6 +188,7 @@ export default function Students() {
 
   // Open Edit Student Modal
   const openEditModal = (student: Student) => {
+    addEditTriggerRef.current = captureActiveTrigger();
     setModalMode('edit');
     setSelectedStudentId(student.id);
     setFormName(student.name);
@@ -264,6 +287,7 @@ export default function Students() {
   };
 
   const openStudentExamHistory = (student: Student) => {
+    logsTriggerRef.current = captureActiveTrigger();
     const studentSubs = submissions.filter((sub) => sub.studentId === student.id);
     setActiveLogStudent(student);
     setActiveLogSubmissions(studentSubs);
@@ -574,6 +598,7 @@ export default function Students() {
           <button
             id="btn-excel-wizard"
             onClick={() => {
+              wizardTriggerRef.current = captureActiveTrigger();
               setWizardStep(1);
               setShowImportWizard(true);
             }}
@@ -948,761 +973,774 @@ export default function Students() {
       </div>
 
       {/* Manual Add / Edit Modal Dialouge Room */}
-      {showAddEditModal && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 text-right"
-          id="add-edit-modal-backdrop"
-        >
-        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-        <div aria-hidden="true" className="absolute inset-0 bgfx" />
-                              <div className="relative w-full max-w-md @container">
-            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-            <div aria-hidden="true" className="absolute area-blur" />
-            <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            style={{ transformOrigin: 'center bottom' }}
-            transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden"
-            id="add-edit-student-box"
+      <AnimatePresence>
+        {showAddEditModal && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 text-right"
+            id="add-edit-modal-backdrop"
           >
-            {/* Modal Header */}
-            <div className="px-6 py-5 glx border-b flex items-center justify-between">
-              <button
-                onClick={() => setShowAddEditModal(false)}
-                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] font-bold text-heading-3 cursor-pointer"
+            {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+            <div aria-hidden="true" className="absolute inset-0 bgfx" />
+            <div className="relative w-full max-w-md @container">
+              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+              <div aria-hidden="true" className="absolute area-blur" />
+              <motion.div
+                ref={addEditPanelRef}
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                style={addEditOrigin ?? { transformOrigin: 'center bottom' }}
+                transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
+                className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden"
+                id="add-edit-student-box"
               >
-                &times;
-              </button>
-              <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
-                <UserPlus className="w-5 h-5 text-[var(--color-accent)]" />
-                <span>
-                  {modalMode === 'add'
-                    ? 'ایجاد پرونده تحصیلی دانش‌آموز نو'
-                    : 'ویرایش شناسنامه تحصیلی دانش‌آموز'}
-                </span>
-              </h3>
-            </div>
-
-            {/* Form body */}
-            <form onSubmit={handleSaveStudentSubmit} className="p-6 space-y-4 text-label">
-              {/* Family name */}
-              <Input
-                label="نام و نام خانوادگی:"
-                type="text"
-                required
-                placeholder="مثال: بردیا مهدوی"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                className="text-label"
-              />
-
-              {/* National ID + Interactive Live Validation logic */}
-              <div className="space-y-1.5">
-                <label className="font-semibold text-[var(--color-text-secondary)] block">
-                  کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):
-                </label>
-                <input
-                  type="text"
-                  required
-                  maxLength={10}
-                  placeholder="مثال: 0012487654"
-                  value={formNationalId}
-                  onChange={(e) => setFormNationalId(e.target.value.replace(/\D/g, ''))}
-                  className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-label font-mono tracking-widest text-[var(--color-text-primary)] text-right"
-                />
-
-                {/* Live validation feedback display! */}
-                {formNationalId && (
-                  <div
-                    className={`p-2.5 rounded-lg border flex items-start gap-1.5 transition-all text-micro leading-relaxed ${
-                      validateIranianNationalId(formNationalId).isValid
-                        ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/10/60 text-[var(--color-success)]'
-                        : 'bg-[var(--color-danger-soft)]/40 border-[var(--color-danger)]/10/60 text-[var(--color-danger)]/80'
-                    }`}
+                {/* Modal Header */}
+                <div className="px-6 py-5 glx border-b flex items-center justify-between">
+                  <button
+                    onClick={() => setShowAddEditModal(false)}
+                    className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] font-bold text-heading-3 cursor-pointer"
                   >
-                    {validateIranianNationalId(formNationalId).isValid ? (
-                      <CheckCircle className="w-3.5 h-3.5 text-[var(--color-success)] shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)] shrink-0 mt-0.5" />
+                    &times;
+                  </button>
+                  <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
+                    <UserPlus className="w-5 h-5 text-[var(--color-accent)]" />
+                    <span>
+                      {modalMode === 'add'
+                        ? 'ایجاد پرونده تحصیلی دانش‌آموز نو'
+                        : 'ویرایش شناسنامه تحصیلی دانش‌آموز'}
+                    </span>
+                  </h3>
+                </div>
+
+                {/* Form body */}
+                <form onSubmit={handleSaveStudentSubmit} className="p-6 space-y-4 text-label">
+                  {/* Family name */}
+                  <Input
+                    label="نام و نام خانوادگی:"
+                    type="text"
+                    required
+                    placeholder="مثال: بردیا مهدوی"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className="text-label"
+                  />
+
+                  {/* National ID + Interactive Live Validation logic */}
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-[var(--color-text-secondary)] block">
+                      کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={10}
+                      placeholder="مثال: 0012487654"
+                      value={formNationalId}
+                      onChange={(e) => setFormNationalId(e.target.value.replace(/\D/g, ''))}
+                      className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-label font-mono tracking-widest text-[var(--color-text-primary)] text-right"
+                    />
+
+                    {/* Live validation feedback display! */}
+                    {formNationalId && (
+                      <div
+                        className={`p-2.5 rounded-lg border flex items-start gap-1.5 transition-all text-micro leading-relaxed ${
+                          validateIranianNationalId(formNationalId).isValid
+                            ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/10/60 text-[var(--color-success)]'
+                            : 'bg-[var(--color-danger-soft)]/40 border-[var(--color-danger)]/10/60 text-[var(--color-danger)]/80'
+                        }`}
+                      >
+                        {validateIranianNationalId(formNationalId).isValid ? (
+                          <CheckCircle className="w-3.5 h-3.5 text-[var(--color-success)] shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)] shrink-0 mt-0.5" />
+                        )}
+                        <span>{validateIranianNationalId(formNationalId).message}</span>
+                      </div>
                     )}
-                    <span>{validateIranianNationalId(formNationalId).message}</span>
                   </div>
-                )}
-              </div>
 
-              {/* Grade and Class Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-[var(--color-text-secondary)] block">
-                    پایه تحصیلی:
-                  </label>
-                  <Dropdown
-                    value={formGrade}
-                    onChange={setFormGrade}
-                    options={[
-                      { value: 'هفتم', label: 'پایه هفتم' },
-                      { value: 'هشتم', label: 'پایه هشتم' },
-                      { value: 'نهم', label: 'پایه نهم' },
-                    ]}
-                    className="text-label"
-                  />
-                </div>
+                  {/* Grade and Class Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-[var(--color-text-secondary)] block">
+                        پایه تحصیلی:
+                      </label>
+                      <Dropdown
+                        value={formGrade}
+                        onChange={setFormGrade}
+                        options={[
+                          { value: 'هفتم', label: 'پایه هفتم' },
+                          { value: 'هشتم', label: 'پایه هشتم' },
+                          { value: 'نهم', label: 'پایه نهم' },
+                        ]}
+                        className="text-label"
+                      />
+                    </div>
 
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-[var(--color-text-secondary)] block">
-                    کلاس اختصاصی:
-                  </label>
-                  <Dropdown
-                    value={formClassGroupId}
-                    onChange={setFormClassGroupId}
-                    options={[
-                      { value: '', label: 'بدون کلاس', disabled: true },
-                      ...classGroups.map((c) => ({ value: c.id, label: c.name })),
-                    ]}
-                    placeholder="انتخاب کلاس"
-                    className="text-label"
-                  />
-                </div>
-              </div>
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-[var(--color-text-secondary)] block">
+                        کلاس اختصاصی:
+                      </label>
+                      <Dropdown
+                        value={formClassGroupId}
+                        onChange={setFormClassGroupId}
+                        options={[
+                          { value: '', label: 'بدون کلاس', disabled: true },
+                          ...classGroups.map((c) => ({ value: c.id, label: c.name })),
+                        ]}
+                        placeholder="انتخاب کلاس"
+                        className="text-label"
+                      />
+                    </div>
+                  </div>
 
-              {/* Status Selector */}
-              <div className="space-y-1.5">
-                <label className="font-semibold text-[var(--color-text-secondary)] block">
-                  وضعیت دانش‌آموز:
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { val: 'active', label: 'فعال' },
-                    { val: 'suspended', label: 'غیرفعال / مسدود' },
-                    { val: 'examining', label: 'در حال آزمون' },
-                  ].map((s) => (
+                  {/* Status Selector */}
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-[var(--color-text-secondary)] block">
+                      وضعیت دانش‌آموز:
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { val: 'active', label: 'فعال' },
+                        { val: 'suspended', label: 'غیرفعال / مسدود' },
+                        { val: 'examining', label: 'در حال آزمون' },
+                      ].map((s) => (
+                        <button
+                          key={s.val}
+                          type="button"
+                          onClick={() =>
+                            setFormStatus(s.val as 'active' | 'suspended' | 'examining')
+                          }
+                          className={`py-2 text-micro rounded-xl border font-bold transition-all cursor-pointer ${
+                            formStatus === s.val
+                              ? 'bg-[var(--color-accent)] border-[var(--color-accent)]/20 text-white shadow-sm'
+                              : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Phone and Email Optional */}
+                  <div className="grid grid-cols-2 gap-4 border-t border-[var(--color-glass-light-stroke)] pt-4.5">
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-[var(--color-text-secondary)] block">
+                        همراه ولی (اختیاری):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="مثال: 09123456789"
+                        value={formPhone}
+                        onChange={(e) => setFormPhone(e.target.value)}
+                        className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-label font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="font-semibold text-[var(--color-text-secondary)] block">
+                        پست الکترونیک (ایمیل):
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="stud@school.ir"
+                        value={formEmail}
+                        onChange={(e) => setFormEmail(e.target.value)}
+                        className="w-full glx border px-3 py-2.5 rounded-xl font-mono text-left"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Error messages if form is incomplete */}
+                  {!formName && (
+                    <p className="text-micro text-[var(--color-danger)] text-center font-bold">
+                      برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.
+                    </p>
+                  )}
+
+                  {/* Submit triggers */}
+                  <div className="flex gap-3 pt-4.5 border-t border-[var(--color-glass-light-stroke)] justify-end">
                     <button
-                      key={s.val}
                       type="button"
-                      onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
-                      className={`py-2 text-micro rounded-xl border font-bold transition-all cursor-pointer ${
-                        formStatus === s.val
-                          ? 'bg-[var(--color-accent)] border-[var(--color-accent)]/20 text-white shadow-sm'
-                          : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
+                      onClick={() => setShowAddEditModal(false)}
+                      className="px-4 py-2 glx-inset hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer transition-all"
+                    >
+                      انصراف
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!formName}
+                      className={`px-5 py-2 rounded-xl font-bold text-white shadow-xs transition-all cursor-pointer ${
+                        formName
+                          ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] active:scale-95'
+                          : 'bg-[var(--color-accent-soft)]/40 cursor-not-allowed'
                       }`}
                     >
-                      {s.label}
+                      {modalMode === 'add' ? 'ثبت و درج نهایی' : 'ذخیره دگرگونی‌ها'}
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Phone and Email Optional */}
-              <div className="grid grid-cols-2 gap-4 border-t border-[var(--color-glass-light-stroke)] pt-4.5">
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-[var(--color-text-secondary)] block">
-                    همراه ولی (اختیاری):
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="مثال: 09123456789"
-                    value={formPhone}
-                    onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-label font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-[var(--color-text-secondary)] block">
-                    پست الکترونیک (ایمیل):
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="stud@school.ir"
-                    value={formEmail}
-                    onChange={(e) => setFormEmail(e.target.value)}
-                    className="w-full glx border px-3 py-2.5 rounded-xl font-mono text-left"
-                  />
-                </div>
-              </div>
-
-              {/* Error messages if form is incomplete */}
-              {!formName && (
-                <p className="text-micro text-[var(--color-danger)] text-center font-bold">
-                  برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.
-                </p>
-              )}
-
-              {/* Submit triggers */}
-              <div className="flex gap-3 pt-4.5 border-t border-[var(--color-glass-light-stroke)] justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowAddEditModal(false)}
-                  className="px-4 py-2 glx-inset hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer transition-all"
-                >
-                  انصراف
-                </button>
-                <button
-                  type="submit"
-                  disabled={!formName}
-                  className={`px-5 py-2 rounded-xl font-bold text-white shadow-xs transition-all cursor-pointer ${
-                    formName
-                      ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] active:scale-95'
-                      : 'bg-[var(--color-accent-soft)]/40 cursor-not-allowed'
-                  }`}
-                >
-                  {modalMode === 'add' ? 'ثبت و درج نهایی' : 'ذخیره دگرگونی‌ها'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* 4-Step Excel / CSV Import Wizard Modal! */}
-      {showImportWizard && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
-          id="wizard-backdrop"
-        >
-        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-        <div aria-hidden="true" className="absolute inset-0 bgfx" />
-                              <div className="relative w-full max-w-2xl @container">
-            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-            <div aria-hidden="true" className="absolute area-blur" />
-            <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 1, scale: 0.96 }}
-            style={{ transformOrigin: 'center bottom' }}
-            className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden text-caption"
-            id="wizard-container"
+      <AnimatePresence>
+        {showImportWizard && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
+            id="wizard-backdrop"
           >
-            {/* Header with Close */}
-            <div className="px-6 py-5 glx border-b flex items-center justify-between">
-              <button
-                onClick={() => {
-                  setShowImportWizard(false);
-                  setWizardStep(1);
-                  setUploadedFileName('');
-                  setWizardRawData([]);
-                }}
-                className="px-2.5 py-1 glx-inset hover:glx-inset text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-bold rounded-xl cursor-pointer"
+            {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+            <div aria-hidden="true" className="absolute inset-0 bgfx" />
+            <div className="relative w-full max-w-2xl @container">
+              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+              <div aria-hidden="true" className="absolute area-blur" />
+              <motion.div
+                ref={wizardPanelRef}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 1, scale: 0.96 }}
+                style={wizardOrigin ?? { transformOrigin: 'center bottom' }}
+                className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden text-caption"
+                id="wizard-container"
               >
-                بستن راهنما ×
-              </button>
-              <h3 className="font-bold text-[var(--color-text-primary)] text-caption flex items-center gap-1.5">
-                <FileSpreadsheet className="w-5 h-5 text-[var(--color-success)]" />
-                <span>دستیار هوشمند ورود ستونی دانش‌آموزان از اکسل / CSV</span>
-              </h3>
-            </div>
-
-            {/* Step Wizard visual track bar! */}
-            <div className="glx border-b px-6 py-3.5 flex items-center justify-around gap-2 select-none">
-              {[
-                { s: 1, label: 'مرحله ۱: انتخاب فایل' },
-                { s: 2, label: 'مرحله ۲: پیش‌نمایش اطلاعات' },
-                { s: 3, label: 'مرحله ۳: بررسی خطاها' },
-                { s: 4, label: 'مرحله ۴: تایید نهایی' },
-              ].map((stepObj) => (
-                <div key={stepObj.s} className="flex items-center gap-2">
-                  <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-micro font-black transition-all ${
-                      wizardStep === stepObj.s
-                        ? 'bg-[var(--color-accent)] text-white shadow-sm'
-                        : wizardStep > stepObj.s
-                          ? 'bg-[var(--color-success)] text-white'
-                          : 'glx-inset text-[var(--color-text-tertiary)]'
-                    }`}
+                {/* Header with Close */}
+                <div className="px-6 py-5 glx border-b flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setShowImportWizard(false);
+                      setWizardStep(1);
+                      setUploadedFileName('');
+                      setWizardRawData([]);
+                    }}
+                    className="px-2.5 py-1 glx-inset hover:glx-inset text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-bold rounded-xl cursor-pointer"
                   >
-                    {wizardStep > stepObj.s ? '✓' : toPersianDigits(stepObj.s)}
-                  </div>
-                  <span
-                    className={`text-micro font-bold hidden sm:inline ${
-                      wizardStep === stepObj.s
-                        ? 'text-[var(--color-accent)] font-extrabold'
-                        : 'text-[var(--color-text-tertiary)]'
-                    }`}
-                  >
-                    {stepObj.label}
-                  </span>
+                    بستن راهنما ×
+                  </button>
+                  <h3 className="font-bold text-[var(--color-text-primary)] text-caption flex items-center gap-1.5">
+                    <FileSpreadsheet className="w-5 h-5 text-[var(--color-success)]" />
+                    <span>دستیار هوشمند ورود ستونی دانش‌آموزان از اکسل / CSV</span>
+                  </h3>
                 </div>
-              ))}
-            </div>
 
-            {/* Modal Core Body according to steps! */}
-            <div className="p-6 max-h-120 overflow-y-auto space-y-5">
-              {/* Step 1: File selection Drag & Drop */}
-              {wizardStep === 1 && (
-                <div className="space-y-4">
-                  <div className="space-y-1 glx border p-4.5 rounded-2xl leading-relaxed">
-                    <p className="font-bold text-[var(--color-text-primary)] text-micro">
-                      ملاحظات قالب فایل بارگذاری شده:
-                    </p>
-                    <p className="text-[var(--color-text-tertiary)]">
-                      فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با{' '}
-                      <strong className="font-bold text-[var(--color-text-secondary)]">name</strong>{' '}
-                      (نام و نام خانوادگی)،{' '}
-                      <strong className="font-bold text-[var(--color-text-secondary)]">
-                        national_id
-                      </strong>{' '}
-                      (کدملی)،{' '}
-                      <strong className="font-bold text-[var(--color-text-secondary)] text-[var(--color-accent)]">
-                        class
-                      </strong>{' '}
-                      (نام کلاس) و{' '}
-                      <strong className="font-bold text-[var(--color-text-secondary)]">
-                        grade
-                      </strong>{' '}
-                      (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
-                    </p>
-                    <p className="text-[var(--color-warning)] font-bold text-micro mt-1 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
-                      در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
-                    </p>
-                    <span className="text-micro block mt-1 bg-[var(--color-accent-soft)]/70 border border-[var(--color-accent-soft)]/40 text-[var(--color-accent)] p-2 rounded-xl text-center font-bold">
-                      "فایل شما باید شامل ستون‌های name، national_id، class و grade باشد."
-                    </span>
-                  </div>
-
-                  {/* Drag drop area */}
-                  <div
-                    onDragEnter={handleDrag}
-                    onDragOver={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center gap-3 transition-colors ${
-                      dragActive
-                        ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30'
-                        : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105/50'
-                    }`}
-                  >
-                    <Upload className="w-12 h-12 text-[var(--color-text-tertiary)] animate-pulse" />
-                    <div className="text-center space-y-1.5 select-none">
-                      <p className="font-bold text-[var(--color-text-secondary)] text-caption">
-                        درگ و دراپ مستقیم فایل اکسل (.xlsx) یا فایل کامادار (CSV)
-                      </p>
-                      <p className="text-micro text-[var(--color-text-tertiary)]">
-                        یا برای مرور دستی فایل در حافظه کامپیوتر کلیک کنید
-                      </p>
-                    </div>
-
-                    <label className="mt-2.5 px-4.5 py-2 hover:brightness-95 active:scale-98 bg-[var(--color-accent)] text-white text-micro font-bold rounded-xl cursor-pointer transition-all shadow-xs">
-                      جستجو و انتخاب فایل
-                      <input
-                        type="file"
-                        accept=".xlsx,.xls,.csv"
-                        className="hidden"
-                        onChange={handleFileInputChange}
-                      />
-                    </label>
-                  </div>
-
-                  {/* Sandboxed Demo Presets triggers so testers don't even need to provide a file! */}
-                  <div className="glx p-4.5 rounded-2xl border space-y-3">
-                    <p className="font-bold text-[var(--color-text-secondary)] block text-micro">
-                      بررسی ساده و سریع دمو بدون آپلود فایل واقعی:
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={loadValidSampleTemplate}
-                        className="flex-1 py-2 bg-[var(--color-success-soft)] hover:bg-[var(--color-success-soft)]/80 border border-[var(--color-success)]/15 text-[var(--color-success)] rounded-xl font-bold cursor-pointer"
+                {/* Step Wizard visual track bar! */}
+                <div className="glx border-b px-6 py-3.5 flex items-center justify-around gap-2 select-none">
+                  {[
+                    { s: 1, label: 'مرحله ۱: انتخاب فایل' },
+                    { s: 2, label: 'مرحله ۲: پیش‌نمایش اطلاعات' },
+                    { s: 3, label: 'مرحله ۳: بررسی خطاها' },
+                    { s: 4, label: 'مرحله ۴: تایید نهایی' },
+                  ].map((stepObj) => (
+                    <div key={stepObj.s} className="flex items-center gap-2">
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-micro font-black transition-all ${
+                          wizardStep === stepObj.s
+                            ? 'bg-[var(--color-accent)] text-white shadow-sm'
+                            : wizardStep > stepObj.s
+                              ? 'bg-[var(--color-success)] text-white'
+                              : 'glx-inset text-[var(--color-text-tertiary)]'
+                        }`}
                       >
-                        بارگذاری رکوردهای نمونه فایل معتبر دمو
-                      </button>
-                      <button
-                        type="button"
-                        onClick={loadErrorSampleTemplate}
-                        className="flex-1 py-2 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40/80 border border-[var(--color-danger)]/10 text-[var(--color-danger)]/80 rounded-xl font-bold cursor-pointer"
+                        {wizardStep > stepObj.s ? '✓' : toPersianDigits(stepObj.s)}
+                      </div>
+                      <span
+                        className={`text-micro font-bold hidden sm:inline ${
+                          wizardStep === stepObj.s
+                            ? 'text-[var(--color-accent)] font-extrabold'
+                            : 'text-[var(--color-text-tertiary)]'
+                        }`}
                       >
-                        بارگذاری رکوردهای دارای خطا و کد تکراری دمو
-                      </button>
+                        {stepObj.label}
+                      </span>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              )}
 
-              {/* Step 2: Preview of Raw Rows */}
-              {wizardStep === 2 && (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center glx p-3 rounded-xl">
-                    <span className="text-[var(--color-text-tertiary)] font-semibold">
-                      فایل دریافتی:{' '}
-                      <strong className="text-[var(--color-text-primary)]">
-                        {uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}
-                      </strong>
-                    </span>
-                    <span className="font-bold text-[var(--color-accent)] bg-[var(--color-accent-soft)] px-2.5 py-1 rounded-full">
-                      {toPersianDigits(wizardRawData.length)} ردیف یافت شد
-                    </span>
-                  </div>
+                {/* Modal Core Body according to steps! */}
+                <div className="p-6 max-h-120 overflow-y-auto space-y-5">
+                  {/* Step 1: File selection Drag & Drop */}
+                  {wizardStep === 1 && (
+                    <div className="space-y-4">
+                      <div className="space-y-1 glx border p-4.5 rounded-2xl leading-relaxed">
+                        <p className="font-bold text-[var(--color-text-primary)] text-micro">
+                          ملاحظات قالب فایل بارگذاری شده:
+                        </p>
+                        <p className="text-[var(--color-text-tertiary)]">
+                          فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با{' '}
+                          <strong className="font-bold text-[var(--color-text-secondary)]">
+                            name
+                          </strong>{' '}
+                          (نام و نام خانوادگی)،{' '}
+                          <strong className="font-bold text-[var(--color-text-secondary)]">
+                            national_id
+                          </strong>{' '}
+                          (کدملی)،{' '}
+                          <strong className="font-bold text-[var(--color-text-secondary)] text-[var(--color-accent)]">
+                            class
+                          </strong>{' '}
+                          (نام کلاس) و{' '}
+                          <strong className="font-bold text-[var(--color-text-secondary)]">
+                            grade
+                          </strong>{' '}
+                          (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
+                        </p>
+                        <p className="text-[var(--color-warning)] font-bold text-micro mt-1 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
+                          در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
+                        </p>
+                        <span className="text-micro block mt-1 bg-[var(--color-accent-soft)]/70 border border-[var(--color-accent-soft)]/40 text-[var(--color-accent)] p-2 rounded-xl text-center font-bold">
+                          "فایل شما باید شامل ستون‌های name، national_id، class و grade باشد."
+                        </span>
+                      </div>
 
-                  <p className="text-[var(--color-text-tertiary)] text-micro">
-                    لیست سطور خام خوانده‌شده از فایل قبل از اعتبارسنجی:
-                  </p>
+                      {/* Drag drop area */}
+                      <div
+                        onDragEnter={handleDrag}
+                        onDragOver={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center gap-3 transition-colors ${
+                          dragActive
+                            ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30'
+                            : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105/50'
+                        }`}
+                      >
+                        <Upload className="w-12 h-12 text-[var(--color-text-tertiary)] animate-pulse" />
+                        <div className="text-center space-y-1.5 select-none">
+                          <p className="font-bold text-[var(--color-text-secondary)] text-caption">
+                            درگ و دراپ مستقیم فایل اکسل (.xlsx) یا فایل کامادار (CSV)
+                          </p>
+                          <p className="text-micro text-[var(--color-text-tertiary)]">
+                            یا برای مرور دستی فایل در حافظه کامپیوتر کلیک کنید
+                          </p>
+                        </div>
 
-                  <div className="border border-[var(--color-glass-light-stroke)] rounded-xl overflow-hidden shadow-sm max-h-60 overflow-y-auto">
-                    <table className="w-full text-right text-micro">
-                      <thead className="glx-inset border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] sticky top-0">
-                        <tr>
-                          <th className="p-3 font-bold text-center w-12">ردیف</th>
-                          <th className="p-3 font-bold">name (نام و نام خانوادگی)</th>
-                          <th className="p-3 font-bold">national_id (کد ملی)</th>
-                          <th className="p-3 font-bold">grade (پایه)</th>
-                          <th className="p-3 font-bold">class (کلاس)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]">
-                        {wizardRawData.map((row, idx) => (
-                          <tr key={idx} className="hover:brightness-105">
-                            <td className="p-3 text-center text-[var(--color-text-tertiary)] font-bold">
-                              {toPersianDigits(row.row)}
-                            </td>
-                            <td className="p-3 font-bold text-[var(--color-text-primary)]">
-                              {row.name || (
-                                <span className="text-[var(--color-danger)] italic">خالی</span>
-                              )}
-                            </td>
-                            <td className="p-3 font-mono text-[var(--color-text-secondary)]">
-                              {toPersianDigits(row.national_id) || (
-                                <span className="text-[var(--color-danger)] italic">خالی</span>
-                              )}
-                            </td>
-                            <td className="p-3 text-[var(--color-text-secondary)]">
-                              {row.grade || (
-                                <span className="text-[var(--color-danger)] italic">خالی</span>
-                              )}
-                            </td>
-                            <td className="p-3 text-[var(--color-text-secondary)] font-semibold">
-                              {row.class || (
-                                <span className="text-[var(--color-danger)] italic">خالی</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        <label className="mt-2.5 px-4.5 py-2 hover:brightness-95 active:scale-98 bg-[var(--color-accent)] text-white text-micro font-bold rounded-xl cursor-pointer transition-all shadow-xs">
+                          جستجو و انتخاب فایل
+                          <input
+                            type="file"
+                            accept=".xlsx,.xls,.csv"
+                            className="hidden"
+                            onChange={handleFileInputChange}
+                          />
+                        </label>
+                      </div>
 
-                  <div className="flex justify-end gap-2 pt-2 border-t border-[var(--color-glass-light-stroke)]">
-                    <button
-                      onClick={() => setWizardStep(1)}
-                      className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
-                    >
-                      بازگشت و انتخاب فایل دیگر
-                    </button>
-                    <button
-                      onClick={processWizardValidations}
-                      className="px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl flex items-center gap-1 cursor-pointer"
-                    >
-                      <span>شروع پردازش و صحت‌سنجی فیلدها</span>
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Error logs & categorized results */}
-              {wizardStep === 3 && (
-                <div className="space-y-4">
-                  <h4 className="font-bold text-[var(--color-text-primary)]">
-                    گزارش نهایی آنالیز اعتبارسنجی هوشمند:
-                  </h4>
-
-                  {/* Category cards summary Grid */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3.5 bg-[var(--color-success-soft)] border border-[var(--color-success)]/10 rounded-2xl text-center">
-                      <span className="text-[var(--color-success)] font-bold text-heading-3 block">
-                        {toPersianDigits(wizardValidationResults.valid.length)}
-                      </span>
-                      <span className="text-micro text-[var(--color-success)]">
-                        عده ردیف‌های صحیح
-                      </span>
-                    </div>
-
-                    <div className="p-3.5 bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/10 rounded-2xl text-center">
-                      <span className="text-[var(--color-danger)] font-bold text-heading-3 block">
-                        {toPersianDigits(wizardValidationResults.errors.length)}
-                      </span>
-                      <span className="text-micro text-[var(--color-danger)]/80">
-                        عده ردیف‌های دارای خطا
-                      </span>
-                    </div>
-
-                    <div className="p-3.5 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 rounded-2xl text-center">
-                      <span className="text-[var(--color-warning)] font-bold text-heading-3 block">
-                        {toPersianDigits(wizardValidationResults.duplicates.length)}
-                      </span>
-                      <span className="text-micro text-[var(--color-warning)]/80">
-                        عده ردیف‌های تکراری
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Segment: Error Rows warnings if any exists */}
-                  {wizardValidationResults.errors.length > 0 && (
-                    <div className="space-y-2 text-right">
-                      <p className="font-bold text-[var(--color-danger)]/80 flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)]" />
-                        <span>ردیف‌های نیازمند تصحیح (ردیف‌های خطا):</span>
-                      </p>
-                      <div className="bg-[var(--color-danger-soft)]/40/50 p-2.5 rounded-xl border border-[var(--color-danger)]/10/60 text-micro text-[var(--color-danger)]/80 space-y-1 max-h-36 overflow-y-auto">
-                        {wizardValidationResults.errors.map((e, idx) => (
-                          <div
-                            key={idx}
-                            className="flex justify-between border-b border-[var(--color-danger)]/10/40 pb-1.5"
-                            id={`err-wizard-${idx}`}
+                      {/* Sandboxed Demo Presets triggers so testers don't even need to provide a file! */}
+                      <div className="glx p-4.5 rounded-2xl border space-y-3">
+                        <p className="font-bold text-[var(--color-text-secondary)] block text-micro">
+                          بررسی ساده و سریع دمو بدون آپلود فایل واقعی:
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={loadValidSampleTemplate}
+                            className="flex-1 py-2 bg-[var(--color-success-soft)] hover:bg-[var(--color-success-soft)]/80 border border-[var(--color-success)]/15 text-[var(--color-success)] rounded-xl font-bold cursor-pointer"
                           >
-                            <span>
-                              ردیف {toPersianDigits(e.row)} - دانش‌آموز{' '}
-                              {e.student.name || '(نامشخص)'}
-                            </span>
-                            <span className="font-bold">{e.reason}</span>
-                          </div>
-                        ))}
+                            بارگذاری رکوردهای نمونه فایل معتبر دمو
+                          </button>
+                          <button
+                            type="button"
+                            onClick={loadErrorSampleTemplate}
+                            className="flex-1 py-2 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40/80 border border-[var(--color-danger)]/10 text-[var(--color-danger)]/80 rounded-xl font-bold cursor-pointer"
+                          >
+                            بارگذاری رکوردهای دارای خطا و کد تکراری دمو
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Segment: Duplicate Warnings */}
-                  {wizardValidationResults.duplicates.length > 0 && (
-                    <div className="space-y-2 text-right">
-                      <p className="font-bold text-[var(--color-warning)]/80 flex items-center gap-1">
-                        <Info className="w-3.5 h-3.5 text-[var(--color-warning-soft)]/500" />
-                        <span>ردیف‌های دارای شماره ملی تکراری در پایگاه داده:</span>
-                      </p>
-                      <div className="bg-[var(--color-warning-soft)]/50 p-2.5 rounded-xl border border-[var(--color-warning)]/10/60 text-micro text-[var(--color-warning)]/80 space-y-1 max-h-36 overflow-y-auto">
-                        {wizardValidationResults.duplicates.map((d, idx) => (
-                          <div
-                            key={idx}
-                            className="flex justify-between border-b border-[var(--color-warning)]/10/40 pb-1.5"
-                            id={`dupe-wizard-${idx}`}
-                          >
-                            <span>
-                              ردیف {toPersianDigits(d.row)} - {d.student.name} (
-                              {toPersianDigits(d.student.national_id)})
-                            </span>
-                            <span className="font-bold">{d.reason}</span>
-                          </div>
-                        ))}
+                  {/* Step 2: Preview of Raw Rows */}
+                  {wizardStep === 2 && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center glx p-3 rounded-xl">
+                        <span className="text-[var(--color-text-tertiary)] font-semibold">
+                          فایل دریافتی:{' '}
+                          <strong className="text-[var(--color-text-primary)]">
+                            {uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}
+                          </strong>
+                        </span>
+                        <span className="font-bold text-[var(--color-accent)] bg-[var(--color-accent-soft)] px-2.5 py-1 rounded-full">
+                          {toPersianDigits(wizardRawData.length)} ردیف یافت شد
+                        </span>
                       </div>
-                    </div>
-                  )}
 
-                  {/* Segment: Correct Rows preview */}
-                  {wizardValidationResults.valid.length > 0 ? (
-                    <div className="space-y-2 text-right">
-                      <p className="font-bold text-[var(--color-success)] flex items-center gap-1">
-                        <CheckCircle className="w-3.5 h-3.5 text-[var(--color-success)]" />
-                        <span>پیش‌نمایش ارقام سالم و آماده درج نهایی:</span>
+                      <p className="text-[var(--color-text-tertiary)] text-micro">
+                        لیست سطور خام خوانده‌شده از فایل قبل از اعتبارسنجی:
                       </p>
-                      <div className="border border-[var(--color-success)]/10 glx rounded-xl max-h-40 overflow-y-auto text-micro">
-                        <table className="w-full text-right">
-                          <thead className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-b border-[var(--color-success)]/10 sticky top-0">
+
+                      <div className="border border-[var(--color-glass-light-stroke)] rounded-xl overflow-hidden shadow-sm max-h-60 overflow-y-auto">
+                        <table className="w-full text-right text-micro">
+                          <thead className="glx-inset border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] sticky top-0">
                             <tr>
-                              <th className="p-2.5">نام و فامیل</th>
-                              <th className="p-2.5">کد ملی</th>
-                              <th className="p-2.5">کلاس انتسابی نهایی</th>
+                              <th className="p-3 font-bold text-center w-12">ردیف</th>
+                              <th className="p-3 font-bold">name (نام و نام خانوادگی)</th>
+                              <th className="p-3 font-bold">national_id (کد ملی)</th>
+                              <th className="p-3 font-bold">grade (پایه)</th>
+                              <th className="p-3 font-bold">class (کلاس)</th>
                             </tr>
                           </thead>
-                          <tbody>
-                            {wizardValidationResults.valid.map((r, idx) => (
-                              <tr
-                                key={idx}
-                                className="border-b border-[var(--color-glass-light-stroke)] hover:bg-[var(--color-success-soft)]/15"
-                              >
-                                <td className="p-2.5 font-bold text-[var(--color-text-primary)]">
-                                  {r.name}
+                          <tbody className="divide-y divide-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]">
+                            {wizardRawData.map((row, idx) => (
+                              <tr key={idx} className="hover:brightness-105">
+                                <td className="p-3 text-center text-[var(--color-text-tertiary)] font-bold">
+                                  {toPersianDigits(row.row)}
                                 </td>
-                                <td className="p-2.5 font-mono text-[var(--color-text-primary)]">
-                                  {toPersianDigits(r.national_id)}
+                                <td className="p-3 font-bold text-[var(--color-text-primary)]">
+                                  {row.name || (
+                                    <span className="text-[var(--color-danger)] italic">خالی</span>
+                                  )}
                                 </td>
-                                <td className="p-2.5 text-[var(--color-text-secondary)]">
-                                  {r.class} (پایه {r.grade})
+                                <td className="p-3 font-mono text-[var(--color-text-secondary)]">
+                                  {toPersianDigits(row.national_id) || (
+                                    <span className="text-[var(--color-danger)] italic">خالی</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-[var(--color-text-secondary)]">
+                                  {row.grade || (
+                                    <span className="text-[var(--color-danger)] italic">خالی</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-[var(--color-text-secondary)] font-semibold">
+                                  {row.class || (
+                                    <span className="text-[var(--color-danger)] italic">خالی</span>
+                                  )}
                                 </td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="p-6 bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/10 rounded-2xl text-center text-[var(--color-danger)]/80">
-                      هیچ ردیف معتبری جهت درج در دیتابیسی فعلی یافت نشد. لطفاً قالب فایل زیستی خود
-                      را بازبینی و مجدداً بارگذاری کنید.
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-[var(--color-glass-light-stroke)]">
+                        <button
+                          onClick={() => setWizardStep(1)}
+                          className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
+                        >
+                          بازگشت و انتخاب فایل دیگر
+                        </button>
+                        <button
+                          onClick={processWizardValidations}
+                          className="px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>شروع پردازش و صحت‌سنجی فیلدها</span>
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {/* Wizard Step Action triggers */}
-                  <div className="flex justify-between gap-2.5 pt-3.5 border-t border-[var(--color-glass-light-stroke)]">
-                    <button
-                      onClick={() => setWizardStep(2)}
-                      className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
-                    >
-                      بازگشت به پیش‌نمایش سطور
-                    </button>
-                    {wizardValidationResults.valid.length > 0 ? (
-                      <button
-                        onClick={handleWizardSubmitDone}
-                        className="px-5 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm hover:scale-[1.01] transition-transform cursor-pointer"
-                      >
-                        <Check className="w-4 h-4" />
-                        <span>
-                          انتساب سوابق و واردکردن نهایی{' '}
-                          {toPersianDigits(wizardValidationResults.valid.length)} دانش‌آموز
-                        </span>
-                      </button>
+                  {/* Step 3: Error logs & categorized results */}
+                  {wizardStep === 3 && (
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-[var(--color-text-primary)]">
+                        گزارش نهایی آنالیز اعتبارسنجی هوشمند:
+                      </h4>
+
+                      {/* Category cards summary Grid */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-3.5 bg-[var(--color-success-soft)] border border-[var(--color-success)]/10 rounded-2xl text-center">
+                          <span className="text-[var(--color-success)] font-bold text-heading-3 block">
+                            {toPersianDigits(wizardValidationResults.valid.length)}
+                          </span>
+                          <span className="text-micro text-[var(--color-success)]">
+                            عده ردیف‌های صحیح
+                          </span>
+                        </div>
+
+                        <div className="p-3.5 bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/10 rounded-2xl text-center">
+                          <span className="text-[var(--color-danger)] font-bold text-heading-3 block">
+                            {toPersianDigits(wizardValidationResults.errors.length)}
+                          </span>
+                          <span className="text-micro text-[var(--color-danger)]/80">
+                            عده ردیف‌های دارای خطا
+                          </span>
+                        </div>
+
+                        <div className="p-3.5 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 rounded-2xl text-center">
+                          <span className="text-[var(--color-warning)] font-bold text-heading-3 block">
+                            {toPersianDigits(wizardValidationResults.duplicates.length)}
+                          </span>
+                          <span className="text-micro text-[var(--color-warning)]/80">
+                            عده ردیف‌های تکراری
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Segment: Error Rows warnings if any exists */}
+                      {wizardValidationResults.errors.length > 0 && (
+                        <div className="space-y-2 text-right">
+                          <p className="font-bold text-[var(--color-danger)]/80 flex items-center gap-1">
+                            <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)]" />
+                            <span>ردیف‌های نیازمند تصحیح (ردیف‌های خطا):</span>
+                          </p>
+                          <div className="bg-[var(--color-danger-soft)]/40/50 p-2.5 rounded-xl border border-[var(--color-danger)]/10/60 text-micro text-[var(--color-danger)]/80 space-y-1 max-h-36 overflow-y-auto">
+                            {wizardValidationResults.errors.map((e, idx) => (
+                              <div
+                                key={idx}
+                                className="flex justify-between border-b border-[var(--color-danger)]/10/40 pb-1.5"
+                                id={`err-wizard-${idx}`}
+                              >
+                                <span>
+                                  ردیف {toPersianDigits(e.row)} - دانش‌آموز{' '}
+                                  {e.student.name || '(نامشخص)'}
+                                </span>
+                                <span className="font-bold">{e.reason}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Segment: Duplicate Warnings */}
+                      {wizardValidationResults.duplicates.length > 0 && (
+                        <div className="space-y-2 text-right">
+                          <p className="font-bold text-[var(--color-warning)]/80 flex items-center gap-1">
+                            <Info className="w-3.5 h-3.5 text-[var(--color-warning-soft)]/500" />
+                            <span>ردیف‌های دارای شماره ملی تکراری در پایگاه داده:</span>
+                          </p>
+                          <div className="bg-[var(--color-warning-soft)]/50 p-2.5 rounded-xl border border-[var(--color-warning)]/10/60 text-micro text-[var(--color-warning)]/80 space-y-1 max-h-36 overflow-y-auto">
+                            {wizardValidationResults.duplicates.map((d, idx) => (
+                              <div
+                                key={idx}
+                                className="flex justify-between border-b border-[var(--color-warning)]/10/40 pb-1.5"
+                                id={`dupe-wizard-${idx}`}
+                              >
+                                <span>
+                                  ردیف {toPersianDigits(d.row)} - {d.student.name} (
+                                  {toPersianDigits(d.student.national_id)})
+                                </span>
+                                <span className="font-bold">{d.reason}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Segment: Correct Rows preview */}
+                      {wizardValidationResults.valid.length > 0 ? (
+                        <div className="space-y-2 text-right">
+                          <p className="font-bold text-[var(--color-success)] flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5 text-[var(--color-success)]" />
+                            <span>پیش‌نمایش ارقام سالم و آماده درج نهایی:</span>
+                          </p>
+                          <div className="border border-[var(--color-success)]/10 glx rounded-xl max-h-40 overflow-y-auto text-micro">
+                            <table className="w-full text-right">
+                              <thead className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-b border-[var(--color-success)]/10 sticky top-0">
+                                <tr>
+                                  <th className="p-2.5">نام و فامیل</th>
+                                  <th className="p-2.5">کد ملی</th>
+                                  <th className="p-2.5">کلاس انتسابی نهایی</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {wizardValidationResults.valid.map((r, idx) => (
+                                  <tr
+                                    key={idx}
+                                    className="border-b border-[var(--color-glass-light-stroke)] hover:bg-[var(--color-success-soft)]/15"
+                                  >
+                                    <td className="p-2.5 font-bold text-[var(--color-text-primary)]">
+                                      {r.name}
+                                    </td>
+                                    <td className="p-2.5 font-mono text-[var(--color-text-primary)]">
+                                      {toPersianDigits(r.national_id)}
+                                    </td>
+                                    <td className="p-2.5 text-[var(--color-text-secondary)]">
+                                      {r.class} (پایه {r.grade})
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-6 bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/10 rounded-2xl text-center text-[var(--color-danger)]/80">
+                          هیچ ردیف معتبری جهت درج در دیتابیسی فعلی یافت نشد. لطفاً قالب فایل زیستی
+                          خود را بازبینی و مجدداً بارگذاری کنید.
+                        </div>
+                      )}
+
+                      {/* Wizard Step Action triggers */}
+                      <div className="flex justify-between gap-2.5 pt-3.5 border-t border-[var(--color-glass-light-stroke)]">
+                        <button
+                          onClick={() => setWizardStep(2)}
+                          className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
+                        >
+                          بازگشت به پیش‌نمایش سطور
+                        </button>
+                        {wizardValidationResults.valid.length > 0 ? (
+                          <button
+                            onClick={handleWizardSubmitDone}
+                            className="px-5 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm hover:scale-[1.01] transition-transform cursor-pointer"
+                          >
+                            <Check className="w-4 h-4" />
+                            <span>
+                              انتساب سوابق و واردکردن نهایی{' '}
+                              {toPersianDigits(wizardValidationResults.valid.length)} دانش‌آموز
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setWizardStep(1)}
+                            className="px-5 py-2.5 bg-[var(--color-danger)] text-white font-bold rounded-xl cursor-pointer"
+                          >
+                            بارگذاری فایلِ اصلاح شده نو
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 4: Finished with stunning celebrate layout */}
+                  {wizardStep === 4 && (
+                    <div className="py-12 space-y-4 text-center">
+                      <div className="w-16 h-16 rounded-full bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20 flex items-center justify-center mx-auto text-display animate-bounce">
+                        ✓
+                      </div>
+                      <div className="space-y-1.5">
+                        <h4 className="text-md font-bold text-[var(--color-text-primary)]">
+                          عملیات واردکردن دانش‌آموزان با موفقیت کامل انجام پذیرفت!
+                        </h4>
+                        <p className="text-[var(--color-text-tertiary)] max-w-sm mx-auto leading-relaxed text-micro">
+                          اطلاعات شناسنامه‌ای گله‌ای با کدهای ملی ماسک شده به خوبی به فهرست فیزیکی
+                          دیتابیس کلاس‌ها ملحق گردید.
+                        </p>
+                      </div>
+                      <p className="text-micro text-[var(--color-text-tertiary)] animate-pulse">
+                        کادر جادویی تا چند لحظه دیگر به صورت خودکار بسته خواهد شد...
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Submodal: Detailed Student Exam Participation logs */}
+      <AnimatePresence>
+        {showExamLogsModal && activeLogStudent && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
+            id="exam-logs-modal-backdrop"
+          >
+            {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+            <div aria-hidden="true" className="absolute inset-0 bgfx" />
+            <div className="relative w-full max-w-lg @container">
+              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+              <div aria-hidden="true" className="absolute area-blur" />
+              <motion.div
+                ref={logsPanelRef}
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                style={logsOrigin ?? { transformOrigin: 'center bottom' }}
+                transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
+                className="relative glx-strong rounded-3xl w-full overflow-hidden"
+                id="exam-logs-box"
+              >
+                {/* Header */}
+                <div className="px-6 py-5 bg-[var(--color-accent-soft)]/70 border-b border-[var(--color-accent-soft)] flex items-center justify-between">
+                  <button
+                    onClick={() => setShowExamLogsModal(false)}
+                    className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-caption glx px-2.5 py-1.5 rounded-xl cursor-pointer"
+                  >
+                    بستن سوابق
+                  </button>
+                  <h3 className="text-caption font-black text-[var(--color-accent)] flex items-center gap-1.5">
+                    <FileText className="w-5 h-5 text-[var(--color-accent)]" />
+                    <span>پرونده سنجش‌ها تحصیلی و مشارکت «{activeLogStudent.name}»</span>
+                  </h3>
+                </div>
+
+                {/* Logs Body info */}
+                <div className="p-6 space-y-5">
+                  <div className="flex justify-between items-center glx p-4.5 rounded-2xl border">
+                    <div>
+                      <p className="font-bold text-[var(--color-text-primary)] text-caption">
+                        {activeLogStudent.name}
+                      </p>
+                      <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
+                        پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}
+                      </p>
+                    </div>
+                    <div className="text-left font-mono text-micro">
+                      <p className="text-[var(--color-text-tertiary)]">کد ملی ورود:</p>
+                      <p className="font-bold text-[var(--color-text-secondary)]">
+                        {toPersianDigits(activeLogStudent.nationalId)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <span className="text-micro font-bold text-[var(--color-text-primary)] block">
+                      امتحانات ثبت شده در دیتابیس کلاس‌ها:
+                    </span>
+
+                    {activeLogSubmissions.length > 0 ? (
+                      <div className="space-y-2.5 max-h-64 overflow-y-auto">
+                        {activeLogSubmissions.map((sub, index) => {
+                          const examItem = allExams.find((e) => e.id === sub.examId);
+                          return (
+                            <div
+                              key={sub.id || index}
+                              className="p-3.5 glx border rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
+                            >
+                              <div>
+                                <h5 className="font-bold text-[var(--color-text-secondary)] text-micro">
+                                  {examItem?.title || sub.examCode}
+                                </h5>
+                                <span className="text-micro text-[var(--color-text-tertiary)] mt-1 block">
+                                  کد یکتای برگ پاسخ: {sub.id}
+                                </span>
+                              </div>
+
+                              <div className="text-left">
+                                <span
+                                  className={`px-2 py-0.5 rounded-md text-micro font-bold block mb-1 text-center ${
+                                    sub.status === 'graded'
+                                      ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
+                                      : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10 animate-pulse'
+                                  }`}
+                                >
+                                  {sub.status === 'graded'
+                                    ? 'تصحیح نهایی شده'
+                                    : 'در حال سنجش یا نیازمند تصحیح'}
+                                </span>
+                                <span className="text-micro font-bold text-[var(--color-text-primary)]">
+                                  نمره:{' '}
+                                  <strong className="text-caption font-black text-[var(--color-accent)]">
+                                    {toPersianDigits(sub.score)}
+                                  </strong>{' '}
+                                  از {toPersianDigits(sub.maxScore)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     ) : (
-                      <button
-                        onClick={() => setWizardStep(1)}
-                        className="px-5 py-2.5 bg-[var(--color-danger)] text-white font-bold rounded-xl cursor-pointer"
-                      >
-                        بارگذاری فایلِ اصلاح شده نو
-                      </button>
+                      <div className="p-8 text-center glx rounded-2xl border border-dashed select-none">
+                        <Info className="w-8 h-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
+                        <p className="text-micro text-[var(--color-text-tertiary)]">
+                          هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج
+                          ثبت نگردیده است.
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
-              )}
-
-              {/* Step 4: Finished with stunning celebrate layout */}
-              {wizardStep === 4 && (
-                <div className="py-12 space-y-4 text-center">
-                  <div className="w-16 h-16 rounded-full bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20 flex items-center justify-center mx-auto text-display animate-bounce">
-                    ✓
-                  </div>
-                  <div className="space-y-1.5">
-                    <h4 className="text-md font-bold text-[var(--color-text-primary)]">
-                      عملیات واردکردن دانش‌آموزان با موفقیت کامل انجام پذیرفت!
-                    </h4>
-                    <p className="text-[var(--color-text-tertiary)] max-w-sm mx-auto leading-relaxed text-micro">
-                      اطلاعات شناسنامه‌ای گله‌ای با کدهای ملی ماسک شده به خوبی به فهرست فیزیکی
-                      دیتابیس کلاس‌ها ملحق گردید.
-                    </p>
-                  </div>
-                  <p className="text-micro text-[var(--color-text-tertiary)] animate-pulse">
-                    کادر جادویی تا چند لحظه دیگر به صورت خودکار بسته خواهد شد...
-                  </p>
-                </div>
-              )}
+              </motion.div>
             </div>
-          </motion.div>
           </div>
-        </div>
-      )}
-
-      {/* Submodal: Detailed Student Exam Participation logs */}
-      {showExamLogsModal && activeLogStudent && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
-          id="exam-logs-modal-backdrop"
-        >
-        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-        <div aria-hidden="true" className="absolute inset-0 bgfx" />
-                              <div className="relative w-full max-w-lg @container">
-            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-            <div aria-hidden="true" className="absolute area-blur" />
-            <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            style={{ transformOrigin: 'center bottom' }}
-            transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="relative glx-strong rounded-3xl w-full overflow-hidden"
-            id="exam-logs-box"
-          >
-            {/* Header */}
-            <div className="px-6 py-5 bg-[var(--color-accent-soft)]/70 border-b border-[var(--color-accent-soft)] flex items-center justify-between">
-              <button
-                onClick={() => setShowExamLogsModal(false)}
-                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-caption glx px-2.5 py-1.5 rounded-xl cursor-pointer"
-              >
-                بستن سوابق
-              </button>
-              <h3 className="text-caption font-black text-[var(--color-accent)] flex items-center gap-1.5">
-                <FileText className="w-5 h-5 text-[var(--color-accent)]" />
-                <span>پرونده سنجش‌ها تحصیلی و مشارکت «{activeLogStudent.name}»</span>
-              </h3>
-            </div>
-
-            {/* Logs Body info */}
-            <div className="p-6 space-y-5">
-              <div className="flex justify-between items-center glx p-4.5 rounded-2xl border">
-                <div>
-                  <p className="font-bold text-[var(--color-text-primary)] text-caption">
-                    {activeLogStudent.name}
-                  </p>
-                  <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
-                    پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}
-                  </p>
-                </div>
-                <div className="text-left font-mono text-micro">
-                  <p className="text-[var(--color-text-tertiary)]">کد ملی ورود:</p>
-                  <p className="font-bold text-[var(--color-text-secondary)]">
-                    {toPersianDigits(activeLogStudent.nationalId)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <span className="text-micro font-bold text-[var(--color-text-primary)] block">
-                  امتحانات ثبت شده در دیتابیس کلاس‌ها:
-                </span>
-
-                {activeLogSubmissions.length > 0 ? (
-                  <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                    {activeLogSubmissions.map((sub, index) => {
-                      const examItem = allExams.find((e) => e.id === sub.examId);
-                      return (
-                        <div
-                          key={sub.id || index}
-                          className="p-3.5 glx border rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
-                        >
-                          <div>
-                            <h5 className="font-bold text-[var(--color-text-secondary)] text-micro">
-                              {examItem?.title || sub.examCode}
-                            </h5>
-                            <span className="text-micro text-[var(--color-text-tertiary)] mt-1 block">
-                              کد یکتای برگ پاسخ: {sub.id}
-                            </span>
-                          </div>
-
-                          <div className="text-left">
-                            <span
-                              className={`px-2 py-0.5 rounded-md text-micro font-bold block mb-1 text-center ${
-                                sub.status === 'graded'
-                                  ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
-                                  : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10 animate-pulse'
-                              }`}
-                            >
-                              {sub.status === 'graded'
-                                ? 'تصحیح نهایی شده'
-                                : 'در حال سنجش یا نیازمند تصحیح'}
-                            </span>
-                            <span className="text-micro font-bold text-[var(--color-text-primary)]">
-                              نمره:{' '}
-                              <strong className="text-caption font-black text-[var(--color-accent)]">
-                                {toPersianDigits(sub.score)}
-                              </strong>{' '}
-                              از {toPersianDigits(sub.maxScore)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center glx rounded-2xl border border-dashed select-none">
-                    <Info className="w-8 h-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-                    <p className="text-micro text-[var(--color-text-tertiary)]">
-                      هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت
-                      نگردیده است.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-          </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Delete Student Confirmation */}
       <ConfirmDialog

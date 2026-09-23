@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   FileText,
@@ -24,6 +24,7 @@ import {
 import { logger } from '../../lib/logger';
 import { Student, Exam, Submission, Question, ClassGroup } from '../../types';
 import { Button, Card, StatusBadge, EmptyState, Table } from '../../components/UIComponents';
+import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
 import { TheMark } from '../../components/TheMark';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
 import {
@@ -83,6 +84,12 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
   // Excel import simulator state
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
+
+  // The Excel import panel grows out of / collapses back into whichever button
+  // opened it (quick action or empty state), so it is captured at click time.
+  const excelTriggerRef = useRef<HTMLElement | null>(null);
+  const excelPanelRef = useRef<HTMLDivElement>(null);
+  const excelOrigin = useOriginFromTrigger(excelTriggerRef, excelPanelRef, isExcelModalOpen);
   const [_excelFile, setExcelFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [importStep, setImportStep] = useState<'idle' | 'reading' | 'mapping' | 'preview' | 'done'>(
@@ -371,7 +378,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5" id="quick-action-btns">
           <button
             id="qa-btn-import-excel"
-            onClick={() => setIsExcelModalOpen(true)}
+            onClick={(e) => {
+              excelTriggerRef.current = e.currentTarget;
+              setIsExcelModalOpen(true);
+            }}
             className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
           >
             <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
@@ -694,7 +704,14 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   title="موردی برای تصحیح یافت نشد!"
                   description="هیچ دانش‌آموزی در کلاس جاری ثبت‌نام نشده یا پاسخی دریافت نگردیده است. شما می‌توانید فایل اکسل رسمی دانش‌آموزان را برای شروع بارگذاری کنید."
                   action={
-                    <Button onClick={() => setIsExcelModalOpen(true)} variant="primary" size="sm">
+                    <Button
+                      onClick={(e) => {
+                        excelTriggerRef.current = e.currentTarget;
+                        setIsExcelModalOpen(true);
+                      }}
+                      variant="primary"
+                      size="sm"
+                    >
                       بارگذاری اکسل دانش‌آموزان
                     </Button>
                   }
@@ -878,189 +895,192 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       </div>
 
       {/* 8. Interactively Functional Excel Import Modal Component */}
-      {isExcelModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          id="excel-import-modal-backdrop"
-        >
-        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-        <div aria-hidden="true" className="absolute inset-0 bgfx" />
-                              <div className="relative w-full max-w-lg @container">
-            {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-            <div aria-hidden="true" className="absolute area-blur" />
-            <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            style={{ transformOrigin: 'center bottom' }}
-            transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
-            className="relative glx-strong w-full rounded-3xl overflow-hidden text-right text-caption glx-sheen"
-            id="excel-import-dialog"
+      <AnimatePresence>
+        {isExcelModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            id="excel-import-modal-backdrop"
           >
-            {/* Modal Header */}
-            <div className="p-5 border-b border-[var(--color-glass-light-stroke)] glx-inset flex items-center justify-between">
-              <button
-                onClick={() => {
-                  setIsExcelModalOpen(false);
-                  setImportStep('idle');
-                  setExcelFile(null);
-                }}
-                className="p-1 px-2.5 glx-inset hover:brightness-110 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] rounded-xl transition-all font-bold cursor-pointer"
+            {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+            <div aria-hidden="true" className="absolute inset-0 bgfx" />
+            <div className="relative w-full max-w-lg @container">
+              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
+              <div aria-hidden="true" className="absolute area-blur" />
+              <motion.div
+                ref={excelPanelRef}
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                style={excelOrigin ?? { transformOrigin: 'center bottom' }}
+                transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
+                className="relative glx-strong w-full rounded-3xl overflow-hidden text-right text-caption glx-sheen"
+                id="excel-import-dialog"
               >
-                بستن ×
-              </button>
-              <span className="font-bold text-[var(--color-text-primary)] text-label flex items-center gap-1.5">
-                <FileSpreadsheet className="w-5 h-5 text-[var(--color-success)]" />
-                ورود اطلاعات دانش‌آموزان از طریق فایل اکسل / CSV
-              </span>
-            </div>
-
-            {/* Modal Body / Active Step Controls */}
-            <div className="p-6 space-y-5">
-              {importStep === 'idle' && (
-                <div className="space-y-4">
-                  <p className="text-[var(--color-text-tertiary)] leading-relaxed text-micro">
-                    برای ورود فله‌ای مشخصات دانش‌آموزان و قراردهی آن‌ها در کلاس‌ها، می‌توانید فایل
-                    خروجی سناد یا فایل دستی اکسل با پسوندهای{' '}
-                    <strong className="font-semibold text-[var(--color-text-secondary)]">
-                      .xlsx
-                    </strong>{' '}
-                    یا{' '}
-                    <strong className="font-semibold text-[var(--color-text-secondary)]">
-                      .csv
-                    </strong>{' '}
-                    را بارگذاری کنید.
-                  </p>
-                  <p className="text-[var(--color-warning)] font-bold text-micro bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
-                    در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
-                  </p>
-
-                  <div
-                    onDragEnter={handleDrag}
-                    onDragOver={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all ${
-                      dragActive
-                        ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30'
-                        : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
-                    }`}
+                {/* Modal Header */}
+                <div className="p-5 border-b border-[var(--color-glass-light-stroke)] glx-inset flex items-center justify-between">
+                  <button
+                    onClick={() => {
+                      setIsExcelModalOpen(false);
+                      setImportStep('idle');
+                      setExcelFile(null);
+                    }}
+                    className="p-1 px-2.5 glx-inset hover:brightness-110 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] rounded-xl transition-all font-bold cursor-pointer"
                   >
-                    <Upload className="w-10 h-10 text-[var(--color-text-tertiary)] animate-bounce" />
-                    <div className="text-center space-y-1">
-                      <p className="font-bold text-[var(--color-text-secondary)]">
-                        فایل خود را به این قسمت بکشید و رها کنید
+                    بستن ×
+                  </button>
+                  <span className="font-bold text-[var(--color-text-primary)] text-label flex items-center gap-1.5">
+                    <FileSpreadsheet className="w-5 h-5 text-[var(--color-success)]" />
+                    ورود اطلاعات دانش‌آموزان از طریق فایل اکسل / CSV
+                  </span>
+                </div>
+
+                {/* Modal Body / Active Step Controls */}
+                <div className="p-6 space-y-5">
+                  {importStep === 'idle' && (
+                    <div className="space-y-4">
+                      <p className="text-[var(--color-text-tertiary)] leading-relaxed text-micro">
+                        برای ورود فله‌ای مشخصات دانش‌آموزان و قراردهی آن‌ها در کلاس‌ها، می‌توانید
+                        فایل خروجی سناد یا فایل دستی اکسل با پسوندهای{' '}
+                        <strong className="font-semibold text-[var(--color-text-secondary)]">
+                          .xlsx
+                        </strong>{' '}
+                        یا{' '}
+                        <strong className="font-semibold text-[var(--color-text-secondary)]">
+                          .csv
+                        </strong>{' '}
+                        را بارگذاری کنید.
                       </p>
-                      <p className="text-micro text-[var(--color-text-tertiary)]">
-                        یا برای انتخاب فایل از روی حافظه کلیک کنید
+                      <p className="text-[var(--color-warning)] font-bold text-micro bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
+                        در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
+                      </p>
+
+                      <div
+                        onDragEnter={handleDrag}
+                        onDragOver={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all ${
+                          dragActive
+                            ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30'
+                            : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
+                        }`}
+                      >
+                        <Upload className="w-10 h-10 text-[var(--color-text-tertiary)] animate-bounce" />
+                        <div className="text-center space-y-1">
+                          <p className="font-bold text-[var(--color-text-secondary)]">
+                            فایل خود را به این قسمت بکشید و رها کنید
+                          </p>
+                          <p className="text-micro text-[var(--color-text-tertiary)]">
+                            یا برای انتخاب فایل از روی حافظه کلیک کنید
+                          </p>
+                        </div>
+
+                        <label className="mt-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-micro cursor-pointer shadow-xs transition-all">
+                          انتخاب فایل اکسل
+                          <input
+                            type="file"
+                            accept=".xlsx,.xls,.csv"
+                            className="hidden"
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="p-3.5 bg-[var(--color-accent-soft)]/30 border border-[var(--color-accent-soft)]/40 rounded-xl text-[var(--color-accent)] flex items-start gap-2 text-micro">
+                        <span className="font-bold">نکته راهنما:</span>
+                        <span>
+                          ستون‌های الزامی در فایل اکسل باید شامل «نام و نام خانوادگی»، «کد ملی» و
+                          «پایه تحصیلی» باشد.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Progress Loading Simulated Screen */}
+                  {(importStep === 'reading' || importStep === 'mapping') && (
+                    <div className="py-8 space-y-4 text-center">
+                      <div className="w-12 h-12 rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-accent)] animate-spin mx-auto" />
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-[var(--color-text-primary)]">
+                          {importStep === 'reading'
+                            ? 'درحال بارگذاری و استخراج بیت‌های فایل...'
+                            : 'درحال قرینه‌سازی با سطوح سنادی استان...'}
+                        </p>
+                        <p className="text-micro text-[var(--color-text-tertiary)]">
+                          لطفاً از بستن این کادر یا رفرش تب مرورگر خود خودداری نمایید.
+                        </p>
+                      </div>
+                      <div className="w-64 glx-inset h-2.5 rounded-full overflow-hidden mx-auto mt-2">
+                        <div
+                          className="bg-[var(--color-accent)] h-full transition-all duration-300"
+                          style={{ width: `${importProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Simulated Excel Preview Screen prior Confirmation */}
+                  {importStep === 'preview' && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 p-3 bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-xl">
+                        <CheckCircle className="w-4 h-4 shrink-0" />
+                        <span className="font-bold">
+                          فایل به خوبی تحلیل گردید! تعداد ۳ دانش‌آموز معتبر جدید استخراج شد.
+                        </span>
+                      </div>
+
+                      <p className="text-[var(--color-text-tertiary)] text-micro">
+                        پیش‌نمایش رکوردهای خوانده‌شده قبل از درج نهایی دیتابیس:
+                      </p>
+
+                      <div className="border glx rounded-xl overflow-hidden p-6 text-center">
+                        <p className="text-label text-[var(--color-text-tertiary)] font-bold">
+                          پیش‌نمایش داده‌ها پس از پیاده‌سازی واقعی ورود اکسل نمایش داده خواهد شد.
+                        </p>
+                      </div>
+
+                      <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-glass-light-stroke)]">
+                        <button
+                          onClick={() => {
+                            setImportStep('idle');
+                            setExcelFile(null);
+                          }}
+                          className="px-4 py-2 glx-inset hover:brightness-110 text-[var(--color-text-secondary)] font-bold rounded-xl cursor-pointer"
+                        >
+                          لغو و تفکیک دگر
+                        </button>
+                        <button
+                          onClick={handleConfirmImport}
+                          className="px-4.5 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white font-bold rounded-xl cursor-pointer shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          تأیید و افزودن به لیست دانش‌آموزان
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SUCCESS final Simulation state */}
+                  {importStep === 'done' && (
+                    <div className="py-8 space-y-3 text-center">
+                      <div className="w-14 h-14 bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-full flex items-center justify-center mx-auto">
+                        <CheckCircle className="w-8 h-8" />
+                      </div>
+                      <h4 className="text-label font-bold text-[var(--color-text-primary)]">
+                        عملیات انتقال پرونده‌ها پیروز بود!
+                      </h4>
+                      <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed max-w-xs mx-auto">
+                        تعداد ۳ دانش‌آموز جدید وارد بانک اطلاعاتی گردید و اینک در بخش آمار و
+                        کلاس‌بندی سازماندهی شده‌اند.
                       </p>
                     </div>
-
-                    <label className="mt-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-micro cursor-pointer shadow-xs transition-all">
-                      انتخاب فایل اکسل
-                      <input
-                        type="file"
-                        accept=".xlsx,.xls,.csv"
-                        className="hidden"
-                        onChange={handleFileChange}
-                      />
-                    </label>
-                  </div>
-
-                  <div className="p-3.5 bg-[var(--color-accent-soft)]/30 border border-[var(--color-accent-soft)]/40 rounded-xl text-[var(--color-accent)] flex items-start gap-2 text-micro">
-                    <span className="font-bold">نکته راهنما:</span>
-                    <span>
-                      ستون‌های الزامی در فایل اکسل باید شامل «نام و نام خانوادگی»، «کد ملی» و «پایه
-                      تحصیلی» باشد.
-                    </span>
-                  </div>
+                  )}
                 </div>
-              )}
-
-              {/* Progress Loading Simulated Screen */}
-              {(importStep === 'reading' || importStep === 'mapping') && (
-                <div className="py-8 space-y-4 text-center">
-                  <div className="w-12 h-12 rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-accent)] animate-spin mx-auto" />
-                  <div className="space-y-1.5">
-                    <p className="font-bold text-[var(--color-text-primary)]">
-                      {importStep === 'reading'
-                        ? 'درحال بارگذاری و استخراج بیت‌های فایل...'
-                        : 'درحال قرینه‌سازی با سطوح سنادی استان...'}
-                    </p>
-                    <p className="text-micro text-[var(--color-text-tertiary)]">
-                      لطفاً از بستن این کادر یا رفرش تب مرورگر خود خودداری نمایید.
-                    </p>
-                  </div>
-                  <div className="w-64 glx-inset h-2.5 rounded-full overflow-hidden mx-auto mt-2">
-                    <div
-                      className="bg-[var(--color-accent)] h-full transition-all duration-300"
-                      style={{ width: `${importProgress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Simulated Excel Preview Screen prior Confirmation */}
-              {importStep === 'preview' && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 p-3 bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-xl">
-                    <CheckCircle className="w-4 h-4 shrink-0" />
-                    <span className="font-bold">
-                      فایل به خوبی تحلیل گردید! تعداد ۳ دانش‌آموز معتبر جدید استخراج شد.
-                    </span>
-                  </div>
-
-                  <p className="text-[var(--color-text-tertiary)] text-micro">
-                    پیش‌نمایش رکوردهای خوانده‌شده قبل از درج نهایی دیتابیس:
-                  </p>
-
-                  <div className="border glx rounded-xl overflow-hidden p-6 text-center">
-                    <p className="text-label text-[var(--color-text-tertiary)] font-bold">
-                      پیش‌نمایش داده‌ها پس از پیاده‌سازی واقعی ورود اکسل نمایش داده خواهد شد.
-                    </p>
-                  </div>
-
-                  <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-glass-light-stroke)]">
-                    <button
-                      onClick={() => {
-                        setImportStep('idle');
-                        setExcelFile(null);
-                      }}
-                      className="px-4 py-2 glx-inset hover:brightness-110 text-[var(--color-text-secondary)] font-bold rounded-xl cursor-pointer"
-                    >
-                      لغو و تفکیک دگر
-                    </button>
-                    <button
-                      onClick={handleConfirmImport}
-                      className="px-4.5 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white font-bold rounded-xl cursor-pointer shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      تأیید و افزودن به لیست دانش‌آموزان
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* SUCCESS final Simulation state */}
-              {importStep === 'done' && (
-                <div className="py-8 space-y-3 text-center">
-                  <div className="w-14 h-14 bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-full flex items-center justify-center mx-auto">
-                    <CheckCircle className="w-8 h-8" />
-                  </div>
-                  <h4 className="text-label font-bold text-[var(--color-text-primary)]">
-                    عملیات انتقال پرونده‌ها پیروز بود!
-                  </h4>
-                  <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed max-w-xs mx-auto">
-                    تعداد ۳ دانش‌آموز جدید وارد بانک اطلاعاتی گردید و اینک در بخش آمار و کلاس‌بندی
-                    سازماندهی شده‌اند.
-                  </p>
-                </div>
-              )}
+              </motion.div>
             </div>
-          </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
