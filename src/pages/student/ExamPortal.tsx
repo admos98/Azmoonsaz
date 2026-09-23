@@ -2063,11 +2063,37 @@ export default function ExamPortal({
             dir="rtl"
             id="modal-submit-confirmation"
           >
-          {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-          <div aria-hidden="true" className="absolute inset-0 bgfx" />
+          {/* Scrim — opacity only: a backdrop-filter under an opacity animation
+              freezes its frame, which lingers past unmount. */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="absolute inset-0 scrim"
+          />
+          {/* Veil blur — full strength on frame 1; ramped off fast on exit. */}
+          <motion.div
+            aria-hidden="true"
+            initial={false}
+            exit={{
+              backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+              transition: { duration: 0.12 },
+            }}
+            className="absolute inset-0 pointer-events-none veil-blur"
+          />
             <div className="relative w-full max-w-md @container">
-              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-              <div aria-hidden="true" className="absolute area-blur" />
+              {/* Halo blur dies fast on exit so nothing lingers behind the closing panel */}
+              <motion.div
+                aria-hidden="true"
+                initial={false}
+                exit={{
+                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
+                  backgroundColor: 'rgba(26, 28, 34, 0)',
+                  transition: { duration: 0.14 },
+                }}
+                className="pointer-events-none absolute area-blur"
+              />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -2156,11 +2182,37 @@ export default function ExamPortal({
             dir="rtl"
             id="mobile-navigation-drawer-backdrop"
           >
-          {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-          <div aria-hidden="true" className="absolute inset-0 bgfx" />
+          {/* Scrim — opacity only: a backdrop-filter under an opacity animation
+              freezes its frame, which lingers past unmount. */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="absolute inset-0 scrim"
+          />
+          {/* Veil blur — full strength on frame 1; ramped off fast on exit. */}
+          <motion.div
+            aria-hidden="true"
+            initial={false}
+            exit={{
+              backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+              transition: { duration: 0.12 },
+            }}
+            className="absolute inset-0 pointer-events-none veil-blur"
+          />
             <div className="relative w-full max-w-md @container">
-              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-              <div aria-hidden="true" className="absolute area-blur" />
+              {/* Halo blur dies fast on exit so nothing lingers behind the closing panel */}
+              <motion.div
+                aria-hidden="true"
+                initial={false}
+                exit={{
+                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
+                  backgroundColor: 'rgba(26, 28, 34, 0)',
+                  transition: { duration: 0.14 },
+                }}
+                className="pointer-events-none absolute area-blur"
+              />
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}

@@ -1609,7 +1609,7 @@ export default function ExamPreview({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
             onClick={() => setEditingQuestion(null)}
             className="fixed inset-0 scrim"
           />
@@ -1619,7 +1619,7 @@ export default function ExamPreview({
             initial={false}
             exit={{
               backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-              transition: { duration: 0.18 },
+              transition: { duration: 0.12 },
             }}
             className="fixed inset-0 pointer-events-none veil-blur"
           />
@@ -1637,11 +1637,15 @@ export default function ExamPreview({
                 scale: 0,
                 backdropFilter: 'blur(0px) saturate(1) brightness(1)',
                 backgroundColor: 'rgba(26, 28, 34, 0)',
-                transition: { duration: 0.26, ease: [0.4, 0, 1, 1] },
+                transition: {
+                  scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                  backdropFilter: { duration: 0.14 },
+                  backgroundColor: { duration: 0.14 },
+                },
               }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               style={drawerOrigin}
-              className="absolute area-blur"
+              className="pointer-events-none absolute area-blur"
             />
             <motion.div
               ref={drawerPanelRef}
@@ -1650,11 +1654,11 @@ export default function ExamPreview({
               exit={{
                 opacity: 0,
                 scale: 0,
-                transition: { duration: 0.26, ease: [0.4, 0, 1, 1] },
+                transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
               }}
               transition={{
                 opacity: { duration: 0.16 },
-                scale: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+                scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
               }}
               style={drawerOrigin}
               className="relative w-full h-full glx-strong z-10 flex flex-col border-r overflow-hidden text-caption text-right font-sans"

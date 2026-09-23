@@ -197,11 +197,28 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
+            key="mobile-scrim"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="lg:hidden fixed inset-0 z-40 bgfx"
+            className="lg:hidden fixed inset-0 z-40 scrim"
             onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+      {/* Veil blur — static (opacity on a filtered layer freezes its frame);
+          ramps off fast on exit so nothing lingers behind the closing drawer. */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            key="mobile-veil"
+            aria-hidden="true"
+            initial={false}
+            exit={{
+              backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+              transition: { duration: 0.12 },
+            }}
+            className="lg:hidden fixed inset-0 z-40 pointer-events-none veil-blur"
           />
         )}
       </AnimatePresence>

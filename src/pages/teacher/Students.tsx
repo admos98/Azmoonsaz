@@ -979,18 +979,60 @@ export default function Students() {
             className="fixed inset-0 z-[60] flex items-center justify-center p-4 text-right"
             id="add-edit-modal-backdrop"
           >
-            {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-            <div aria-hidden="true" className="absolute inset-0 bgfx" />
+            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
+                freezes its frame, which lingers past unmount. */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16, ease: 'easeOut' }}
+              className="absolute inset-0 scrim"
+            />
+            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
+                un-blur never lingers behind the closing panel. */}
+            <motion.div
+              aria-hidden="true"
+              initial={false}
+              exit={{
+                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+                transition: { duration: 0.12 },
+              }}
+              className="absolute inset-0 pointer-events-none veil-blur"
+            />
             <div className="relative w-full max-w-md @container">
-              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-              <div aria-hidden="true" className="absolute area-blur" />
+              {/* Halo rides the panel's grow/shrink (same origin, no opacity) */}
+              <motion.div
+                aria-hidden="true"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{
+                  scale: 0,
+                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
+                  backgroundColor: 'rgba(26, 28, 34, 0)',
+                  transition: {
+                    scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                    backdropFilter: { duration: 0.14 },
+                    backgroundColor: { duration: 0.14 },
+                  },
+                }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                style={addEditOrigin ?? { transformOrigin: 'center bottom' }}
+                className="pointer-events-none absolute area-blur"
+              />
               <motion.div
                 ref={addEditPanelRef}
-                initial={{ opacity: 0, scale: 0.92 }}
+                initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0,
+                  transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                }}
                 style={addEditOrigin ?? { transformOrigin: 'center bottom' }}
-                transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
+                transition={{
+                  opacity: { duration: 0.16 },
+                  scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                }}
                 className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden"
                 id="add-edit-student-box"
               >
@@ -1194,17 +1236,60 @@ export default function Students() {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
             id="wizard-backdrop"
           >
-            {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-            <div aria-hidden="true" className="absolute inset-0 bgfx" />
+            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
+                freezes its frame, which lingers past unmount. */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16, ease: 'easeOut' }}
+              className="absolute inset-0 scrim"
+            />
+            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
+                un-blur never lingers behind the closing panel. */}
+            <motion.div
+              aria-hidden="true"
+              initial={false}
+              exit={{
+                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+                transition: { duration: 0.12 },
+              }}
+              className="absolute inset-0 pointer-events-none veil-blur"
+            />
             <div className="relative w-full max-w-2xl @container">
-              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-              <div aria-hidden="true" className="absolute area-blur" />
+              {/* Halo rides the panel's grow/shrink (same origin, no opacity) */}
+              <motion.div
+                aria-hidden="true"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{
+                  scale: 0,
+                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
+                  backgroundColor: 'rgba(26, 28, 34, 0)',
+                  transition: {
+                    scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                    backdropFilter: { duration: 0.14 },
+                    backgroundColor: { duration: 0.14 },
+                  },
+                }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                style={wizardOrigin ?? { transformOrigin: 'center bottom' }}
+                className="pointer-events-none absolute area-blur"
+              />
               <motion.div
                 ref={wizardPanelRef}
-                initial={{ opacity: 0, scale: 0.96 }}
+                initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 1, scale: 0.96 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0,
+                  transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                }}
                 style={wizardOrigin ?? { transformOrigin: 'center bottom' }}
+                transition={{
+                  opacity: { duration: 0.16 },
+                  scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                }}
                 className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden text-caption"
                 id="wizard-container"
               >
@@ -1630,18 +1715,60 @@ export default function Students() {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
             id="exam-logs-modal-backdrop"
           >
-            {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
-            <div aria-hidden="true" className="absolute inset-0 bgfx" />
+            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
+                freezes its frame, which lingers past unmount. */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16, ease: 'easeOut' }}
+              className="absolute inset-0 scrim"
+            />
+            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
+                un-blur never lingers behind the closing panel. */}
+            <motion.div
+              aria-hidden="true"
+              initial={false}
+              exit={{
+                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+                transition: { duration: 0.12 },
+              }}
+              className="absolute inset-0 pointer-events-none veil-blur"
+            />
             <div className="relative w-full max-w-lg @container">
-              {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
-              <div aria-hidden="true" className="absolute area-blur" />
+              {/* Halo rides the panel's grow/shrink (same origin, no opacity) */}
+              <motion.div
+                aria-hidden="true"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{
+                  scale: 0,
+                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
+                  backgroundColor: 'rgba(26, 28, 34, 0)',
+                  transition: {
+                    scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                    backdropFilter: { duration: 0.14 },
+                    backgroundColor: { duration: 0.14 },
+                  },
+                }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                style={logsOrigin ?? { transformOrigin: 'center bottom' }}
+                className="pointer-events-none absolute area-blur"
+              />
               <motion.div
                 ref={logsPanelRef}
-                initial={{ opacity: 0, scale: 0.92 }}
+                initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0,
+                  transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                }}
                 style={logsOrigin ?? { transformOrigin: 'center bottom' }}
-                transition={{ duration: 0.3, ease: [0.25, 1.6, 0.45, 1] }}
+                transition={{
+                  opacity: { duration: 0.16 },
+                  scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                }}
                 className="relative glx-strong rounded-3xl w-full overflow-hidden"
                 id="exam-logs-box"
               >

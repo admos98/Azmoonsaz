@@ -225,7 +225,7 @@ export default function Topbar({
     setTimeout(() => {
       setShowHamburgerMenu(false);
       setMenuClosing(false);
-    }, 350);
+    }, 290);
   }, []);
 
   useEffect(() => {
@@ -259,7 +259,7 @@ export default function Topbar({
       setShowNotifications(false);
       setBellRect(null);
       setNotifClosing(false);
-    }, 300);
+    }, 290);
   }, []);
 
   useEffect(() => {
@@ -368,7 +368,7 @@ export default function Topbar({
         id="topbar-left-group"
       >
         {/* Bell */}
-        <div className="transition-all duration-300 ease-out">
+        <div className="transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
           <button
             ref={bellRef}
             id="notifications-bell-btn"
@@ -401,7 +401,7 @@ export default function Topbar({
         {/* Avatar pill — pic absolutely pinned (never moves), only pill width animates */}
         <div className="relative flex items-center">
           <div
-            className={`relative h-10 rounded-full overflow-hidden glx-strong cursor-pointer transition-[width] duration-300 ease-out ${
+            className={`relative h-10 rounded-full overflow-hidden glx-strong cursor-pointer transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               avatarExpanded ? 'w-[200px]' : 'w-10'
             }`}
             onMouseEnter={() => {
@@ -445,7 +445,7 @@ export default function Topbar({
 
             {/* Name panel — absolute, fade only (no width/layout change, zero pic movement) */}
             <div
-              className={`absolute left-[42px] top-1/2 -translate-y-1/2 transition-opacity duration-300 ease-out ${
+              className={`absolute left-[42px] top-1/2 -translate-y-1/2 transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 avatarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
               }`}
               style={{ direction: 'rtl', textAlign: 'right' }}
@@ -485,7 +485,7 @@ export default function Topbar({
         {/* Search — smooth pill expand from icon */}
         <div
           ref={searchRef}
-          className={`relative h-11 flex items-center overflow-hidden rounded-full transition-all duration-300 ease-out ${
+          className={`relative h-11 flex items-center overflow-hidden rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
             showSearch ? 'w-[200px] glx-inset' : 'w-11 glx-inset'
           }`}
           onMouseEnter={() => !showHamburgerMenu && setShowSearch(true)}
@@ -547,8 +547,8 @@ export default function Topbar({
                 top: computePanelTop(0),
                 transformOrigin: computeHamburgerTransformOrigin(0),
                 animation: menuClosing
-                  ? 'shrinkToHamburger 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
-                  : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both',
+                  ? 'shrinkToHamburger 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0ms both'
+                  : 'growFromHamburger 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0ms both',
               }}
               id="hamburger-panel-1"
             >
@@ -578,8 +578,8 @@ export default function Topbar({
                 top: computePanelTop(1),
                 transformOrigin: computeHamburgerTransformOrigin(1),
                 animation: menuClosing
-                  ? 'shrinkToHamburger 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
-                  : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 80ms both',
+                  ? 'shrinkToHamburger 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0ms both'
+                  : 'growFromHamburger 0.5s cubic-bezier(0.22, 1, 0.36, 1) 80ms both',
               }}
               id="hamburger-panel-2"
             >
@@ -619,8 +619,8 @@ export default function Topbar({
                 top: computePanelTop(2),
                 transformOrigin: computeHamburgerTransformOrigin(2),
                 animation: menuClosing
-                  ? 'shrinkToHamburger 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
-                  : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 160ms both',
+                  ? 'shrinkToHamburger 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0ms both'
+                  : 'growFromHamburger 0.5s cubic-bezier(0.22, 1, 0.36, 1) 160ms both',
               }}
               id="hamburger-panel-3"
             >
@@ -699,8 +699,8 @@ export default function Topbar({
                 top: computePanelTop(3),
                 transformOrigin: computeHamburgerTransformOrigin(3),
                 animation: menuClosing
-                  ? 'shrinkToHamburger 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0ms both'
-                  : 'growFromHamburger 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) 240ms both',
+                  ? 'shrinkToHamburger 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0ms both'
+                  : 'growFromHamburger 0.5s cubic-bezier(0.22, 1, 0.36, 1) 240ms both',
               }}
               id="hamburger-panel-4"
             >
@@ -825,8 +825,8 @@ export default function Topbar({
                   ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`
                   : 'center',
                 animation: notifClosing
-                  ? 'shrinkToBell 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) both'
-                  : 'growFromBell 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) both',
+                  ? 'shrinkToBell 0.28s cubic-bezier(0.4, 0, 0.2, 1) both'
+                  : 'growFromBell 0.32s cubic-bezier(0.22, 1, 0.36, 1) both',
               }}
               id="notification-dropdown"
             >
