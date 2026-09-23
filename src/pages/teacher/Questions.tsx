@@ -1071,9 +1071,11 @@ export default function Questions() {
       {/* REUSABLE live preview question modal overlay */}
       {previewQuestion && (
         <div
-          className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           id="live-preview-overlay"
         >
+        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+        <div aria-hidden="true" className="absolute inset-0 bgfx" />
                               <div className="relative w-full max-w-2xl @container">
             {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
             <div aria-hidden="true" className="absolute area-blur" />
@@ -1121,9 +1123,11 @@ export default function Questions() {
       {/* MEGA ADD / EDIT DRAWER (Saves into state cleanly with live options form build!) */}
       {showAddEditDrawer && (
         <div
-          className="fixed inset-0 z-50 bgfx flex justify-end"
+          className="fixed inset-0 z-50 flex justify-end"
           id="add-edit-drawer-overlay"
         >
+        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+        <div aria-hidden="true" className="absolute inset-0 bgfx" />
           <div className="fixed inset-0" onClick={() => setShowAddEditDrawer(false)} />
 
                               <div className="relative h-full w-full max-w-3xl @container">

@@ -880,9 +880,11 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       {/* 8. Interactively Functional Excel Import Modal Component */}
       {isExcelModalOpen && (
         <div
-          className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           id="excel-import-modal-backdrop"
         >
+        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+        <div aria-hidden="true" className="absolute inset-0 bgfx" />
                               <div className="relative w-full max-w-lg @container">
             {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
             <div aria-hidden="true" className="absolute area-blur" />

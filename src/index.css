@@ -262,9 +262,6 @@ select::-webkit-calendar-picker-indicator {
   backdrop-filter:
     blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
     brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
-  -webkit-backdrop-filter:
-    blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
-    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
 }
 
 /* Strong glass — primary modals + hero.
@@ -286,9 +283,6 @@ select::-webkit-calendar-picker-indicator {
   backdrop-filter:
     blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
     brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
-  -webkit-backdrop-filter:
-    blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
-    brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
 }
 
 /* Ink glass — sidebar (dark field with warm gold tint) */
@@ -301,7 +295,6 @@ select::-webkit-calendar-picker-indicator {
     inset 0 -1px 4px var(--color-glass-ink-bottom),
     0 4px 24px var(--color-glass-shadow);
   backdrop-filter: blur(14px) saturate(1.35);
-  -webkit-backdrop-filter: blur(14px) saturate(1.35);
 }
 
 /* Inset/concave glass — inputs, wells */
@@ -314,7 +307,6 @@ select::-webkit-calendar-picker-indicator {
     inset 2px 0 2px rgba(255, 255, 255, 0.0342),
     inset -2px 0 2px rgba(255, 255, 255, 0.0186);
   backdrop-filter: blur(10px) saturate(1.5) brightness(1.02);
-  -webkit-backdrop-filter: blur(10px) saturate(1.5) brightness(1.02);
 }
 
 /* Area blur — ratio-sized halo behind popup panels (liquid glass).
@@ -328,7 +320,6 @@ select::-webkit-calendar-picker-indicator {
   pointer-events: none;
   background: rgb(var(--glass-h-tint) / var(--glass-h-fill));
   backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat)) brightness(var(--glass-h-bright));
-  -webkit-backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat)) brightness(var(--glass-h-bright));
   /* Feathered falloff: linear ease 0 → solid across the rim band (no mid
      plateau = no visible edge line once the blur is alive) */
   -webkit-mask-image:
@@ -346,9 +337,6 @@ select::-webkit-calendar-picker-indicator {
 @utility bgfx {
   background: rgb(var(--glass-scrim-color) / var(--glass-scrim-a));
   backdrop-filter:
-    blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
-    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
-  -webkit-backdrop-filter:
     blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
     brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
 }

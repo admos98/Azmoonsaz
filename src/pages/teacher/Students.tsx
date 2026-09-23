@@ -950,9 +950,11 @@ export default function Students() {
       {/* Manual Add / Edit Modal Dialouge Room */}
       {showAddEditModal && (
         <div
-          className="fixed inset-0 z-[60] bgfx flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 text-right"
           id="add-edit-modal-backdrop"
         >
+        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+        <div aria-hidden="true" className="absolute inset-0 bgfx" />
                               <div className="relative w-full max-w-md @container">
             {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
             <div aria-hidden="true" className="absolute area-blur" />
@@ -1158,9 +1160,11 @@ export default function Students() {
       {/* 4-Step Excel / CSV Import Wizard Modal! */}
       {showImportWizard && (
         <div
-          className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
           id="wizard-backdrop"
         >
+        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+        <div aria-hidden="true" className="absolute inset-0 bgfx" />
                               <div className="relative w-full max-w-2xl @container">
             {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
             <div aria-hidden="true" className="absolute area-blur" />
@@ -1587,9 +1591,11 @@ export default function Students() {
       {/* Submodal: Detailed Student Exam Participation logs */}
       {showExamLogsModal && activeLogStudent && (
         <div
-          className="fixed inset-0 z-50 bgfx flex items-center justify-center p-4 text-right"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
           id="exam-logs-modal-backdrop"
         >
+        {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+        <div aria-hidden="true" className="absolute inset-0 bgfx" />
                               <div className="relative w-full max-w-lg @container">
             {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
             <div aria-hidden="true" className="absolute area-blur" />

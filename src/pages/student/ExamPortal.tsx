@@ -2059,10 +2059,12 @@ export default function ExamPortal({
       <AnimatePresence>
         {isConfirmSubmitOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bgfx select-none"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none"
             dir="rtl"
             id="modal-submit-confirmation"
           >
+          {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+          <div aria-hidden="true" className="absolute inset-0 bgfx" />
             <div className="relative w-full max-w-md @container">
               {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
               <div aria-hidden="true" className="absolute area-blur" />
@@ -2150,10 +2152,12 @@ export default function ExamPortal({
       <AnimatePresence>
         {mobileNavOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-end justify-center bgfx sm:hidden"
+            className="fixed inset-0 z-50 flex items-end justify-center sm:hidden"
             dir="rtl"
             id="mobile-navigation-drawer-backdrop"
           >
+          {/* bgfx moved here: an ancestor with backdrop-filter is a backdrop root, which kills the halo blur */}
+          <div aria-hidden="true" className="absolute inset-0 bgfx" />
             <div className="relative w-full max-w-md @container">
               {/* Static halo: panel animates, halo stays opacity 1 so blur survives */}
               <div aria-hidden="true" className="absolute area-blur" />
