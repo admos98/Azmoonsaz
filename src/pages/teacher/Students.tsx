@@ -99,9 +99,30 @@ export default function Students() {
   const addEditPanelRef = useRef<HTMLDivElement>(null);
   const wizardPanelRef = useRef<HTMLDivElement>(null);
   const logsPanelRef = useRef<HTMLDivElement>(null);
-  const addEditOrigin = useOriginFromTrigger(addEditTriggerRef, addEditPanelRef, showAddEditModal);
-  const wizardOrigin = useOriginFromTrigger(wizardTriggerRef, wizardPanelRef, showImportWizard);
-  const logsOrigin = useOriginFromTrigger(logsTriggerRef, logsPanelRef, showExamLogsModal);
+  // Area-blur halo siblings: bigger negative-inset boxes riding the same scale.
+  // The hook writes their transformOrigin directly (same viewport point, offset
+  // local coordinates) — the React style prop on them carries no origin.
+  const addEditHaloRef = useRef<HTMLDivElement>(null);
+  const wizardHaloRef = useRef<HTMLDivElement>(null);
+  const logsHaloRef = useRef<HTMLDivElement>(null);
+  const addEditOrigin = useOriginFromTrigger(
+    addEditTriggerRef,
+    addEditPanelRef,
+    showAddEditModal,
+    addEditHaloRef,
+  );
+  const wizardOrigin = useOriginFromTrigger(
+    wizardTriggerRef,
+    wizardPanelRef,
+    showImportWizard,
+    wizardHaloRef,
+  );
+  const logsOrigin = useOriginFromTrigger(
+    logsTriggerRef,
+    logsPanelRef,
+    showExamLogsModal,
+    logsHaloRef,
+  );
 
   // Browsers focus a button on click, so the active element is the opener —
   // lets every call site report its trigger without threading a ref through
@@ -1016,7 +1037,7 @@ export default function Students() {
                   },
                 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={addEditOrigin ?? { transformOrigin: 'center bottom' }}
+                ref={addEditHaloRef}
                 className="pointer-events-none absolute area-blur"
               />
               <motion.div
@@ -1273,7 +1294,7 @@ export default function Students() {
                   },
                 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={wizardOrigin ?? { transformOrigin: 'center bottom' }}
+                ref={wizardHaloRef}
                 className="pointer-events-none absolute area-blur"
               />
               <motion.div
@@ -1752,7 +1773,7 @@ export default function Students() {
                   },
                 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={logsOrigin ?? { transformOrigin: 'center bottom' }}
+                ref={logsHaloRef}
                 className="pointer-events-none absolute area-blur"
               />
               <motion.div
