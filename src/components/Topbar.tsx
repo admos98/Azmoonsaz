@@ -309,7 +309,10 @@ export default function Topbar({
   if (bellRect) {
     const dropdownWidth = 320;
     const gap = 12;
-    const top = bellRect.bottom + gap;
+    // Match the hamburger menu's coordinate model exactly: it anchors with
+    // scrollX/scrollY, this one only had scrollX — so once the page was
+    // scrolled the dropdown rendered scrollY px too high.
+    const top = bellRect.bottom + gap + window.scrollY;
     notificationStyle.left = `${bellRect.left + window.scrollX}px`;
     notificationStyle.top = `${top}px`;
     notificationStyle.width = `${dropdownWidth}px`;
@@ -353,7 +356,9 @@ export default function Topbar({
 
   return (
     <header
-      className={`sticky top-0 ${showHamburgerMenu || menuClosing ? 'z-[65]' : 'z-30'} h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent`}
+      className={`sticky top-0 ${
+        showHamburgerMenu || menuClosing || showNotifications || notifClosing ? 'z-[65]' : 'z-30'
+      } h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent`}
       id="topbar-wrapper"
     >
       {/* LEFT SIDE: Bell then Avatar */}
@@ -374,7 +379,7 @@ export default function Topbar({
                 openNotifications();
               }
             }}
-            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative transition-all cursor-pointer"
+            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative z-[60] transition-all cursor-pointer"
             aria-label="اعلان‌ها"
             aria-expanded={showNotifications}
             aria-haspopup="true"
@@ -454,7 +459,7 @@ export default function Topbar({
           onClick={openHamburgerMenu}
           onMouseEnter={() => setHamburgerHover(true)}
           onMouseLeave={() => setHamburgerHover(false)}
-          className="p-2 rounded-xl hover: bg-[var(--color-surface)]/5 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
+          className="relative z-[70] p-2 rounded-xl hover: bg-[var(--color-surface)]/5 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
           aria-label="منوی اصلی"
           aria-expanded={showHamburgerMenu}
           aria-haspopup="true"
@@ -627,7 +632,11 @@ export default function Topbar({
                   <span>داشبورد مدیریتی</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
+                    currentTab === 'students'
+                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
+                  }`}
                   onClick={() => {
                     onTabChange('students');
                     closeMenu();
@@ -644,7 +653,11 @@ export default function Topbar({
                   <span>دانش‌آموزان</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
+                    currentTab === 'classes'
+                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
+                  }`}
                   onClick={() => {
                     onTabChange('classes');
                     closeMenu();
@@ -678,7 +691,11 @@ export default function Topbar({
             >
               <div className="p-3 min-w-[240px]">
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
+                    currentTab === 'questions'
+                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
+                  }`}
                   onClick={() => {
                     onTabChange('questions');
                     closeMenu();
@@ -695,7 +712,11 @@ export default function Topbar({
                   <span>بانک سوالات</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)] cursor-pointer transition-all duration-300"
+                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
+                    currentTab.startsWith('exams')
+                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
+                  }`}
                   onClick={() => {
                     onTabChange('exams');
                     closeMenu();
@@ -774,76 +795,81 @@ export default function Topbar({
 
       {/* Notifications Dropdown — animates from bell origin */}
       {(showNotifications || notifClosing) && (
-        <div className="fixed z-[60] @container" style={notificationStyle}>
-          {/* Static halo — the panel animates, the halo stays at opacity 1 so its blur survives */}
-          <div aria-hidden="true" className="absolute area-blur" />
-          <div
-            ref={notifRef}
-            className={`relative w-full glx-strong rounded-2xl overflow-hidden glx-sheen ${
-              notifClosing ? 'notification-shrink' : 'notification-grow'
-            }`}
-            style={{
-              transformOrigin: bellRect
-                ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`
-                : 'center',
-              animation: notifClosing
-                ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
-                : 'growFromBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both',
-            }}
-            id="notification-dropdown"
-          >
-            <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
-              <span className="text-caption font-bold text-[var(--color-text-primary)]">
-                اعلان‌ها
-              </span>
-              {unreadCount > 0 && (
-                <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
-                  {formatPersianNumber(unreadCount.toString())} جدید
+        <>
+          {/* Background veil — the same Control-Center layer the menu uses (blur + scrim
+              behind the panel). Without it only the halo ring blurs, so the notif reads flat. */}
+          <div className="fixed inset-0 z-[55] bgfx" />
+          <div className="fixed z-[60] @container" style={notificationStyle}>
+            {/* Static halo — the panel animates, the halo stays at opacity 1 so its blur survives */}
+            <div aria-hidden="true" className="absolute area-blur" />
+            <div
+              ref={notifRef}
+              className={`relative w-full glx-strong rounded-2xl overflow-hidden glx-sheen ${
+                notifClosing ? 'notification-shrink' : 'notification-grow'
+              }`}
+              style={{
+                transformOrigin: bellRect
+                  ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`
+                  : 'center',
+                animation: notifClosing
+                  ? 'shrinkToBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both'
+                  : 'growFromBell 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both',
+              }}
+              id="notification-dropdown"
+            >
+              <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
+                <span className="text-caption font-bold text-[var(--color-text-primary)]">
+                  اعلان‌ها
                 </span>
-              )}
-            </div>
+                {unreadCount > 0 && (
+                  <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
+                    {formatPersianNumber(unreadCount.toString())} جدید
+                  </span>
+                )}
+              </div>
 
-            <div className="max-h-60 overflow-y-auto text-caption divide-y divide-[var(--color-glass-light-stroke)]">
-              {loadingNotifs ? (
-                <div className="p-4 text-center text-[var(--color-text-tertiary)]">
-                  در حال بارگذاری...
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="p-6 text-center text-[var(--color-text-tertiary)]">
-                  هیچ اعلانی نیست.
-                </div>
-              ) : (
-                notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
-                    onClick={() => {
-                      if (n.onClick) n.onClick();
-                      closeNotifications();
-                    }}
-                  >
-                    <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
-                    <p className="text-micro text-[var(--color-text-secondary)] mt-1">
-                      {n.description}
-                    </p>
-                    <span className="text-micro text-[var(--color-text-tertiary)] mt-2 block">
-                      {n.timeAgo}
-                    </span>
+              <div className="max-h-60 overflow-y-auto text-caption divide-y divide-[var(--color-glass-light-stroke)]">
+                {loadingNotifs ? (
+                  <div className="p-4 text-center text-[var(--color-text-tertiary)]">
+                    در حال بارگذاری...
                   </div>
-                ))
-              )}
-            </div>
+                ) : notifications.length === 0 ? (
+                  <div className="p-6 text-center text-[var(--color-text-tertiary)]">
+                    هیچ اعلانی نیست.
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
+                      onClick={() => {
+                        if (n.onClick) n.onClick();
+                        closeNotifications();
+                      }}
+                    >
+                      <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
+                      <p className="text-micro text-[var(--color-text-secondary)] mt-1">
+                        {n.description}
+                      </p>
+                      <span className="text-micro text-[var(--color-text-tertiary)] mt-2 block">
+                        {n.timeAgo}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
 
-            <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
-              <button
-                onClick={closeNotifications}
-                className="text-micro text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
-              >
-                بستن
-              </button>
+              <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
+                <button
+                  onClick={closeNotifications}
+                  className="text-micro text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
+                >
+                  بستن
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );

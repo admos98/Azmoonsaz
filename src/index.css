@@ -35,8 +35,8 @@
    * Glass: gradient white fill (20% → 9%) + ink hairline + lifted shadow;
    * the blur comes from the veil/halo layers (Liquid Glass recipe below).
    */
-  --color-page-bg: #f0f7ff;
-  --color-paper-warm: #f0f7ff;
+  --color-page-bg: #dcf0ff;
+  --color-paper-warm: #dcf0ff;
   --color-surface: #f8fafc;
   --color-surface-secondary: #e0f2fe;
 
