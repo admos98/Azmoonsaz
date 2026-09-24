@@ -5,10 +5,30 @@ export interface Teacher {
   avatarUrl?: string;
   schoolName: string;
   subject?: string;
+  schools?: TeacherSchool[];
+  schedule?: TeacherScheduleItem[];
+  bio?: string;
   isOnboarded?: boolean;
   managerName?: string;
   schoolLogoUrl?: string;
   domainUrl?: string;
+}
+
+export interface TeacherSchool {
+  id: string;
+  name: string;
+  isPrimary: boolean;
+}
+
+export interface TeacherScheduleItem {
+  id: string;
+  day: number;
+  startTime: string;
+  endTime?: string;
+  schoolId?: string;
+  schoolName: string;
+  className: string;
+  subject: string;
 }
 
 export interface Student {

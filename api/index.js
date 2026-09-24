@@ -1,7 +1,7 @@
 import { json } from './_lib/http.js';
 import { handleHealth, handleSecurityCheck, handleStudentIdDemo } from './routes/public.js';
 import { handleStudentStartSession, handleStudentExamPayload, handleStudentSaveAnswer, handleStudentSubmit } from './routes/student.js';
-import { handleTeacherMe, handleTeacherClasses, handleTeacherStudents, handleTeacherSummary, handleTeacherQuestions, handleTeacherExams, handleTeacherSubmissions, handleTeacherGradeAnswer, handleTeacherFinalizeSubmission } from './routes/teacher.js';
+import { handleTeacherMe, handleTeacherProfile, handleTeacherClasses, handleTeacherStudents, handleTeacherSummary, handleTeacherQuestions, handleTeacherExams, handleTeacherSubmissions, handleTeacherGradeAnswer, handleTeacherFinalizeSubmission } from './routes/teacher.js';
 import { handleOnboardingStatus, handleOnboarding } from './routes/auth.js';
 
 function routePath(req) {
@@ -33,6 +33,7 @@ const routes = {
   'student/save-answer': handleStudentSaveAnswer,
   'student/submit': handleStudentSubmit,
   'teacher/me': handleTeacherMe,
+  'teacher/profile': handleTeacherProfile,
   'teacher/classes': handleTeacherClasses,
   'teacher/students': handleTeacherStudents,
   'teacher/summary': handleTeacherSummary,

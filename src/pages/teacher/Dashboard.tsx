@@ -11,11 +11,9 @@ import {
   CheckSquare,
   Plus,
   Clock,
-  Award,
   ChevronLeft,
   Upload,
   FileSpreadsheet,
-  AlertTriangle,
   CheckCircle,
   Eye,
   BookOpen,
@@ -179,19 +177,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     return currentExams.find((e) => e.id === examId)?.title || 'آزمون عمومی';
   };
 
-  // Compute Question Bank health counts
-  const qBankTotal = localQuestions.length;
-  const grade7QCount = localQuestions.filter((q) => q.grade === 'هفتم').length;
-  const grade8QCount = localQuestions.filter((q) => q.grade === 'هشتم').length;
-  const grade9QCount = localQuestions.filter((q) => q.grade === 'نهم').length;
 
-  const typeMultiChoiceCount = localQuestions.filter(
-    (q) => q.type === 'single_choice' || q.type === 'multiple_choice',
-  ).length;
-  const typeEssayCount = localQuestions.filter(
-    (q) => q.type === 'long_answer' || q.type === 'short_answer',
-  ).length;
-  const typeRestCount = qBankTotal - (typeMultiChoiceCount + typeEssayCount);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
@@ -249,9 +235,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         </div>
       </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch" id="dashboard-widget-pair">
       {/* 2. Stats Grid (5 Cards) */}
       <div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5"
+        className="glx rounded-2xl p-5 grid grid-cols-2 gap-3 content-stretch"
         id="stats-grid-layouts"
       >
         {/* Card 1: Students */}
@@ -286,7 +273,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
           <div className="mt-4">
             <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-              {formatPersianNumber(qBankTotal)}{' '}
+              {formatPersianNumber(localQuestions.length)}{' '}
               <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
                 سوال
               </span>
@@ -375,7 +362,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <span>اقدامات سریع</span>
         </h3>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5" id="quick-action-btns">
+        <div className="grid grid-cols-2 gap-3.5" id="quick-action-btns">
           <button
             id="qa-btn-import-excel"
             onClick={(e) => {
@@ -434,7 +421,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <button
             id="qa-btn-correct-essays"
             onClick={() => onNavigate('results')}
-            className="p-4 bg-[var(--color-danger-soft)]/70 hover:bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 md:col-span-1 group cursor-pointer"
+            className="p-4 bg-[var(--color-danger-soft)]/70 hover:bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer"
           >
             <div className="p-2.5 bg-[var(--color-danger)]/10 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
               <CheckSquare className="w-5 h-5" />
@@ -444,10 +431,12 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         </div>
       </div>
 
+      </div>
+
       {/* Main Core Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="dashboard-core-split">
-        {/* Left Columns (2/3 Width) */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" id="dashboard-core-split">
+        {/* Equal operational panels */}
+        <div className="contents">
           {/* 4. Upcoming and Active Exams Section */}
           <div className="glx p-6 rounded-2xl" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
@@ -721,178 +710,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
         </div>
 
-        {/* Right Sidebar Column (1/3 Width) */}
-        <div className="space-y-6" id="dashboard-right-sidebar">
-          {/* 6. Question Bank Health Section */}
-          <div className="glx p-6 rounded-2xl text-right" id="section-q-bank-health">
-            <h3 className="text-caption font-black text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-              <span>وضعیت بانک سوالات</span>
-            </h3>
-
-            {/* CSS-Only Visual Stacked Health Charts */}
-            <div className="space-y-5" id="charts-q-bank">
-              {/* Chart A: Question Count by base/grade */}
-              <div className="space-y-2">
-                <span className="text-micro font-bold text-[var(--color-text-tertiary)] block">
-                  پراکندگی سوالات بر اساس پایه‌های درسی
-                </span>
-                <div className="flex bg-[var(--color-glass-light-fill)] h-6 rounded-lg overflow-hidden text-micro font-semibold text-white">
-                  <div
-                    className="bg-[var(--color-accent)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
-                    style={{ width: `${(grade7QCount / qBankTotal) * 100}%` }}
-                    title={`هفتم: ${grade7QCount} سوال`}
-                  >
-                    {grade7QCount > 0 && `هفتم (${grade7QCount})`}
-                  </div>
-                  <div
-                    className="bg-[var(--color-accent-soft)]/200 h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
-                    style={{ width: `${(grade8QCount / qBankTotal) * 100}%` }}
-                    title={`هشتم: ${grade8QCount} سوال`}
-                  >
-                    {grade8QCount > 0 && `هشتم (${grade8QCount})`}
-                  </div>
-                  <div
-                    className="bg-[var(--color-success)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
-                    style={{ width: `${(grade9QCount / qBankTotal) * 100}%` }}
-                    title={`نهم: ${grade9QCount} سوال`}
-                  >
-                    {grade9QCount > 0 && `نهم (${grade9QCount})`}
-                  </div>
-                </div>
-                <div className="flex justify-between text-micro text-[var(--color-text-tertiary)] px-1">
-                  <span>هفتم: {grade7QCount}س</span>
-                  <span>هشتم: {grade8QCount}س</span>
-                  <span>نهم: {grade9QCount}س</span>
-                </div>
-              </div>
-
-              {/* Chart B: Count by Type */}
-              <div className="space-y-2">
-                <span className="text-micro font-bold text-[var(--color-text-tertiary)] block">
-                  تفکیک ساختاری نوع سوالات بانک
-                </span>
-                <div className="flex bg-[var(--color-glass-light-fill)] h-6 rounded-lg overflow-hidden text-micro font-semibold text-white">
-                  <div
-                    className="bg-[var(--color-danger)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
-                    style={{ width: `${(typeMultiChoiceCount / qBankTotal) * 100}%` }}
-                    title={`تستی: ${typeMultiChoiceCount} سوال`}
-                  >
-                    {typeMultiChoiceCount > 0 && `تستی (${typeMultiChoiceCount})`}
-                  </div>
-                  <div
-                    className="bg-[var(--color-accent-soft)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
-                    style={{ width: `${(typeEssayCount / qBankTotal) * 100}%` }}
-                    title={`تشریحی: ${typeEssayCount} سوال`}
-                  >
-                    {typeEssayCount > 0 && `تشریحی (${typeEssayCount})`}
-                  </div>
-                  <div
-                    className="bg-[var(--color-warning-soft)] h-full flex items-center justify-center transition-all duration-300 hover:brightness-95"
-                    style={{ width: `${(typeRestCount / qBankTotal) * 100}%` }}
-                    title={`سایر: ${typeRestCount} سوال`}
-                  >
-                    {typeRestCount > 0 && `سایر (${typeRestCount})`}
-                  </div>
-                </div>
-                <div className="flex justify-between text-micro text-[var(--color-text-tertiary)] px-1">
-                  <span>تستی: {typeMultiChoiceCount} مورد</span>
-                  <span>تشریحی: {typeEssayCount} مورد</span>
-                  <span>سایر: {typeRestCount} مورد</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Custom Beast Mode Prompt Warning Box */}
-            <div
-              className="mt-5 p-4 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 rounded-2xl flex items-start gap-3"
-              id="beast-mode-alert"
-            >
-              <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] shrink-0 mt-0.5" />
-              <div className="space-y-1.5">
-                <h5 className="text-micro font-bold text-[var(--color-warning)]">
-                  کمبود جدی بانک سوالات
-                </h5>
-                <p className="text-micro text-[var(--color-warning)] leading-relaxed">
-                  برای حالت Beast Mode سوالات کافی نیست.
-                </p>
-                <button
-                  onClick={() => onNavigate('questions')}
-                  className="text-micro font-black text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] hover:underline block pt-1 cursor-pointer"
-                >
-                  بهبود بانک سوالات
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Active Class Groups List */}
-          <div className="glx p-6 rounded-2xl" id="section-class-groups-list">
-            <h3 className="text-caption font-black text-[var(--color-text-primary)] mb-4">
-              آمار کلاس‌های تحت پوشش پایه‌ها
-            </h3>
-            <div className="space-y-3">
-              {classGroups.map((cg) => (
-                <div
-                  key={cg.id}
-                  className="p-3.5 rounded-2xl glx flex justify-between items-center hover:brightness-105 transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[var(--color-accent-soft)] border border-[var(--color-accent-soft)] flex items-center justify-center text-[var(--color-accent)] text-caption font-bold">
-                      {cg.grade.slice(0, 2)}
-                    </div>
-                    <div>
-                      <h4 className="text-caption font-bold text-[var(--color-text-primary)]">
-                        {cg.name}
-                      </h4>
-                      <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
-                        پایه {cg.grade}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-micro glx-inset text-[var(--color-text-secondary)] px-2.5 py-1 rounded-full font-bold">
-                    {cg.studentCount} دانش‌آموز
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              id="sidebar-add-class-dashboard"
-              onClick={() => onNavigate('students')}
-              className="w-full py-2.5 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl text-caption font-semibold mt-4 border border-dashed transition-all flex items-center justify-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>ایجاد کلاس یا گروه جدید</span>
-            </button>
-          </div>
-
-          {/* Quick Security Checklist / Protip */}
-          <div className="glx p-6 rounded-2xl">
-            <div className="flex items-start gap-4">
-              <div className="p-2.5 glx text-[var(--color-accent)] rounded-xl">
-                <Award className="w-5 h-5" />
-              </div>
-              <div className="space-y-1.5 flex-1">
-                <h4 className="text-caption font-bold text-[var(--color-text-primary)]">
-                  راهنمای هوشمند آزمون‌ساز
-                </h4>
-                <p className="text-micro text-[var(--color-text-secondary)] leading-relaxed">
-                  آیا می‌دانید با فعال‌سازی گزینه «قفل کردن مرورگر (حالت حفاظتی)»، دانش‌آموز در صورت
-                  خارج شدن دائم از تب امتحان، پاسخ‌برگش به صورت خودکار بایگانی خواهد شد؟
-                </p>
-                <div className="pt-2">
-                  <button
-                    onClick={() => onNavigate('exams')}
-                    className="text-micro font-bold text-[var(--color-accent)] hover:text-[var(--color-accent)] hover:underline cursor-pointer"
-                  >
-                    تنظیمات تخصصی آزمون
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div>
 
       {/* 8. Interactively Functional Excel Import Modal Component */}
       <AnimatePresence>

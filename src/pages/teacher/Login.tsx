@@ -110,7 +110,12 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
     'w-full text-label text-[var(--color-text-primary)] pr-10 pl-4 py-3 rounded-xl glx-inset focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:brightness-105 transition-all placeholder-[var(--color-text-tertiary)]';
 
   return (
-    <div className="min-h-screen bg-[var(--color-paper-warm)] flex items-center justify-center p-4">
+    <div className="login-shell min-h-screen p-4 sm:p-6">
+      <aside className="login-art" aria-hidden="true">
+        <div className="login-art-mark"><TheMark variant="row" size={72} animated={false} /></div>
+        <div className="login-art-copy"><span>طراحی · برگزاری · ارزیابی</span><h2>سنجش را ساده‌تر و<br/>آموزش را روشن‌تر کنید.</h2><p>یک فضای آرام و یکپارچه برای مدیریت کلاس و آزمون.</p></div>
+      </aside>
+      <main className="login-form-column">
       <div className="w-full max-w-md">
         {/* Header — The Mark logo */}
         <div className="text-center mb-8">
@@ -449,6 +454,7 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
           </button>
         </div>
       </div>
+      </main>
     </div>
   );
 }

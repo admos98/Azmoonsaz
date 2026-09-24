@@ -5,9 +5,7 @@
 
 import {
   LayoutDashboard,
-  Users,
-  GraduationCap,
-  HelpCircle,
+  UserRound,
   FileText,
   CheckSquare,
   Settings,
@@ -38,14 +36,11 @@ const navGroups: NavGroup[] = [
     label: 'مدیریت',
     items: [
       { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard },
-      { id: 'classes', label: 'کلاس‌ها', icon: GraduationCap },
-      { id: 'students', label: 'دانش‌آموزان', icon: Users },
     ],
   },
   {
     label: 'آزمون‌ها',
     items: [
-      { id: 'questions', label: 'بانک سوالات', icon: HelpCircle },
       { id: 'exams', label: 'آزمون‌ها', icon: FileText },
       { id: 'results', label: 'نتایج', icon: CheckSquare },
     ],
@@ -79,8 +74,10 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       </div>
 
       {/* Teacher Profile */}
-      <div
-        className="mx-4 my-4 p-3 rounded-xl bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] flex items-center gap-3"
+      <button
+        type="button"
+        onClick={() => { onTabChange('profile'); setMobileOpen(false); }}
+        className="mx-4 my-4 p-3 rounded-xl bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] flex items-center gap-3 text-right cursor-pointer hover:bg-white/10 transition-colors"
         id="sidebar-profile"
       >
         {teacher?.avatarUrl ? (
@@ -103,7 +100,8 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
             {teacher?.schoolName || ''}
           </p>
         </div>
-      </div>
+        <UserRound className="w-4 h-4 text-[var(--color-gold)]" aria-hidden="true" />
+      </button>
 
       {/* Grouped Navigation */}
       <nav className="px-4 space-y-5 flex-1" id="sidebar-nav">

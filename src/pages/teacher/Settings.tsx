@@ -3,67 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import {
   Settings as SettingsIcon,
-  User,
-  School,
-  Mail,
   Server,
   Shield,
   Wifi,
   WifiOff,
   Info,
   CheckCircle,
-  Edit3,
-  Save,
-  X,
 } from 'lucide-react';
-import { Card, Button, Input, Badge } from '../../components/UIComponents';
-import { useTeacher } from '../../contexts/TeacherContext';
+import { Card, Badge } from '../../components/UIComponents';
 import { isSecureBackendMode, getRuntimeModeLabel } from '../../config/runtimeMode';
 import { publicEnv } from '../../config/env';
 
 export default function Settings() {
-  const { teacher, loading, updateTeacher } = useTeacher();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editSchoolName, setEditSchoolName] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const handleStartEdit = () => {
-    if (!teacher) return;
-    setEditName(teacher.name);
-    setEditSchoolName(teacher.schoolName);
-    setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-  };
-
-  const handleSave = async () => {
-    if (!teacher) return;
-    setSaving(true);
-    updateTeacher({ name: editName, schoolName: editSchoolName });
-    setIsEditing(false);
-    setSaving(false);
-  };
-
   const isSecure = isSecureBackendMode();
   const modeLabel = getRuntimeModeLabel();
   const supabaseConfigured = publicEnv.isSupabaseConfigured;
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 w-48 bg-[var(--color-glass-light-stroke)] rounded-xl animate-pulse" />
-        <div className="h-40 bg-[var(--color-glass-light-fill)] rounded-3xl animate-pulse" />
-        <div className="h-40 bg-[var(--color-glass-light-fill)] rounded-3xl animate-pulse" />
-      </div>
-    );
-  }
+
 
   return (
     <motion.div
@@ -83,118 +43,11 @@ export default function Settings() {
               تنظیمات سامانه
             </h2>
             <p className="text-caption text-[var(--color-text-tertiary)] font-medium mt-0.5">
-              مدیریت پروفایل و وضعیت سیستم
+              وضعیت اجرا، امنیت و اطلاعات سامانه
             </p>
           </div>
         </div>
       </div>
-
-      {/* Teacher Profile Card */}
-      <Card>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-            <User className="w-4 h-4 text-[var(--color-accent)]" />
-            پروفایل دبیر
-          </h3>
-          {!isEditing && (
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<Edit3 className="w-3.5 h-3.5" />}
-              onClick={handleStartEdit}
-            >
-              ویرایش
-            </Button>
-          )}
-        </div>
-
-        {teacher && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 bg-[var(--color-glass-light-fill)] rounded-2xl">
-              <img
-                src={teacher.avatarUrl}
-                alt={teacher.name}
-                referrerPolicy="no-referrer"
-                className="w-14 h-14 rounded-full object-cover border-2 border-[var(--color-glass-light-stroke)] shadow-md"
-              />
-              <div className="flex-1">
-                {isEditing ? (
-                  <div className="space-y-3">
-                    <Input
-                      label="نام و نام خانوادگی"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      icon={<User className="w-4 h-4" />}
-                    />
-                    <Input
-                      label="نام مدرسه"
-                      value={editSchoolName}
-                      onChange={(e) => setEditSchoolName(e.target.value)}
-                      icon={<School className="w-4 h-4" />}
-                    />
-                    <div className="flex items-center gap-2 pt-1">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        isLoading={saving}
-                        icon={<Save className="w-3.5 h-3.5" />}
-                        onClick={handleSave}
-                      >
-                        ذخیره
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<X className="w-3.5 h-3.5" />}
-                        onClick={handleCancelEdit}
-                      >
-                        انصراف
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <h4 className="text-label font-bold text-[var(--color-text-primary)]">
-                      {teacher.name}
-                    </h4>
-                    <p className="text-caption text-[var(--color-text-tertiary)] mt-0.5">
-                      {teacher.schoolName}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {!isEditing && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
-                  <Mail className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <div>
-                    <p className="text-micro text-[var(--color-text-tertiary)] font-bold">ایمیل</p>
-                    <p className="text-caption text-[var(--color-text-secondary)] font-semibold">
-                      {teacher.email}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
-                  <School className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <div>
-                    <p className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                      شناسه دبیر
-                    </p>
-                    <p
-                      className="text-caption text-[var(--color-text-secondary)] font-semibold font-mono"
-                      dir="ltr"
-                    >
-                      {teacher.id}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </Card>
 
       {/* Runtime Status Card */}
       <Card>
@@ -242,6 +95,16 @@ export default function Settings() {
             </div>
           </div>
         </div>
+      </Card>
+
+      <Card>
+        <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-3">
+          <Shield className="w-4 h-4 text-[var(--color-gold)]" />
+          راهنمای امنیت آزمون
+        </h3>
+        <p className="text-caption text-[var(--color-text-secondary)] leading-7">
+          برای آزمون‌های رسمی می‌توانید قفل مرورگر، ثبت خروج از صفحه و ارسال خودکار پاسخ‌برگ را از تنظیمات همان آزمون فعال کنید. پیش از انتشار، حالت پیش‌نمایش را بررسی کنید.
+        </p>
       </Card>
 
       {/* App Info Card */}

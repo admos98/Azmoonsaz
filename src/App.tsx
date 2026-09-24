@@ -17,12 +17,10 @@ import { Exam } from './types';
 
 // Lazy-loaded teacher pages (code-split)
 const Dashboard = lazy(() => import('./pages/teacher/Dashboard'));
-const Students = lazy(() => import('./pages/teacher/Students'));
-const Classes = lazy(() => import('./pages/teacher/Classes'));
-const Questions = lazy(() => import('./pages/teacher/Questions'));
 const Exams = lazy(() => import('./pages/teacher/Exams'));
 const NewExam = lazy(() => import('./pages/teacher/NewExam'));
-const Settings = lazy(() => import('./pages/teacher/Settings'));
+const SettingsHub = lazy(() => import('./pages/teacher/SettingsHub'));
+const TeacherProfile = lazy(() => import('./pages/teacher/TeacherProfile'));
 
 // Toast state shared via simple emitter for App-level toasts
 const toastQueue: Array<{
@@ -156,11 +154,13 @@ export default function App() {
           />
         );
       case 'students':
-        return <Students />;
+        return <TeacherProfile key="students" initialTab="students" />;
       case 'classes':
-        return <Classes />;
+        return <TeacherProfile key="classes" initialTab="classes" />;
+      case 'profile':
+        return <TeacherProfile key="profile" />;
       case 'questions':
-        return <Questions />;
+        return <SettingsHub key="questions" initialTab="questions" />;
       case 'exams/new':
         return <NewExam onBack={() => setCurrentTab('exams')} onAddExam={handleAddNewExam} />;
       case 'exams':
@@ -208,7 +208,7 @@ export default function App() {
         );
       }
       case 'settings':
-        return <Settings />;
+        return <SettingsHub key="settings" />;
       default:
         return <Dashboard onNavigate={setCurrentTab} />;
     }

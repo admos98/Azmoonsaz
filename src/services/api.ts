@@ -17,27 +17,16 @@ import { logger } from '../lib/logger';
 import { getSupabasePublicClient } from '../lib/supabasePublic';
 import { publicEnv } from '../config/env';
 import { teacherGet, teacherPost, getTeacherAccessToken } from './teacherApi';
-import { uploadQuestionImage as storageUploadQuestionImage } from './storageService';
+import { uploadQuestionImage as storageUploadQuestionImage, uploadTeacherAvatar } from './storageService';
 
 export const authService = {
   async loginTeacher(email: string, password = ''): Promise<Teacher> {
     const supabase = getSupabasePublicClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error('ایمیل یا رمز عبور معتبر نیست.');
-    const me = await teacherGet<{
-      teacher: {
-        id: string;
-        email: string;
-        name: string;
-        schoolName: string;
-        subject: string;
-        isOnboarded: boolean;
-      };
-    }>('/api/teacher/me');
+    const me = await teacherGet<{ teacher: Teacher }>('/api/teacher/me');
     const teacher: Teacher = {
-      id: me.teacher.id,
-      email: me.teacher.email,
-      name: me.teacher.name,
+      ...me.teacher,
       schoolName: me.teacher.schoolName || '',
       subject: me.teacher.subject || '',
       isOnboarded: me.teacher.isOnboarded ?? false,
@@ -90,20 +79,9 @@ export const authService = {
     const token = await getTeacherAccessToken();
     if (!token) return null;
     try {
-      const me = await teacherGet<{
-        teacher: {
-          id: string;
-          email: string;
-          name: string;
-          schoolName: string;
-          subject: string;
-          isOnboarded: boolean;
-        };
-      }>('/api/teacher/me');
+      const me = await teacherGet<{ teacher: Teacher }>('/api/teacher/me');
       return {
-        id: me.teacher.id,
-        email: me.teacher.email,
-        name: me.teacher.name,
+        ...me.teacher,
         schoolName: me.teacher.schoolName || '',
         subject: me.teacher.subject || '',
         isOnboarded: me.teacher.isOnboarded ?? false,
@@ -112,6 +90,14 @@ export const authService = {
       return null;
     }
   },
+};
+
+export const teacherProfileService = {
+  async save(profile: Pick<Teacher, 'name' | 'subject' | 'bio' | 'avatarUrl' | 'schools' | 'schedule'>): Promise<Teacher> {
+    const response = await teacherPost<{ teacher: Teacher }>('/api/teacher/profile', profile);
+    return response.teacher;
+  },
+  uploadAvatar: uploadTeacherAvatar,
 };
 
 export const classService = {

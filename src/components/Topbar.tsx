@@ -583,9 +583,9 @@ export default function Topbar({
               }}
               id="hamburger-panel-2"
             >
-              <div className="p-3 min-w-[240px]">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center overflow-hidden">
+              <button type="button" onClick={() => { onTabChange('profile'); closeMenu(); }} className="p-3 min-w-[240px] w-full text-right cursor-pointer">
+                <span className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center overflow-hidden">
                     {teacher?.avatarUrl ? (
                       <img
                         src={teacher.avatarUrl}
@@ -598,17 +598,17 @@ export default function Topbar({
                         {teacher?.name?.[0] || '?'}
                       </span>
                     )}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-caption font-bold text-[var(--color-text-primary)] truncate">
+                  </span>
+                  <span className="flex-1 overflow-hidden block">
+                    <span className="text-caption font-bold text-[var(--color-text-primary)] truncate block">
                       {teacher?.name || '...'}
-                    </p>
-                    <p className="text-micro text-[var(--color-text-secondary)] truncate">
+                    </span>
+                    <span className="text-micro text-[var(--color-text-secondary)] truncate block">
                       {teacher?.schoolName || ''}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                    </span>
+                  </span>
+                </span>
+              </button>
             </div>
 
             {/* Panel 3: Management options */}
@@ -647,47 +647,10 @@ export default function Topbar({
                   <span>داشبورد مدیریتی</span>
                 </div>
                 <div
-                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
-                    currentTab === 'students'
-                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
-                  }`}
-                  onClick={() => {
-                    onTabChange('students');
-                    closeMenu();
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      onTabChange('students');
-                      closeMenu();
-                    }
-                  }}
-                >
-                  <span>دانش‌آموزان</span>
-                </div>
-                <div
-                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
-                    currentTab === 'classes'
-                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
-                  }`}
-                  onClick={() => {
-                    onTabChange('classes');
-                    closeMenu();
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      onTabChange('classes');
-                      closeMenu();
-                    }
-                  }}
-                >
-                  <span>کلاس‌ها</span>
-                </div>
+                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${currentTab === 'profile' ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'}`}
+                  onClick={() => { onTabChange('profile'); closeMenu(); }} role="button" tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onTabChange('profile'); closeMenu(); } }}
+                ><span>پروفایل، دانش‌آموزان و کلاس‌ها</span></div>
               </div>
             </div>
 
@@ -705,27 +668,6 @@ export default function Topbar({
               id="hamburger-panel-4"
             >
               <div className="p-3 min-w-[240px]">
-                <div
-                  className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
-                    currentTab === 'questions'
-                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
-                  }`}
-                  onClick={() => {
-                    onTabChange('questions');
-                    closeMenu();
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      onTabChange('questions');
-                      closeMenu();
-                    }
-                  }}
-                >
-                  <span>بانک سوالات</span>
-                </div>
                 <div
                   className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
                     currentTab.startsWith('exams')
