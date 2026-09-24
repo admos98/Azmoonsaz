@@ -21,9 +21,15 @@ alter table public.exam_questions enable row level security;
 alter table public.student_exam_sessions enable row level security;
 alter table public.student_answers enable row level security;
 
+drop policy if exists "teacher can read own profile" on public.teacher_profiles;
 create policy "teacher can read own profile" on public.teacher_profiles for select using (id = auth.uid());
+drop policy if exists "teacher can update own profile" on public.teacher_profiles;
 create policy "teacher can update own profile" on public.teacher_profiles for update using (id = auth.uid());
+drop policy if exists "teacher owns classes" on public.class_groups;
 create policy "teacher owns classes" on public.class_groups for all using (teacher_id = auth.uid()) with check (teacher_id = auth.uid());
+drop policy if exists "teacher owns students" on public.students;
 create policy "teacher owns students" on public.students for all using (teacher_id = auth.uid()) with check (teacher_id = auth.uid());
+drop policy if exists "teacher owns exams" on public.exams;
 create policy "teacher owns exams" on public.exams for all using (teacher_id = auth.uid()) with check (teacher_id = auth.uid());
+drop policy if exists "teacher owns questions" on public.questions;
 create policy "teacher owns questions" on public.questions for all using (teacher_id = auth.uid()) with check (teacher_id = auth.uid());
