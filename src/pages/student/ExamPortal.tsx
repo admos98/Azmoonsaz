@@ -601,7 +601,7 @@ export default function ExamPortal({
           >
             <div className="text-center space-y-2 pb-4 border-b border-[var(--color-glass-light-stroke)]">
               <ClipboardCheck className="w-12 h-12 text-[var(--color-accent)] mx-auto" />
-              <h1 className="text-md md:text-heading-3 font-black text-[var(--color-text-primary)]">
+              <h1 className="text-body md:text-heading-3 font-black text-[var(--color-text-primary)]">
                 {activeExam.title}
               </h1>
               <p className="text-micro text-[var(--color-text-tertiary)] max-w-md mx-auto leading-normal">
@@ -815,7 +815,7 @@ export default function ExamPortal({
               <span className="text-[var(--color-accent)] bg-[var(--color-accent-soft)] px-3 py-1 rounded-full text-micro font-black tracking-wide border border-[var(--color-accent)]/20 select-none">
                 آماده‌سازی آزمون
               </span>
-              <h1 className="text-md md:text-heading-3 font-black text-[var(--color-text-primary)]">
+              <h1 className="text-body md:text-heading-3 font-black text-[var(--color-text-primary)]">
                 {activeExam.title}
               </h1>
               <p className="text-micro text-[var(--color-text-tertiary)]">

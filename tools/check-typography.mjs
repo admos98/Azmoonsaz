@@ -2,8 +2,8 @@
  * Reports typography utilities that are used in TSX but never declared, so they
  * silently emit no CSS at all (a class that looks applied and isn't).
  *
- * Read-only: prints the debt and exits 0. Wire it into `npm run check` only
- * once the reported classes have been replaced with real type roles.
+ * Read-only report that FAILS when it finds offenders, so it can gate `npm run
+ * check`. It currently passes: the 14 `text-md` sites were cleared in Phase 1.
  *
  *   node tools/check-typography.mjs
  */
@@ -55,7 +55,8 @@ for (const file of walk(join(root, 'src'))) {
     // inside `text-[var(--color-text-secondary)]` and reports a false token.
     const line = raw.replace(/\[[^\]]*\]/g, '[]');
     // Matches `text-md`, `md:text-md`, `hover:text-white/90`, `text-[]`.
-    for (const m of line.matchAll(/\b((?:[\w-]+:)*text-[\w[\]/-]+)/g)) {
+    // `(?<![\w-])` so a kebab id like `question-text-box` is not read as a class.
+    for (const m of line.matchAll(/(?<![\w-])((?:[\w-]+:)*text-[\w[\]/-]+)/g)) {
       const cls = m[1];
       const bare = cls.slice(cls.lastIndexOf(':') + 1); // strip variant prefixes
       const token = bare
@@ -88,4 +89,4 @@ for (const [where, cls] of offenders) console.error(`  ${where}  ${cls}`);
 console.error(
   `\n${offenders.size} site(s). Replace with a declared role: ${[...declared].join(', ')}.`,
 );
-process.exit(0);
+process.exit(1);

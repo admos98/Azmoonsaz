@@ -9,10 +9,33 @@ Reference file for implementation. Exact SVG coordinates and rules below.
 - GOLD = always 3rd of 4 circles, always filled (never ring)
 
 ## Colors
-- Ink: #221E4A (circles, dark mode bg)
+- Ink: #221E4A (circles, headings and solid fills)
 - Gold: #F5B301 (answer mark, never changes)
-- Cream: #F7F1E4 (light mode bg)
+- Cream: #F7F1E4 (accents and light solids)
 - Muted: #6B6489 (secondary text)
+
+### Page surfaces — the two materials
+
+Agreed 2026-09-26. Light and dark are two different materials, both derived
+from the Mark. The surfaces stay calm; the identity lives in type and accents.
+
+| Theme | Page surface | Why it reads as The Mark |
+|---|---|---|
+| Light | `#FAF8F5` | The cream/gold hue (≈41°) lifted to near-white — paper from the Mark's own family, not a cool grey. Reads white; the warmth is the identity. |
+| Dark | `#18161D` | Ink's hue pulled to 13% chroma / 10% lightness — violet-black, blue no longer dominant. Reads near-black; the violet cast is the identity. |
+
+Ink `#221E4A` and Cream `#F7F1E4` are **demoted from page background to brand
+colour** — they carry headings, solid fills and The Mark itself. This is how
+"keep The Mark identity" and "much less blue, think white" are satisfied at the
+same time.
+
+Defined exactly once, in `src/index.css`: `--color-page-bg` and
+`--color-paper-warm` (light in `@theme`, dark in `:root[data-theme='dark']`).
+There is no second token file — `src/theme/` was deleted in Phase 1 because it
+was unreferenced and had drifted back to a blue page (`#f0f7ff`) and an indigo
+accent (`#6366f1`).
+
+Provisional: reviewed by the user, who may order either value changed.
 
 ## SVG Variants
 

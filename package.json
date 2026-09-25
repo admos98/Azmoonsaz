@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
-    "check": "npm run typecheck && npm run lint && npm run check:theme && npm run check:a11y-buttons && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run check:theme && npm run check:typography && npm run check:a11y-buttons && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "check:env": "node tools/check-env.mjs",

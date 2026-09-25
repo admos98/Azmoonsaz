@@ -54,14 +54,14 @@
   /* Was #dcf0ff (HSL sat 100% / light 93% — fully saturated blue, read as
      "blue page"). Pulled to a near-white with just enough cast to still read
      as a cool white rather than paper. */
-  --color-page-bg: #f7f7f4;
-  --color-paper-warm: #f7f7f4;
-  --color-surface: #fcfcfa;
-  --color-surface-secondary: #f1f1ed;
+  --color-page-bg: #faf8f5;
+  --color-paper-warm: #faf8f5;
+  --color-surface: #fffdfa;
+  --color-surface-secondary: #f3f1ec;
 
   /* Ink field — sidebar, hero on dark */
   --color-ink-field: #1a1a2e;
-  --color-ink-stroke: #374151;
+  --color-ink-stroke: #393744;
 
   /* Glass fills — liquid glass, research-tuned: chrome 45%, content panels 78%
      (Sitka overlay/chrome band: 16-20px blur + 180% sat + 72-92% fill) */
@@ -70,7 +70,7 @@
   --color-glass-light-sheen: rgba(255, 255, 255, 0.22);
   --color-glass-light-bottom: rgba(0, 0, 0, 0.06);
   --color-glass-panel-fill: rgba(255, 255, 255, 0.78);
-  --color-inset-fill: rgba(248, 248, 245, 0.82);
+  --color-inset-fill: rgba(250, 248, 245, 0.82);
   --color-inset-side-sheen: rgba(255, 255, 255, 0.035);
   --color-inset-side-shade: rgba(255, 255, 255, 0.019);
 
@@ -90,10 +90,10 @@
   --color-gold-glow: rgba(245, 179, 1, 0.16);
 
   /* Semantic — Primary */
-  --color-accent: #303449;
+  --color-accent: #343242;
   --color-accent-hover: #1a1a2e;
   --color-accent-soft: #efefeb;
-  --color-accent-solid: #303449;
+  --color-accent-solid: #343242;
   --color-accent-solid-hover: #1a1a2e;
   --color-text-on-solid: #ffffff;
 
@@ -114,8 +114,8 @@
 
   /* Text */
   --color-text-primary: #1a1a2e;
-  --color-text-secondary: #525d72;
-  --color-text-tertiary: #6b7280;
+  --color-text-secondary: #5e5a68;
+  --color-text-tertiary: #716e78;
   --color-text-on-dark: #f9fafb;
   --color-text-on-dark-secondary: #d1d5db;
 }
@@ -127,7 +127,7 @@
   color-scheme: light;
   /* Runtime-only variables live outside @theme so Tailwind cannot inline the
      light value into utilities that must change without a rebuild. */
-  --ui-inset-fill: rgba(248, 248, 245, 0.82);
+  --ui-inset-fill: rgba(250, 248, 245, 0.82);
 
   /* Full-screen veil (Control-Center style backdrop behind popups) */
   /* Full-screen veil blur. Separate token from --glass-bg-blur on purpose:
@@ -200,20 +200,20 @@
    themes, so system and explicit preferences stay visually consistent. */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --ui-inset-fill: rgba(27, 31, 40, 0.94);
-  --color-page-bg: #0f1117;
-  --color-paper-warm: #0f1117;
-  --color-surface: #171a22;
-  --color-surface-secondary: #20242e;
-  --color-ink-field: #090b10;
-  --color-ink-stroke: #697386;
+  --ui-inset-fill: rgba(33, 31, 41, 0.94);
+  --color-page-bg: #18161d;
+  --color-paper-warm: #18161d;
+  --color-surface: #211f29;
+  --color-surface-secondary: #2a2734;
+  --color-ink-field: #100f15;
+  --color-ink-stroke: #716d80;
 
-  --color-glass-light-fill: rgba(30, 34, 44, 0.72);
+  --color-glass-light-fill: rgba(36, 33, 43, 0.72);
   --color-glass-light-stroke: rgba(255, 255, 255, 0.12);
   --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
   --color-glass-light-bottom: rgba(0, 0, 0, 0.35);
-  --color-glass-panel-fill: rgba(24, 27, 35, 0.86);
-  --color-inset-fill: rgba(27, 31, 40, 0.94);
+  --color-glass-panel-fill: rgba(33, 31, 41, 0.86);
+  --color-inset-fill: rgba(33, 31, 41, 0.94);
   --color-inset-side-sheen: rgba(255, 255, 255, 0.045);
   --color-inset-side-shade: rgba(0, 0, 0, 0.16);
   --color-glass-shadow: rgba(0, 0, 0, 0.42);
@@ -223,11 +223,11 @@
   --color-gold: #f8c542;
   --color-gold-soft: #382d10;
   --color-gold-glow: rgba(248, 197, 66, 0.18);
-  --color-accent: #d8ddec;
+  --color-accent: #dcd9e6;
   --color-accent-hover: #ffffff;
-  --color-accent-soft: #282d38;
-  --color-accent-solid: #4f5672;
-  --color-accent-solid-hover: #616a8b;
+  --color-accent-soft: #2e2b39;
+  --color-accent-solid: #565274;
+  --color-accent-solid-hover: #6a6692;
   --color-text-on-solid: #ffffff;
 
   --color-success: #67e3b1;
@@ -244,8 +244,8 @@
   --color-info-soft: #182f55;
 
   --color-text-primary: #f4f5f8;
-  --color-text-secondary: #c1c7d2;
-  --color-text-tertiary: #99a2b2;
+  --color-text-secondary: #c6c3d1;
+  --color-text-tertiary: #a19eac;
   --color-text-on-dark: #f9fafb;
   --color-text-on-dark-secondary: #d1d5db;
 
@@ -255,7 +255,7 @@
   --glass-h-tint: 0 0 0;
   --glass-p-a1: 0.26;
   --glass-p-a2: 0.16;
-  --glass-p-tint: 35 39 49;
+  --glass-p-tint: 36 33 44;
   --glass-p-ba: 0.16;
   --glass-p-bc: 255 255 255;
   --glass-sh-a: 0.55;

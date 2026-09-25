@@ -71,7 +71,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const sizes: Record<ButtonProps['size'] & {}, string> = {
       sm: 'px-3 py-1.5 text-caption',
       md: 'px-4.5 py-2.5 text-caption md:text-label',
-      lg: 'px-6 py-3.5 text-label md:text-md',
+      lg: 'px-6 py-3.5 text-label md:text-body',
     };
 
     return (
@@ -643,7 +643,7 @@ export const Modal = ({
             >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-glass-light-stroke)]">
-                <h3 className="text-label md:text-md font-black text-[var(--color-text-primary)] text-right">
+                <h3 className="text-label md:text-body font-black text-[var(--color-text-primary)] text-right">
                   {title}
                 </h3>
                 <button
@@ -737,7 +737,9 @@ export const Drawer = ({
             >
               {/* Head */}
               <div className="p-6 flex items-center justify-between">
-                <h2 className="text-md font-black text-[var(--color-text-primary)]">{title}</h2>
+                <h2 className="text-heading-3 font-black text-[var(--color-text-primary)]">
+                  {title}
+                </h2>
                 <button
                   type="button"
                   onClick={onClose}
@@ -819,7 +821,7 @@ export const EmptyState = ({ icon, title, description, action }: EmptyStateProps
         {icon || <HelpCircle className="w-8 h-8" />}
       </div>
       <div className="space-y-1 w-full max-w-sm">
-        <h4 className="text-label md:text-md font-bold text-[var(--color-text-primary)]">
+        <h4 className="text-label md:text-body font-bold text-[var(--color-text-primary)]">
           {title}
         </h4>
         <p className="text-caption text-[var(--color-text-tertiary)] font-medium leading-relaxed">

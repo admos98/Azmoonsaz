@@ -598,7 +598,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                       ارزیابی پیشرفته تستی و تشریحی
                     </span>
                   </div>
-                  <h1 className="text-md md:text-heading-3 font-black text-[var(--color-text-primary)] mt-1">
+                  <h1 className="text-body md:text-heading-3 font-black text-[var(--color-text-primary)] mt-1">
                     نتایج و تصحیح آزمون
                   </h1>
                   <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
@@ -1150,7 +1150,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                     <span className="text-micro font-bold text-[var(--color-accent)] block bg-[var(--color-accent-soft)]/30 px-2.5 py-0.5 rounded-full w-fit">
                       مدیریت پاسخ‌برگ داوطلب
                     </span>
-                    <h2 className="text-md font-black text-[var(--color-text-primary)] mt-1">
+                    <h2 className="text-heading-3 font-black text-[var(--color-text-primary)] mt-1">
                       پاسخ‌برگ تحویلی: {activeSubmission.studentName}
                     </h2>
                   </div>

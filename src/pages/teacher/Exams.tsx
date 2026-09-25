@@ -203,7 +203,7 @@ export default function Exams({
       {/* Upper Panel Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx p-6 rounded-2xl">
         <div>
-          <h2 className="text-md font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+          <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[var(--color-accent)]" />
             <span>مدیریت آزمون‌های دوره‌ای و هماهنگ کشوری</span>
           </h2>

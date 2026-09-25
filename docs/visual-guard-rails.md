@@ -19,43 +19,40 @@ the ULTIMATE plan's §0 amendments for the roadmap (7 phases, not 9).
 
 ```bash
 npm run check            # typecheck + lint + theme tokens + a11y + build
-npm run test             # vitest, 82 tests
+npm run test             # vitest, 85 tests
 npm run check:theme      # colour must go through --color-* tokens
-npm run check:typography # text-* utilities that emit no CSS (see debt below)
+npm run check:typography # text-* utilities that resolve to no rule (gates `check`)
 npm run format:check     # prettier
 ```
 
-`check:typography` is **report-only** (exit 0) on purpose. It is wired to fail
-only after the debt below is cleared, so it can move into `check` in Phase 1.
+`check:typography` is a hard gate: part of `npm run check`, exits 1 on any
+`text-*` utility that emits no CSS.
 
-## Known debt — Phase 1
+## Typography debt — cleared in Phase 1
 
-`text-md` is never declared in `src/index.css`, so it emits **no CSS at all**:
-the class looks applied and silently isn't. Confirmed absent from
-`dist/assets/*.css`.
+`text-md` was never declared in `src/index.css`, so it emitted **no CSS at all**
+— the class looked applied and silently wasn't. Confirmed absent from
+`dist/assets/*.css`. 13 real sites; a 14th reported hit,
+`ExamResults.tsx:1247`, was the element id `question-text-box`, not a class.
 
-| Site | Form |
-|---|---|
-| `src/components/UIComponents.tsx:74` | `md:text-md` |
-| `src/components/UIComponents.tsx:646` | `md:text-md` |
-| `src/components/UIComponents.tsx:740` | `text-md` |
-| `src/components/UIComponents.tsx:822` | `md:text-md` |
-| `src/pages/student/ExamPortal.tsx:604` | `text-md` |
-| `src/pages/student/ExamPortal.tsx:818` | `text-md` |
-| `src/pages/teacher/ExamPreview.tsx:611` | `md:text-md` |
-| `src/pages/teacher/ExamResults.tsx:601` | `text-md` |
-| `src/pages/teacher/ExamResults.tsx:1153` | `text-md` |
-| `src/pages/teacher/ExamResults.tsx:1247` | `text-box` |
-| `src/pages/teacher/ExamSettings.tsx:419` | `md:text-md` |
-| `src/pages/teacher/Exams.tsx:206` | `text-md` |
-| `src/pages/teacher/Questions.tsx:741` | `text-md` |
-| `src/pages/teacher/Students.tsx:464` | `text-md` |
+| Site | Was | Now |
+|---|---|---|
+| `UIComponents.tsx:74` (Button `lg`) | `md:text-md` | `md:text-body` |
+| `UIComponents.tsx:646` (card h3) | `md:text-md` | `md:text-body` |
+| `UIComponents.tsx:740` (EmptyState h2) | `text-md` | `text-heading-3` |
+| `UIComponents.tsx:822` (h4) | `md:text-md` | `md:text-body` |
+| `ExamPortal.tsx:604`, `:818` (h1) | `text-md md:text-heading-3` | `text-body md:text-heading-3` |
+| `ExamPreview.tsx:611` (h2) | `md:text-md` | `md:text-body` |
+| `ExamResults.tsx:601` (h1) | `text-md md:text-heading-3` | `text-body md:text-heading-3` |
+| `ExamResults.tsx:1153` (h2) | `text-md` | `text-heading-3` |
+| `ExamSettings.tsx:419` (h2) | `md:text-md` | `md:text-body` |
+| `Exams.tsx:206`, `Questions.tsx:741`, `Students.tsx:464` (h2) | `text-md` | `text-heading-3` |
 
-Replace each with a declared role — `text-display`, `text-heading-1`,
-`text-heading-2`, `text-heading-3`, `text-body`, `text-label`, `text-caption`,
-`text-micro`. Because the class currently renders nothing, fixing it is a
-**visible** change: `md:text-md` buttons will start scaling at `md`. Review
-screenshot-by-screenshot.
+Visible by design: those headings were inheriting `0.9375rem` (15px) from
+`body`, so an explicit role is a real size change. In the built CSS
+`.font-black` and `.font-bold` sort **after** `.text-heading-3` and
+`.text-body`, so the explicit weights still win — only size changed. The user
+confirms the result visually.
 
 ## The material laboratory
 

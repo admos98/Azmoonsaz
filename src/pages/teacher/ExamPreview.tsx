@@ -608,7 +608,7 @@ export default function ExamPreview({
             <ArrowRight className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-label md:text-md font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
+            <h2 className="text-label md:text-body font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
               <FileText className="w-5 h-5 text-[var(--color-accent)]" />
               <span>پیش‌نمایش و ویرایش آزمون</span>
             </h2>

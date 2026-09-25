@@ -18,7 +18,7 @@ from Tailwind defaults or arbitrary values.
 - **6 keyframes**: `mark-pop`, `growFromBell`, `shrinkToBell`, `growFromHamburger`, `shrinkToHamburger`, `shimmer`.
 - **11 `backdrop-filter` sites** in CSS.
 - **1 `<GlassSheen>` site** — `App.tsx`, wrapping the routed page. This is the page-wide sheen the plan wants moved onto floating surfaces only.
-- `src/theme/{tokens,colors,glass,typography}.ts` exist as declared; they carry **almost no visual usage themselves** (0 glx, 0 radii, 0 shadows) — they are data modules, and the duplication risk is that they and `index.css` drift.
+- ~~`src/theme/{tokens,colors,glass,typography}.ts`~~ **deleted in Phase 1** — see §4. `index.css` is now the only place visual values are declared; there is no second file left to drift.
 
 ## 2. Measured usage (all of `src/**.tsx`)
 
@@ -67,15 +67,18 @@ dropdown, a card and a page panel can share `rounded-2xl`.
 | `text-caption` | 399 |
 | `text-label` | 114 |
 | `text-heading-1` | 17 |
-| `text-heading-3` | 15 |
+| `text-heading-3` | 20 |
 | `text-heading-2` | 13 |
-| `text-body` | 7 |
+| `text-body` | 15 |
 | `text-display` | 1 |
-| **Total** | **1034** |
+| **Total** | **1047** |
 
-**`text-micro` + `text-caption` = 84% of all typed text.** The plan's rule
-"never use tiny text to create false sophistication" is currently violated by
-default. `text-body` — the reading role — is used 7 times.
+**`text-micro` + `text-caption` = 83% of all typed text.** The plan's rule
+"never use tiny text to create false sophistication" is still violated by
+default. `text-body` — the reading role — is used 15 times.
+
+*(Phase 1 re-measured these: `text-md` was cleared, so `text-heading-3` went
+15 → 20 and `text-body` 7 → 15, total 1034 → 1047.)*
 
 ## 3. Where the material actually lives
 
@@ -90,7 +93,7 @@ Plan §3.2 names 10 component/theme files for inventory. Measured across those
 | `components/GlassSystem.tsx` | 3 | 0 | 0 | 0 | 103 |
 | `components/CommandPalette.tsx` | 1 | 6 | 2 | 7 | 364 |
 | `components/TheMark.tsx` | 0 | 0 | 0 | 0 | 172 |
-| `theme/*.ts` (4 files) | 0 | 0 | 0 | 1 | 302 |
+| ~~`theme/*.ts`~~ deleted in Phase 1 | — | — | — | — | — |
 | **10 named files** | **40** | **65** | **14** | **85** | |
 
 **The named files hold 10% of the material usage.** The other ~354 `glx` uses
@@ -109,4 +112,4 @@ primitives and leaves most screens untouched.
 | 9 radii / 9 shadows with no role mapping; `glx` at 68% | 3 |
 | Single `<GlassSheen>` wrapping the routed page | 2 |
 | Material concentrated in pages, not shared components | 3 and 5 |
-| 41 `--glass-*` vars duplicated against `src/theme/glass.ts` | 1 |
+| 41 `--glass-*` vars duplicated against `src/theme/glass.ts` — **resolved**: `src/theme/` deleted in Phase 1 | 1 ✓ |

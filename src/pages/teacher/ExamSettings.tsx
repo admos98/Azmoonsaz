@@ -416,7 +416,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
             <ArrowRight className="w-5 h-5" />
           </button>
           <div>
-            <h2 className="text-label md:text-md font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
+            <h2 className="text-label md:text-body font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
               <Compass className="w-5 h-5 text-[var(--color-accent)]" />
               <span>تنظیمات و انتشار آزمون</span>
             </h2>

@@ -461,7 +461,7 @@ export default function Students() {
         id="students-control-board"
       >
         <div>
-          <h2 className="text-md font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+          <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <Users className="w-5 h-5 text-[var(--color-accent)]" />
             <span>مدیریت دانش‌آموزان و درگاه ورودی</span>
           </h2>
