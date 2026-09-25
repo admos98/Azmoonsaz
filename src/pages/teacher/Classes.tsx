@@ -17,6 +17,7 @@ import {
 import { classService } from '../../services/api';
 import { ClassGroup } from '../../types';
 import { formatPersianNumber } from '../../services/persianHelpers';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 export default function Classes() {
   const [classes, setClasses] = useState<ClassGroup[]>([]);
@@ -24,10 +25,29 @@ export default function Classes() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassGroup | null>(null);
   const [formData, setFormData] = useState({ name: '', grade: '' });
+  const [savedFormData, setSavedFormData] = useState(formData);
+  const guardClassDraft = useUnsavedChanges(
+    isModalOpen && JSON.stringify(formData) !== JSON.stringify(savedFormData),
+  );
+  const closeClassEditor = () => guardClassDraft(() => setIsModalOpen(false));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadClasses();
+    let active = true;
+    classService
+      .getClassGroups()
+      .then((data) => {
+        if (active) setClasses(data);
+      })
+      .catch(() => {
+        if (active) setError('خطا در بارگذاری گروه‌های کلاسی.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const loadClasses = async () => {
@@ -50,6 +70,7 @@ export default function Classes() {
       setEditingClass(null);
       setFormData({ name: '', grade: '' });
     }
+    setSavedFormData(cls ? { name: cls.name, grade: cls.grade } : { name: '', grade: '' });
     setIsModalOpen(true);
     setError(null);
   };
@@ -74,22 +95,51 @@ export default function Classes() {
   };
 
   const [classToDelete, setClassToDelete] = useState<string | null>(null);
+  const [undoDelete, setUndoDelete] = useState<ClassGroup | null>(null);
+  const deleteTimerRef = useRef<number | null>(null);
   const addClassTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(
+    () => () => {
+      if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
+    },
+    [],
+  );
 
   const handleDelete = (id: string) => {
     setClassToDelete(id);
   };
 
-  const confirmDeleteClass = async () => {
+  const confirmDeleteClass = () => {
     if (!classToDelete) return;
-    try {
-      await classService.deleteClassGroup(classToDelete);
-      await loadClasses();
-    } catch (_err) {
-      setError('خطا در حذف کلاس.');
-    } finally {
-      setClassToDelete(null);
-    }
+    const removed = classes.find((item) => item.id === classToDelete);
+    if (!removed) return;
+    if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
+    setClasses((current) => current.filter((item) => item.id !== removed.id));
+    setUndoDelete(removed);
+    setClassToDelete(null);
+    deleteTimerRef.current = window.setTimeout(async () => {
+      try {
+        await classService.deleteClassGroup(removed.id);
+        setUndoDelete(null);
+      } catch (_err) {
+        setClasses((current) =>
+          current.some((item) => item.id === removed.id) ? current : [...current, removed],
+        );
+        setUndoDelete(null);
+        setError('کلاس حذف نشد و به فهرست بازگردانده شد. دوباره تلاش کنید.');
+      }
+    }, 5000);
+  };
+
+  const undoClassDeletion = () => {
+    if (!undoDelete) return;
+    if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
+    deleteTimerRef.current = null;
+    setClasses((current) =>
+      current.some((item) => item.id === undoDelete.id) ? current : [...current, undoDelete],
+    );
+    setUndoDelete(null);
   };
 
   return (
@@ -118,6 +168,18 @@ export default function Classes() {
         <div className="bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/20 text-[var(--color-danger)]/80 p-4 rounded-2xl text-caption font-bold flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
           {error}
+        </div>
+      )}
+
+      {undoDelete && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-4 rounded-2xl bg-[var(--color-warning-soft)] p-4 text-caption font-bold text-[var(--color-text-primary)]"
+        >
+          <span>کلاس «{undoDelete.name}» حذف شد.</span>
+          <button type="button" className="btn-soft" onClick={undoClassDeletion}>
+            بازگردانی
+          </button>
         </div>
       )}
 
@@ -160,6 +222,7 @@ export default function Classes() {
                   </Button>
                   <Button
                     onClick={() => handleDelete(cls.id)}
+                    disabled={Boolean(undoDelete)}
                     variant="ghost"
                     size="sm"
                     className="text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 hover:bg-[var(--color-danger-soft)]/40"
@@ -184,7 +247,12 @@ export default function Classes() {
                   <Button onClick={() => handleOpenModal(cls)} variant="ghost" size="sm">
                     ویرایش
                   </Button>
-                  <Button onClick={() => handleDelete(cls.id)} variant="danger" size="sm">
+                  <Button
+                    onClick={() => handleDelete(cls.id)}
+                    disabled={Boolean(undoDelete)}
+                    variant="danger"
+                    size="sm"
+                  >
                     حذف
                   </Button>
                 </div>
@@ -196,7 +264,7 @@ export default function Classes() {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={closeClassEditor}
         title={editingClass ? 'ویرایش اطلاعات کلاس' : 'افزودن کلاس جدید'}
         triggerRef={addClassTriggerRef}
       >
@@ -237,7 +305,7 @@ export default function Classes() {
             />
           </div>
           <div className="pt-4 flex justify-end gap-3">
-            <Button onClick={() => setIsModalOpen(false)} variant="ghost">
+            <Button onClick={closeClassEditor} variant="ghost">
               انصراف
             </Button>
             <Button onClick={handleSave} variant="primary">

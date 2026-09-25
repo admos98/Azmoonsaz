@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Compatibility exports for older AI-Studio-generated imports.
  *
  * Prefer importing directly from ../utils/persian in new code.

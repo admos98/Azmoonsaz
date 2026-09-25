@@ -112,165 +112,252 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
   return (
     <div className="login-shell min-h-screen p-4 sm:p-6">
       <aside className="login-art" aria-hidden="true">
-        <div className="login-art-mark"><TheMark variant="row" size={72} animated={false} /></div>
-        <div className="login-art-copy"><span>طراحی · برگزاری · ارزیابی</span><h2>سنجش را ساده‌تر و<br/>آموزش را روشن‌تر کنید.</h2><p>یک فضای آرام و یکپارچه برای مدیریت کلاس و آزمون.</p></div>
+        <div className="login-art-mark">
+          <TheMark variant="row" size={72} animated={false} />
+        </div>
+        <div className="login-art-copy">
+          <span>طراحی · برگزاری · ارزیابی</span>
+          <h2>
+            سنجش را ساده‌تر و<br />
+            آموزش را روشن‌تر کنید.
+          </h2>
+          <p>یک فضای آرام و یکپارچه برای مدیریت کلاس و آزمون.</p>
+        </div>
       </aside>
       <main className="login-form-column">
-      <div className="w-full max-w-md">
-        {/* Header — The Mark logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 glx-dark rounded-2xl mb-4 shadow-xl flex-shrink-0">
-            <TheMark variant="core" size={48} animated={false} />
+        <div className="w-full max-w-md">
+          {/* Header — The Mark logo */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 glx-dark rounded-2xl mb-4 shadow-xl flex-shrink-0">
+              <TheMark variant="core" size={48} animated={false} />
+            </div>
+            <h1 className="text-heading-1 font-black text-[var(--color-ink)] tracking-tight">
+              آزمون‌ساز
+            </h1>
+            <p className="text-label text-[var(--color-text-secondary)] mt-1">پنل مدیریت اساتید</p>
           </div>
-          <h1 className="text-heading-1 font-black text-[var(--color-ink)] tracking-tight">
-            آزمون‌ساز
-          </h1>
-          <p className="text-label text-[var(--color-text-secondary)] mt-1">پنل مدیریت اساتید</p>
-        </div>
 
-        {/* Card — glx glass surface */}
-        <div className="glx rounded-3xl p-8">
-          {/* View: Enter Email */}
-          {view === 'email' && (
-            <form onSubmit={handleEmailSubmit} className="space-y-5">
-              <div>
-                <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
-                  ایمیل
-                </label>
-                <div className="relative">
-                  <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <input
-                    type="email"
-                    dir="ltr"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@gmail.com"
-                    className={inputBase}
-                    autoFocus
-                  />
+          {/* Card — glx glass surface */}
+          <div className="glx rounded-3xl p-8">
+            {/* View: Enter Email */}
+            {view === 'email' && (
+              <form onSubmit={handleEmailSubmit} className="space-y-5">
+                <div>
+                  <label
+                    htmlFor="teacher-email"
+                    className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2"
+                  >
+                    ایمیل
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
+                    <input
+                      id="teacher-email"
+                      type="email"
+                      dir="ltr"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@gmail.com"
+                      className={inputBase}
+                      autoFocus
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {error && (
-                <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">
-                  {error}
-                </p>
-              )}
+                {error && (
+                  <p
+                    role="alert"
+                    className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2"
+                  >
+                    {error}
+                  </p>
+                )}
 
-              <button
-                type="submit"
-                className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer flex items-center justify-center gap-2"
-              >
-                ادامه
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </form>
-          )}
-
-          {/* View: Enter Password (Login) */}
-          {view === 'password' && (
-            <form onSubmit={handlePasswordSubmit} className="space-y-5">
-              <div className="text-center">
-                <p className="text-caption text-[var(--color-text-tertiary)]">ورود با</p>
-                <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
-                  {email}
-                </p>
                 <button
-                  type="button"
-                  onClick={() => {
-                    setView('email');
-                    setError(null);
-                    setPassword('');
-                  }}
-                  className="text-micro text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
+                  type="submit"
+                  className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer flex items-center justify-center gap-2"
                 >
-                  تغییر ایمیل
+                  ادامه
+                  <ArrowRight className="w-4 h-4" />
                 </button>
-              </div>
+              </form>
+            )}
 
-              <div>
-                <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
-                  رمز عبور
-                </label>
-                <div className="relative">
-                  <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    dir="ltr"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className={inputBase}
-                    autoFocus
-                  />
+            {/* View: Enter Password (Login) */}
+            {view === 'password' && (
+              <form onSubmit={handlePasswordSubmit} className="space-y-5">
+                <div className="text-center">
+                  <p className="text-caption text-[var(--color-text-tertiary)]">ورود با</p>
+                  <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                    {email}
+                  </p>
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                    onClick={() => {
+                      setView('email');
+                      setError(null);
+                      setPassword('');
+                    }}
+                    className="text-micro text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    تغییر ایمیل
                   </button>
                 </div>
-              </div>
 
-              {error && (
-                <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 disabled:opacity-60 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer"
-              >
-                {loading ? 'در حال بررسی...' : 'ورود'}
-              </button>
-
-              <div className="flex items-center justify-between text-micro">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setView('forgot-password');
-                    setError(null);
-                    setPassword('');
-                  }}
-                  className="text-[var(--color-accent)] hover:underline cursor-pointer flex items-center gap-1"
-                >
-                  <KeyRound className="w-3 h-3" />
-                  رمز عبور را فراموش کردم
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setView('signup');
-                    setError(null);
-                    setPassword('');
-                  }}
-                  className="text-[var(--color-success)] hover:underline cursor-pointer"
-                >
-                  ایجاد حساب جدید
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* View: Signup (create new account) */}
-          {view === 'signup' && (
-            <form onSubmit={handleSignupSubmit} className="space-y-5">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-[var(--color-success-soft)] rounded-full mb-2">
-                  <CheckCircle2 className="w-6 h-6 text-[var(--color-success)]" />
+                <div>
+                  <label
+                    htmlFor="teacher-password"
+                    className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2"
+                  >
+                    رمز عبور
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
+                    <input
+                      id="teacher-password"
+                      type={showPassword ? 'text' : 'password'}
+                      dir="ltr"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className={inputBase}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
-                <h2 className="text-body font-bold text-[var(--color-text-primary)]">
-                  ایجاد حساب جدید
-                </h2>
-                <p className="text-caption text-[var(--color-text-tertiary)] mt-1">
-                  یک رمز عبور برای حساب خود انتخاب کنید
-                </p>
-                <p className="text-label font-bold text-[var(--color-text-primary)] mt-2" dir="ltr">
-                  {email}
-                </p>
+
+                {error && (
+                  <p
+                    role="alert"
+                    className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2"
+                  >
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 disabled:opacity-60 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer"
+                >
+                  {loading ? 'در حال بررسی...' : 'ورود'}
+                </button>
+
+                <div className="flex items-center justify-between text-micro">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('forgot-password');
+                      setError(null);
+                      setPassword('');
+                    }}
+                    className="text-[var(--color-accent)] hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <KeyRound className="w-3 h-3" />
+                    رمز عبور را فراموش کردم
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('signup');
+                      setError(null);
+                      setPassword('');
+                    }}
+                    className="text-[var(--color-success)] hover:underline cursor-pointer"
+                  >
+                    ایجاد حساب جدید
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* View: Signup (create new account) */}
+            {view === 'signup' && (
+              <form onSubmit={handleSignupSubmit} className="space-y-5">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-[var(--color-success-soft)] rounded-full mb-2">
+                    <CheckCircle2 className="w-6 h-6 text-[var(--color-success)]" />
+                  </div>
+                  <h2 className="text-body font-bold text-[var(--color-text-primary)]">
+                    ایجاد حساب جدید
+                  </h2>
+                  <p className="text-caption text-[var(--color-text-tertiary)] mt-1">
+                    یک رمز عبور برای حساب خود انتخاب کنید
+                  </p>
+                  <p
+                    className="text-label font-bold text-[var(--color-text-primary)] mt-2"
+                    dir="ltr"
+                  >
+                    {email}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('password');
+                      setError(null);
+                      setPassword('');
+                    }}
+                    className="text-micro text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
+                  >
+                    تغییر ایمیل
+                  </button>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="signup-password"
+                    className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2"
+                  >
+                    رمز عبور
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
+                    <input
+                      id="signup-password"
+                      type={showPassword ? 'text' : 'password'}
+                      dir="ltr"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="حداقل ۶ کاراکتر"
+                      className={inputBase}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <p
+                    role="alert"
+                    className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2"
+                  >
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 disabled:opacity-60 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-success)]/10 cursor-pointer"
+                >
+                  {loading ? 'در حال ثبت‌نام...' : 'ساخت حساب'}
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -278,182 +365,139 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
                     setError(null);
                     setPassword('');
                   }}
-                  className="text-micro text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
+                  className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
                 >
-                  تغییر ایمیل
+                  بازگشت به ورود
+                </button>
+              </form>
+            )}
+
+            {/* View: Signup Email Sent */}
+            {view === 'signup-sent' && (
+              <div className="text-center space-y-4 py-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full mb-2">
+                  <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
+                </div>
+                <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+                  ایمیل تأیید ارسال شد
+                </h2>
+                <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
+                  لطفاً ایمیل خود را بررسی کنید و لینک تأیید را کلیک کنید.
+                  <br />
+                  پس از تأیید، با همین ایمیل و رمز عبور وارد شوید.
+                </p>
+                <div className="glx-inset rounded-xl px-4 py-3">
+                  <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
+                  <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                    {email}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetAll}
+                  className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
+                >
+                  بازگشت به ورود
                 </button>
               </div>
+            )}
 
-              <div>
-                <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
-                  رمز عبور
-                </label>
-                <div className="relative">
-                  <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
+            {/* View: Forgot Password */}
+            {view === 'forgot-password' && (
+              <form onSubmit={handleForgotPasswordSubmit} className="space-y-5">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-[var(--color-warning-soft)] rounded-full mb-2">
+                    <KeyRound className="w-6 h-6 text-[var(--color-warning)]" />
+                  </div>
+                  <h2 className="text-body font-bold text-[var(--color-text-primary)]">
+                    بازیابی رمز عبور
+                  </h2>
+                  <p className="text-caption text-[var(--color-text-tertiary)] mt-1">
+                    لینک بازیابی رمز عبور به ایمیل شما ارسال می‌شود
+                  </p>
+                  <p
+                    className="text-label font-bold text-[var(--color-text-primary)] mt-2"
                     dir="ltr"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="حداقل ۶ کاراکتر"
-                    className={inputBase}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                    {email}
+                  </p>
                 </div>
-              </div>
 
-              {error && (
-                <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">
-                  {error}
-                </p>
-              )}
+                {error && (
+                  <p
+                    role="alert"
+                    className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2"
+                  >
+                    {error}
+                  </p>
+                )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 disabled:opacity-60 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-success)]/10 cursor-pointer"
-              >
-                {loading ? 'در حال ثبت‌نام...' : 'ساخت حساب'}
-              </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[var(--color-warning-solid)] hover:bg-[var(--color-warning-solid)]/90 disabled:opacity-60 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-warning)]/10 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  {loading ? 'در حال ارسال...' : 'ارسال لینک بازیابی'}
+                </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setView('password');
-                  setError(null);
-                  setPassword('');
-                }}
-                className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
-              >
-                بازگشت به ورود
-              </button>
-            </form>
-          )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setView('password');
+                    setError(null);
+                    setPassword('');
+                  }}
+                  className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
+                >
+                  بازگشت به ورود
+                </button>
+              </form>
+            )}
 
-          {/* View: Signup Email Sent */}
-          {view === 'signup-sent' && (
-            <div className="text-center space-y-4 py-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full mb-2">
-                <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
-              </div>
-              <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
-                ایمیل تأیید ارسال شد
-              </h2>
-              <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
-                لطفاً ایمیل خود را بررسی کنید و لینک تأیید را کلیک کنید.
-                <br />
-                پس از تأیید، با همین ایمیل و رمز عبور وارد شوید.
-              </p>
-              <div className="glx-inset rounded-xl px-4 py-3">
-                <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
-                <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
-                  {email}
-                </p>
-              </div>
-              <button
-                onClick={resetAll}
-                className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
-              >
-                بازگشت به ورود
-              </button>
-            </div>
-          )}
-
-          {/* View: Forgot Password */}
-          {view === 'forgot-password' && (
-            <form onSubmit={handleForgotPasswordSubmit} className="space-y-5">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-[var(--color-warning-soft)] rounded-full mb-2">
-                  <KeyRound className="w-6 h-6 text-[var(--color-warning)]" />
+            {/* View: Forgot Password Email Sent */}
+            {view === 'forgot-password-sent' && (
+              <div className="text-center space-y-4 py-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-warning-soft)] rounded-full mb-2">
+                  <CheckCircle2 className="w-8 h-8 text-[var(--color-warning)]" />
                 </div>
-                <h2 className="text-body font-bold text-[var(--color-text-primary)]">
-                  بازیابی رمز عبور
+                <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+                  لینک بازیابی ارسال شد
                 </h2>
-                <p className="text-caption text-[var(--color-text-tertiary)] mt-1">
-                  لینک بازیابی رمز عبور به ایمیل شما ارسال می‌شود
+                <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
+                  ایمیلی حاوی لینک بازیابی رمز عبور برای شما ارسال شد.
+                  <br />
+                  لینک را باز کنید و رمز جدید انتخاب کنید.
                 </p>
-                <p className="text-label font-bold text-[var(--color-text-primary)] mt-2" dir="ltr">
-                  {email}
-                </p>
+                <div className="glx-inset rounded-xl px-4 py-3">
+                  <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
+                  <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                    {email}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetAll}
+                  className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
+                >
+                  بازگشت به ورود
+                </button>
               </div>
+            )}
+          </div>
 
-              {error && (
-                <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-lg px-3 py-2">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[var(--color-warning)] hover:bg-[var(--color-warning)]/90 disabled:opacity-60 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-warning)]/10 cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                {loading ? 'در حال ارسال...' : 'ارسال لینک بازیابی'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setView('password');
-                  setError(null);
-                  setPassword('');
-                }}
-                className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
-              >
-                بازگشت به ورود
-              </button>
-            </form>
-          )}
-
-          {/* View: Forgot Password Email Sent */}
-          {view === 'forgot-password-sent' && (
-            <div className="text-center space-y-4 py-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-warning-soft)] rounded-full mb-2">
-                <CheckCircle2 className="w-8 h-8 text-[var(--color-warning)]" />
-              </div>
-              <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
-                لینک بازیابی ارسال شد
-              </h2>
-              <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
-                ایمیلی حاوی لینک بازیابی رمز عبور برای شما ارسال شد.
-                <br />
-                لینک را باز کنید و رمز جدید انتخاب کنید.
-              </p>
-              <div className="glx-inset rounded-xl px-4 py-3">
-                <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
-                <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
-                  {email}
-                </p>
-              </div>
-              <button
-                onClick={resetAll}
-                className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
-              >
-                بازگشت به ورود
-              </button>
-            </div>
-          )}
+          {/* Student switch */}
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={onSwitchToStudent}
+              className="inline-flex items-center gap-2 text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5" />
+              ورود دانش‌آموز
+            </button>
+          </div>
         </div>
-
-        {/* Student switch */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={onSwitchToStudent}
-            className="inline-flex items-center gap-2 text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5" />
-            ورود دانش‌آموز
-          </button>
-        </div>
-      </div>
       </main>
     </div>
   );

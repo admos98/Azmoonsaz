@@ -11,6 +11,7 @@ import { gradingService, examService } from '../services/api';
 import { Exam, Submission } from '../types';
 import { logger } from '../lib/logger';
 import { TheMark } from './TheMark';
+import { usePersistentPreference } from '../hooks/usePersistentPreference';
 
 interface TopbarProps {
   currentTab: string;
@@ -133,6 +134,14 @@ export default function Topbar({
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loadingNotifs, setLoadingNotifs] = useState(true);
+  const [submissionNotifications] = usePersistentPreference('notifications:submissions', true);
+  const [examNotifications] = usePersistentPreference('notifications:active-exams', true);
+  const [readNotificationIds, setReadNotificationIds] = usePersistentPreference<string[]>(
+    'notifications:read',
+    [],
+    (value): value is string[] =>
+      Array.isArray(value) && value.every((item) => typeof item === 'string'),
+  );
   const [bellRect, setBellRect] = useState<DOMRect | null>(null);
   const [hamburgerRect, setHamburgerRect] = useState<DOMRect | null>(null);
   const [notifClosing, setNotifClosing] = useState(false);
@@ -194,7 +203,12 @@ export default function Topbar({
           });
         });
 
-        if (!cancelled) setNotifications(items);
+        const enabledItems = items.filter(
+          (item) =>
+            (item.type === 'exam' && examNotifications) ||
+            (item.type !== 'exam' && submissionNotifications),
+        );
+        if (!cancelled) setNotifications(enabledItems);
       } catch (err) {
         logger.error('Notification fetch failed:', err);
         if (!cancelled) setNotifications([]);
@@ -208,7 +222,7 @@ export default function Topbar({
       const timer = setInterval(fetchNotifications, 60000);
       return () => clearInterval(timer);
     }
-  }, [onSelectExamForResults, showNotifications]);
+  }, [examNotifications, onSelectExamForResults, showNotifications, submissionNotifications]);
 
   // --- Hamburger menu ---
   const openHamburgerMenu = useCallback(() => {
@@ -262,12 +276,6 @@ export default function Topbar({
     }, 290);
   }, []);
 
-  useEffect(() => {
-    if (avatarExpanded && showNotifications) {
-      closeNotifications();
-    }
-  }, [avatarExpanded, showNotifications, closeNotifications]);
-
   // --- Notifications ---
   const openNotifications = useCallback(() => {
     setNotifClosing(false);
@@ -303,7 +311,7 @@ export default function Topbar({
     return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [showNotifications, closeNotifications]);
 
-  const unreadCount = notifications.length;
+  const unreadCount = notifications.filter((item) => !readNotificationIds.includes(item.id)).length;
 
   // Notification dropdown position (fixed, anchored to bell — on left side, so use left)
   const notificationStyle: React.CSSProperties = { position: 'fixed' };
@@ -370,6 +378,7 @@ export default function Topbar({
         {/* Bell */}
         <div className="transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
           <button
+            type="button"
             ref={bellRef}
             id="notifications-bell-btn"
             onClick={() => {
@@ -388,7 +397,7 @@ export default function Topbar({
             <Bell className="w-4.5 h-4.5" />
             {unreadCount > 0 && (
               <span
-                className="absolute top-1.5 right-1.5 flex items-center justify-center text-micro font-bold text-white bg-[var(--color-danger)] rounded-full ring-2 ring-white"
+                className="absolute top-1.5 right-1.5 flex items-center justify-center text-micro font-bold text-[var(--color-text-on-solid)] bg-[var(--color-danger-solid)] rounded-full ring-2 ring-white"
                 style={{ width: '18px', height: '18px' }}
                 aria-label={`${unreadCount} اعلان خوانه‌نشده`}
               >
@@ -408,7 +417,10 @@ export default function Topbar({
               // Clear any pending collapse — stacked mouseleave timers used to
               // re-close the pill right after a re-enter (hover flicker).
               if (avatarLeaveTimer.current) window.clearTimeout(avatarLeaveTimer.current);
-              if (!showHamburgerMenu) setAvatarExpanded(true);
+              if (!showHamburgerMenu) {
+                if (showNotifications) closeNotifications();
+                setAvatarExpanded(true);
+              }
             }}
             onMouseLeave={() => {
               avatarLeaveTimer.current = window.setTimeout(() => {
@@ -420,12 +432,16 @@ export default function Topbar({
                 exact gap that centers it in the collapsed 40px pill, and since the
                 pill grows rightward (left edge fixed) it never moves when expanded. */}
             <div
-              className="absolute left-[3px] top-[3px] w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden"
-              onClick={() => setAvatarExpanded(!avatarExpanded)}
+              className="absolute left-[3px] top-[3px] w-8 h-8 rounded-full bg-[var(--color-accent-solid)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden"
+              onClick={() => {
+                if (!avatarExpanded && showNotifications) closeNotifications();
+                setAvatarExpanded(!avatarExpanded);
+              }}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
+                  if (!avatarExpanded && showNotifications) closeNotifications();
                   setAvatarExpanded(!avatarExpanded);
                 }
               }}
@@ -433,6 +449,8 @@ export default function Topbar({
             >
               {teacher?.avatarUrl ? (
                 <img
+                  loading="eager"
+                  decoding="async"
                   src={teacher.avatarUrl}
                   alt={teacher.name}
                   referrerPolicy="no-referrer"
@@ -462,6 +480,7 @@ export default function Topbar({
       <div className="flex items-center gap-3" id="topbar-right-group">
         {/* TheMark Hamburger — rightmost */}
         <button
+          type="button"
           ref={hamburgerRef}
           id="hamburger-menu-btn"
           onClick={() => {
@@ -474,7 +493,7 @@ export default function Topbar({
           }}
           onMouseEnter={() => setHamburgerHover(true)}
           onMouseLeave={() => setHamburgerHover(false)}
-          className="relative z-[70] p-2 rounded-xl hover: bg-[var(--color-surface)]/5 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
+          className="relative z-[70] p-2 rounded-xl hover:bg-[var(--color-surface-secondary)] transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
           aria-label="منوی اصلی"
           aria-expanded={showHamburgerMenu}
           aria-haspopup="true"
@@ -492,6 +511,7 @@ export default function Topbar({
           onMouseLeave={() => !showHamburgerMenu && setShowSearch(false)}
         >
           <button
+            type="button"
             id="search-toggle-btn"
             onClick={() => setShowSearch(!showSearch)}
             className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-full hover:bg-[var(--color-glass-light-stroke)]/20 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-full"
@@ -583,11 +603,20 @@ export default function Topbar({
               }}
               id="hamburger-panel-2"
             >
-              <button type="button" onClick={() => { onTabChange('profile'); closeMenu(); }} className="p-3 min-w-[240px] w-full text-right cursor-pointer">
+              <button
+                type="button"
+                onClick={() => {
+                  onTabChange('profile');
+                  closeMenu();
+                }}
+                className="p-3 min-w-[240px] w-full text-right cursor-pointer"
+              >
                 <span className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center overflow-hidden">
+                  <span className="w-8 h-8 rounded-full bg-[var(--color-accent-solid)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center overflow-hidden">
                     {teacher?.avatarUrl ? (
                       <img
+                        loading="eager"
+                        decoding="async"
                         src={teacher.avatarUrl}
                         alt={teacher.name}
                         referrerPolicy="no-referrer"
@@ -648,9 +677,21 @@ export default function Topbar({
                 </div>
                 <div
                   className={`flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${currentTab === 'profile' ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'}`}
-                  onClick={() => { onTabChange('profile'); closeMenu(); }} role="button" tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { onTabChange('profile'); closeMenu(); } }}
-                ><span>پروفایل، دانش‌آموزان و کلاس‌ها</span></div>
+                  onClick={() => {
+                    onTabChange('profile');
+                    closeMenu();
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      onTabChange('profile');
+                      closeMenu();
+                    }
+                  }}
+                >
+                  <span>پروفایل، دانش‌آموزان و کلاس‌ها</span>
+                </div>
               </div>
             </div>
 
@@ -728,7 +769,7 @@ export default function Topbar({
                   <span>بخش دانش‌آموزی</span>
                 </div>
                 <div
-                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 cursor-pointer transition-all duration-300"
+                  className="flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger-solid)]/10 cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onLogout();
                     closeMenu();
@@ -797,12 +838,34 @@ export default function Topbar({
                     <div
                       key={n.id}
                       className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${n.title}${readNotificationIds.includes(n.id) ? '، خوانده‌شده' : '، خوانده‌نشده'}`}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') event.currentTarget.click();
+                      }}
                       onClick={() => {
+                        setReadNotificationIds((current) =>
+                          current.includes(n.id) ? current : [...current, n.id].slice(-100),
+                        );
                         if (n.onClick) n.onClick();
                         closeNotifications();
                       }}
                     >
-                      <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
+                      <div className="flex items-center gap-2">
+                        {!readNotificationIds.includes(n.id) && (
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full bg-[var(--color-accent)]"
+                            aria-hidden="true"
+                          />
+                        )}
+                        <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
+                        <span
+                          className={`mr-auto rounded-full px-2 py-0.5 text-micro font-bold ${n.type === 'exam' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}
+                        >
+                          {n.type === 'exam' ? 'فوری' : 'اطلاع‌رسانی'}
+                        </span>
+                      </div>
                       <p className="text-micro text-[var(--color-text-secondary)] mt-1">
                         {n.description}
                       </p>
@@ -816,6 +879,7 @@ export default function Topbar({
 
               <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
                 <button
+                  type="button"
                   onClick={closeNotifications}
                   className="text-micro text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
                 >

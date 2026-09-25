@@ -56,7 +56,7 @@ export function maskNationalId(code: string): string {
 /**
  * Converts numbers/digits from English to Persian representation.
  */
-export function formatPersianNumber(str: string | number): string {
+export function formatPersianNumber(str: string | number | null | undefined): string {
   if (str === undefined || str === null) return '';
   const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
   return String(str).replace(/[0-9]/g, (digit) => farsiDigits[parseInt(digit, 10)]);
@@ -80,7 +80,8 @@ export function formatPersianDate(
 
     const options: Intl.DateTimeFormatOptions = {
       calendar: 'persian',
-      numberingSystem: 'latn', // keep as latn and convert overall or use fa-IR natively
+      numberingSystem: 'arabext',
+      timeZone: 'Asia/Tehran',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -91,7 +92,9 @@ export function formatPersianDate(
       options.minute = '2-digit';
     }
 
-    const formatted = new Intl.DateTimeFormat('fa-IR', options).format(date);
+    const formatted = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-arabext', options).format(
+      date,
+    );
     return formatted;
   } catch (error) {
     logger.warn('Persian date conversion failed, returning default representation', error);
@@ -102,7 +105,7 @@ export function formatPersianDate(
 /**
  * Converts numbers/digits to Persian representation.
  */
-export function toPersianDigits(str: string | number): string {
+export function toPersianDigits(str: string | number | null | undefined): string {
   return formatPersianNumber(str);
 }
 
@@ -115,6 +118,47 @@ export function toEnglishDigits(str: string | number): string {
   return input
     .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
     .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+}
+
+/** Normalizes Arabic/Persian variants for reliable search and comparison. */
+export function normalizePersianText(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return '';
+  return toEnglishDigits(String(value))
+    .replace(/[یى]/g, 'ی')
+    .replace(/ک/g, 'ک')
+    .replace(/ة/g, 'ه')
+    .replace(/[أإٱ]/g, 'ا')
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/[\u200C\u200D]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase('fa-IR');
+}
+
+/** Formats a concise relative time in Persian, with deterministic `now` for tests. */
+export function formatPersianRelativeTime(
+  dateInput: string | Date | null | undefined,
+  now: Date = new Date(),
+): string {
+  if (!dateInput) return '—';
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  if (Number.isNaN(date.getTime()) || Number.isNaN(now.getTime())) return '—';
+
+  const seconds = Math.round((date.getTime() - now.getTime()) / 1000);
+  const absoluteSeconds = Math.abs(seconds);
+  const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+    ['year', 365 * 24 * 60 * 60],
+    ['month', 30 * 24 * 60 * 60],
+    ['week', 7 * 24 * 60 * 60],
+    ['day', 24 * 60 * 60],
+    ['hour', 60 * 60],
+    ['minute', 60],
+  ];
+  const [unit, divisor] = units.find(([, size]) => absoluteSeconds >= size) || ['second', 1];
+  return new Intl.RelativeTimeFormat('fa-IR-u-nu-arabext', { numeric: 'auto' }).format(
+    Math.round(seconds / divisor),
+    unit,
+  );
 }
 
 /**

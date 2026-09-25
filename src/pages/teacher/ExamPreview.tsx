@@ -39,7 +39,9 @@ import {
 import { classService, questionService } from '../../services/api';
 import { Dropdown } from '../../components/UIComponents';
 import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { motion, AnimatePresence } from 'motion/react';
+import { toPersianDigits } from '../../utils/persian';
 
 interface ExamPreviewProps {
   exam: Exam;
@@ -47,6 +49,8 @@ interface ExamPreviewProps {
   onSave?: (updatedExam: Exam) => void;
   onNavigateToSettings?: (updatedExam: Exam) => void;
 }
+
+const createDraftQuestionId = (prefix: 'q-rep' | 'q-man') => `${prefix}-${crypto.randomUUID()}`;
 
 interface ValidationWarning {
   id: string;
@@ -69,6 +73,10 @@ export default function ExamPreview({
 }: ExamPreviewProps) {
   // Local reactive exam state
   const [localExam, setLocalExam] = useState<Exam>({ ...exam });
+  const [savedFingerprint, setSavedFingerprint] = useState(() => JSON.stringify(exam));
+  const hasUnsavedChanges = JSON.stringify(localExam) !== savedFingerprint;
+  const confirmDiscard = useUnsavedChanges(hasUnsavedChanges);
+  const handleBack = () => confirmDiscard(onBack);
 
   // Mode state: 'teacher' (معلم) or 'student' (دانش‌آموز)
   const [viewMode, setViewMode] = useState<'teacher' | 'student'>('teacher');
@@ -113,17 +121,7 @@ export default function ExamPreview({
       .catch(() => {});
   }, []);
 
-  // Sync state if initial prop changes
-  useEffect(() => {
-    setLocalExam({ ...exam });
-  }, [exam]);
-
   // Persian digit converter helper
-  const toPersianDigits = (str: string | number | undefined): string => {
-    if (str === undefined) return '';
-    const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    return String(str).replace(/[0-9]/g, (w) => farsiDigits[parseInt(w)]);
-  };
 
   const getDifficultyLabel = (diff: string | undefined): string => {
     if (diff === 'easy') return 'آسان';
@@ -158,10 +156,8 @@ export default function ExamPreview({
     return names[type] || 'طرح عمومی';
   };
 
-  // 1. Dynamic Validation System
-  const [warnings, setWarnings] = useState<ValidationWarning[]>([]);
-
-  useEffect(() => {
+  // 1. Dynamic Validation System — pure derived state
+  const warnings = (() => {
     const list: ValidationWarning[] = [];
 
     // Analyze empty sections
@@ -245,8 +241,8 @@ export default function ExamPreview({
       }
     });
 
-    setWarnings(list);
-  }, [localExam]);
+    return list;
+  })();
 
   // Total scores summary
   const totalScore = localExam.questions.reduce((sum, q) => sum + (q.points || 0), 0);
@@ -325,7 +321,7 @@ export default function ExamPreview({
     if (!replacingQuestionId || !replacingSectionId) return;
 
     // Build replacement
-    const randId = `q-rep-${Date.now()}`;
+    const randId = createDraftQuestionId('q-rep');
     const clonedQ: Question = { ...selectedBankQ, id: randId };
 
     // Update in questions array
@@ -365,7 +361,7 @@ export default function ExamPreview({
     drawerTriggerRef.current = trigger ?? null;
     setTargetSectionIdForNew(sectionId);
     setEditingQuestion({
-      id: `q-man-${Date.now()}`,
+      id: createDraftQuestionId('q-man'),
       title: 'عنوان سوال جدید',
       text: 'صورت سوال را در اینجا یادداشت کنید.',
       type: 'single_choice',
@@ -603,8 +599,9 @@ export default function ExamPreview({
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glx p-6 rounded-3xl border">
         <div className="flex items-center gap-3">
           <button
+            type="button"
             id="btn-back-to-exams-list"
-            onClick={onBack}
+            onClick={handleBack}
             className="p-2 hover:brightness-105 rounded-xl text-[var(--color-text-tertiary)] cursor-pointer border border-[var(--color-glass-light-stroke)] transition-all font-bold"
             title="رجوع به بانک لیست آزمون‌ها"
           >
@@ -626,6 +623,7 @@ export default function ExamPreview({
         <div className="flex items-center gap-2 w-full lg:w-auto self-end lg:self-center">
           <div className="glx-inset p-1 rounded-2xl border border-[var(--color-glass-light-stroke)] flex items-center gap-1 w-full lg:w-auto">
             <button
+              type="button"
               onClick={() => setViewMode('teacher')}
               className={`flex-1 lg:flex-none px-4 py-2 rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 viewMode === 'teacher'
@@ -637,6 +635,7 @@ export default function ExamPreview({
               <span>حالت ویرایش طراح (معلم)</span>
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('student')}
               className={`flex-1 lg:flex-none px-4 py-2 rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 viewMode === 'student'
@@ -830,7 +829,7 @@ export default function ExamPreview({
                 <div className="border-b border-[var(--color-accent)]/10/60 pb-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="bg-[var(--color-accent)] text-white font-extrabold rounded-md px-2.5 py-0.5 text-micro">
+                      <span className="bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] font-extrabold rounded-md px-2.5 py-0.5 text-micro">
                         بخش {toPersianDigits(sIdx + 1)}
                       </span>
                       <h4 className="text-caption font-slate-800 font-extrabold">
@@ -848,7 +847,9 @@ export default function ExamPreview({
                   {viewMode === 'teacher' && (
                     <button
                       type="button"
-                      onClick={(e) => triggerAddManualQuestion(section.id, e.currentTarget as HTMLElement)}
+                      onClick={(e) =>
+                        triggerAddManualQuestion(section.id, e.currentTarget as HTMLElement)
+                      }
                       className="px-3.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl text-micro font-bold border border-[var(--color-accent-soft)] flex items-center gap-1.5 cursor-pointer transition-all self-end md:self-center"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
@@ -900,12 +901,14 @@ export default function ExamPreview({
                           {q.imageUrl && (
                             <div className="max-w-md glx border rounded-2xl p-2 relative group inline-block">
                               <img
+                                loading="lazy"
+                                decoding="async"
                                 src={q.imageUrl}
                                 alt="سوال پیوست"
                                 referrerPolicy="no-referrer"
                                 className="max-h-56 rounded-xl object-contain  bg-[var(--color-surface)] transition-all shadow-3xs"
                               />
-                              <span className="absolute bottom-3 right-3 bg-black/30 text-white rounded-md px-2 py-0.5 text-micro">
+                              <span className="absolute bottom-3 right-3 bg-black/30 text-[var(--color-text-on-solid)] rounded-md px-2 py-0.5 text-micro">
                                 تصویر ضمیمه سوال
                               </span>
                             </div>
@@ -964,7 +967,7 @@ export default function ExamPreview({
                                             className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
                                               (viewMode === 'teacher' && isCorrectOption) ||
                                               (viewMode === 'student' && currentSelected)
-                                                ? 'bg-[var(--color-accent)] border-[var(--color-accent)]/20 text-white'
+                                                ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)]'
                                                 : 'border-[var(--color-glass-light-stroke)] glx'
                                             }`}
                                           >
@@ -975,7 +978,7 @@ export default function ExamPreview({
                                             className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                               (viewMode === 'teacher' && isCorrectOption) ||
                                               (viewMode === 'student' && currentSelected)
-                                                ? 'bg-[var(--color-accent)] border-[var(--color-accent)]/20 text-white'
+                                                ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)]'
                                                 : 'border-[var(--color-glass-light-stroke)] glx'
                                             }`}
                                           >
@@ -989,6 +992,8 @@ export default function ExamPreview({
                                         {opt.imageUrl && (
                                           <div className="mt-2 block max-w-xs">
                                             <img
+                                              loading="lazy"
+                                              decoding="async"
                                               src={opt.imageUrl}
                                               alt="گزینه"
                                               referrerPolicy="no-referrer"
@@ -1040,7 +1045,7 @@ export default function ExamPreview({
                                   <span>{item.label}</span>
                                   {((viewMode === 'teacher' && isCorrect) ||
                                     (viewMode === 'student' && isSelected)) && (
-                                    <span className="bg-[var(--color-accent)] text-white p-0.5 rounded-full">
+                                    <span className="bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] p-0.5 rounded-full">
                                       <Check className="w-3 h-3" />
                                     </span>
                                   )}
@@ -1329,7 +1334,9 @@ export default function ExamPreview({
                             <div className="flex flex-wrap items-center gap-1.5">
                               <button
                                 type="button"
-                                onClick={(e) => triggerEditQuestion(q, e.currentTarget as HTMLElement)}
+                                onClick={(e) =>
+                                  triggerEditQuestion(q, e.currentTarget as HTMLElement)
+                                }
                                 className="p-2 glx-inset hover:brightness-105 text-[var(--color-accent)] hover:text-[var(--color-accent)] rounded-lg border border-[var(--color-accent-soft)] hover:border-[var(--color-accent)]/20 cursor-pointer text-micro font-bold flex items-center gap-1.5 transition-all"
                               >
                                 <Edit className="w-3.5 h-3.5 text-[var(--color-accent)]" />
@@ -1382,7 +1389,8 @@ export default function ExamPreview({
         id="preview-footer-plate"
       >
         <button
-          onClick={onBack}
+          type="button"
+          onClick={handleBack}
           className="w-full sm:w-auto px-5 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-bold rounded-xl text-caption transition-all cursor-pointer text-center"
         >
           بازگشت به ساخت آزمون
@@ -1390,9 +1398,11 @@ export default function ExamPreview({
 
         <div className="flex gap-2.5 w-full sm:w-auto">
           <button
+            type="button"
             onClick={() => {
               if (onSave) {
                 onSave(localExam);
+                setSavedFingerprint(JSON.stringify(localExam));
               } else {
                 alert('پیش‌نویس جدید آزمون با موفقیت در فضای ابری ذخیره شد.');
               }
@@ -1403,14 +1413,16 @@ export default function ExamPreview({
           </button>
 
           <button
+            type="button"
             onClick={() => {
               if (onNavigateToSettings) {
+                setSavedFingerprint(JSON.stringify(localExam));
                 onNavigateToSettings(localExam);
               } else {
                 alert('تغییرات شما ذخیره شد. در حال هدایت به تنظیمات توزیع آزمون...');
               }
             }}
-            className="flex-1 sm:flex-none px-5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-caption shadow-xs hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer text-center"
+            className="flex-1 sm:flex-none px-5 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl text-caption shadow-xs hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer text-center"
           >
             ادامه به تنظیمات توزیع آزمون
           </button>
@@ -1434,6 +1446,9 @@ export default function ExamPreview({
                 <span>جایگزینی سوال با مخزن بانک سوالات همگام</span>
               </h3>
               <button
+                type="button"
+                aria-label="بستن پنجره جایگزینی سؤال"
+                title="بستن"
                 onClick={() => setReplacingQuestionId(null)}
                 className="p-1 hover:glx-inset rounded-lg text-[var(--color-text-tertiary)] cursor-pointer"
               >
@@ -1579,8 +1594,9 @@ export default function ExamPreview({
                       <div className="border-t border-[var(--color-glass-light-stroke)] pt-2.5 flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
                         <span>بارم استاندارد: {toPersianDigits(bq.points)} نمره</span>
                         <button
+                          type="button"
                           onClick={() => handleExecuteReplacement(bq)}
-                          className="px-4 py-1.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-micro cursor-pointer transition-all shadow-3xs"
+                          className="px-4 py-1.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl text-micro cursor-pointer transition-all shadow-3xs"
                         >
                           تایید و جایگزینی این سوال
                         </button>
@@ -1610,544 +1626,556 @@ export default function ExamPreview({
       {/* MODAL 2: MEGA ADD/EDIT MANUAL QUESTION PANEL (SIDE DRAWER DESIGN) */}
       <AnimatePresence>
         {editingQuestion && (
-        <div className="fixed inset-0 z-50" id="drawer-container-backdrop">
-          {/* Scrim — opacity-only: a backdrop-filter under an opacity animation
+          <div className="fixed inset-0 z-50" id="drawer-container-backdrop">
+            {/* Scrim — opacity-only: a backdrop-filter under an opacity animation
               freezes its last frame, which lingers after close. */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            onClick={() => setEditingQuestion(null)}
-            className="fixed inset-0 scrim"
-          />
-          {/* Veil blur — static: full blur on frame 1 (no latency), ramped off on exit */}
-          <motion.div
-            aria-hidden="true"
-            initial={false}
-            exit={{
-              backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-              transition: { duration: 0.12 },
-            }}
-            className="fixed inset-0 pointer-events-none veil-blur"
-          />
-
-          {/* Container sized to the panel (left dock preserved) so the ratio halo resolves */}
-          <div className="absolute left-0 top-0 h-full w-full max-w-xl @container z-10">
-            {/* Halo rides the panel's grow/shrink (same origin + curves) so no detached
-                glow floats where the panel lands; NO opacity — that would freeze the
-                filter's last frame past unmount. */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16, ease: 'easeOut' }}
+              onClick={() => setEditingQuestion(null)}
+              className="fixed inset-0 scrim"
+            />
+            {/* Veil blur — static: full blur on frame 1 (no latency), ramped off on exit */}
             <motion.div
               aria-hidden="true"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
+              initial={false}
               exit={{
-                scale: 0,
-                backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                backgroundColor: 'rgba(26, 28, 34, 0)',
-                transition: {
-                  scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                  backdropFilter: { duration: 0.14 },
-                  backgroundColor: { duration: 0.14 },
-                },
+                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+                transition: { duration: 0.12 },
               }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              ref={drawerHaloRef}
-              style={drawerHaloOrigin}
-              className="pointer-events-none absolute area-blur"
+              className="fixed inset-0 pointer-events-none veil-blur"
             />
-            <motion.div
-              ref={drawerPanelRef}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{
-                opacity: 0,
-                scale: 0,
-                transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-              }}
-              transition={{
-                opacity: { duration: 0.16 },
-                scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-              }}
-              style={drawerOrigin}
-              className="relative w-full h-full glx-strong z-10 flex flex-col border-r overflow-hidden text-caption text-right font-sans"
-              dir="rtl"
-              id="drawer-edit-form"
-            >
-            {/* Drawer Header */}
-            <div className="px-5 py-4 glx border-b flex items-center justify-between">
-              <h3 className="font-extrabold text-[var(--color-text-primary)] text-caption md:text-label flex items-center gap-1.5">
-                <Sliders className="w-5 h-5 text-[var(--color-accent)]" />
-                <span>
-                  {isAddingNew ? 'طرح سوال تازه برای برگه آزمون' : 'ویرایش جزئیات فنی و بارم سوال'}
-                </span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingQuestion(null)}
-                className="p-1 px-3 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-xl font-bold cursor-pointer"
+
+            {/* Container sized to the panel (left dock preserved) so the ratio halo resolves */}
+            <div className="absolute left-0 top-0 h-full w-full max-w-xl @container z-10">
+              {/* Halo rides the panel's grow/shrink (same origin + curves) so no detached
+                glow floats where the panel lands; NO opacity — that would freeze the
+                filter's last frame past unmount. */}
+              <motion.div
+                aria-hidden="true"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{
+                  scale: 0,
+                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
+                  backgroundColor: 'rgba(26, 28, 34, 0)',
+                  transition: {
+                    scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                    backdropFilter: { duration: 0.14 },
+                    backgroundColor: { duration: 0.14 },
+                  },
+                }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                ref={drawerHaloRef}
+                style={drawerHaloOrigin}
+                className="pointer-events-none absolute area-blur"
+              />
+              <motion.div
+                ref={drawerPanelRef}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0,
+                  transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
+                }}
+                transition={{
+                  opacity: { duration: 0.16 },
+                  scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                }}
+                style={drawerOrigin}
+                className="relative w-full h-full glx-strong z-10 flex flex-col border-r overflow-hidden text-caption text-right font-sans"
+                dir="rtl"
+                id="drawer-edit-form"
               >
-                انصراف ×
-              </button>
-            </div>
-
-            {/* Drawer scrolling form content */}
-            <div className="p-5 overflow-y-auto space-y-5 flex-1">
-              {/* Type selector */}
-              <div className="space-y-1 glx p-3 rounded-2xl border">
-                <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                  نوع قالب‌بندی سوال:
-                </label>
-                <Dropdown
-                  value={editingQuestion.type}
-                  onChange={(v) => {
-                    const nextVal = v as QuestionType;
-                    setEditingQuestion({
-                      ...editingQuestion,
-                      type: nextVal,
-                      // populate default structures if missing
-                      options: ['single_choice', 'multiple_choice', 'image_based'].includes(nextVal)
-                        ? editingQuestion.options || [
-                            { id: 'o1', text: 'گزینه الف', isCorrect: true },
-                            { id: 'o2', text: 'گزینه ب', isCorrect: false },
-                          ]
-                        : undefined,
-                      rubrics: nextVal === 'long_answer' ? [] : undefined,
-                      parts: nextVal === 'reading_comprehension' ? [] : undefined,
-                    });
-                  }}
-                  options={[
-                    { value: 'single_choice', label: 'چهارگزینه‌ای یا کتبی تستی' },
-                    { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
-                    { value: 'true_false', label: 'درست / نادرست' },
-                    { value: 'short_answer', label: 'پاسخ کوتاه (نیم‌تشریحی)' },
-                    { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
-                    { value: 'fill_blank', label: 'پر کردن جاهای خالی' },
-                    { value: 'matching', label: 'وصل‌کردنی ارتباطی' },
-                    { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
-                    { value: 'image_based', label: 'سوال تصویری یا تحلیلی' },
-                  ]}
-                />
-              </div>
-
-              {/* Title & Points row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="md:col-span-2 space-y-1 glx p-3.5 rounded-2xl border">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                    عنوان خلاصه سوال:
-                  </label>
-                  <input
-                    type="text"
-                    value={editingQuestion.title || ''}
-                    onChange={(e) =>
-                      setEditingQuestion({ ...editingQuestion, title: e.target.value })
-                    }
-                    className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption px-2.5 py-1.5 rounded-lg focus:outline-hidden focus:border-[var(--color-accent)]/40"
-                    placeholder="مثال: سوال مضاف‌الیه ادبیات"
-                  />
-                </div>
-
-                <div className="space-y-1 glx p-3.5 rounded-2xl border text-center">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block text-right">
-                    بارم (امتیاز عددی):
-                  </label>
-                  <input
-                    type="number"
-                    step="0.25"
-                    min="0"
-                    value={editingQuestion.points || 0}
-                    onChange={(e) =>
-                      setEditingQuestion({ ...editingQuestion, points: Number(e.target.value) })
-                    }
-                    className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption text-center font-bold px-2 py-1.5 rounded-lg focus:outline-hidden font-mono focus:border-[var(--color-accent)]/40"
-                  />
-                </div>
-              </div>
-
-              {/* Question Text Prompt */}
-              <div className="space-y-1 glx p-4 rounded-2xl border">
-                <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                  متن اصلی صورت سوال:
-                </label>
-                <textarea
-                  rows={4}
-                  value={editingQuestion.text || ''}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
-                  className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption p-3 rounded-lg focus:outline-hidden focus:border-[var(--color-accent)]/40 leading-relaxed text-right placeholder-[var(--color-text-tertiary)]"
-                  placeholder="صورت سوال علمی، پیوند‌ها و نمادها را در اینجا تایپ کنید..."
-                />
-              </div>
-
-              {/* Image URL / media upload simulation */}
-              <div className="space-y-2 glx p-3.5 rounded-2xl border">
-                <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                  تصویر یا نمودار پیوست سوال:
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={editingQuestion.imageUrl || ''}
-                    onChange={(e) =>
-                      setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })
-                    }
-                    className="w-full glx border text-caption px-2.5 py-1.5 rounded-lg placeholder-[var(--color-text-tertiary)] focus:outline-hidden"
-                    placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
-                  />
-                  {editingQuestion.imageUrl && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEditingQuestion({ ...editingQuestion, imageUrl: undefined })
-                      }
-                      className="px-2 py-1 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro transition-all cursor-pointer font-bold shrink-0"
-                    >
-                      حذف
-                    </button>
-                  )}
-                </div>
-                {/* Simulative quick presets to populate mock images safely */}
-                <div className="flex flex-wrap gap-1 mt-1 justify-start">
-                  <span className="text-micro text-[var(--color-text-tertiary)] font-semibold self-center ml-1">
-                    چند پیوست پیش‌فرض:
-                  </span>
-                  {[
-                    {
-                      label: 'سلول گیاهی',
-                      url: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=500&auto=format&fit=crop&q=60',
-                    },
-                    {
-                      label: 'نمودار اهرم‌ها',
-                      url: 'https://images.unsplash.com/photo-1632571401005-458e9d244591?w=500&auto=format&fit=crop&q=60',
-                    },
-                  ].map((preset, pIdx) => (
-                    <button
-                      key={pIdx}
-                      type="button"
-                      onClick={() =>
-                        setEditingQuestion({ ...editingQuestion, imageUrl: preset.url })
-                      }
-                      className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-md border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] transition-all text-micro font-bold"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Specific template setups according to chosen type! */}
-
-              {/* A. Choice Options edit area */}
-              {['single_choice', 'multiple_choice', 'image_based'].includes(
-                editingQuestion.type || '',
-              ) && (
-                <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
-                  <div className="flex justify-between items-center border-b border-[var(--color-accent-soft)]/60 pb-1.5">
-                    <span className="text-micro text-[var(--color-accent)] font-extrabold">
-                      گزینه‌های پاسخ و تخصیص کلید:
+                {/* Drawer Header */}
+                <div className="px-5 py-4 glx border-b flex items-center justify-between">
+                  <h3 className="font-extrabold text-[var(--color-text-primary)] text-caption md:text-label flex items-center gap-1.5">
+                    <Sliders className="w-5 h-5 text-[var(--color-accent)]" />
+                    <span>
+                      {isAddingNew
+                        ? 'طرح سوال تازه برای برگه آزمون'
+                        : 'ویرایش جزئیات فنی و بارم سوال'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={addNewOptionInDrawer}
-                      className="bg-[var(--color-accent)] text-white px-2.5 py-1 rounded-lg hover:bg-[var(--color-glass-light-fill)] transition-all font-bold text-micro flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>افزودن گزینه جدید</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {(editingQuestion.options || []).map((opt, oIdx) => (
-                      <div
-                        key={opt.id}
-                        className="flex gap-2 items-center glx p-2 rounded-xl border"
-                      >
-                        {/* Correct trigger */}
-                        <button
-                          type="button"
-                          onClick={() => toggleOptionCorrectInDrawer(opt.id)}
-                          className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
-                            opt.isCorrect
-                              ? 'bg-[var(--color-success)] border-[var(--color-success)]/20 text-white shadow-xs'
-                              : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
-                          }`}
-                          title={
-                            opt.isCorrect
-                              ? 'کلید پاسخ صحیح (غیرفعال‌سازی)'
-                              : 'تبدیل به کلید پاسخ صحیح'
-                          }
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Input */}
-                        <input
-                          type="text"
-                          value={opt.text}
-                          onChange={(e) => updateOptionTextInDrawer(opt.id, e.target.value)}
-                          className="w-full bg-transparent border-none py-1 px-1.5 text-caption focus:ring-0 focus:outline-hidden"
-                          placeholder={`متن گزینه ${toPersianDigits(oIdx + 1)} را بنویسید...`}
-                        />
-
-                        {/* Image Option helper */}
-                        <input
-                          type="text"
-                          value={opt.imageUrl || ''}
-                          onChange={(e) => {
-                            const updatedOpts = (editingQuestion.options || []).map((o) =>
-                              o.id === opt.id ? { ...o, imageUrl: e.target.value } : o,
-                            );
-                            setEditingQuestion({ ...editingQuestion, options: updatedOpts });
-                          }}
-                          className="glx border text-micro w-28 px-1 rounded-md"
-                          placeholder="آدرس تصویر گزینه"
-                        />
-
-                        {/* Remove Option */}
-                        <button
-                          type="button"
-                          onClick={() => removeOptionInDrawer(opt.id)}
-                          className="p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
-                          title="حذف این گزینه"
-                        >
-                          <Trash className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* B. True False setup */}
-              {editingQuestion.type === 'true_false' && (
-                <div className="space-y-2 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
-                  <span className="text-micro text-[var(--color-accent)] font-extrabold block">
-                    مشخص‌سازی کلید پاسخ درست:
-                  </span>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEditingQuestion({ ...editingQuestion, correctAnswer: true })
-                      }
-                      className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
-                        editingQuestion.correctAnswer === true
-                          ? 'bg-[var(--color-success)] border-[var(--color-success)]/20 text-white shadow-xs'
-                          : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
-                      }`}
-                    >
-                      صحیح
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setEditingQuestion({ ...editingQuestion, correctAnswer: false })
-                      }
-                      className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
-                        editingQuestion.correctAnswer === false
-                          ? 'bg-[var(--color-success)] border-[var(--color-success)]/20 text-white shadow-xs'
-                          : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
-                      }`}
-                    >
-                      غلط
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* C. Fill Blanks input tag builders */}
-              {editingQuestion.type === 'fill_blank' && (
-                <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
-                  <span className="text-micro text-[var(--color-accent)] font-extrabold block">
-                    کلید واژه‌های صحیح برای پرکردن جاهای خالی (به ترتیب):
-                  </span>
-                  <div className="space-y-2">
-                    {(editingQuestion.correctFillBlanks || ['']).map((word, wIdx) => (
-                      <div
-                        key={wIdx}
-                        className="flex gap-2 items-center glx p-2 rounded-xl border"
-                      >
-                        <span className="text-[var(--color-text-tertiary)] font-bold font-mono">
-                          جای خالی ({toPersianDigits(wIdx + 1)}):
-                        </span>
-                        <input
-                          type="text"
-                          value={word}
-                          onChange={(e) => {
-                            const nextWords = [...(editingQuestion.correctFillBlanks || [])];
-                            nextWords[wIdx] = e.target.value;
-                            setEditingQuestion({
-                              ...editingQuestion,
-                              correctFillBlanks: nextWords,
-                            });
-                          }}
-                          className="w-full bg-transparent border-none text-caption focus:ring-0"
-                          placeholder="کلمه معتبر..."
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextWords = (editingQuestion.correctFillBlanks || []).filter(
-                              (_, i) => i !== wIdx,
-                            );
-                            setEditingQuestion({
-                              ...editingQuestion,
-                              correctFillBlanks: nextWords,
-                            });
-                          }}
-                          className="p-1 hover:brightness-105 text-[var(--color-danger)] rounded-lg"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
+                  </h3>
                   <button
                     type="button"
-                    onClick={() => {
-                      const nextWords = [...(editingQuestion.correctFillBlanks || []), ''];
-                      setEditingQuestion({ ...editingQuestion, correctFillBlanks: nextWords });
-                    }}
-                    className="w-full glx text-[var(--color-accent)] text-micro py-1.5 rounded-xl border border-[var(--color-accent)]/20 font-bold hover:bg-[var(--color-accent-soft)] transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    onClick={() => setEditingQuestion(null)}
+                    className="p-1 px-3 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-xl font-bold cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>افزودن جای خالی گمشده دیگر</span>
+                    انصراف ×
                   </button>
                 </div>
-              )}
 
-              {/* D. Rubrics Metrics setup (Descriptive Long Answer) */}
-              {editingQuestion.type === 'long_answer' && (
-                <div className="space-y-3 bg-[var(--color-danger-soft)]/40 p-4 rounded-2xl border border-[var(--color-danger)]/10">
-                  <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-1.5">
-                    <span className="text-micro text-[var(--color-danger)] font-extrabold">
-                      معیارهای واگذاری بارم تصحیح:
-                    </span>
-                    <button
-                      type="button"
-                      onClick={addNewRubricInDrawer}
-                      className="bg-[var(--color-danger)] text-white px-2.5 py-1 rounded-lg hover:bg-[var(--color-glass-light-fill)] transition-all font-bold text-micro flex items-center gap-1"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>افزودن معیار بارم</span>
-                    </button>
+                {/* Drawer scrolling form content */}
+                <div className="p-5 overflow-y-auto space-y-5 flex-1">
+                  {/* Type selector */}
+                  <div className="space-y-1 glx p-3 rounded-2xl border">
+                    <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                      نوع قالب‌بندی سوال:
+                    </label>
+                    <Dropdown
+                      value={editingQuestion.type}
+                      onChange={(v) => {
+                        const nextVal = v as QuestionType;
+                        setEditingQuestion({
+                          ...editingQuestion,
+                          type: nextVal,
+                          // populate default structures if missing
+                          options: ['single_choice', 'multiple_choice', 'image_based'].includes(
+                            nextVal,
+                          )
+                            ? editingQuestion.options || [
+                                { id: 'o1', text: 'گزینه الف', isCorrect: true },
+                                { id: 'o2', text: 'گزینه ب', isCorrect: false },
+                              ]
+                            : undefined,
+                          rubrics: nextVal === 'long_answer' ? [] : undefined,
+                          parts: nextVal === 'reading_comprehension' ? [] : undefined,
+                        });
+                      }}
+                      options={[
+                        { value: 'single_choice', label: 'چهارگزینه‌ای یا کتبی تستی' },
+                        { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
+                        { value: 'true_false', label: 'درست / نادرست' },
+                        { value: 'short_answer', label: 'پاسخ کوتاه (نیم‌تشریحی)' },
+                        { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
+                        { value: 'fill_blank', label: 'پر کردن جاهای خالی' },
+                        { value: 'matching', label: 'وصل‌کردنی ارتباطی' },
+                        { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
+                        { value: 'image_based', label: 'سوال تصویری یا تحلیلی' },
+                      ]}
+                    />
                   </div>
 
-                  <div className="space-y-3">
-                    {(editingQuestion.rubrics || []).map((rub) => (
-                      <div
-                        key={rub.id}
-                        className="glx p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2"
-                      >
-                        <div className="flex gap-2 justify-between">
-                          <input
-                            type="text"
-                            value={rub.title}
-                            onChange={(e) =>
-                              updateRubricInDrawer(rub.id, { title: e.target.value })
-                            }
-                            className="w-full glx border-none px-2 py-1 rounded-md text-[var(--color-text-primary)] font-bold font-sans"
-                            placeholder="نام معیار (مثال: رسم درست نمودار)"
-                          />
-                          <input
-                            type="number"
-                            step="0.25"
-                            value={rub.maxPoints}
-                            onChange={(e) =>
-                              updateRubricInDrawer(rub.id, { maxPoints: Number(e.target.value) })
-                            }
-                            className="w-20 glx border-none px-2 py-1 rounded-md font-bold font-mono text-center"
-                            placeholder="بارم"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          value={rub.description}
-                          onChange={(e) =>
-                            updateRubricInDrawer(rub.id, { description: e.target.value })
-                          }
-                          className="w-full glx border-none px-2 py-1 rounded-md"
-                          placeholder="شرح کوتاه برای دبیـر تصحیح‌کننده..."
-                        />
+                  {/* Title & Points row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2 space-y-1 glx p-3.5 rounded-2xl border">
+                      <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                        عنوان خلاصه سوال:
+                      </label>
+                      <input
+                        type="text"
+                        value={editingQuestion.title || ''}
+                        onChange={(e) =>
+                          setEditingQuestion({ ...editingQuestion, title: e.target.value })
+                        }
+                        className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption px-2.5 py-1.5 rounded-lg focus:outline-hidden focus:border-[var(--color-accent)]/40"
+                        placeholder="مثال: سوال مضاف‌الیه ادبیات"
+                      />
+                    </div>
+
+                    <div className="space-y-1 glx p-3.5 rounded-2xl border text-center">
+                      <label className="text-micro text-[var(--color-text-tertiary)] font-bold block text-right">
+                        بارم (امتیاز عددی):
+                      </label>
+                      <input
+                        type="number"
+                        step="0.25"
+                        min="0"
+                        value={editingQuestion.points || 0}
+                        onChange={(e) =>
+                          setEditingQuestion({ ...editingQuestion, points: Number(e.target.value) })
+                        }
+                        className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption text-center font-bold px-2 py-1.5 rounded-lg focus:outline-hidden font-mono focus:border-[var(--color-accent)]/40"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Question Text Prompt */}
+                  <div className="space-y-1 glx p-4 rounded-2xl border">
+                    <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                      متن اصلی صورت سوال:
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={editingQuestion.text || ''}
+                      onChange={(e) =>
+                        setEditingQuestion({ ...editingQuestion, text: e.target.value })
+                      }
+                      className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption p-3 rounded-lg focus:outline-hidden focus:border-[var(--color-accent)]/40 leading-relaxed text-right placeholder-[var(--color-text-tertiary)]"
+                      placeholder="صورت سوال علمی، پیوند‌ها و نمادها را در اینجا تایپ کنید..."
+                    />
+                  </div>
+
+                  {/* Image URL / media upload simulation */}
+                  <div className="space-y-2 glx p-3.5 rounded-2xl border">
+                    <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                      تصویر یا نمودار پیوست سوال:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editingQuestion.imageUrl || ''}
+                        onChange={(e) =>
+                          setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })
+                        }
+                        className="w-full glx border text-caption px-2.5 py-1.5 rounded-lg placeholder-[var(--color-text-tertiary)] focus:outline-hidden"
+                        placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
+                      />
+                      {editingQuestion.imageUrl && (
                         <button
                           type="button"
-                          onClick={() => removeRubricInDrawer(rub.id)}
-                          className="text-[var(--color-danger)] font-bold hover:bg-[var(--color-danger-soft)]/40 px-2 py-1 rounded-md block text-micro transition-all"
+                          onClick={() =>
+                            setEditingQuestion({ ...editingQuestion, imageUrl: undefined })
+                          }
+                          className="px-2 py-1 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro transition-all cursor-pointer font-bold shrink-0"
                         >
-                          پاک کردن این گزینه معیار
+                          حذف
+                        </button>
+                      )}
+                    </div>
+                    {/* Simulative quick presets to populate mock images safely */}
+                    <div className="flex flex-wrap gap-1 mt-1 justify-start">
+                      <span className="text-micro text-[var(--color-text-tertiary)] font-semibold self-center ml-1">
+                        چند پیوست پیش‌فرض:
+                      </span>
+                      {[
+                        {
+                          label: 'سلول گیاهی',
+                          url: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=500&auto=format&fit=crop&q=60',
+                        },
+                        {
+                          label: 'نمودار اهرم‌ها',
+                          url: 'https://images.unsplash.com/photo-1632571401005-458e9d244591?w=500&auto=format&fit=crop&q=60',
+                        },
+                      ].map((preset, pIdx) => (
+                        <button
+                          key={pIdx}
+                          type="button"
+                          onClick={() =>
+                            setEditingQuestion({ ...editingQuestion, imageUrl: preset.url })
+                          }
+                          className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-md border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] transition-all text-micro font-bold"
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Specific template setups according to chosen type! */}
+
+                  {/* A. Choice Options edit area */}
+                  {['single_choice', 'multiple_choice', 'image_based'].includes(
+                    editingQuestion.type || '',
+                  ) && (
+                    <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
+                      <div className="flex justify-between items-center border-b border-[var(--color-accent-soft)]/60 pb-1.5">
+                        <span className="text-micro text-[var(--color-accent)] font-extrabold">
+                          گزینه‌های پاسخ و تخصیص کلید:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={addNewOptionInDrawer}
+                          className="bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] px-2.5 py-1 rounded-lg hover:bg-[var(--color-glass-light-fill)] transition-all font-bold text-micro flex items-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>افزودن گزینه جدید</span>
                         </button>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* E. Subquestions parts list (Reading comprehension) */}
-              {editingQuestion.type === 'reading_comprehension' && (
-                <div className="space-y-3 bg-[var(--color-info-soft)]/30/40 p-4 rounded-2xl border border-[var(--color-info)]/20">
-                  <div className="flex justify-between items-center border-b border-[var(--color-info)]/20 pb-1.5">
-                    <span className="text-micro text-[var(--color-info)] font-extrabold">
-                      زیرسوالات درک مطلب (مینی‌سوال‌ها):
-                    </span>
-                    <button
-                      type="button"
-                      onClick={addNewSubquestionPartInDrawer}
-                      className="bg-[var(--color-info-soft)]/80 text-white px-2.5 py-1 rounded-xl font-bold text-micro"
-                    >
-                      افزودن زیرسوال جدید
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {(editingQuestion.parts || []).map((part, pIdx) => (
-                      <div
-                        key={part.id}
-                        className="glx p-3 rounded-xl border border-[var(--color-info)]/20 space-y-2"
-                      >
-                        <div className="flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
-                          <span>زیرسوال شماره {toPersianDigits(pIdx + 1)}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeSubquestionPartInDrawer(part.id)}
-                            className="text-[var(--color-danger)]"
+                      <div className="space-y-2.5">
+                        {(editingQuestion.options || []).map((opt, oIdx) => (
+                          <div
+                            key={opt.id}
+                            className="flex gap-2 items-center glx p-2 rounded-xl border"
                           >
-                            حذف
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={part.text}
-                          onChange={(e) => updateSubquestionTextInDrawer(part.id, e.target.value)}
-                          className="w-full glx border-none p-1.5 rounded-md font-semibold text-[var(--color-text-primary)]"
-                          placeholder="نمام متن مینی‌سوال..."
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+                            {/* Correct trigger */}
+                            <button
+                              type="button"
+                              onClick={() => toggleOptionCorrectInDrawer(opt.id)}
+                              className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
+                                opt.isCorrect
+                                  ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
+                                  : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
+                              }`}
+                              title={
+                                opt.isCorrect
+                                  ? 'کلید پاسخ صحیح (غیرفعال‌سازی)'
+                                  : 'تبدیل به کلید پاسخ صحیح'
+                              }
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
 
-            {/* Save trigger inside drawer */}
-            <div className="p-4 glx border-t flex gap-2">
-              <button
-                type="button"
-                onClick={handleSaveDrawerQuestion}
-                className="flex-1 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-center shadow-xs cursor-pointer text-caption"
-              >
-                ثبت نهایی و بازگشت به ورقه املاکی
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingQuestion(null)}
-                className="flex-1 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-bold rounded-xl text-center cursor-pointer text-caption"
-              >
-                لغو تغییرات
-              </button>
+                            {/* Input */}
+                            <input
+                              type="text"
+                              value={opt.text}
+                              onChange={(e) => updateOptionTextInDrawer(opt.id, e.target.value)}
+                              className="w-full bg-transparent border-none py-1 px-1.5 text-caption focus:ring-0 focus:outline-hidden"
+                              placeholder={`متن گزینه ${toPersianDigits(oIdx + 1)} را بنویسید...`}
+                            />
+
+                            {/* Image Option helper */}
+                            <input
+                              type="text"
+                              value={opt.imageUrl || ''}
+                              onChange={(e) => {
+                                const updatedOpts = (editingQuestion.options || []).map((o) =>
+                                  o.id === opt.id ? { ...o, imageUrl: e.target.value } : o,
+                                );
+                                setEditingQuestion({ ...editingQuestion, options: updatedOpts });
+                              }}
+                              className="glx border text-micro w-28 px-1 rounded-md"
+                              placeholder="آدرس تصویر گزینه"
+                            />
+
+                            {/* Remove Option */}
+                            <button
+                              type="button"
+                              onClick={() => removeOptionInDrawer(opt.id)}
+                              className="p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
+                              title="حذف این گزینه"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* B. True False setup */}
+                  {editingQuestion.type === 'true_false' && (
+                    <div className="space-y-2 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
+                      <span className="text-micro text-[var(--color-accent)] font-extrabold block">
+                        مشخص‌سازی کلید پاسخ درست:
+                      </span>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingQuestion({ ...editingQuestion, correctAnswer: true })
+                          }
+                          className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
+                            editingQuestion.correctAnswer === true
+                              ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
+                              : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                          }`}
+                        >
+                          صحیح
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingQuestion({ ...editingQuestion, correctAnswer: false })
+                          }
+                          className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
+                            editingQuestion.correctAnswer === false
+                              ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
+                              : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                          }`}
+                        >
+                          غلط
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* C. Fill Blanks input tag builders */}
+                  {editingQuestion.type === 'fill_blank' && (
+                    <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
+                      <span className="text-micro text-[var(--color-accent)] font-extrabold block">
+                        کلید واژه‌های صحیح برای پرکردن جاهای خالی (به ترتیب):
+                      </span>
+                      <div className="space-y-2">
+                        {(editingQuestion.correctFillBlanks || ['']).map((word, wIdx) => (
+                          <div
+                            key={wIdx}
+                            className="flex gap-2 items-center glx p-2 rounded-xl border"
+                          >
+                            <span className="text-[var(--color-text-tertiary)] font-bold font-mono">
+                              جای خالی ({toPersianDigits(wIdx + 1)}):
+                            </span>
+                            <input
+                              type="text"
+                              value={word}
+                              onChange={(e) => {
+                                const nextWords = [...(editingQuestion.correctFillBlanks || [])];
+                                nextWords[wIdx] = e.target.value;
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  correctFillBlanks: nextWords,
+                                });
+                              }}
+                              className="w-full bg-transparent border-none text-caption focus:ring-0"
+                              placeholder="کلمه معتبر..."
+                            />
+                            <button
+                              type="button"
+                              aria-label={`حذف پاسخ معتبر شماره ${toPersianDigits(wIdx + 1)}`}
+                              title="حذف پاسخ"
+                              onClick={() => {
+                                const nextWords = (editingQuestion.correctFillBlanks || []).filter(
+                                  (_, i) => i !== wIdx,
+                                );
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  correctFillBlanks: nextWords,
+                                });
+                              }}
+                              className="p-1 hover:brightness-105 text-[var(--color-danger)] rounded-lg"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextWords = [...(editingQuestion.correctFillBlanks || []), ''];
+                          setEditingQuestion({ ...editingQuestion, correctFillBlanks: nextWords });
+                        }}
+                        className="w-full glx text-[var(--color-accent)] text-micro py-1.5 rounded-xl border border-[var(--color-accent)]/20 font-bold hover:bg-[var(--color-accent-soft)] transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>افزودن جای خالی گمشده دیگر</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* D. Rubrics Metrics setup (Descriptive Long Answer) */}
+                  {editingQuestion.type === 'long_answer' && (
+                    <div className="space-y-3 bg-[var(--color-danger-soft)]/40 p-4 rounded-2xl border border-[var(--color-danger)]/10">
+                      <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-1.5">
+                        <span className="text-micro text-[var(--color-danger)] font-extrabold">
+                          معیارهای واگذاری بارم تصحیح:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={addNewRubricInDrawer}
+                          className="bg-[var(--color-danger-solid)] text-[var(--color-text-on-solid)] px-2.5 py-1 rounded-lg hover:bg-[var(--color-glass-light-fill)] transition-all font-bold text-micro flex items-center gap-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>افزودن معیار بارم</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {(editingQuestion.rubrics || []).map((rub) => (
+                          <div
+                            key={rub.id}
+                            className="glx p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2"
+                          >
+                            <div className="flex gap-2 justify-between">
+                              <input
+                                type="text"
+                                value={rub.title}
+                                onChange={(e) =>
+                                  updateRubricInDrawer(rub.id, { title: e.target.value })
+                                }
+                                className="w-full glx border-none px-2 py-1 rounded-md text-[var(--color-text-primary)] font-bold font-sans"
+                                placeholder="نام معیار (مثال: رسم درست نمودار)"
+                              />
+                              <input
+                                type="number"
+                                step="0.25"
+                                value={rub.maxPoints}
+                                onChange={(e) =>
+                                  updateRubricInDrawer(rub.id, {
+                                    maxPoints: Number(e.target.value),
+                                  })
+                                }
+                                className="w-20 glx border-none px-2 py-1 rounded-md font-bold font-mono text-center"
+                                placeholder="بارم"
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={rub.description}
+                              onChange={(e) =>
+                                updateRubricInDrawer(rub.id, { description: e.target.value })
+                              }
+                              className="w-full glx border-none px-2 py-1 rounded-md"
+                              placeholder="شرح کوتاه برای دبیـر تصحیح‌کننده..."
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeRubricInDrawer(rub.id)}
+                              className="text-[var(--color-danger)] font-bold hover:bg-[var(--color-danger-soft)]/40 px-2 py-1 rounded-md block text-micro transition-all"
+                            >
+                              پاک کردن این گزینه معیار
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* E. Subquestions parts list (Reading comprehension) */}
+                  {editingQuestion.type === 'reading_comprehension' && (
+                    <div className="space-y-3 bg-[var(--color-info-soft)]/30/40 p-4 rounded-2xl border border-[var(--color-info)]/20">
+                      <div className="flex justify-between items-center border-b border-[var(--color-info)]/20 pb-1.5">
+                        <span className="text-micro text-[var(--color-info)] font-extrabold">
+                          زیرسوالات درک مطلب (مینی‌سوال‌ها):
+                        </span>
+                        <button
+                          type="button"
+                          onClick={addNewSubquestionPartInDrawer}
+                          className="bg-[var(--color-info-soft)]/80 text-[var(--color-text-on-solid)] px-2.5 py-1 rounded-xl font-bold text-micro"
+                        >
+                          افزودن زیرسوال جدید
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {(editingQuestion.parts || []).map((part, pIdx) => (
+                          <div
+                            key={part.id}
+                            className="glx p-3 rounded-xl border border-[var(--color-info)]/20 space-y-2"
+                          >
+                            <div className="flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
+                              <span>زیرسوال شماره {toPersianDigits(pIdx + 1)}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeSubquestionPartInDrawer(part.id)}
+                                className="text-[var(--color-danger)]"
+                              >
+                                حذف
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              value={part.text}
+                              onChange={(e) =>
+                                updateSubquestionTextInDrawer(part.id, e.target.value)
+                              }
+                              className="w-full glx border-none p-1.5 rounded-md font-semibold text-[var(--color-text-primary)]"
+                              placeholder="نمام متن مینی‌سوال..."
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Save trigger inside drawer */}
+                <div className="p-4 glx border-t flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveDrawerQuestion}
+                    className="flex-1 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl text-center shadow-xs cursor-pointer text-caption"
+                  >
+                    ثبت نهایی و بازگشت به ورقه املاکی
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingQuestion(null)}
+                    className="flex-1 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-bold rounded-xl text-center cursor-pointer text-caption"
+                  >
+                    لغو تغییرات
+                  </button>
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
           </div>
-        </div>
         )}
       </AnimatePresence>
     </div>

@@ -4,6 +4,40 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (() => {
+        const key = 'azmoonsaz-theme';
+        let preference = 'system';
+        try {
+          const saved = localStorage.getItem(key);
+          if (saved === 'light' || saved === 'dark' || saved === 'system') preference = saved;
+        } catch {}
+        const theme =
+          preference === 'system'
+            ? matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light'
+            : preference;
+        document.documentElement.dataset.themePreference = preference;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+
+        const motionKey = 'azmoonsaz-motion';
+        let motionPreference = 'system';
+        try {
+          const savedMotion = localStorage.getItem(motionKey);
+          if (savedMotion === 'reduced' || savedMotion === 'full' || savedMotion === 'system') {
+            motionPreference = savedMotion;
+          }
+        } catch {}
+        const systemReducesMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const resolvedMotion =
+          motionPreference === 'reduced' || systemReducesMotion ? 'reduce' : 'full';
+        document.documentElement.dataset.motionPreference = motionPreference;
+        document.documentElement.dataset.motion = resolvedMotion;
+      })();
+    </script>
     <title>آزمون‌ساز | سامانه مدیریت آزمون آنلاین</title>
   </head>
   <body>

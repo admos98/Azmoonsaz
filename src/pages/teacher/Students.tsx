@@ -13,8 +13,6 @@ import {
   Trash2,
   Edit,
   GraduationCap,
-  Check,
-  Upload,
   FileSpreadsheet,
   AlertTriangle,
   CheckCircle,
@@ -22,7 +20,6 @@ import {
   FileText,
   Smartphone,
   Mail,
-  ArrowLeft,
   Eye,
   Activity,
   UserPlus,
@@ -33,13 +30,20 @@ import { Student, Submission, ClassGroup, Exam } from '../../types';
 import { studentService, classService, gradingService, examService } from '../../services/api';
 import { ConfirmDialog, Dropdown, Input } from '../../components/UIComponents';
 import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
+import StudentImportWizard from '../../features/student-import/StudentImportWizard';
 import { useToast } from '../../hooks/useToast';
+import { usePersistentPreference } from '../../hooks/usePersistentPreference';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
+import { normalizePersianText, toPersianDigits } from '../../utils/persian';
 
 export default function Students() {
   const { showToast, toastElement } = useToast();
   // State management
   const [students, setStudents] = useState<Student[]>([]);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [allExams, setAllExams] = useState<Exam[]>([]);
@@ -78,9 +82,70 @@ export default function Students() {
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState<string>('all');
-  const [selectedClassGroup, setSelectedClassGroup] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [sortOrder, setSortOrder] = usePersistentPreference<'name' | 'grade'>(
+    'students:sort',
+    'name',
+    (value): value is 'name' | 'grade' => value === 'name' || value === 'grade',
+  );
+  const [pageSize, setPageSize] = usePersistentPreference<number>(
+    'students:page-size',
+    20,
+    (value): value is number => value === 10 || value === 20 || value === 50,
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedGrade, setSelectedGrade, resetSelectedGrade] = usePersistentPreference(
+    'students:grade',
+    'all',
+  );
+  const [selectedClassGroup, setSelectedClassGroup, resetSelectedClassGroup] =
+    usePersistentPreference('students:class', 'all');
+  const [selectedStatus, setSelectedStatus, resetSelectedStatus] = usePersistentPreference(
+    'students:status',
+    'all',
+  );
+  const urlFiltersReady = useRef(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const setIfPresent = (key: string, setter: (value: string) => void) => {
+      const value = params.get(key);
+      if (value) setter(value);
+    };
+    setIfPresent('q', setSearchQuery);
+    setIfPresent('grade', setSelectedGrade);
+    setIfPresent('class', setSelectedClassGroup);
+    setIfPresent('status', setSelectedStatus);
+    const urlSort = params.get('sort');
+    if (urlSort === 'name' || urlSort === 'grade') setSortOrder(urlSort);
+    const urlPageSize = Number(params.get('pageSize'));
+    if (urlPageSize === 10 || urlPageSize === 20 || urlPageSize === 50) setPageSize(urlPageSize);
+    urlFiltersReady.current = true;
+  }, [setPageSize, setSelectedClassGroup, setSelectedGrade, setSelectedStatus, setSortOrder]);
+
+  useEffect(() => {
+    if (!urlFiltersReady.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const values: Record<string, string> = {
+      q: searchQuery,
+      grade: selectedGrade,
+      class: selectedClassGroup,
+      status: selectedStatus,
+      sort: sortOrder,
+      pageSize: String(pageSize),
+    };
+    Object.entries(values).forEach(([key, value]) => {
+      if (
+        !value ||
+        value === 'all' ||
+        (key === 'sort' && value === 'name') ||
+        (key === 'pageSize' && value === '20')
+      )
+        params.delete(key);
+      else params.set(key, value);
+    });
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+  }, [pageSize, searchQuery, selectedClassGroup, selectedGrade, selectedStatus, sortOrder]);
 
   // Modals state
   const [showAddEditModal, setShowAddEditModal] = useState(false);
@@ -97,24 +162,16 @@ export default function Students() {
   const wizardTriggerRef = useRef<HTMLElement | null>(null);
   const logsTriggerRef = useRef<HTMLElement | null>(null);
   const addEditPanelRef = useRef<HTMLDivElement>(null);
-  const wizardPanelRef = useRef<HTMLDivElement>(null);
   const logsPanelRef = useRef<HTMLDivElement>(null);
   // Area-blur halo siblings: bigger negative-inset boxes riding the same scale.
   // The hook measures and returns their origins alongside each panel's.
   const addEditHaloRef = useRef<HTMLDivElement>(null);
-  const wizardHaloRef = useRef<HTMLDivElement>(null);
   const logsHaloRef = useRef<HTMLDivElement>(null);
   const [addEditOrigin, addEditHaloOrigin] = useOriginFromTrigger(
     addEditTriggerRef,
     addEditPanelRef,
     showAddEditModal,
     addEditHaloRef,
-  );
-  const [wizardOrigin, wizardHaloOrigin] = useOriginFromTrigger(
-    wizardTriggerRef,
-    wizardPanelRef,
-    showImportWizard,
-    wizardHaloRef,
   );
   const [logsOrigin, logsHaloOrigin] = useOriginFromTrigger(
     logsTriggerRef,
@@ -139,23 +196,22 @@ export default function Students() {
   const [formPhone, setFormPhone] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formStatus, setFormStatus] = useState<'active' | 'suspended' | 'examining'>('active');
-
-  // Excel / CSV Wizard State
-  const [wizardStep, setWizardStep] = useState<1 | 2 | 3 | 4>(1);
-  const [dragActive, setDragActive] = useState(false);
-  const [uploadedFileName, setUploadedFileName] = useState<string>('');
-  const [wizardRawData, setWizardRawData] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any -- CSV parsed rows with mixed types
-  const [wizardValidationResults, setWizardValidationResults] = useState<{
-    valid: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-    errors: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-    duplicates: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-  }>({ valid: [], errors: [], duplicates: [] });
+  const formSnapshot = JSON.stringify([
+    formName,
+    formNationalId,
+    formGrade,
+    formClassGroupId,
+    formPhone,
+    formEmail,
+    formStatus,
+  ]);
+  const [savedFormSnapshot, setSavedFormSnapshot] = useState(formSnapshot);
+  const guardStudentDraft = useUnsavedChanges(
+    showAddEditModal && formSnapshot !== savedFormSnapshot,
+  );
+  const closeStudentEditor = () => guardStudentDraft(() => setShowAddEditModal(false));
 
   // Convert English digits to Persian/Farsi format
-  const toPersianDigits = (str: string | number): string => {
-    const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    return String(str).replace(/[0-9]/g, (w) => farsiDigits[parseInt(w)]);
-  };
 
   // Iranian National ID validation
   const validateIranianNationalId = (id: string): { isValid: boolean; message: string } => {
@@ -203,6 +259,9 @@ export default function Students() {
     setFormPhone('');
     setFormEmail('');
     setFormStatus('active');
+    setSavedFormSnapshot(
+      JSON.stringify(['', '', 'هفتم', classGroups[0]?.id || 'c-1', '', '', 'active']),
+    );
     setShowAddEditModal(true);
   };
 
@@ -218,6 +277,17 @@ export default function Students() {
     setFormPhone(student.phoneNumber || '');
     setFormEmail(student.email || '');
     setFormStatus(student.status || 'active');
+    setSavedFormSnapshot(
+      JSON.stringify([
+        student.name,
+        student.nationalId,
+        student.grade,
+        student.classGroupId,
+        student.phoneNumber || '',
+        student.email || '',
+        student.status || 'active',
+      ]),
+    );
     setShowAddEditModal(true);
   };
 
@@ -232,6 +302,7 @@ export default function Students() {
       return;
     }
 
+    setSaveState('saving');
     try {
       if (modalMode === 'add') {
         // Check for duplicated National ID
@@ -280,8 +351,16 @@ export default function Students() {
           }),
         );
       }
+      const savedAt = new Date();
+      setLastSavedAt(savedAt);
+      setSaveState('saved');
+      showToast(
+        modalMode === 'add' ? 'دانش‌آموز جدید ثبت شد.' : 'اطلاعات دانش‌آموز ذخیره شد.',
+        'success',
+      );
       setShowAddEditModal(false);
     } catch (err: unknown) {
+      setSaveState('failed');
       showToast(`خطا در ذخیره‌سازی: ${err instanceof Error ? err.message : String(err)}`, 'error');
     }
   };
@@ -315,9 +394,12 @@ export default function Students() {
   };
 
   // Filters logic
+  const normalizedSearch = normalizePersianText(searchQuery);
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
-      student.name.includes(searchQuery) || student.nationalId.includes(searchQuery);
+      !normalizedSearch ||
+      normalizePersianText(student.name).includes(normalizedSearch) ||
+      normalizePersianText(student.nationalId).includes(normalizedSearch);
     const matchesGrade = selectedGrade === 'all' || student.grade === selectedGrade;
     const matchesClass =
       selectedClassGroup === 'all' || student.classGroupId === selectedClassGroup;
@@ -325,250 +407,35 @@ export default function Students() {
 
     return matchesSearch && matchesGrade && matchesClass && matchesStatus;
   });
+  const sortedStudents = [...filteredStudents].sort((a, b) =>
+    sortOrder === 'grade'
+      ? a.grade.localeCompare(b.grade, 'fa') || a.name.localeCompare(b.name, 'fa')
+      : a.name.localeCompare(b.name, 'fa'),
+  );
+  const totalPages = Math.max(1, Math.ceil(sortedStudents.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const visibleStudents = sortedStudents.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  // Drag & drop handlers for file CSV/XLSX
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processSelectedFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const processSelectedFile = (file: File) => {
-    setUploadedFileName(file.name);
-
-    // Check if it is .csv or plain-text to implement actual text parser
-    if (file.name.endsWith('.csv') || file.type === 'text/csv') {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const textStr = event.target?.result as string;
-        parseCSVText(textStr);
-      };
-      reader.readAsText(file, 'UTF-8');
-    } else {
-      // For .xlsx files, we simulate parsing gracefully according to guidelines
-      simulateXLSXLoad();
-    }
-  };
-
-  const parseCSVText = (text: string) => {
-    const lines = text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-    if (lines.length < 2) {
-      showToast('فایل ارسالی خالی است یا ساختار صحیحی ندارد.', 'error');
-      return;
-    }
-
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-    const nameIdx = headers.indexOf('name');
-    const nidIdx = headers.indexOf('national_id');
-    const classIdx = headers.indexOf('class');
-    const gradeIdx = headers.indexOf('grade');
-
-    if (nameIdx === -1 || nidIdx === -1 || classIdx === -1 || gradeIdx === -1) {
-      // Fallback: If headings don't match, warn but load mock demo parsing so they aren't stuck!
-      simulateXLSXLoad();
-      return;
-    }
-
-    const rawDataList: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',').map((c) => c.trim());
-      if (cols.length >= 4) {
-        rawDataList.push({
-          row: i + 1,
-          name: cols[nameIdx] || '',
-          national_id: cols[nidIdx] || '',
-          class: cols[classIdx] || '',
-          grade: cols[gradeIdx] || '',
-        });
-      }
-    }
-
-    setWizardRawData(rawDataList);
-    setWizardStep(2);
-  };
-
-  const simulateXLSXLoad = () => {
-    // Return sample row array with mixed valid, invalid, and duplicate student datasets to show comprehensive step validations
-    const sampleRows = [
-      {
-        row: 1,
-        name: 'آبتین سهرابی',
-        national_id: '0012345678',
-        class: 'کلاس ۷۰۱ (علوم تجربی)',
-        grade: 'هفتم',
-      }, // Valid Model
-      {
-        row: 2,
-        name: '',
-        national_id: '0440981234',
-        class: 'کلاس ۷۰۱ (علوم تجربی)',
-        grade: 'هفتم',
-      }, // Invalid: Missing name
-      {
-        row: 3,
-        name: 'رها سالاری',
-        national_id: '0021487654',
-        class: 'کلاس ۷۰۱ (علوم تجربی)',
-        grade: 'هفتم',
-      }, // Duplicate: nationalId already in mockStudents (id s-1)
-      { row: 4, name: 'فراز یگانه', national_id: '12345', class: 'کلاس ۸۰۱', grade: 'هشتم' }, // Invalid National ID (not 10 digits)
-      { row: 5, name: 'سهراب سپهری', national_id: '1111111111', class: 'کلاس ۹۰۱', grade: 'نهم' }, // Invalid mathematical sequence
-      { row: 6, name: 'بهار کیانی', national_id: '0081234569', class: '', grade: 'نهم' }, // Invalid: Missing class
-      { row: 7, name: 'بردیا تهرانی', national_id: '0076241584', class: 'کلاس ۹۰۱', grade: 'نهم' }, // Valid Model
-    ];
-    setWizardRawData(sampleRows);
-    setWizardStep(2);
-  };
-
-  // Step 2 & 3 Process Validations
-  const processWizardValidations = () => {
-    const valid: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-    const errors: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-    const duplicates: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-    wizardRawData.forEach((row) => {
-      // 1. Check missing values
-      if (!row.name || !row.national_id || !row.grade || !row.class) {
-        errors.push({
-          row: row.row,
-          student: row,
-          reason: `اطلاعات ناقص: ${!row.name ? 'نام ناقص | ' : ''}${!row.national_id ? 'کد ملی ناقص | ' : ''}${!row.grade ? 'پایه ناقص | ' : ''}${!row.class ? 'کلاس ناقص' : ''}`,
-        });
-        return;
-      }
-
-      // 2. National ID validation
-      const idVal = validateIranianNationalId(row.national_id);
-      if (!idVal.isValid) {
-        errors.push({
-          row: row.row,
-          student: row,
-          reason: `کدملی غیرمجاز: ${idVal.message}`,
-        });
-        return;
-      }
-
-      // 3. Duplicate checks inside local database students
-      const isAlreadyInDB = students.some((s) => s.nationalId === row.national_id);
-      if (isAlreadyInDB) {
-        duplicates.push({
-          row: row.row,
-          student: row,
-          reason: 'این شماره ملی پیش از این در دیتابیس ثبت شده است.',
-        });
-        return;
-      }
-
-      // 4. Duplicate within the file itself
-      const internalDupe = valid.some((s) => s.national_id === row.national_id);
-      if (internalDupe) {
-        duplicates.push({
-          row: row.row,
-          student: row,
-          reason: 'کد ملی فوق به طور مکرر در سطور فایل بارگذاری گردیده است.',
-        });
-        return;
-      }
-
-      valid.push(row);
-    });
-
-    setWizardValidationResults({ valid, errors, duplicates });
-    setWizardStep(3);
-  };
-
-  // Complete Wizards & Import
-  const handleWizardSubmitDone = async () => {
-    // Map valid wizard rows into existing students layout
-    const toImport = wizardValidationResults.valid.map((r) => {
-      // Try to find matching classGroupId by name or default
-      const matchedClass =
-        classGroups.find((c) => c.name.includes(r.class) || r.class.includes(c.name)) ||
-        classGroups[0];
-      return {
-        name: r.name,
-        nationalId: r.national_id,
-        grade: r.grade,
-        classGroupId: matchedClass?.id || 'c-1',
-        phoneNumber: r.phone || undefined,
-        email: r.email || undefined,
-      };
-    });
-
-    try {
-      const imported = await studentService.importStudents(toImport);
-      const importedWithStatus: Student[] = imported.map((s) => ({
-        ...s,
-        status: 'active' as const,
-      }));
-      setStudents((prev) => [...importedWithStatus, ...prev]);
-      setWizardStep(4);
-
-      // Auto reset wizard modal
-      setTimeout(() => {
-        setShowImportWizard(false);
-        setWizardStep(1);
-        setUploadedFileName('');
-        setWizardRawData([]);
-      }, 2200);
-    } catch (_err) {
-      showToast('خطا در بارگذاری گروهی دانش‌آموزان', 'error');
-    }
-  };
-
-  // Quick Action triggers for mock data sandbox examples
-  const loadValidSampleTemplate = () => {
-    const validSample = [
-      {
-        row: 1,
-        name: 'آرش کمانگیر',
-        national_id: '0076241584',
-        class: 'کلاس ۷۰۱ (علوم تجربی)',
-        grade: 'هفتم',
-      },
-      {
-        row: 2,
-        name: 'دیبا ابراهیمی',
-        national_id: '0085421369',
-        class: 'کلاس ۸۰۱',
-        grade: 'هشتم',
-      }, // Note: national_id matches s-5, duplicates detector will catch it!
-      { row: 3, name: 'روژان نادری', national_id: '0021487654', class: 'کلاس ۹۰۱', grade: 'نهم' },
-    ];
-    setWizardRawData(validSample);
-    setWizardStep(2);
-  };
-
-  const loadErrorSampleTemplate = () => {
-    simulateXLSXLoad();
-  };
+  if (loading) {
+    return (
+      <div className="space-y-6" role="status" aria-label="در حال بارگذاری دانش‌آموزان">
+        <div className="h-28 rounded-3xl bg-[var(--color-surface-secondary)] skeleton" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-36 rounded-2xl bg-[var(--color-surface-secondary)] skeleton"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300" id="students-tab-view">
       {toastElement}
+      <SaveStatusIndicator state={saveState} savedAt={lastSavedAt} />
 
       {/* Privacy Warning Card (Critical Safeguard) */}
       <div
@@ -599,16 +466,17 @@ export default function Students() {
             <span>مدیریت دانش‌آموزان و درگاه ورودی</span>
           </h2>
           <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
-            پذیرش اطلاعات دانش‌آموزی، ویرایش شناسنامه تحصیلی و قرینه‌سازی با فرمت اکسل سناد
+            افزودن، ویرایش و ورود گروهی اطلاعات دانش‌آموزان
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Add Manual student */}
           <button
+            type="button"
             id="btn-trigger-add-student"
             onClick={openAddModal}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] hover:scale-[1.01] active:scale-99 text-white rounded-xl text-caption font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] hover:scale-[1.01] active:scale-99 text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>افزودن دستی دانش‌آموز</span>
@@ -616,13 +484,13 @@ export default function Students() {
 
           {/* Import Student Wizard Button */}
           <button
+            type="button"
             id="btn-excel-wizard"
             onClick={() => {
               wizardTriggerRef.current = captureActiveTrigger();
-              setWizardStep(1);
               setShowImportWizard(true);
             }}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 hover:scale-[1.01] active:scale-99 text-white rounded-xl text-caption font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 hover:scale-[1.01] active:scale-99 text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>ورود از Excel یا CSV</span>
@@ -713,11 +581,12 @@ export default function Students() {
             selectedClassGroup !== 'all' ||
             selectedStatus !== 'all') && (
             <button
+              type="button"
               onClick={() => {
                 setSearchQuery('');
-                setSelectedGrade('all');
-                setSelectedClassGroup('all');
-                setSelectedStatus('all');
+                resetSelectedGrade();
+                resetSelectedClassGroup();
+                resetSelectedStatus();
               }}
               className="px-2.5 py-1.5 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro font-bold transition-all cursor-pointer"
             >
@@ -725,6 +594,65 @@ export default function Students() {
             </button>
           )}
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-caption">
+          <label htmlFor="student-sort" className="font-bold">
+            مرتب‌سازی
+          </label>
+          <select
+            id="student-sort"
+            value={sortOrder}
+            onChange={(event) => {
+              setSortOrder(event.target.value as 'name' | 'grade');
+              setCurrentPage(1);
+            }}
+            className="glx-inset rounded-xl border px-3 py-2"
+          >
+            <option value="name">نام</option>
+            <option value="grade">پایه</option>
+          </select>
+          <label htmlFor="student-page-size" className="font-bold">
+            در هر صفحه
+          </label>
+          <select
+            id="student-page-size"
+            value={pageSize}
+            onChange={(event) => {
+              setPageSize(Number(event.target.value));
+              setCurrentPage(1);
+            }}
+            className="glx-inset rounded-xl border px-3 py-2"
+          >
+            <option value={10}>۱۰</option>
+            <option value={20}>۲۰</option>
+            <option value={50}>۵۰</option>
+          </select>
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2 text-caption">
+            <button
+              type="button"
+              className="btn-soft"
+              disabled={safePage === 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            >
+              قبلی
+            </button>
+            <span aria-live="polite">
+              صفحه {toPersianDigits(safePage)} از {toPersianDigits(totalPages)}
+            </span>
+            <button
+              type="button"
+              className="btn-soft"
+              disabled={safePage === totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            >
+              بعدی
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Student Representation Area (Responsive Table vs Mobile Cards) */}
@@ -746,7 +674,7 @@ export default function Students() {
             <tbody className="divide-y divide-[var(--color-glass-light-stroke)]">
               <AnimatePresence initial={false}>
                 {filteredStudents.length > 0 ? (
-                  filteredStudents.map((student) => {
+                  visibleStudents.map((student) => {
                     const classGroup = classGroups.find((c) => c.id === student.classGroupId);
 
                     return (
@@ -840,6 +768,7 @@ export default function Students() {
                           <div className="flex items-center justify-center gap-2">
                             {/* Student exams history */}
                             <button
+                              type="button"
                               id={`logs-std-${student.id}`}
                               onClick={() => openStudentExamHistory(student)}
                               className="p-2 text-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] rounded-xl transition-all cursor-pointer"
@@ -850,6 +779,7 @@ export default function Students() {
 
                             {/* Edit */}
                             <button
+                              type="button"
                               id={`edit-std-${student.id}`}
                               onClick={() => openEditModal(student)}
                               className="p-2 text-[var(--color-text-tertiary)] hover:brightness-105 hover:text-[var(--color-text-primary)] rounded-xl transition-all cursor-pointer"
@@ -860,6 +790,7 @@ export default function Students() {
 
                             {/* Delete */}
                             <button
+                              type="button"
                               id={`delete-std-${student.id}`}
                               onClick={() => handleDeleteStudent(student.id, student.name)}
                               className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-xl transition-all cursor-pointer"
@@ -894,7 +825,7 @@ export default function Students() {
         <div className="block md:hidden p-4 space-y-3.5" id="students-mob-cards">
           <AnimatePresence initial={false}>
             {filteredStudents.length > 0 ? (
-              filteredStudents.map((student) => {
+              visibleStudents.map((student) => {
                 const classGroup = classGroups.find((c) => c.id === student.classGroupId);
                 return (
                   <motion.div
@@ -954,7 +885,7 @@ export default function Students() {
                         <span className="text-[var(--color-text-tertiary)] block pb-0.5">
                           کد ملی ورود به آزمون
                         </span>
-                        <span className="font-mono bg-white px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
+                        <span className="font-mono bg-[var(--color-surface)] px-2 py-0.5 rounded-md border border-[var(--color-glass-light-stroke)]">
                           {maskNationalIdPersian(student.nationalId)}
                         </span>
                       </div>
@@ -962,18 +893,21 @@ export default function Students() {
 
                     <div className="flex items-center justify-end gap-1 border-t border-[var(--color-glass-light-stroke)]/60 pt-3.5">
                       <button
+                        type="button"
                         onClick={() => openStudentExamHistory(student)}
                         className="px-3 py-1.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl font-bold text-micro"
                       >
                         سوابق آزمون
                       </button>
                       <button
+                        type="button"
                         onClick={() => openEditModal(student)}
                         className="px-3 py-1.5 glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold text-micro"
                       >
                         ویرایش
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDeleteStudent(student.id, student.name)}
                         className="px-3 py-1.5 bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-xl font-bold text-micro"
                       >
@@ -1060,7 +994,8 @@ export default function Students() {
                 {/* Modal Header */}
                 <div className="px-6 py-5 glx border-b flex items-center justify-between">
                   <button
-                    onClick={() => setShowAddEditModal(false)}
+                    type="button"
+                    onClick={closeStudentEditor}
                     className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] font-bold text-heading-3 cursor-pointer"
                   >
                     &times;
@@ -1176,7 +1111,7 @@ export default function Students() {
                           }
                           className={`py-2 text-micro rounded-xl border font-bold transition-all cursor-pointer ${
                             formStatus === s.val
-                              ? 'bg-[var(--color-accent)] border-[var(--color-accent)]/20 text-white shadow-sm'
+                              ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)] shadow-sm'
                               : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
                           }`}
                         >
@@ -1226,7 +1161,7 @@ export default function Students() {
                   <div className="flex gap-3 pt-4.5 border-t border-[var(--color-glass-light-stroke)] justify-end">
                     <button
                       type="button"
-                      onClick={() => setShowAddEditModal(false)}
+                      onClick={closeStudentEditor}
                       className="px-4 py-2 glx-inset hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer transition-all"
                     >
                       انصراف
@@ -1234,13 +1169,13 @@ export default function Students() {
                     <button
                       type="submit"
                       disabled={!formName}
-                      className={`px-5 py-2 rounded-xl font-bold text-white shadow-xs transition-all cursor-pointer ${
+                      className={`px-5 py-2 rounded-xl font-bold text-[var(--color-text-on-solid)] shadow-xs transition-all cursor-pointer ${
                         formName
-                          ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] active:scale-95'
+                          ? 'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] active:scale-95'
                           : 'bg-[var(--color-accent-soft)]/40 cursor-not-allowed'
                       }`}
                     >
-                      {modalMode === 'add' ? 'ثبت و درج نهایی' : 'ذخیره دگرگونی‌ها'}
+                      {modalMode === 'add' ? 'ثبت دانش‌آموز' : 'ذخیره تغییرات'}
                     </button>
                   </div>
                 </form>
@@ -1250,487 +1185,15 @@ export default function Students() {
         )}
       </AnimatePresence>
 
-      {/* 4-Step Excel / CSV Import Wizard Modal! */}
-      <AnimatePresence>
-        {showImportWizard && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
-            id="wizard-backdrop"
-          >
-            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
-                freezes its frame, which lingers past unmount. */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: 'easeOut' }}
-              className="absolute inset-0 scrim"
-            />
-            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
-                un-blur never lingers behind the closing panel. */}
-            <motion.div
-              aria-hidden="true"
-              initial={false}
-              exit={{
-                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-                transition: { duration: 0.12 },
-              }}
-              className="absolute inset-0 pointer-events-none veil-blur"
-            />
-            <div className="relative w-full max-w-2xl @container">
-              {/* Halo rides the panel's grow/shrink (same origin, no opacity) */}
-              <motion.div
-                aria-hidden="true"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{
-                  scale: 0,
-                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                  backgroundColor: 'rgba(26, 28, 34, 0)',
-                  transition: {
-                    scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                    backdropFilter: { duration: 0.14 },
-                    backgroundColor: { duration: 0.14 },
-                  },
-                }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                ref={wizardHaloRef}
-                style={wizardHaloOrigin}
-                className="pointer-events-none absolute area-blur"
-              />
-              <motion.div
-                ref={wizardPanelRef}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{
-                  opacity: 0,
-                  scale: 0,
-                  transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                }}
-                style={wizardOrigin ?? { transformOrigin: 'center bottom' }}
-                transition={{
-                  opacity: { duration: 0.16 },
-                  scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-                }}
-                className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden text-caption"
-                id="wizard-container"
-              >
-                {/* Header with Close */}
-                <div className="px-6 py-5 glx border-b flex items-center justify-between">
-                  <button
-                    onClick={() => {
-                      setShowImportWizard(false);
-                      setWizardStep(1);
-                      setUploadedFileName('');
-                      setWizardRawData([]);
-                    }}
-                    className="px-2.5 py-1 glx-inset hover:glx-inset text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all font-bold rounded-xl cursor-pointer"
-                  >
-                    بستن راهنما ×
-                  </button>
-                  <h3 className="font-bold text-[var(--color-text-primary)] text-caption flex items-center gap-1.5">
-                    <FileSpreadsheet className="w-5 h-5 text-[var(--color-success)]" />
-                    <span>دستیار هوشمند ورود ستونی دانش‌آموزان از اکسل / CSV</span>
-                  </h3>
-                </div>
+      <StudentImportWizard
+        open={showImportWizard}
+        onClose={() => setShowImportWizard(false)}
+        triggerRef={wizardTriggerRef}
+        classGroups={classGroups}
+        existingStudents={students}
+        onImported={(imported) => setStudents((current) => [...imported, ...current])}
+      />
 
-                {/* Step Wizard visual track bar! */}
-                <div className="glx border-b px-6 py-3.5 flex items-center justify-around gap-2 select-none">
-                  {[
-                    { s: 1, label: 'مرحله ۱: انتخاب فایل' },
-                    { s: 2, label: 'مرحله ۲: پیش‌نمایش اطلاعات' },
-                    { s: 3, label: 'مرحله ۳: بررسی خطاها' },
-                    { s: 4, label: 'مرحله ۴: تایید نهایی' },
-                  ].map((stepObj) => (
-                    <div key={stepObj.s} className="flex items-center gap-2">
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-micro font-black transition-all ${
-                          wizardStep === stepObj.s
-                            ? 'bg-[var(--color-accent)] text-white shadow-sm'
-                            : wizardStep > stepObj.s
-                              ? 'bg-[var(--color-success)] text-white'
-                              : 'glx-inset text-[var(--color-text-tertiary)]'
-                        }`}
-                      >
-                        {wizardStep > stepObj.s ? '✓' : toPersianDigits(stepObj.s)}
-                      </div>
-                      <span
-                        className={`text-micro font-bold hidden sm:inline ${
-                          wizardStep === stepObj.s
-                            ? 'text-[var(--color-accent)] font-extrabold'
-                            : 'text-[var(--color-text-tertiary)]'
-                        }`}
-                      >
-                        {stepObj.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Modal Core Body according to steps! */}
-                <div className="p-6 max-h-120 overflow-y-auto space-y-5">
-                  {/* Step 1: File selection Drag & Drop */}
-                  {wizardStep === 1 && (
-                    <div className="space-y-4">
-                      <div className="space-y-1 glx border p-4.5 rounded-2xl leading-relaxed">
-                        <p className="font-bold text-[var(--color-text-primary)] text-micro">
-                          ملاحظات قالب فایل بارگذاری شده:
-                        </p>
-                        <p className="text-[var(--color-text-tertiary)]">
-                          فایل ارسالی شما واجب است دارای ستون‌هایی هم‌نام با{' '}
-                          <strong className="font-bold text-[var(--color-text-secondary)]">
-                            name
-                          </strong>{' '}
-                          (نام و نام خانوادگی)،{' '}
-                          <strong className="font-bold text-[var(--color-text-secondary)]">
-                            national_id
-                          </strong>{' '}
-                          (کدملی)،{' '}
-                          <strong className="font-bold text-[var(--color-text-secondary)] text-[var(--color-accent)]">
-                            class
-                          </strong>{' '}
-                          (نام کلاس) و{' '}
-                          <strong className="font-bold text-[var(--color-text-secondary)]">
-                            grade
-                          </strong>{' '}
-                          (پایه تحصیلی) در سطر نخست به عنوان هدر (Headers) باشد.
-                        </p>
-                        <p className="text-[var(--color-warning)] font-bold text-micro mt-1 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
-                          در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
-                        </p>
-                        <span className="text-micro block mt-1 bg-[var(--color-accent-soft)]/70 border border-[var(--color-accent-soft)]/40 text-[var(--color-accent)] p-2 rounded-xl text-center font-bold">
-                          "فایل شما باید شامل ستون‌های name، national_id، class و grade باشد."
-                        </span>
-                      </div>
-
-                      {/* Drag drop area */}
-                      <div
-                        onDragEnter={handleDrag}
-                        onDragOver={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDrop={handleDrop}
-                        className={`border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center gap-3 transition-colors ${
-                          dragActive
-                            ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30'
-                            : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105/50'
-                        }`}
-                      >
-                        <Upload className="w-12 h-12 text-[var(--color-text-tertiary)] animate-pulse" />
-                        <div className="text-center space-y-1.5 select-none">
-                          <p className="font-bold text-[var(--color-text-secondary)] text-caption">
-                            درگ و دراپ مستقیم فایل اکسل (.xlsx) یا فایل کامادار (CSV)
-                          </p>
-                          <p className="text-micro text-[var(--color-text-tertiary)]">
-                            یا برای مرور دستی فایل در حافظه کامپیوتر کلیک کنید
-                          </p>
-                        </div>
-
-                        <label className="mt-2.5 px-4.5 py-2 hover:brightness-95 active:scale-98 bg-[var(--color-accent)] text-white text-micro font-bold rounded-xl cursor-pointer transition-all shadow-xs">
-                          جستجو و انتخاب فایل
-                          <input
-                            type="file"
-                            accept=".xlsx,.xls,.csv"
-                            className="hidden"
-                            onChange={handleFileInputChange}
-                          />
-                        </label>
-                      </div>
-
-                      {/* Sandboxed Demo Presets triggers so testers don't even need to provide a file! */}
-                      <div className="glx p-4.5 rounded-2xl border space-y-3">
-                        <p className="font-bold text-[var(--color-text-secondary)] block text-micro">
-                          بررسی ساده و سریع دمو بدون آپلود فایل واقعی:
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={loadValidSampleTemplate}
-                            className="flex-1 py-2 bg-[var(--color-success-soft)] hover:bg-[var(--color-success-soft)]/80 border border-[var(--color-success)]/15 text-[var(--color-success)] rounded-xl font-bold cursor-pointer"
-                          >
-                            بارگذاری رکوردهای نمونه فایل معتبر دمو
-                          </button>
-                          <button
-                            type="button"
-                            onClick={loadErrorSampleTemplate}
-                            className="flex-1 py-2 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40/80 border border-[var(--color-danger)]/10 text-[var(--color-danger)]/80 rounded-xl font-bold cursor-pointer"
-                          >
-                            بارگذاری رکوردهای دارای خطا و کد تکراری دمو
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Step 2: Preview of Raw Rows */}
-                  {wizardStep === 2 && (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center glx p-3 rounded-xl">
-                        <span className="text-[var(--color-text-tertiary)] font-semibold">
-                          فایل دریافتی:{' '}
-                          <strong className="text-[var(--color-text-primary)]">
-                            {uploadedFileName || 'پیش‌نمایش قالب دیتابیس'}
-                          </strong>
-                        </span>
-                        <span className="font-bold text-[var(--color-accent)] bg-[var(--color-accent-soft)] px-2.5 py-1 rounded-full">
-                          {toPersianDigits(wizardRawData.length)} ردیف یافت شد
-                        </span>
-                      </div>
-
-                      <p className="text-[var(--color-text-tertiary)] text-micro">
-                        لیست سطور خام خوانده‌شده از فایل قبل از اعتبارسنجی:
-                      </p>
-
-                      <div className="border border-[var(--color-glass-light-stroke)] rounded-xl overflow-hidden shadow-sm max-h-60 overflow-y-auto">
-                        <table className="w-full text-right text-micro">
-                          <thead className="glx-inset border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] sticky top-0">
-                            <tr>
-                              <th className="p-3 font-bold text-center w-12">ردیف</th>
-                              <th className="p-3 font-bold">name (نام و نام خانوادگی)</th>
-                              <th className="p-3 font-bold">national_id (کد ملی)</th>
-                              <th className="p-3 font-bold">grade (پایه)</th>
-                              <th className="p-3 font-bold">class (کلاس)</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]">
-                            {wizardRawData.map((row, idx) => (
-                              <tr key={idx} className="hover:brightness-105">
-                                <td className="p-3 text-center text-[var(--color-text-tertiary)] font-bold">
-                                  {toPersianDigits(row.row)}
-                                </td>
-                                <td className="p-3 font-bold text-[var(--color-text-primary)]">
-                                  {row.name || (
-                                    <span className="text-[var(--color-danger)] italic">خالی</span>
-                                  )}
-                                </td>
-                                <td className="p-3 font-mono text-[var(--color-text-secondary)]">
-                                  {toPersianDigits(row.national_id) || (
-                                    <span className="text-[var(--color-danger)] italic">خالی</span>
-                                  )}
-                                </td>
-                                <td className="p-3 text-[var(--color-text-secondary)]">
-                                  {row.grade || (
-                                    <span className="text-[var(--color-danger)] italic">خالی</span>
-                                  )}
-                                </td>
-                                <td className="p-3 text-[var(--color-text-secondary)] font-semibold">
-                                  {row.class || (
-                                    <span className="text-[var(--color-danger)] italic">خالی</span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="flex justify-end gap-2 pt-2 border-t border-[var(--color-glass-light-stroke)]">
-                        <button
-                          onClick={() => setWizardStep(1)}
-                          className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
-                        >
-                          بازگشت و انتخاب فایل دیگر
-                        </button>
-                        <button
-                          onClick={processWizardValidations}
-                          className="px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>شروع پردازش و صحت‌سنجی فیلدها</span>
-                          <ArrowLeft className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Step 3: Error logs & categorized results */}
-                  {wizardStep === 3 && (
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-[var(--color-text-primary)]">
-                        گزارش نهایی آنالیز اعتبارسنجی هوشمند:
-                      </h4>
-
-                      {/* Category cards summary Grid */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="p-3.5 bg-[var(--color-success-soft)] border border-[var(--color-success)]/10 rounded-2xl text-center">
-                          <span className="text-[var(--color-success)] font-bold text-heading-3 block">
-                            {toPersianDigits(wizardValidationResults.valid.length)}
-                          </span>
-                          <span className="text-micro text-[var(--color-success)]">
-                            عده ردیف‌های صحیح
-                          </span>
-                        </div>
-
-                        <div className="p-3.5 bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/10 rounded-2xl text-center">
-                          <span className="text-[var(--color-danger)] font-bold text-heading-3 block">
-                            {toPersianDigits(wizardValidationResults.errors.length)}
-                          </span>
-                          <span className="text-micro text-[var(--color-danger)]/80">
-                            عده ردیف‌های دارای خطا
-                          </span>
-                        </div>
-
-                        <div className="p-3.5 bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 rounded-2xl text-center">
-                          <span className="text-[var(--color-warning)] font-bold text-heading-3 block">
-                            {toPersianDigits(wizardValidationResults.duplicates.length)}
-                          </span>
-                          <span className="text-micro text-[var(--color-warning)]/80">
-                            عده ردیف‌های تکراری
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Segment: Error Rows warnings if any exists */}
-                      {wizardValidationResults.errors.length > 0 && (
-                        <div className="space-y-2 text-right">
-                          <p className="font-bold text-[var(--color-danger)]/80 flex items-center gap-1">
-                            <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)]" />
-                            <span>ردیف‌های نیازمند تصحیح (ردیف‌های خطا):</span>
-                          </p>
-                          <div className="bg-[var(--color-danger-soft)]/40/50 p-2.5 rounded-xl border border-[var(--color-danger)]/10/60 text-micro text-[var(--color-danger)]/80 space-y-1 max-h-36 overflow-y-auto">
-                            {wizardValidationResults.errors.map((e, idx) => (
-                              <div
-                                key={idx}
-                                className="flex justify-between border-b border-[var(--color-danger)]/10/40 pb-1.5"
-                                id={`err-wizard-${idx}`}
-                              >
-                                <span>
-                                  ردیف {toPersianDigits(e.row)} - دانش‌آموز{' '}
-                                  {e.student.name || '(نامشخص)'}
-                                </span>
-                                <span className="font-bold">{e.reason}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Segment: Duplicate Warnings */}
-                      {wizardValidationResults.duplicates.length > 0 && (
-                        <div className="space-y-2 text-right">
-                          <p className="font-bold text-[var(--color-warning)]/80 flex items-center gap-1">
-                            <Info className="w-3.5 h-3.5 text-[var(--color-warning-soft)]/500" />
-                            <span>ردیف‌های دارای شماره ملی تکراری در پایگاه داده:</span>
-                          </p>
-                          <div className="bg-[var(--color-warning-soft)]/50 p-2.5 rounded-xl border border-[var(--color-warning)]/10/60 text-micro text-[var(--color-warning)]/80 space-y-1 max-h-36 overflow-y-auto">
-                            {wizardValidationResults.duplicates.map((d, idx) => (
-                              <div
-                                key={idx}
-                                className="flex justify-between border-b border-[var(--color-warning)]/10/40 pb-1.5"
-                                id={`dupe-wizard-${idx}`}
-                              >
-                                <span>
-                                  ردیف {toPersianDigits(d.row)} - {d.student.name} (
-                                  {toPersianDigits(d.student.national_id)})
-                                </span>
-                                <span className="font-bold">{d.reason}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Segment: Correct Rows preview */}
-                      {wizardValidationResults.valid.length > 0 ? (
-                        <div className="space-y-2 text-right">
-                          <p className="font-bold text-[var(--color-success)] flex items-center gap-1">
-                            <CheckCircle className="w-3.5 h-3.5 text-[var(--color-success)]" />
-                            <span>پیش‌نمایش ارقام سالم و آماده درج نهایی:</span>
-                          </p>
-                          <div className="border border-[var(--color-success)]/10 glx rounded-xl max-h-40 overflow-y-auto text-micro">
-                            <table className="w-full text-right">
-                              <thead className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-b border-[var(--color-success)]/10 sticky top-0">
-                                <tr>
-                                  <th className="p-2.5">نام و فامیل</th>
-                                  <th className="p-2.5">کد ملی</th>
-                                  <th className="p-2.5">کلاس انتسابی نهایی</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {wizardValidationResults.valid.map((r, idx) => (
-                                  <tr
-                                    key={idx}
-                                    className="border-b border-[var(--color-glass-light-stroke)] hover:bg-[var(--color-success-soft)]/15"
-                                  >
-                                    <td className="p-2.5 font-bold text-[var(--color-text-primary)]">
-                                      {r.name}
-                                    </td>
-                                    <td className="p-2.5 font-mono text-[var(--color-text-primary)]">
-                                      {toPersianDigits(r.national_id)}
-                                    </td>
-                                    <td className="p-2.5 text-[var(--color-text-secondary)]">
-                                      {r.class} (پایه {r.grade})
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-6 bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/10 rounded-2xl text-center text-[var(--color-danger)]/80">
-                          هیچ ردیف معتبری جهت درج در دیتابیسی فعلی یافت نشد. لطفاً قالب فایل زیستی
-                          خود را بازبینی و مجدداً بارگذاری کنید.
-                        </div>
-                      )}
-
-                      {/* Wizard Step Action triggers */}
-                      <div className="flex justify-between gap-2.5 pt-3.5 border-t border-[var(--color-glass-light-stroke)]">
-                        <button
-                          onClick={() => setWizardStep(2)}
-                          className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold cursor-pointer"
-                        >
-                          بازگشت به پیش‌نمایش سطور
-                        </button>
-                        {wizardValidationResults.valid.length > 0 ? (
-                          <button
-                            onClick={handleWizardSubmitDone}
-                            className="px-5 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white font-bold rounded-xl flex items-center gap-1.5 shadow-sm hover:scale-[1.01] transition-transform cursor-pointer"
-                          >
-                            <Check className="w-4 h-4" />
-                            <span>
-                              انتساب سوابق و واردکردن نهایی{' '}
-                              {toPersianDigits(wizardValidationResults.valid.length)} دانش‌آموز
-                            </span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setWizardStep(1)}
-                            className="px-5 py-2.5 bg-[var(--color-danger)] text-white font-bold rounded-xl cursor-pointer"
-                          >
-                            بارگذاری فایلِ اصلاح شده نو
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Step 4: Finished with stunning celebrate layout */}
-                  {wizardStep === 4 && (
-                    <div className="py-12 space-y-4 text-center">
-                      <div className="w-16 h-16 rounded-full bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20 flex items-center justify-center mx-auto text-display animate-bounce">
-                        ✓
-                      </div>
-                      <div className="space-y-1.5">
-                        <h4 className="text-md font-bold text-[var(--color-text-primary)]">
-                          عملیات واردکردن دانش‌آموزان با موفقیت کامل انجام پذیرفت!
-                        </h4>
-                        <p className="text-[var(--color-text-tertiary)] max-w-sm mx-auto leading-relaxed text-micro">
-                          اطلاعات شناسنامه‌ای گله‌ای با کدهای ملی ماسک شده به خوبی به فهرست فیزیکی
-                          دیتابیس کلاس‌ها ملحق گردید.
-                        </p>
-                      </div>
-                      <p className="text-micro text-[var(--color-text-tertiary)] animate-pulse">
-                        کادر جادویی تا چند لحظه دیگر به صورت خودکار بسته خواهد شد...
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Submodal: Detailed Student Exam Participation logs */}
       <AnimatePresence>
         {showExamLogsModal && activeLogStudent && (
           <div
@@ -1798,6 +1261,7 @@ export default function Students() {
                 {/* Header */}
                 <div className="px-6 py-5 bg-[var(--color-accent-soft)]/70 border-b border-[var(--color-accent-soft)] flex items-center justify-between">
                   <button
+                    type="button"
                     onClick={() => setShowExamLogsModal(false)}
                     className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-caption glx px-2.5 py-1.5 rounded-xl cursor-pointer"
                   >

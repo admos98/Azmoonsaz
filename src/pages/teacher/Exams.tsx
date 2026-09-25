@@ -70,13 +70,11 @@ export default function Exams({
   );
   const [selectedExamId, setSelectedExamId] = useState<string | null>(propExamId || null);
 
-  // Sync prop changes
-  React.useEffect(() => {
-    if (propSubView) setLocalSubView(propSubView);
-    if (propExamId) setSelectedExamId(propExamId);
-  }, [propSubView, propExamId]);
-
-  const currentExam = exams.find((e) => e.id === selectedExamId);
+  // URL-backed parents remain the source of truth; standalone usage falls back
+  // to local navigation state without effect-driven prop synchronization.
+  const effectiveSubView = onSubViewChange ? propSubView : localSubView;
+  const effectiveExamId = onSubViewChange ? propExamId || null : selectedExamId;
+  const currentExam = exams.find((e) => e.id === effectiveExamId);
 
   const handleStatusChange = async (examId: string, newStatus: Exam['status']) => {
     try {
@@ -152,7 +150,7 @@ export default function Exams({
   };
 
   // Rendering conditional subviews
-  if (localSubView === 'settings' && currentExam) {
+  if (effectiveSubView === 'settings' && currentExam) {
     return (
       <ExamSettings
         exam={currentExam}
@@ -165,9 +163,10 @@ export default function Exams({
     );
   }
 
-  if (localSubView === 'preview' && currentExam) {
+  if (effectiveSubView === 'preview' && currentExam) {
     return (
       <ExamPreview
+        key={currentExam.id}
         exam={currentExam}
         onBack={() => {
           setLocalSubView('list');
@@ -186,7 +185,7 @@ export default function Exams({
     );
   }
 
-  if (localSubView === 'results' && currentExam) {
+  if (effectiveSubView === 'results' && currentExam) {
     return (
       <ExamResults
         exam={currentExam}
@@ -213,9 +212,10 @@ export default function Exams({
           </p>
         </div>
         <button
+          type="button"
           id="btn-create-exam-trigger"
           onClick={() => onNavigate('exams/new')}
-          className="px-4 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+          className="px-4 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>طراحی آزمون نو</span>
@@ -235,6 +235,7 @@ export default function Exams({
           { id: 'completed', label: 'برگزار شده' },
         ].map((tab) => (
           <button
+            type="button"
             key={tab.id}
             id={`tab-status-${tab.id}`}
             onClick={() =>
@@ -250,7 +251,7 @@ export default function Exams({
             {activeTab === tab.id && (
               <motion.div
                 layoutId="activeExamTabIndicator"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-accent)] rounded-full"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-accent-solid)] rounded-full"
               />
             )}
           </button>
@@ -325,6 +326,7 @@ export default function Exams({
                   <div className="flex gap-1">
                     {/* Preview Option */}
                     <button
+                      type="button"
                       id={`exam-pre-${ex.id}`}
                       onClick={() => navigateToSubView('preview', ex.id)}
                       className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border cursor-pointer"
@@ -335,6 +337,7 @@ export default function Exams({
 
                     {/* Settings Option */}
                     <button
+                      type="button"
                       id={`exam-set-${ex.id}`}
                       onClick={() => navigateToSubView('settings', ex.id)}
                       className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border cursor-pointer"
@@ -345,6 +348,7 @@ export default function Exams({
 
                     {/* Results / Answers sheet review */}
                     <button
+                      type="button"
                       id={`exam-res-${ex.id}`}
                       onClick={() => navigateToSubView('results', ex.id)}
                       className="p-2 glx hover:brightness-105 text-[var(--color-accent)] rounded-xl transition-colors border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] cursor-pointer"
@@ -358,6 +362,7 @@ export default function Exams({
                   <div className="flex items-center">
                     {ex.status === 'draft' && (
                       <button
+                        type="button"
                         id={`ex-act-${ex.id}`}
                         onClick={() => handleStatusChange(ex.id, 'active')}
                         className="px-2.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)]/50 text-[var(--color-accent)] font-bold text-micro rounded-lg border border-[var(--color-accent)]/20 flex items-center gap-1 cursor-pointer animate-pulse"
@@ -368,6 +373,7 @@ export default function Exams({
                     )}
                     {ex.status === 'active' && (
                       <button
+                        type="button"
                         id={`ex-comp-${ex.id}`}
                         onClick={() => handleStatusChange(ex.id, 'completed')}
                         className="px-2.5 py-1.5 bg-[var(--color-danger-soft)] hover:bg-[var(--color-danger-soft)]/50 text-[var(--color-danger)] font-bold text-micro rounded-lg border border-[var(--color-danger)]/10 flex items-center gap-1 cursor-pointer"

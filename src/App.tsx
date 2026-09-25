@@ -14,13 +14,38 @@ import ExamPortal from './pages/student/ExamPortal';
 import SecureExamPortal from './pages/student/SecureExamPortal';
 import { Toast } from './components/UIComponents';
 import { Exam } from './types';
+import { getSupabasePublicClient } from './lib/supabasePublic';
+import { authService } from './services/api';
+import { teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
+import { usePersistentPreference } from './hooks/usePersistentPreference';
+import CommandPalette from './components/CommandPalette';
+import { requestAppNavigation } from './hooks/useUnsavedChanges';
+import {
+  loadDashboard,
+  loadExams,
+  loadNewExam,
+  loadSettingsHub,
+  loadTeacherProfile,
+} from './utils/teacherPageLoaders';
+
+function WorkspacePreferenceApplier() {
+  const [density] = usePersistentPreference<'comfortable' | 'compact'>(
+    'workspace:density',
+    'comfortable',
+    (value): value is 'comfortable' | 'compact' => value === 'comfortable' || value === 'compact',
+  );
+  useEffect(() => {
+    document.documentElement.dataset.density = density;
+  }, [density]);
+  return null;
+}
 
 // Lazy-loaded teacher pages (code-split)
-const Dashboard = lazy(() => import('./pages/teacher/Dashboard'));
-const Exams = lazy(() => import('./pages/teacher/Exams'));
-const NewExam = lazy(() => import('./pages/teacher/NewExam'));
-const SettingsHub = lazy(() => import('./pages/teacher/SettingsHub'));
-const TeacherProfile = lazy(() => import('./pages/teacher/TeacherProfile'));
+const Dashboard = lazy(loadDashboard);
+const Exams = lazy(loadExams);
+const NewExam = lazy(loadNewExam);
+const SettingsHub = lazy(loadSettingsHub);
+const TeacherProfile = lazy(loadTeacherProfile);
 
 // Toast state shared via simple emitter for App-level toasts
 const toastQueue: Array<{
@@ -35,6 +60,7 @@ export const showAppToast = (
   message: string,
   type: 'success' | 'error' | 'warning' | 'info' = 'info',
 ) => {
+  if (toastQueue.some((toast) => toast.message === message && toast.type === type)) return;
   const id = ++toastNextId;
   toastQueue.push({ id, message, type });
   toastListeners.forEach((l) => l());
@@ -50,13 +76,50 @@ export const showAppToast = (
 export default function App() {
   const [userRole, setUserRole] = useState<'teacher' | 'student'>('teacher');
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
+  const [authInitializing, setAuthInitializing] = useState(true);
   const [isOnboarded, setIsOnboarded] = useState(true);
-  const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const [currentTab, setCurrentTab] = useState<string>(() =>
+    teacherTabFromPath(window.location.pathname),
+  );
+  const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+  const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>(
+    'list',
+  );
   const [toastSnapshot, setToastSnapshot] = useState<Array<(typeof toastQueue)[0]>>([]);
+
+  useEffect(() => {
+    let active = true;
+    const supabase = getSupabasePublicClient();
+    const bootstrap = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!active) return;
+      setIsTeacherLoggedIn(Boolean(data.session));
+      if (data.session && window.location.pathname === '/') {
+        window.history.replaceState(null, '', '/teacher/dashboard');
+        setCurrentPath('/teacher/dashboard');
+        setCurrentTab('dashboard');
+      }
+      if (data.session) {
+        const teacher = await authService.getCurrentTeacher();
+        if (active && teacher) setIsOnboarded(teacher.isOnboarded ?? true);
+      }
+      if (active) setAuthInitializing(false);
+    };
+    void bootstrap();
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      setIsTeacherLoggedIn(Boolean(session));
+      setAuthInitializing(false);
+    });
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
 
   const flushToasts = () => setToastSnapshot([...toastQueue]);
   useEffect(() => {
-    flushToasts();
     toastListeners.push(flushToasts);
     return () => {
       const idx = toastListeners.indexOf(flushToasts);
@@ -70,48 +133,41 @@ export default function App() {
   });
 
   // URL state management
-  const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
-
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
+      const path = window.location.pathname;
+      setCurrentPath(path);
+      if (path.startsWith('/teacher')) {
+        setCurrentTab(teacherTabFromPath(path));
+        const resultMatch = path.match(/^\/teacher\/exams\/([^/]+)\/results$/);
+        setSelectedExamId(resultMatch?.[1]);
+        setExamSubView(resultMatch ? 'results' : 'list');
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const navigateToLocalPath = (path: string) => {
-    window.history.pushState(null, '', path);
+  const navigateToLocalPath = (path: string, replace = false) => {
+    window.history[replace ? 'replaceState' : 'pushState'](null, '', path);
     setCurrentPath(path);
   };
 
-  useEffect(() => {
-    const resultsMatch = currentPath.match(/^\/teacher\/exams\/([^/]+)\/results$/);
-    if (resultsMatch) {
-      const examId = resultsMatch[1];
-      setUserRole('teacher');
-      setIsTeacherLoggedIn(true);
-      setCurrentTab('exams');
-      setSelectedExamId(examId);
-      setExamSubView('results');
-    }
-  }, [currentPath]);
+  const navigateTeacher = (tab: string) => {
+    if (!requestAppNavigation()) return;
+    setCurrentTab(tab);
+    setExamSubView('list');
+    setSelectedExamId(undefined);
+    navigateToLocalPath(teacherPathFromTab(tab));
+  };
 
   // Check onboarding status after login
   useEffect(() => {
     if (!isTeacherLoggedIn) return;
-    import('./services/api').then(({ authService }) => {
-      authService.getCurrentTeacher().then((teacher) => {
-        if (teacher) setIsOnboarded(teacher.isOnboarded ?? true);
-      });
+    authService.getCurrentTeacher().then((teacher) => {
+      if (teacher) setIsOnboarded(teacher.isOnboarded ?? true);
     });
   }, [isTeacherLoggedIn]);
-
-  // Exam sub-routing state
-  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
-  const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>(
-    'list',
-  );
 
   // Handle addition of designed exam
   const [customExams, setCustomExams] = useState<Exam[]>([]);
@@ -120,6 +176,7 @@ export default function App() {
     setCustomExams([newExam, ...customExams]);
     setCurrentTab('exams');
     setExamSubView('list');
+    navigateToLocalPath('/teacher/exams');
     showAppToast('آزمون جدید با موفقیت ایجاد شد.', 'success');
   };
 
@@ -127,6 +184,7 @@ export default function App() {
     setCurrentTab('exams');
     setSelectedExamId(examId);
     setExamSubView('results');
+    navigateToLocalPath(`/teacher/exams/${examId}/results`);
   };
 
   // Switch Role
@@ -136,7 +194,7 @@ export default function App() {
       navigateToLocalPath('/secure-exam/DEMO7');
     } else {
       setUserRole('teacher');
-      navigateToLocalPath('/');
+      navigateToLocalPath('/teacher/dashboard');
     }
   };
 
@@ -146,31 +204,24 @@ export default function App() {
       case 'dashboard':
         return (
           <Dashboard
-            onNavigate={(tab) => {
-              setCurrentTab(tab);
-              setExamSubView('list');
-            }}
+            onNavigate={navigateTeacher}
             onSelectExamForResults={handleSelectExamForResults}
           />
         );
       case 'students':
-        return <TeacherProfile key="students" initialTab="students" />;
+        return <TeacherProfile initialTab="students" onNavigate={navigateTeacher} />;
       case 'classes':
-        return <TeacherProfile key="classes" initialTab="classes" />;
+        return <TeacherProfile initialTab="classes" onNavigate={navigateTeacher} />;
       case 'profile':
-        return <TeacherProfile key="profile" />;
+        return <TeacherProfile onNavigate={navigateTeacher} />;
       case 'questions':
-        return <SettingsHub key="questions" initialTab="questions" />;
+        return <SettingsHub initialTab="questions" onNavigate={navigateTeacher} />;
       case 'exams/new':
-        return <NewExam onBack={() => setCurrentTab('exams')} onAddExam={handleAddNewExam} />;
+        return <NewExam onBack={() => navigateTeacher('exams')} onAddExam={handleAddNewExam} />;
       case 'exams':
         return (
           <Exams
-            onNavigate={(tab) => {
-              setCurrentTab(tab);
-              setExamSubView('list');
-              navigateToLocalPath('/');
-            }}
+            onNavigate={navigateTeacher}
             selectedExamId={selectedExamId}
             subView={examSubView}
             onSubViewChange={(view, id) => {
@@ -179,7 +230,7 @@ export default function App() {
               if (view === 'results' && id) {
                 navigateToLocalPath(`/teacher/exams/${id}/results`);
               } else if (view === 'list') {
-                navigateToLocalPath('/');
+                navigateToLocalPath('/teacher/exams');
               }
             }}
           />
@@ -188,11 +239,7 @@ export default function App() {
         const firstExam = customExams[0];
         return (
           <Exams
-            onNavigate={(tab) => {
-              setCurrentTab(tab);
-              setExamSubView('list');
-              navigateToLocalPath('/');
-            }}
+            onNavigate={navigateTeacher}
             selectedExamId={selectedExamId || firstExam?.id}
             subView="results"
             onSubViewChange={(view, id) => {
@@ -201,16 +248,16 @@ export default function App() {
               if (view === 'results' && id) {
                 navigateToLocalPath(`/teacher/exams/${id}/results`);
               } else if (view === 'list') {
-                navigateToLocalPath('/');
+                navigateToLocalPath('/teacher/exams');
               }
             }}
           />
         );
       }
       case 'settings':
-        return <SettingsHub key="settings" />;
+        return <SettingsHub onNavigate={navigateTeacher} />;
       default:
-        return <Dashboard onNavigate={setCurrentTab} />;
+        return <Dashboard onNavigate={navigateTeacher} />;
     }
   };
 
@@ -221,7 +268,8 @@ export default function App() {
       <SecureExamPortal
         presetExamCode={secureExamRouteMatch[1]}
         onBackToTeacher={() => {
-          navigateToLocalPath('/');
+          navigateToLocalPath('/teacher/dashboard');
+          setCurrentTab('dashboard');
           setUserRole('teacher');
         }}
       />
@@ -236,7 +284,8 @@ export default function App() {
       <SecureExamPortal
         presetExamCode={code}
         onBackToTeacher={() => {
-          navigateToLocalPath('/');
+          navigateToLocalPath('/teacher/dashboard');
+          setCurrentTab('dashboard');
           setUserRole('teacher');
         }}
       />
@@ -247,13 +296,29 @@ export default function App() {
     return (
       <ExamPortal
         onBackToTeacher={() => {
-          navigateToLocalPath('/');
+          navigateToLocalPath('/teacher/dashboard');
+          setCurrentTab('dashboard');
           setUserRole('teacher');
         }}
         presetExamCode="8AF39"
         subRoute="login"
         onNavigate={navigateToLocalPath}
       />
+    );
+  }
+
+  if (userRole === 'teacher' && authInitializing) {
+    return (
+      <div
+        className="grid min-h-screen place-items-center bg-[var(--color-page-bg)]"
+        role="status"
+        aria-label="در حال بررسی نشست کاربری"
+      >
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-ink)]" />
+          <p className="text-label text-[var(--color-text-secondary)]">در حال آماده‌سازی حساب…</p>
+        </div>
+      </div>
     );
   }
 
@@ -285,12 +350,13 @@ export default function App() {
 
   return (
     <TeacherProvider>
+      <WorkspacePreferenceApplier />
       <GlassFilters />
       <div className="min-h-screen bg-[var(--color-page-bg)] flex" dir="rtl" id="app-teacher-shell">
         {/* Background depth layer — stage surface that main panel floats above */}
         <div className="fixed inset-0 z-0 pointer-events-none" id="app-bg-stage">
           <div className="absolute inset-0 bg-[var(--color-surface-secondary)]" />
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[42rem] h-[42rem] bg-[var(--color-accent)]/2 rounded-full blur-[140px]" />
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[42rem] h-[42rem] bg-[var(--color-accent-solid)]/2 rounded-full blur-[140px]" />
           <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-[var(--color-gold)]/4 rounded-full blur-[120px]" />
         </div>
 
@@ -301,16 +367,14 @@ export default function App() {
         >
           <Topbar
             currentTab={currentTab}
-            onTabChange={(tab) => {
-              setCurrentTab(tab);
-              setExamSubView('list');
-              setSelectedExamId(undefined);
-              navigateToLocalPath('/');
-            }}
+            onTabChange={navigateTeacher}
             onSwitchRole={handleSwitchUserRole}
-            onLogout={() => setIsTeacherLoggedIn(false)}
+            onLogout={() => {
+              void authService.logoutTeacher().finally(() => setIsTeacherLoggedIn(false));
+            }}
             onSelectExamForResults={handleSelectExamForResults}
           />
+          <CommandPalette onNavigate={navigateTeacher} />
 
           {/* Dynamic Page Router — floats above bg stage */}
           <div className="p-4 lg:p-8 flex-1 bg-transparent" id="router-view-box">

@@ -54,8 +54,9 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
               </p>
             )}
             <button
+              type="button"
               onClick={this.handleReset}
-              className="px-6 py-2 bg-[var(--color-info-soft)] text-white rounded-lg hover:bg-[var(--color-info-soft)] transition-colors font-medium"
+              className="px-6 py-2 bg-[var(--color-info-soft)] text-[var(--color-text-on-solid)] rounded-lg hover:bg-[var(--color-info-soft)] transition-colors font-medium"
             >
               تلاش مجدد
             </button>

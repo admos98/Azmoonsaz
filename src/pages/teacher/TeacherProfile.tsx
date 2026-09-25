@@ -1,101 +1,579 @@
 import { useMemo, useRef, useState } from 'react';
-import { Camera, CalendarDays, GraduationCap, Plus, Save, School, UserRound, Users } from 'lucide-react';
+import {
+  Camera,
+  CalendarDays,
+  GraduationCap,
+  Plus,
+  Save,
+  School,
+  Trash2,
+  UserRound,
+  Users,
+} from 'lucide-react';
 import { useTeacher } from '../../contexts/TeacherContext';
 import { teacherProfileService } from '../../services/api';
 import Students from './Students';
 import Classes from './Classes';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 type ProfileTab = 'overview' | 'students' | 'classes';
-type ScheduleItem = { id: string; day: string; time: string; school: string; className: string; subject: string };
+type SaveStatus = { type: 'idle' | 'uploading' | 'saving' | 'success' | 'error'; message: string };
+type LocalSchool = { id: string; name: string };
+type ScheduleItem = {
+  id: string;
+  day: number;
+  startTime: string;
+  endTime: string;
+  schoolName: string;
+  className: string;
+  subject: string;
+};
 
 const days = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
+const makeId = () => crypto.randomUUID();
 
-export default function TeacherProfile({ initialTab = 'overview' }: { initialTab?: ProfileTab }) {
+export default function TeacherProfile({
+  initialTab = 'overview',
+  onNavigate,
+}: {
+  initialTab?: ProfileTab;
+  onNavigate?: (tab: string) => void;
+}) {
   const { teacher, updateTeacher } = useTeacher();
   const [tab, setTab] = useState<ProfileTab>(initialTab);
   const [name, setName] = useState(teacher?.name || '');
   const [subject, setSubject] = useState(teacher?.subject || '');
   const [bio, setBio] = useState(teacher?.bio || '');
-  const [schools, setSchools] = useState<string[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState(teacher?.avatarUrl || '');
+  const [schools, setSchools] = useState<LocalSchool[]>(() =>
+    teacher?.schools?.length
+      ? teacher.schools.map((school) => ({ id: school.id || makeId(), name: school.name }))
+      : teacher?.schoolName
+        ? [{ id: makeId(), name: teacher.schoolName }]
+        : [],
+  );
   const [newSchool, setNewSchool] = useState('');
-  const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [schedule, setSchedule] = useState<ScheduleItem[]>(() =>
+    (teacher?.schedule || []).map((item) => ({
+      id: item.id || makeId(),
+      day: item.day,
+      startTime: item.startTime,
+      endTime: item.endTime || '',
+      schoolName: item.schoolName,
+      className: item.className,
+      subject: item.subject,
+    })),
+  );
+  const [status, setStatus] = useState<SaveStatus>({ type: 'idle', message: '' });
   const fileRef = useRef<HTMLInputElement>(null);
+  const profileSnapshot = JSON.stringify([name, subject, bio, avatarUrl, schools, schedule]);
+  const [savedProfileSnapshot, setSavedProfileSnapshot] = useState(profileSnapshot);
+  const guardProfileAction = useUnsavedChanges(profileSnapshot !== savedProfileSnapshot);
+  const handleTabChange = (next: ProfileTab) =>
+    guardProfileAction(() => {
+      setTab(next);
+      onNavigate?.(next === 'overview' ? 'profile' : next);
+    });
 
-  // Sync the editable draft when the authenticated profile finishes loading.
-  // State adjustment during render (not an effect): resyncs only when a new
-  // teacher object arrives, never on local draft edits.
-  const [syncedTeacher, setSyncedTeacher] = useState(teacher);
-  if (teacher !== syncedTeacher) {
-    setSyncedTeacher(teacher);
+  // Reinitialize only when a different authenticated account is loaded. Context updates
+  // for avatar/profile fields must not erase the user's unsaved local draft.
+  const [loadedTeacherId, setLoadedTeacherId] = useState(teacher?.id);
+  if (teacher?.id !== loadedTeacherId) {
+    setLoadedTeacherId(teacher?.id);
     setName(teacher?.name || '');
     setSubject(teacher?.subject || '');
     setBio(teacher?.bio || '');
-    setSchools(teacher?.schools?.map((s) => s.name) || (teacher?.schoolName ? [teacher.schoolName] : []));
-    setSchedule((teacher?.schedule || []).map((item) => ({ id: item.id, day: days[item.day] || 'شنبه', time: item.startTime, school: item.schoolName, className: item.className, subject: item.subject })));
+    setAvatarUrl(teacher?.avatarUrl || '');
+    setSchools(
+      teacher?.schools?.length
+        ? teacher.schools.map((school) => ({ id: school.id || makeId(), name: school.name }))
+        : teacher?.schoolName
+          ? [{ id: makeId(), name: teacher.schoolName }]
+          : [],
+    );
+    setSchedule(
+      (teacher?.schedule || []).map((item) => ({
+        id: item.id || makeId(),
+        day: item.day,
+        startTime: item.startTime,
+        endTime: item.endTime || '',
+        schoolName: item.schoolName,
+        className: item.className,
+        subject: item.subject,
+      })),
+    );
   }
-  const save = async () => {
-    setSaving(true); setMessage('');
-    try {
-      const updated = await teacherProfileService.save({ name, subject, bio, avatarUrl: teacher?.avatarUrl, schools: schools.map((school, index) => ({ id: '', name: school, isPrimary: index === 0 })), schedule: schedule.map((item) => ({ id: item.id, day: Math.max(0, days.indexOf(item.day)), startTime: item.time, schoolName: item.school, className: item.className, subject: item.subject })) });
-      updateTeacher(updated); setMessage('تغییرات با موفقیت در حساب شما ذخیره شد.');
-    } catch { setMessage('ذخیره اطلاعات انجام نشد. دوباره تلاش کنید.'); }
-    finally { setSaving(false); }
-  };
-  const addSchedule = () => setSchedule((s) => [...s, { id: crypto.randomUUID(), day: 'شنبه', time: '08:00', school: schools[0] || '', className: '', subject }]);
-  const upcoming = useMemo(() => schedule.slice(0, 4), [schedule]);
 
-  if (tab === 'students') return <div><ProfileHeader tab={tab} setTab={setTab} /><Students /></div>;
-  if (tab === 'classes') return <div><ProfileHeader tab={tab} setTab={setTab} /><Classes /></div>;
+  const validationError = useMemo(() => {
+    if (!name.trim()) return 'نام و نام خانوادگی را وارد کنید.';
+    const invalidTime = schedule.find(
+      (item) => item.endTime && item.startTime && item.endTime <= item.startTime,
+    );
+    if (invalidTime)
+      return `ساعت پایان کلاس ${invalidTime.className || 'بدون نام'} باید بعد از شروع باشد.`;
+    return '';
+  }, [name, schedule]);
+
+  const updateSchedule = (id: string, updates: Partial<ScheduleItem>) => {
+    setSchedule((current) =>
+      current.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+    );
+  };
+
+  const save = async () => {
+    if (validationError) {
+      setStatus({ type: 'error', message: validationError });
+      return;
+    }
+    setStatus({ type: 'saving', message: 'در حال ذخیره اطلاعات…' });
+    try {
+      const updated = await teacherProfileService.save({
+        name: name.trim(),
+        subject: subject.trim(),
+        bio: bio.trim(),
+        avatarUrl,
+        schools: schools.map((school, index) => ({
+          id: school.id,
+          name: school.name,
+          isPrimary: index === 0,
+        })),
+        schedule: schedule.map((item) => ({
+          id: item.id,
+          day: item.day,
+          startTime: item.startTime,
+          endTime: item.endTime || undefined,
+          schoolName: item.schoolName,
+          className: item.className.trim(),
+          subject: item.subject.trim(),
+        })),
+      });
+      updateTeacher(updated);
+      setAvatarUrl(updated.avatarUrl || avatarUrl);
+      setSavedProfileSnapshot(profileSnapshot);
+      setStatus({ type: 'success', message: 'تغییرات با موفقیت ذخیره شد.' });
+    } catch (error) {
+      setStatus({
+        type: 'error',
+        message:
+          error instanceof Error ? error.message : 'ذخیره اطلاعات انجام نشد. دوباره تلاش کنید.',
+      });
+    }
+  };
+
+  const uploadAvatar = async (file?: File) => {
+    if (!file) return;
+    setStatus({ type: 'uploading', message: 'در حال بارگذاری تصویر…' });
+    try {
+      const uploadedUrl = await teacherProfileService.uploadAvatar(file);
+      setAvatarUrl(uploadedUrl);
+      setStatus({
+        type: 'success',
+        message: 'تصویر آماده است. برای ثبت نهایی، تغییرات را ذخیره کنید.',
+      });
+    } catch (error) {
+      setStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'بارگذاری تصویر انجام نشد.',
+      });
+    }
+  };
+
+  const addSchool = () => {
+    const value = newSchool.trim();
+    if (!value) return;
+    if (
+      schools.some(
+        (school) => school.name.localeCompare(value, 'fa', { sensitivity: 'base' }) === 0,
+      )
+    ) {
+      setStatus({ type: 'error', message: 'این مدرسه قبلاً اضافه شده است.' });
+      return;
+    }
+    setSchools((current) => [...current, { id: makeId(), name: value }]);
+    setNewSchool('');
+  };
+
+  const removeSchool = (school: LocalSchool) => {
+    setSchools((current) => current.filter((item) => item.id !== school.id));
+    setSchedule((current) =>
+      current.map((item) => (item.schoolName === school.name ? { ...item, schoolName: '' } : item)),
+    );
+  };
+
+  const addSchedule = () => {
+    setSchedule((current) => [
+      ...current,
+      {
+        id: makeId(),
+        day: 0,
+        startTime: '08:00',
+        endTime: '09:00',
+        schoolName: schools[0]?.name || '',
+        className: '',
+        subject,
+      },
+    ]);
+  };
+
+  if (tab === 'students') {
+    return (
+      <div>
+        <ProfileHeader tab={tab} setTab={handleTabChange} />
+        <Students />
+      </div>
+    );
+  }
+  if (tab === 'classes') {
+    return (
+      <div>
+        <ProfileHeader tab={tab} setTab={handleTabChange} />
+        <Classes />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <ProfileHeader tab={tab} setTab={setTab} />
+    <div className="mx-auto max-w-7xl space-y-6">
+      <ProfileHeader tab={tab} setTab={handleTabChange} />
+
       <section className="profile-cover glx overflow-hidden rounded-[28px] p-5 sm:p-7">
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-          <button onClick={() => fileRef.current?.click()} className="relative group shrink-0" aria-label="تغییر تصویر پروفایل">
-            {teacher?.avatarUrl ? <img src={teacher.avatarUrl} alt={teacher?.name || 'تصویر پروفایل'} className="w-24 h-24 rounded-3xl object-cover ring-4 ring-white/50" /> : <div className="w-24 h-24 rounded-3xl bg-[var(--color-ink)] text-white grid place-items-center text-heading-1 font-black">{teacher?.name?.[0] || 'م'}</div>}
-            <span className="absolute -bottom-2 -left-2 w-9 h-9 rounded-xl bg-[var(--color-gold)] text-[var(--color-ink)] grid place-items-center shadow-md"><Camera className="w-4 h-4" /></span>
+        <div className="relative z-10 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="group relative shrink-0"
+            aria-label="تغییر تصویر پروفایل"
+            disabled={status.type === 'uploading'}
+          >
+            {avatarUrl ? (
+              <img
+                loading="eager"
+                decoding="async"
+                src={avatarUrl}
+                alt={`تصویر پروفایل ${name || 'دبیر'}`}
+                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/50"
+              />
+            ) : (
+              <span className="grid h-24 w-24 place-items-center rounded-3xl bg-[var(--color-ink)] text-heading-1 font-black text-[var(--color-text-on-solid)]">
+                {name[0] || 'م'}
+              </span>
+            )}
+            <span className="absolute -bottom-2 -left-2 grid h-9 w-9 place-items-center rounded-xl bg-[var(--color-gold)] text-[var(--color-ink)] shadow-md">
+              <Camera className="h-4 w-4" aria-hidden="true" />
+            </span>
           </button>
-          <input ref={fileRef} hidden type="file" accept="image/*" onChange={async (e) => { const f=e.target.files?.[0]; if(!f) return; setMessage('در حال بارگذاری تصویر…'); try { const avatarUrl = await teacherProfileService.uploadAvatar(f); updateTeacher({avatarUrl}); setMessage('تصویر بارگذاری شد؛ برای ثبت پروفایل، ذخیره را بزنید.'); } catch { setMessage('بارگذاری تصویر انجام نشد.'); } }} />
+          <input
+            ref={fileRef}
+            hidden
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => uploadAvatar(event.target.files?.[0])}
+          />
+
           <div className="flex-1">
-            <p className="text-micro font-bold text-[var(--color-accent)] mb-1">پروفایل حرفه‌ای دبیر</p>
-            <h1 className="text-heading-1 font-black">{teacher?.name || 'پروفایل دبیر'}</h1>
-            <p className="text-label text-[var(--color-text-secondary)] mt-2">{subject || 'درس تخصصی ثبت نشده'} · {schools.length ? `${schools.length} مدرسه` : 'مدرسه‌ای ثبت نشده'}</p>
+            <p className="mb-1 text-caption font-bold text-[var(--color-text-secondary)]">
+              پروفایل حرفه‌ای دبیر
+            </p>
+            <h1 className="text-heading-1 font-black">{name || 'پروفایل دبیر'}</h1>
+            <p className="mt-2 text-label text-[var(--color-text-secondary)]">
+              {subject || 'درس تخصصی ثبت نشده'} ·{' '}
+              {schools.length ? `${schools.length} مدرسه` : 'مدرسه‌ای ثبت نشده'}
+            </p>
           </div>
-          <div className="flex flex-col items-end gap-2"><button onClick={save} disabled={saving} className="btn-brand disabled:opacity-60"><Save className="w-4 h-4" /> {saving ? 'در حال ذخیره…' : 'ذخیره تغییرات'}</button>{message && <span className="text-micro text-[var(--color-text-secondary)]">{message}</span>}</div>
+
+          <div className="flex flex-col items-stretch gap-2 sm:items-end">
+            <button
+              type="button"
+              onClick={save}
+              disabled={status.type === 'saving' || status.type === 'uploading'}
+              className="btn-brand disabled:cursor-wait disabled:opacity-60"
+            >
+              <Save className="h-4 w-4" aria-hidden="true" />
+              {status.type === 'saving' ? 'در حال ذخیره…' : 'ذخیره تغییرات'}
+            </button>
+            {status.message && (
+              <p
+                role={status.type === 'error' ? 'alert' : 'status'}
+                aria-live="polite"
+                className={`max-w-xs text-caption ${status.type === 'error' ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)]'}`}
+              >
+                {status.message}
+              </p>
+            )}
+          </div>
         </div>
       </section>
 
-      <div className="grid lg:grid-cols-[1.05fr_.95fr] gap-6">
+      <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
         <section className="glx panel-shell space-y-5">
-          <div className="section-title"><UserRound /><div><h2>اطلاعات دبیر</h2><p>اطلاعاتی که در پنل و آزمون‌ها نمایش داده می‌شود.</p></div></div>
-          <label className="field-label">نام و نام خانوادگی<input className="profile-input" value={name} onChange={e=>setName(e.target.value)} /></label>
-          <label className="field-label">درس یا دروس تخصصی<input className="profile-input" value={subject} onChange={e=>setSubject(e.target.value)} placeholder="مثلاً ریاضی و فیزیک" /></label>
-          <label className="field-label">درباره من<textarea className="profile-input min-h-[96px] py-3 leading-7 resize-y" value={bio} onChange={e=>setBio(e.target.value)} placeholder="معرفی کوتاه برای نمایش در کنار آزمون‌ها" maxLength={1000} /></label>
+          <SectionTitle
+            icon={<UserRound />}
+            title="اطلاعات دبیر"
+            description="اطلاعاتی که در پنل و آزمون‌ها نمایش داده می‌شود."
+          />
+          <label className="field-label">
+            نام و نام خانوادگی
+            <input
+              className="profile-input"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+          <label className="field-label">
+            درس یا دروس تخصصی
+            <input
+              className="profile-input"
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+              placeholder="مثلاً ریاضی و فیزیک"
+            />
+          </label>
+          <label className="field-label">
+            درباره من
+            <textarea
+              className="profile-input min-h-24 resize-y py-3 leading-7"
+              value={bio}
+              onChange={(event) => setBio(event.target.value)}
+              placeholder="معرفی کوتاه برای نمایش در کنار آزمون‌ها"
+              maxLength={1000}
+            />
+            <span className="mt-1 block text-caption font-normal text-[var(--color-text-tertiary)]">
+              {bio.length.toLocaleString('fa-IR')} از ۱٬۰۰۰ نویسه
+            </span>
+          </label>
+
           <div>
             <p className="field-label mb-2">مدارس محل تدریس</p>
-            <div className="space-y-2">{schools.map((school,i)=><div key={i} className="flex gap-2"><div className="profile-input flex-1 flex items-center gap-2"><School className="w-4 h-4 text-[var(--color-accent)]" />{school}</div><button onClick={()=>setSchools(s=>s.filter((_,x)=>x!==i))} className="px-3 text-[var(--color-danger)]">حذف</button></div>)}</div>
-            <div className="flex gap-2 mt-3"><input className="profile-input flex-1" value={newSchool} onChange={e=>setNewSchool(e.target.value)} placeholder="نام مدرسه جدید"/><button className="btn-soft" onClick={()=>{if(newSchool.trim()){setSchools([...schools,newSchool.trim()]);setNewSchool('')}}}><Plus className="w-4 h-4"/> افزودن</button></div>
+            <div className="space-y-2">
+              {schools.map((school, index) => (
+                <div key={school.id} className="flex items-center gap-2">
+                  <div className="profile-input mt-0 flex flex-1 items-center gap-2">
+                    <School className="h-4 w-4 text-[var(--color-ink)]" aria-hidden="true" />
+                    <span className="flex-1">{school.name}</span>
+                    {index === 0 && (
+                      <span className="text-caption text-[var(--color-text-tertiary)]">اصلی</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeSchool(school)}
+                    className="min-h-11 rounded-xl px-3 text-caption text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
+                  >
+                    حذف
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <input
+                className="profile-input mt-0 flex-1"
+                value={newSchool}
+                onChange={(event) => setNewSchool(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addSchool();
+                  }
+                }}
+                placeholder="نام مدرسه جدید"
+                aria-label="نام مدرسه جدید"
+              />
+              <button type="button" className="btn-soft" onClick={addSchool}>
+                <Plus className="h-4 w-4" aria-hidden="true" /> افزودن
+              </button>
+            </div>
           </div>
         </section>
 
         <section className="glx panel-shell">
-          <div className="section-title mb-5"><CalendarDays /><div><h2>تقویم هفتگی</h2><p>کلاس‌ها، مدرسه و ساعت تدریس شما.</p></div></div>
-          <div className="grid grid-cols-7 gap-1 mb-5">{days.map(d=><div key={d} className="text-center py-2 rounded-xl glx-inset text-micro">{d.slice(0,2)}</div>)}</div>
-          <div className="space-y-3">{upcoming.length ? upcoming.map((item,index)=><div key={item.id} className="schedule-row">
-            <select value={item.day} onChange={e=>setSchedule(s=>s.map((x,i)=>i===index?{...x,day:e.target.value}:x))}>{days.map(d=><option key={d}>{d}</option>)}</select>
-            <input type="time" value={item.time} onChange={e=>setSchedule(s=>s.map((x,i)=>i===index?{...x,time:e.target.value}:x))}/>
-            <input placeholder="کلاس / مدرسه" value={item.className} onChange={e=>setSchedule(s=>s.map((x,i)=>i===index?{...x,className:e.target.value}:x))}/>
-          </div>) : <div className="empty-quiet"><CalendarDays className="w-7 h-7"/><p>برنامه‌ای ثبت نشده است.</p></div>}</div>
-          <button className="btn-soft w-full justify-center mt-4" onClick={addSchedule}><Plus className="w-4 h-4"/> افزودن کلاس به برنامه</button>
+          <SectionTitle
+            icon={<CalendarDays />}
+            title="برنامه هفتگی"
+            description="کلاس‌ها، مدرسه و ساعت تدریس شما."
+          />
+          <div className="mt-5 grid grid-cols-7 gap-1" aria-label="روزهای هفته">
+            {days.map((day) => (
+              <div
+                key={day}
+                title={day}
+                className="glx-inset rounded-xl py-2 text-center text-caption"
+              >
+                {day.slice(0, 2)}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {schedule.length ? (
+              schedule.map((item) => (
+                <div key={item.id} className="schedule-card">
+                  <label>
+                    <span>روز</span>
+                    <select
+                      value={item.day}
+                      onChange={(event) =>
+                        updateSchedule(item.id, { day: Number(event.target.value) })
+                      }
+                    >
+                      {days.map((day, index) => (
+                        <option key={day} value={index}>
+                          {day}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>شروع</span>
+                    <input
+                      type="time"
+                      value={item.startTime}
+                      onChange={(event) =>
+                        updateSchedule(item.id, { startTime: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>پایان</span>
+                    <input
+                      type="time"
+                      value={item.endTime}
+                      onChange={(event) => updateSchedule(item.id, { endTime: event.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>مدرسه</span>
+                    <select
+                      value={item.schoolName}
+                      onChange={(event) =>
+                        updateSchedule(item.id, { schoolName: event.target.value })
+                      }
+                    >
+                      <option value="">انتخاب مدرسه</option>
+                      {schools.map((school) => (
+                        <option key={school.id} value={school.name}>
+                          {school.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>کلاس</span>
+                    <input
+                      value={item.className}
+                      onChange={(event) =>
+                        updateSchedule(item.id, { className: event.target.value })
+                      }
+                      placeholder="مثلاً هفتم الف"
+                    />
+                  </label>
+                  <label>
+                    <span>درس</span>
+                    <input
+                      value={item.subject}
+                      onChange={(event) => updateSchedule(item.id, { subject: event.target.value })}
+                      placeholder="نام درس"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSchedule((current) => current.filter((row) => row.id !== item.id))
+                    }
+                    className="schedule-delete"
+                    aria-label="حذف این کلاس از برنامه"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="empty-quiet">
+                <CalendarDays className="h-7 w-7" aria-hidden="true" />
+                <p>برنامه‌ای ثبت نشده است.</p>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className="btn-soft mt-4 w-full justify-center"
+            onClick={addSchedule}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" /> افزودن کلاس به برنامه
+          </button>
         </section>
       </div>
     </div>
   );
 }
 
-function ProfileHeader({tab,setTab}:{tab:ProfileTab;setTab:(t:ProfileTab)=>void}){
- return <div className="flex flex-wrap items-center justify-between gap-3"><div><h1 className="text-heading-2 font-black">مرکز دبیر و کلاس‌ها</h1><p className="text-caption text-[var(--color-text-tertiary)] mt-1">پروفایل، دانش‌آموزان و برنامه تدریس در یک مکان</p></div><div className="segmented-control"><button onClick={()=>setTab('overview')} className={tab==='overview'?'active':''}><UserRound/>پروفایل</button><button onClick={()=>setTab('students')} className={tab==='students'?'active':''}><Users/>دانش‌آموزان</button><button onClick={()=>setTab('classes')} className={tab==='classes'?'active':''}><GraduationCap/>کلاس‌ها</button></div></div>
+function SectionTitle({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="section-title">
+      {icon}
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function ProfileHeader({ tab, setTab }: { tab: ProfileTab; setTab: (tab: ProfileTab) => void }) {
+  const tabs: Array<{ id: ProfileTab; label: string; icon: React.ReactNode }> = [
+    { id: 'overview', label: 'پروفایل', icon: <UserRound /> },
+    { id: 'students', label: 'دانش‌آموزان', icon: <Users /> },
+    { id: 'classes', label: 'کلاس‌ها', icon: <GraduationCap /> },
+  ];
+  const activate = (next: ProfileTab) => {
+    setTab(next);
+  };
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 className="text-heading-2 font-black">مرکز دبیر و کلاس‌ها</h1>
+        <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
+          پروفایل، دانش‌آموزان و برنامه تدریس در یک مکان
+        </p>
+      </div>
+      <div
+        className="segmented-control"
+        role="tablist"
+        aria-label="بخش‌های پروفایل دبیر"
+        onKeyDown={(event) => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+          event.preventDefault();
+          const index = tabs.findIndex((item) => item.id === tab);
+          const direction = event.key === 'ArrowLeft' ? 1 : -1;
+          const next = tabs[(index + direction + tabs.length) % tabs.length];
+          activate(next.id);
+          requestAnimationFrame(() =>
+            event.currentTarget.querySelector<HTMLElement>('[aria-selected="true"]')?.focus(),
+          );
+        }}
+      >
+        {tabs.map((item) => (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === item.id}
+            tabIndex={tab === item.id ? 0 : -1}
+            key={item.id}
+            onClick={() => activate(item.id)}
+            className={tab === item.id ? 'active' : ''}
+          >
+            {item.icon}
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }

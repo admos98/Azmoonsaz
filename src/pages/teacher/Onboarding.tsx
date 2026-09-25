@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { GraduationCap, Building2, BookOpen } from 'lucide-react';
 import { authService } from '../../services/api';
 import { Dropdown } from '../../components/UIComponents';
+import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -31,9 +32,15 @@ const SUBJECTS = [
 ];
 
 export default function Onboarding({ onComplete }: OnboardingProps) {
-  const [schoolName, setSchoolName] = useState('');
-  const [subject, setSubject] = useState('');
-  const [customSubject, setCustomSubject] = useState('');
+  const [schoolName, setSchoolName, resetSchoolName] = usePersistentPreference(
+    'onboarding:school-name',
+    '',
+  );
+  const [subject, setSubject, resetSubject] = usePersistentPreference('onboarding:subject', '');
+  const [customSubject, setCustomSubject, resetCustomSubject] = usePersistentPreference(
+    'onboarding:custom-subject',
+    '',
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +62,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     setLoading(true);
     try {
       await authService.completeOnboarding(schoolName.trim(), finalSubject.trim());
+      resetSchoolName();
+      resetSubject();
+      resetCustomSubject();
       onComplete();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'خطا در ذخیره اطلاعات');
@@ -77,6 +87,27 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           <p className="text-label text-[var(--color-text-tertiary)] mt-1">
             برای شروع، اطلاعات زیر را تکمیل کنید
           </p>
+        </div>
+
+        <div className="mb-4" aria-label="پیشرفت تکمیل اطلاعات">
+          <div className="mb-1 flex justify-between text-micro font-bold text-[var(--color-text-secondary)]">
+            <span>تکمیل اطلاعات اولیه</span>
+            <span>
+              {schoolName.trim() && (subject !== 'سایر' ? subject : customSubject).trim()
+                ? '۲ از ۲'
+                : schoolName.trim() || (subject !== 'سایر' ? subject : customSubject).trim()
+                  ? '۱ از ۲'
+                  : '۰ از ۲'}
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--color-surface-secondary)]">
+            <div
+              className="h-full bg-[var(--color-accent-solid)] transition-[width]"
+              style={{
+                width: `${((Number(Boolean(schoolName.trim())) + Number(Boolean((subject !== 'سایر' ? subject : customSubject).trim()))) / 2) * 100}%`,
+              }}
+            />
+          </div>
         </div>
 
         {/* Form */}
@@ -139,7 +170,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-soft)]/40 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-lg shadow-[var(--color-accent)]/10 cursor-pointer"
+              className="w-full bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] disabled:bg-[var(--color-accent-soft)]/40 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-lg shadow-[var(--color-accent)]/10 cursor-pointer"
             >
               {loading ? 'در حال ذخیره...' : 'شروع کنید'}
             </button>

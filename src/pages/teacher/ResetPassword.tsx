@@ -17,16 +17,16 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const [validating, setValidating] = useState(true);
+  const [validating, setValidating] = useState(() => {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    return Boolean(params.get('access_token') && params.get('refresh_token'));
+  });
   const [tokenValid, setTokenValid] = useState(false);
 
   // Extract tokens from URL hash and exchange them for a session
   useEffect(() => {
     const hash = window.location.hash;
-    if (!hash.includes('type=recovery')) {
-      setValidating(false);
-      return;
-    }
+    if (!hash.includes('type=recovery')) return;
 
     const supabase = getSupabasePublicClient();
     const params = new URLSearchParams(hash.substring(1));
@@ -44,8 +44,6 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
           }
         })
         .finally(() => setValidating(false));
-    } else {
-      setValidating(false);
     }
   }, []);
 
@@ -75,7 +73,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[var(--color-accent-soft)] via-[var(--color-surface)] to-[var(--color-info-soft)] flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4 animate-pulse">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
             <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
           </div>
           <p className="text-label text-[var(--color-text-tertiary)]">در حال بررسی لینک...</p>
@@ -107,8 +105,9 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
               حالا می‌توانید با رمز جدید وارد شوید.
             </p>
             <button
+              type="button"
               onClick={onDone}
-              className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold text-label py-3 rounded-xl transition-colors cursor-pointer"
+              className="w-full bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors cursor-pointer"
             >
               ورود
             </button>
@@ -135,6 +134,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
               {error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}
             </p>
             <button
+              type="button"
               onClick={onDone}
               className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
             >
@@ -195,7 +195,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] disabled:bg-[var(--color-accent-soft)]/40 text-white font-bold text-label py-3 rounded-xl transition-colors shadow-lg shadow-lg cursor-pointer"
+              className="w-full bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] disabled:bg-[var(--color-accent-soft)]/40 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-lg shadow-lg cursor-pointer"
             >
               {loading ? 'در حال ذخیره...' : 'ذخیره رمز جدید'}
             </button>

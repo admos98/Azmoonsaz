@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { Exam, ExamSettings as SettingsType, ClassGroup, Student } from '../../types';
 import { classService, studentService } from '../../services/api';
+import { formatPersianDate, normalizePersianText, toPersianDigits } from '../../utils/persian';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 interface ExamSettingsProps {
   exam: Exam;
@@ -117,72 +119,34 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [showRecommendationsApplied, setShowRecommendationsApplied] = useState<boolean>(false);
 
-  // Jalali/Shamsi Date Converter Helper
-  const getPersianDateStr = (dateStr?: string): string => {
-    if (!dateStr) return 'نامشخص';
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) return 'نامشخص';
-    const gy = parseInt(parts[0]);
-    const gm = parseInt(parts[1]);
-    const gd = parseInt(parts[2]);
-    if (isNaN(gy) || isNaN(gm) || isNaN(gd)) return 'نامشخص';
-
-    // Gregorian to Jalali mapping algorithm
-    const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    const gy2 = gm > 2 ? gy + 1 : gy;
-    let days =
-      355666 +
-      365 * gy +
-      Math.floor((gy2 + 3) / 4) -
-      Math.floor((gy2 + 99) / 100) +
-      Math.floor((gy2 + 399) / 400) +
-      gd +
-      g_d_m[gm - 1];
-    let jy = -1595 + 33 * Math.floor(days / 12053);
-    days %= 12053;
-    jy += 4 * Math.floor(days / 1461);
-    days %= 1461;
-    if (days > 365) {
-      jy += Math.floor((days - 1) / 365);
-      days = (days - 1) % 365;
-    }
-    const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
-    const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
-
-    const months = [
-      'فروردین',
-      'اردیبهشت',
-      'خرداد',
-      'تیر',
-      'مرداد',
-      'شهریور',
-      'مهر',
-      'آبان',
-      'آذر',
-      'دی',
-      'بهمن',
-      'اسفند',
-    ];
-
-    const daysOfWeek = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
-
-    try {
-      const dateObj = new Date(gy, gm - 1, gd);
-      const dayOfWeekStr = daysOfWeek[dateObj.getDay()];
-      const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-      const toFarsiNum = (n: number) =>
-        String(n).replace(/[0-9]/g, (w) => farsiDigits[parseInt(w)]);
-      return `${dayOfWeekStr}، ${toFarsiNum(jd)} ${months[jm - 1]} ${toFarsiNum(jy)}`;
-    } catch {
-      return '';
-    }
-  };
-
-  const toPersianDigits = (str: string | number | undefined): string => {
-    if (str === undefined) return '';
-    const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    return String(str).replace(/[0-9]/g, (w) => farsiDigits[parseInt(w)]);
-  };
+  // Track only persisted fields; search/copy/recommendation feedback is transient UI state.
+  const editorSnapshot = JSON.stringify([
+    startDate,
+    startHour,
+    endDate,
+    endHour,
+    durationMinutes,
+    allowedClasses,
+    requireNationalId,
+    entryCode,
+    maxAttempts,
+    limitToSpecificStudents,
+    allowedStudents,
+    autoSubmit,
+    allowBacktrack,
+    showOneQuestionPerPage,
+    autoSaveAnswers,
+    shuffleQuestions,
+    shuffleOptions,
+    beastMode,
+    resultsDisplayMode,
+    startInstructions,
+    examStatus,
+    examLink,
+  ]);
+  const [savedSnapshot, setSavedSnapshot] = useState(editorSnapshot);
+  const guardUnsavedAction = useUnsavedChanges(editorSnapshot !== savedSnapshot);
+  const handleBack = () => guardUnsavedAction(onBack);
 
   // Class selection handler
   const handleToggleClass = (classId: string) => {
@@ -222,10 +186,12 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
   // Real-time student calculation list
   const activeClassStudents = allStudents.filter((s) => allowedClasses.includes(s.classGroupId));
+  const normalizedStudentSearch = normalizePersianText(studentSearchQuery);
   const filteredStudents = activeClassStudents.filter(
-    (s) =>
-      s.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-      s.nationalId.includes(studentSearchQuery),
+    (student) =>
+      !normalizedStudentSearch ||
+      normalizePersianText(student.name).includes(normalizedStudentSearch) ||
+      normalizePersianText(student.nationalId).includes(normalizedStudentSearch),
   );
 
   const totalCalculatedStudents = limitToSpecificStudents
@@ -335,6 +301,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
       examLink,
     };
 
+    setSavedSnapshot(editorSnapshot);
     onSave({
       ...exam,
       duration: durationMinutes,
@@ -411,6 +378,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
       examLink: generatedLink,
     };
 
+    setSavedSnapshot(editorSnapshot);
     onSave({
       ...exam,
       duration: durationMinutes,
@@ -439,8 +407,9 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
       <div className="glx px-6 py-5 rounded-3xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
           <button
+            type="button"
             id="btn-back-to-exams-list-from-settings"
-            onClick={onBack}
+            onClick={handleBack}
             className="p-2 hover:brightness-105 rounded-xl text-[var(--color-text-tertiary)] cursor-pointer border border-[var(--color-glass-light-stroke)] transition-all font-semibold"
             title="بازگشت به فهرست آزمون‌ها"
           >
@@ -459,6 +428,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
         <div className="flex items-center gap-2 w-full md:w-auto self-end md:self-center">
           <button
+            type="button"
             id="btn-settings-save-shortcut"
             onClick={handleSaveSettings}
             className="flex-1 md:flex-none px-4.5 py-2 hover:brightness-105 text-[var(--color-text-secondary)] glx border rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
@@ -474,15 +444,15 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
         {/* Right Columns (2/3 width) - Content Inputs and Custom Options */}
         <div className="lg:col-span-2 space-y-6">
           {/* A. Recommended Option Panel (One-click template helper) */}
-          <div className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent)] text-white p-5 rounded-3xl relative overflow-hidden shadow-xs">
+          <div className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent)] text-[var(--color-text-on-solid)] p-5 rounded-3xl relative overflow-hidden shadow-xs">
             <div className="absolute top-0 left-0 translate-x-1/10 -translate-y-1/10 opacity-10">
               <Compass className="w-48 h-48" />
             </div>
 
             <div className="relative z-10 space-y-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[var(--color-warning)]/70 animate-pulse shrink-0" />
-                <h4 className="text-caption font-extrabold text-white">
+                <Sparkles className="w-5 h-5 text-[var(--color-warning)]/70 shrink-0" />
+                <h4 className="text-caption font-extrabold text-[var(--color-text-on-solid)]">
                   سامانه هوشمند پیکربندی رسمی (ویژه ارزشیابی نهایی)
                 </h4>
               </div>
@@ -511,7 +481,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                 <button
                   type="button"
                   onClick={handleApplyOfficialRecommendations}
-                  className="px-4.5 py-2 bg-[var(--color-warning)] hover:bg-[var(--color-warning)] text-[var(--color-text-primary)] rounded-xl text-caption font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-[var(--color-warning)]/20"
+                  className="px-4.5 py-2 bg-[var(--color-warning-solid)] hover:bg-[var(--color-warning-solid)] text-[var(--color-text-primary)] rounded-xl text-caption font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-[var(--color-warning)]/20"
                 >
                   <Zap className="w-4 h-4" />
                   <span>اعمال خودکار تنظیمات پیشنهادی امنیت هوشمند</span>
@@ -519,7 +489,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
               </div>
 
               {showRecommendationsApplied && (
-                <div className="p-3 bg-[var(--color-success)]/25 border border-[var(--color-success)]/20 text-[var(--color-success)] rounded-xl text-micro font-bold animate-in slide-in-from-top-2 duration-300 flex items-center gap-2">
+                <div className="p-3 bg-[var(--color-success-solid)]/25 border border-[var(--color-success)]/20 text-[var(--color-success)] rounded-xl text-micro font-bold animate-in slide-in-from-top-2 duration-300 flex items-center gap-2">
                   <CheckCircle className="w-4.5 h-4.5" />
                   <span>معیارهای امنیتی با موفقیت روی برگه آزمون سوار و ذخیره شدند!</span>
                 </div>
@@ -557,10 +527,10 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                 {/* Real-time Shamsi displays */}
                 {startDate && (
                   <div className="p-2 bg-[var(--color-success-soft)] rounded-lg text-[var(--color-success)] border border-[var(--color-success)]/10/50 text-micro font-semibold flex items-center gap-1 px-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success-solid)] shrink-0" />
                     <span>تقویم شمسی معادل:</span>
                     <strong className="text-[var(--color-success)]">
-                      {getPersianDateStr(startDate)}
+                      {formatPersianDate(startDate)}
                     </strong>
                   </div>
                 )}
@@ -587,10 +557,10 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                 </div>
                 {endDate && (
                   <div className="p-2 bg-[var(--color-success-soft)] rounded-lg text-[var(--color-success)] border border-[var(--color-success)]/10/50 text-micro font-semibold flex items-center gap-1 px-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)] shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success-solid)] shrink-0" />
                     <span>تقویم شمسی معادل:</span>
                     <strong className="text-[var(--color-success)]">
-                      {getPersianDateStr(endDate)}
+                      {formatPersianDate(endDate)}
                     </strong>
                   </div>
                 )}
@@ -664,7 +634,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                         <div
                           className={`w-4 h-4 rounded-md border flex items-center justify-center ${
                             isChecked
-                              ? 'bg-[var(--color-accent)] border-[var(--color-accent)]/20 text-white'
+                              ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)]'
                               : 'border-[var(--color-glass-light-stroke)] glx'
                           }`}
                         >
@@ -744,7 +714,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                                 <div
                                   className={`w-3.5 h-3.5 rounded-md border flex items-center justify-center ${
                                     isChecked
-                                      ? 'bg-[var(--color-accent)] border-[var(--color-accent)]/20 text-white'
+                                      ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)]'
                                       : 'border-[var(--color-glass-light-stroke)] glx'
                                   }`}
                                 >
@@ -856,205 +826,235 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
             </div>
           </div>
 
-          {/* SECTION 3: رفتار آزمون */}
-          <div className="glx p-6 rounded-3xl border space-y-4">
-            <h3 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
-              <Lock className="w-5 h-5 text-[var(--color-accent)]" />
-              <span>۳. نحوه رفتار و ابزار کنترلی آزمون</span>
-            </h3>
-
-            {/* Custom checkboxes behavior */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
-                <input
-                  type="checkbox"
-                  id="auto-submit-toggle"
-                  checked={autoSubmit}
-                  onChange={(e) => setAutoSubmit(e.target.checked)}
-                  className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                />
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="auto-submit-toggle"
-                    className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                  >
-                    ارسال خودکار پس از پایان زمان
-                  </label>
-                  <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                    بسته شدن سیستم و ثبت نهایی امن برگه به محض صفر شدن ثانیه‌شمار.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
-                <input
-                  type="checkbox"
-                  id="allow-backtrack-behavior"
-                  checked={allowBacktrack}
-                  onChange={(e) => setAllowBacktrack(e.target.checked)}
-                  className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                />
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="allow-backtrack-behavior"
-                    className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                  >
-                    امکان بازگشت به سوالات قبلی
-                  </label>
-                  <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                    دانش‌آموز بتواند سوالات رد کرده را برگردد و مجدد جواب دهد.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
-                <input
-                  type="checkbox"
-                  id="auto-save-answers-toggle"
-                  checked={autoSaveAnswers}
-                  onChange={(e) => setAutoSaveAnswers(e.target.checked)}
-                  className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                />
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="auto-save-answers-toggle"
-                    className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                  >
-                    ذخیره خودکار پاسخ‌ها (Auto-saves)
-                  </label>
-                  <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                    پشتیبان‌گیری پیوسته بر ابر پس از زدن هر دکمه جهت جلوگیری از قطعی برق دسکتاپ.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
-                <input
-                  type="checkbox"
-                  id="shuffle-questions-behavior"
-                  checked={shuffleQuestions}
-                  onChange={(e) => setShuffleQuestions(e.target.checked)}
-                  className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                />
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="shuffle-questions-behavior"
-                    className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                  >
-                    جابه‌جایی ترتیب سوالات (Shuffle)
-                  </label>
-                  <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                    تولید خودکار دفترچه‌های مجزا با ترتیب سوالات به هم‌ریخته برای کنترل تقلب.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
-                <input
-                  type="checkbox"
-                  id="shuffle-options-behavior"
-                  checked={shuffleOptions}
-                  onChange={(e) => setShuffleOptions(e.target.checked)}
-                  className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                />
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="shuffle-options-behavior"
-                    className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                  >
-                    جابه‌جایی ترتیب گزینه‌ها
-                  </label>
-                  <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                    جابه‌جایی الف-ب-ج-د به صورت تصادفی در سیستم روی مرورگر دانش‌آموزان به هنگام لود.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Question pagination layouts (1 question per page vs all in one page) */}
-            <div className="pt-3.5 border-t border-[var(--color-glass-light-stroke)] space-y-2">
-              <span className="text-caption font-bold text-[var(--color-text-secondary)] block text-right">
-                نحوه نمایش صفحات سوالات آزمون:
+          {/* SECTION 3: رفتار پیشرفته آزمون */}
+          <details className="group glx rounded-3xl border">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
+              <span className="flex items-center gap-2 text-caption font-extrabold text-[var(--color-text-primary)]">
+                <Lock className="w-5 h-5 text-[var(--color-accent)]" />
+                <span>۳. رفتار و کنترل‌های پیشرفته آزمون</span>
               </span>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div
-                  onClick={() => setShowOneQuestionPerPage(true)}
-                  className={`p-3.5 rounded-2xl border text-right cursor-pointer transition-all ${
-                    showOneQuestionPerPage
-                      ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/40 font-bold text-[var(--color-accent)] shadow-3xs'
-                      : 'border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
-                  }`}
-                >
-                  <span className="block text-caption font-extrabold flex items-center gap-1.5">
-                    <Laptop className="w-4 h-4 text-[var(--color-accent)]" />
-                    <span>نمایش یک سوال در هر صفحه</span>
-                  </span>
-                  <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
-                    تضمین تمرکز بالا، مهار عکس گرفتن گروهی از کل اوراق از روی مانیتورها.
-                  </p>
+              <span className="text-micro font-bold text-[var(--color-accent)] group-open:hidden">
+                نمایش تنظیمات
+              </span>
+              <span className="hidden text-micro font-bold text-[var(--color-accent)] group-open:inline">
+                بستن تنظیمات
+              </span>
+            </summary>
+            <div className="space-y-4 border-t border-[var(--color-glass-light-stroke)] p-6 pt-4">
+              <p className="text-micro leading-relaxed text-[var(--color-text-tertiary)]">
+                این گزینه‌ها ترتیب سؤال‌ها، امکان بازگشت، ذخیره پاسخ و محدودیت‌های حفاظتی را تغییر
+                می‌دهند. پیش از انتشار، تجربه دانش‌آموز را در پیش‌نمایش بررسی کنید.
+              </p>
+
+              {/* Custom checkboxes behavior */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                  <input
+                    type="checkbox"
+                    id="auto-submit-toggle"
+                    checked={autoSubmit}
+                    onChange={(e) => setAutoSubmit(e.target.checked)}
+                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <label
+                      htmlFor="auto-submit-toggle"
+                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
+                    >
+                      ارسال خودکار پس از پایان زمان
+                    </label>
+                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
+                      بسته شدن سیستم و ثبت نهایی امن برگه به محض صفر شدن ثانیه‌شمار.
+                    </p>
+                  </div>
                 </div>
 
-                <div
-                  onClick={() => setShowOneQuestionPerPage(false)}
-                  className={`p-3.5 rounded-2xl border text-right cursor-pointer transition-all ${
-                    !showOneQuestionPerPage
-                      ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/40 font-bold text-[var(--color-accent)] shadow-3xs'
-                      : 'border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
-                  }`}
-                >
-                  <span className="block text-caption font-extrabold flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-[var(--color-accent)]" />
-                    <span>نمایش همه سوالات در یک صفحه</span>
-                  </span>
-                  <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
-                    امکان مرور یکجای تمام آزمون در ارتفاع کوتاه اسکرول به صورت چاپی سنتی.
-                  </p>
+                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                  <input
+                    type="checkbox"
+                    id="allow-backtrack-behavior"
+                    checked={allowBacktrack}
+                    onChange={(e) => setAllowBacktrack(e.target.checked)}
+                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <label
+                      htmlFor="allow-backtrack-behavior"
+                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
+                    >
+                      امکان بازگشت به سوالات قبلی
+                    </label>
+                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
+                      دانش‌آموز بتواند سوالات رد کرده را برگردد و مجدد جواب دهد.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                  <input
+                    type="checkbox"
+                    id="auto-save-answers-toggle"
+                    checked={autoSaveAnswers}
+                    onChange={(e) => setAutoSaveAnswers(e.target.checked)}
+                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <label
+                      htmlFor="auto-save-answers-toggle"
+                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
+                    >
+                      ذخیره خودکار پاسخ‌ها (Auto-saves)
+                    </label>
+                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
+                      پشتیبان‌گیری پیوسته بر ابر پس از زدن هر دکمه جهت جلوگیری از قطعی برق دسکتاپ.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                  <input
+                    type="checkbox"
+                    id="shuffle-questions-behavior"
+                    checked={shuffleQuestions}
+                    onChange={(e) => setShuffleQuestions(e.target.checked)}
+                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <label
+                      htmlFor="shuffle-questions-behavior"
+                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
+                    >
+                      جابه‌جایی ترتیب سوالات (Shuffle)
+                    </label>
+                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
+                      تولید خودکار دفترچه‌های مجزا با ترتیب سوالات به هم‌ریخته برای کنترل تقلب.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                  <input
+                    type="checkbox"
+                    id="shuffle-options-behavior"
+                    checked={shuffleOptions}
+                    onChange={(e) => setShuffleOptions(e.target.checked)}
+                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
+                  />
+                  <div className="space-y-0.5">
+                    <label
+                      htmlFor="shuffle-options-behavior"
+                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
+                    >
+                      جابه‌جایی ترتیب گزینه‌ها
+                    </label>
+                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
+                      جابه‌جایی الف-ب-ج-د به صورت تصادفی در سیستم روی مرورگر دانش‌آموزان به هنگام
+                      لود.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Beast Mode high security system */}
-            <div
-              className={`p-4.5 rounded-2xl border transition-all ${
-                beastMode
-                  ? 'bg-[var(--color-danger-soft)]/40 border-[var(--color-danger)]/20 text-[var(--color-danger)] shadow-sm'
-                  : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <input
-                  type="checkbox"
-                  id="beast-mode-toggle"
-                  checked={beastMode}
-                  onChange={(e) => setBeastMode(e.target.checked)}
-                  className="mt-1.5 w-5 h-5 text-[var(--color-danger)] rounded-md border-[var(--color-danger)]/20 focus:ring-[var(--color-danger)] cursor-pointer"
-                />
-                <div className="space-y-1.5 flex-1">
-                  <label
-                    htmlFor="beast-mode-toggle"
-                    className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-2 cursor-pointer"
+              {/* Question pagination layouts (1 question per page vs all in one page) */}
+              <div className="pt-3.5 border-t border-[var(--color-glass-light-stroke)] space-y-2">
+                <span className="text-caption font-bold text-[var(--color-text-secondary)] block text-right">
+                  نحوه نمایش صفحات سوالات آزمون:
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div
+                    role="radio"
+                    aria-checked={showOneQuestionPerPage}
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ')
+                        setShowOneQuestionPerPage(true);
+                    }}
+                    onClick={() => setShowOneQuestionPerPage(true)}
+                    className={`p-3.5 rounded-2xl border text-right cursor-pointer transition-all ${
+                      showOneQuestionPerPage
+                        ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/40 font-bold text-[var(--color-accent)] shadow-3xs'
+                        : 'border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
+                    }`}
                   >
-                    <ShieldAlert
-                      className={`w-5 h-5 ${beastMode ? 'text-[var(--color-danger)] animate-bounce' : 'text-[var(--color-text-tertiary)]'}`}
-                    />
-                    <span>فعال‌سازی وضعیت فراحفاظتی (Beast Mode 🔒)</span>
-                  </label>
-                  <p className="text-micro leading-relaxed text-[var(--color-text-tertiary)]">
-                    ضد تقبل تمام عیار! با فعال‌سازی گارد فوق‌سخت، خروج از تب امتحان، جابه‌جایی
-                    مانیتور، زدن دکمه کلیک راست کپی/پیست و عکس‌برداری قفل خواهند شد و دفعات لغزش به
-                    کارنامه نهایی ضمیمه می‌گردند.
-                  </p>
+                    <span className="block text-caption font-extrabold flex items-center gap-1.5">
+                      <Laptop className="w-4 h-4 text-[var(--color-accent)]" />
+                      <span>نمایش یک سوال در هر صفحه</span>
+                    </span>
+                    <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
+                      تضمین تمرکز بالا، مهار عکس گرفتن گروهی از کل اوراق از روی مانیتورها.
+                    </p>
+                  </div>
 
-                  {beastMode && (
-                    <div className="pt-2 flex items-center gap-1.5 text-micro font-bold text-[var(--color-danger)]">
-                      <Zap className="w-3.5 h-3.5 text-[var(--color-danger)] animate-pulse" />
-                      <span>حفاظت فعال دسکتاپی روشن - سیستم ضد شبیه‌سازها به صف شدند</span>
-                    </div>
-                  )}
+                  <div
+                    role="radio"
+                    aria-checked={!showOneQuestionPerPage}
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ')
+                        setShowOneQuestionPerPage(false);
+                    }}
+                    onClick={() => setShowOneQuestionPerPage(false)}
+                    className={`p-3.5 rounded-2xl border text-right cursor-pointer transition-all ${
+                      !showOneQuestionPerPage
+                        ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/40 font-bold text-[var(--color-accent)] shadow-3xs'
+                        : 'border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
+                    }`}
+                  >
+                    <span className="block text-caption font-extrabold flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-[var(--color-accent)]" />
+                      <span>نمایش همه سوالات در یک صفحه</span>
+                    </span>
+                    <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
+                      امکان مرور یکجای تمام آزمون در ارتفاع کوتاه اسکرول به صورت چاپی سنتی.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Beast Mode high security system */}
+              <div
+                className={`p-4.5 rounded-2xl border transition-all ${
+                  beastMode
+                    ? 'bg-[var(--color-danger-soft)]/40 border-[var(--color-danger)]/20 text-[var(--color-danger)] shadow-sm'
+                    : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <input
+                    type="checkbox"
+                    id="beast-mode-toggle"
+                    checked={beastMode}
+                    onChange={(e) => setBeastMode(e.target.checked)}
+                    className="mt-1.5 w-5 h-5 text-[var(--color-danger)] rounded-md border-[var(--color-danger)]/20 focus:ring-[var(--color-danger)] cursor-pointer"
+                  />
+                  <div className="space-y-1.5 flex-1">
+                    <label
+                      htmlFor="beast-mode-toggle"
+                      className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-2 cursor-pointer"
+                    >
+                      <ShieldAlert
+                        className={`w-5 h-5 ${beastMode ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-tertiary)]'}`}
+                      />
+                      <span>فعال‌سازی وضعیت فراحفاظتی (Beast Mode 🔒)</span>
+                    </label>
+                    <p className="text-micro leading-relaxed text-[var(--color-text-tertiary)]">
+                      رویدادهایی مانند خروج از تب، تغییر پنجره و تلاش برای کپی‌کردن را ثبت می‌کند و
+                      محدودیت‌های قابل‌اعمال مرورگر را فعال می‌سازد. مرورگر نمی‌تواند استفاده از
+                      دستگاه دوم یا عکس‌برداری بیرونی را تضمینی متوقف کند؛ گزارش‌ها را همراه شواهد
+                      دیگر بررسی کنید.
+                    </p>
+
+                    {beastMode && (
+                      <div className="pt-2 flex items-center gap-1.5 text-micro font-bold text-[var(--color-danger)]">
+                        <Zap className="w-3.5 h-3.5 text-[var(--color-danger)] animate-pulse" />
+                        <span>حفاظت فعال دسکتاپی روشن - سیستم ضد شبیه‌سازها به صف شدند</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </details>
 
           {/* SECTION 4: نمایش نتیجه */}
           <div className="glx p-6 rounded-3xl border space-y-4">
@@ -1070,6 +1070,13 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Option 1: Immediate Score */}
               <div
+                role="radio"
+                aria-checked={resultsDisplayMode === 'immediate_score'}
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ')
+                    setResultsDisplayMode('immediate_score');
+                }}
                 onClick={() => setResultsDisplayMode('immediate_score')}
                 className={`p-3.5 rounded-2xl border text-right cursor-pointer transition-all ${
                   resultsDisplayMode === 'immediate_score'
@@ -1087,6 +1094,13 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
               {/* Option 2: Immediate Score and Answers */}
               <div
+                role="radio"
+                aria-checked={resultsDisplayMode === 'immediate_score_answers'}
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ')
+                    setResultsDisplayMode('immediate_score_answers');
+                }}
                 onClick={() => setResultsDisplayMode('immediate_score_answers')}
                 className={`p-3.5 rounded-2xl border text-right cursor-pointer transition-all ${
                   resultsDisplayMode === 'immediate_score_answers'
@@ -1104,6 +1118,13 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
               {/* Option 3: Only after manual teacher check */}
               <div
+                role="radio"
+                aria-checked={resultsDisplayMode === 'after_approval'}
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ')
+                    setResultsDisplayMode('after_approval');
+                }}
                 onClick={() => setResultsDisplayMode('after_approval')}
                 className={`p-3.5 rounded-2xl border text-right cursor-pointer transition-all ${
                   resultsDisplayMode === 'after_approval'
@@ -1121,6 +1142,12 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
               {/* Option 4: Secret Exam (Never Show) */}
               <div
+                role="radio"
+                aria-checked={resultsDisplayMode === 'none'}
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') setResultsDisplayMode('none');
+                }}
                 onClick={() => setResultsDisplayMode('none')}
                 className={`p-3.5 rounded-2xl border text-right cursor-pointer transition-all ${
                   resultsDisplayMode === 'none'
@@ -1390,7 +1417,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                 className={`w-full py-3 rounded-2xl text-caption font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
                   validationErrors.length > 0
                     ? 'bg-[var(--color-glass-light-fill)] text-[var(--color-text-tertiary)] border border-[var(--color-glass-light-stroke)] cursor-not-allowed'
-                    : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white border border-[var(--color-accent)]/20'
+                    : 'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] border border-[var(--color-accent)]/20'
                 }`}
               >
                 <Play className="w-4 h-4" />
@@ -1398,7 +1425,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
               </button>
             ) : (
               <div className="space-y-3">
-                <div className="bg-[var(--color-success)]/10 text-[var(--color-success)] border-2 border-[var(--color-success)]/20 rounded-2xl p-3 flex items-start gap-2.5">
+                <div className="bg-[var(--color-success-solid)]/10 text-[var(--color-success)] border-2 border-[var(--color-success)]/20 rounded-2xl p-3 flex items-start gap-2.5">
                   <CheckCircle className="w-5 h-5 text-[var(--color-success)] shrink-0 mt-0.5" />
                   <div className="space-y-0.5">
                     <span className="text-micro font-black block">آزمون به جریان منتشر شد!</span>
@@ -1461,7 +1488,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
           <div className="flex gap-2.5 justify-end">
             <button
               type="button"
-              onClick={onBack}
+              onClick={handleBack}
               className="px-5 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] rounded-xl text-caption font-black cursor-pointer shadow-3xs border border-[var(--color-glass-light-stroke)]"
             >
               انصراف و بازگشت
@@ -1469,7 +1496,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
             <button
               type="button"
               onClick={handleSaveSettings}
-              className="px-5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-bold shadow-xs flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>ثبت تغییرات پیکربندی</span>

@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Play,
   ClipboardCheck,
-  Clock,
   Award,
   ShieldAlert,
   ArrowLeft,
@@ -34,6 +33,8 @@ import { logger } from '../../lib/logger';
 import { Exam, Question, Submission, Student } from '../../types';
 import { examService, studentService } from '../../services/api';
 import { Dropdown } from '../../components/UIComponents';
+import { formatPersianDate, toPersianDigits } from '../../utils/persian';
+import { ExamCountdown } from '../../components/ExamCountdown';
 
 interface ExamPortalProps {
   onBackToTeacher: () => void;
@@ -54,7 +55,6 @@ export default function ExamPortal({
   const activeView = subRoute || (isStartPath ? 'take' : 'login');
 
   // --- Core States ---
-  const [_examCode, setExamCode] = useState(presetExamCode);
   const [nationalId, setNationalId] = useState('');
   const [entryCodeInput, setEntryCodeInput] = useState('');
   const [validationError, setValidationError] = useState('');
@@ -70,17 +70,10 @@ export default function ExamPortal({
     }
   });
 
-  // Current Active Exam
-  const [activeExam, setActiveExam] = useState<Exam | null>(() => {
-    const resolved = exams.find((ex) => ex.examCode.toUpperCase() === presetExamCode.toUpperCase());
-    return resolved || null;
-  });
-
   // Active taking exam states
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [studentAnswers, setStudentAnswers] = useState<Record<string, any>>({}); // eslint-disable-line @typescript-eslint/no-explicit-any -- answer shape varies by question type;
+  const [studentAnswers, setStudentAnswers] = useState<Record<string, any>>({}); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({});
-  const [timerSeconds, setTimerSeconds] = useState(0);
   const [_antiCheatWarnings, setAntiCheatWarnings] = useState(0);
   const [savingStatus, setSavingStatus] = useState<'saving' | 'saved' | 'error'>('saved');
   const [isConfirmSubmitOpen, setIsConfirmSubmitOpen] = useState(false);
@@ -91,6 +84,8 @@ export default function ExamPortal({
   const [exams, setExams] = useState<Exam[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const activeExam =
+    exams.find((exam) => exam.examCode.toUpperCase() === presetExamCode.toUpperCase()) || null;
 
   // Fetch exams on mount
   useEffect(() => {
@@ -104,23 +99,9 @@ export default function ExamPortal({
       .catch(() => {});
   }, []);
 
-  // Live Timer references
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   // Live countdown to exam start
   const [timeUntilStartStr, setTimeUntilStartStr] = useState<string>('');
   const [_isExamSoonToOpen, setIsExamSoonToOpen] = useState(false);
-
-  // Sync exam code if prop changes
-  useEffect(() => {
-    if (presetExamCode) {
-      setExamCode(presetExamCode);
-      const resolved = exams.find(
-        (ex) => ex.examCode.toUpperCase() === presetExamCode.toUpperCase(),
-      );
-      setActiveExam(resolved || null);
-    }
-  }, [presetExamCode]); // eslint-disable-line react-hooks/exhaustive-deps -- exams only needed on preset code change
 
   // Read student ongoing answers from local storage
   useEffect(() => {
@@ -130,7 +111,7 @@ export default function ExamPortal({
       );
       if (savedAnswers) {
         try {
-          setStudentAnswers(JSON.parse(savedAnswers));
+          queueMicrotask(() => setStudentAnswers(JSON.parse(savedAnswers)));
         } catch (e) {
           logger.error(e);
         }
@@ -141,7 +122,7 @@ export default function ExamPortal({
       );
       if (savedFlags) {
         try {
-          setFlaggedQuestions(JSON.parse(savedFlags));
+          queueMicrotask(() => setFlaggedQuestions(JSON.parse(savedFlags)));
         } catch (e) {
           logger.error(e);
         }
@@ -157,8 +138,8 @@ export default function ExamPortal({
         JSON.stringify(studentAnswers),
       );
 
-      // Autosave status indicator mock trigger
-      setSavingStatus('saving');
+      // Local persistence is real; feedback updates without blocking this effect.
+      queueMicrotask(() => setSavingStatus('saving'));
       const mockSaveTimeout = setTimeout(() => {
         setSavingStatus('saved');
       }, 500);
@@ -177,68 +158,6 @@ export default function ExamPortal({
   }, [flaggedQuestions, loggedInStudent, activeExam]);
 
   // --- Helpers for formatting ---
-  const toPersianDigits = (num: number | string | undefined): string => {
-    if (num === undefined || num === null) return '';
-    const id = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    return String(num).replace(/[0-9]/g, (w) => id[+w]);
-  };
-
-  const getPersianDateStr = (dateStr?: string): string => {
-    if (!dateStr) return 'نامشخص';
-    const parts = dateStr.split('T')[0].split('-');
-    if (parts.length !== 3) return 'نامشخص';
-    const gy = parseInt(parts[0]);
-    const gm = parseInt(parts[1]);
-    const gd = parseInt(parts[2]);
-    if (isNaN(gy) || isNaN(gm) || isNaN(gd)) return 'نامشخص';
-
-    // Gregorian to Jalali mapping algorithm
-    const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    const gy2 = gm > 2 ? gy + 1 : gy;
-    let days =
-      355666 +
-      365 * gy +
-      Math.floor((gy2 + 3) / 4) -
-      Math.floor((gy2 + 99) / 100) +
-      Math.floor((gy2 + 399) / 400) +
-      gd +
-      g_d_m[gm - 1];
-    let jy = -1595 + 33 * Math.floor(days / 12053);
-    days %= 12053;
-    jy += 4 * Math.floor(days / 1461);
-    days %= 1461;
-    if (days > 365) {
-      jy += Math.floor((days - 1) / 365);
-      days = (days - 1) % 365;
-    }
-    const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
-    const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
-
-    const months = [
-      'فروردین',
-      'اردیبهشت',
-      'خرداد',
-      'تیر',
-      'مرداد',
-      'شهریور',
-      'مهر',
-      'آبان',
-      'آذر',
-      'دی',
-      'بهمن',
-      'اسفند',
-    ];
-
-    const daysOfWeek = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'];
-
-    try {
-      const dateObj = new Date(gy, gm - 1, gd);
-      const dayOfWeekStr = daysOfWeek[dateObj.getDay()];
-      return `${dayOfWeekStr}، ${toPersianDigits(jd)} ${months[jm - 1]} ${toPersianDigits(jy)}`;
-    } catch {
-      return '';
-    }
-  };
 
   // --- Scheduling State Checks ---
   const getExamScheduleState = (): 'not_started' | 'closed' | 'open' => {
@@ -290,7 +209,7 @@ export default function ExamPortal({
   // --- Count down timer until exam start ---
   useEffect(() => {
     if (scheduleState !== 'not_started' || !activeExam) {
-      setTimeUntilStartStr('');
+      queueMicrotask(() => setTimeUntilStartStr(''));
       return;
     }
 
@@ -326,7 +245,7 @@ export default function ExamPortal({
       setTimeUntilStartStr(toPersianDigits(timerStr));
     };
 
-    updateCountdown();
+    queueMicrotask(updateCountdown);
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [activeExam, scheduleState]);
@@ -352,66 +271,6 @@ export default function ExamPortal({
   };
 
   const currentSubmission = getSubmissionsForLoggedIn();
-
-  // Active question-taking timer
-  useEffect(() => {
-    if (activeView === 'take' && loggedInStudent && activeExam) {
-      const subs = submissions.find(
-        (s) => s.studentId === loggedInStudent.id && s.examId === activeExam.id,
-      );
-
-      const sessionDurationMinutes = activeExam.duration || 60;
-      let targetSeconds = sessionDurationMinutes * 60;
-
-      if (subs && subs.startedAt) {
-        const elapsedSecs = Math.floor(
-          (new Date().getTime() - new Date(subs.startedAt).getTime()) / 1000,
-        );
-        targetSeconds = Math.max(0, targetSeconds - elapsedSecs);
-      }
-
-      setTimerSeconds(targetSeconds);
-
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
-
-      timerIntervalRef.current = setInterval(() => {
-        setTimerSeconds((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerIntervalRef.current!);
-            handleAutoSubmit(true); // timed out auto submit
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => {
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-      };
-    }
-  }, [activeView, loggedInStudent, activeExam]); // eslint-disable-line react-hooks/exhaustive-deps -- handleAutoSubmit is recreated each render
-
-  // Handle anti-cheat blur detection
-  useEffect(() => {
-    if (activeView === 'take' && activeExam?.settings?.browserLockdown && loggedInStudent) {
-      const handleBlur = () => {
-        setAntiCheatWarnings((prev) => {
-          const updated = prev + 1;
-          alert(
-            `⚠️ هشدار امنیتی آزمون‌ساز: شما از منوی فعال آزمون خارج شدید! خروج‌های مکرر موجب ثبت نمره منفی و ابطال احتمالی پاسخ‌برگ خواهد شد. (خطا: ${updated}/۳)`,
-          );
-          if (updated >= 3) {
-            handleAutoSubmit(true);
-          }
-          return updated;
-        });
-      };
-      window.addEventListener('blur', handleBlur);
-      return () => window.removeEventListener('blur', handleBlur);
-    }
-  }, [activeView, activeExam, loggedInStudent]); // eslint-disable-line react-hooks/exhaustive-deps -- handleAutoSubmit is recreated each render
 
   // --- Standard Validation
   const validateNationalIdFormat = (id: string) => {
@@ -589,6 +448,26 @@ export default function ExamPortal({
     }
   };
 
+  // Handle anti-cheat blur detection
+  useEffect(() => {
+    if (activeView === 'take' && activeExam?.settings?.browserLockdown && loggedInStudent) {
+      const handleBlur = () => {
+        setAntiCheatWarnings((prev) => {
+          const updated = prev + 1;
+          alert(
+            `⚠️ هشدار امنیتی آزمون‌ساز: شما از منوی فعال آزمون خارج شدید! خروج‌های مکرر موجب ثبت نمره منفی و ابطال احتمالی پاسخ‌برگ خواهد شد. (خطا: ${updated}/۳)`,
+          );
+          if (updated >= 3) {
+            handleAutoSubmit(true);
+          }
+          return updated;
+        });
+      };
+      window.addEventListener('blur', handleBlur);
+      return () => window.removeEventListener('blur', handleBlur);
+    }
+  }, [activeView, activeExam, loggedInStudent]); // eslint-disable-line react-hooks/exhaustive-deps -- handleAutoSubmit is recreated each render
+
   const triggerSubmitDialog = () => {
     setIsConfirmSubmitOpen(true);
   };
@@ -663,12 +542,10 @@ export default function ExamPortal({
     }));
   };
 
-  const formatTime = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return `${toPersianDigits(mins.toString().padStart(2, '0'))}:${toPersianDigits(secs.toString().padStart(2, '0'))}`;
-  };
-
+  const activeSubmission = submissions.find(
+    (submission) =>
+      submission.studentId === loggedInStudent?.id && submission.examId === activeExam?.id,
+  );
   const questionsCount = activeExam?.questions?.length || 0;
   const activeQuestion: Question | undefined = activeExam?.questions?.[currentQuestionIdx];
   const allowBacktrack = activeExam?.settings?.allowBacktrack ?? true;
@@ -698,6 +575,7 @@ export default function ExamPortal({
           </div>
 
           <button
+            type="button"
             onClick={onBackToTeacher}
             className="text-caption font-bold text-[var(--color-accent)] hover:text-[var(--color-accent)] flex items-center gap-1 cursor-pointer hover:underline"
             id="btn-back-to-teacher-control"
@@ -739,14 +617,14 @@ export default function ExamPortal({
                   </span>
                   {activeExam.settings.startTime ? (
                     <p className="text-micro text-[var(--color-warning)]">
-                      تاریخ برگزاری: {getPersianDateStr(activeExam.settings.startTime)} ساعت{' '}
+                      تاریخ برگزاری: {formatPersianDate(activeExam.settings.startTime)} ساعت{' '}
                       {toPersianDigits(
                         activeExam.settings.startTime.split('T')[1]?.substring(0, 5),
                       )}
                     </p>
                   ) : activeExam.settings.startDate ? (
                     <p className="text-micro text-[var(--color-warning)]">
-                      تاریخ برگزاری: {getPersianDateStr(activeExam.settings.startDate)} ساعت{' '}
+                      تاریخ برگزاری: {formatPersianDate(activeExam.settings.startDate)} ساعت{' '}
                       {toPersianDigits(activeExam.settings.startHour)}
                     </p>
                   ) : null}
@@ -885,7 +763,7 @@ export default function ExamPortal({
                     <button
                       type="submit"
                       id="btn-login-submit"
-                      className="w-full py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-black transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer mt-4"
+                      className="w-full py-3 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-black transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer mt-4"
                     >
                       <span>تایید هویت و ورود به درگاه</span>
                       <Play className="w-4 h-4" />
@@ -903,6 +781,7 @@ export default function ExamPortal({
                         </span>
                       </div>
                       <button
+                        type="button"
                         onClick={handleExitToPortal}
                         className="text-micro text-[var(--color-danger)] underline font-bold"
                       >
@@ -910,8 +789,9 @@ export default function ExamPortal({
                       </button>
                     </div>
                     <button
+                      type="button"
                       onClick={() => onNavigate && onNavigate(`/exam/${activeExam.examCode}/start`)}
-                      className="w-full py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-bold shadow-md"
+                      className="w-full py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-md"
                     >
                       ورود به صفحه انتظار آزمون
                     </button>
@@ -946,7 +826,7 @@ export default function ExamPortal({
             {/* Student profile profile summary card */}
             <div className="p-4 bg-[var(--color-accent-soft)]/40 border border-[var(--color-accent)]/20 rounded-2xl flex items-center justify-between text-right">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--color-accent)] text-white flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-full bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] flex items-center justify-center font-bold">
                   <User className="w-5 h-5" />
                 </div>
                 <div>
@@ -971,7 +851,7 @@ export default function ExamPortal({
             {/* Instruction List rules */}
             <div className="p-5 bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] rounded-2xl space-y-3">
               <h3 className="font-extrabold text-[var(--color-text-primary)] flex items-center gap-1.5 border-b border-[var(--color-glass-light-stroke)] pb-2 text-caption text-[var(--color-accent)]">
-                <ShieldAlert className="w-4.5 h-4.5 text-[var(--color-accent)] animate-bounce" />
+                <ShieldAlert className="w-4.5 h-4.5 text-[var(--color-accent)]" />
                 <span>دستورالعمل و ضوابط فنی سنجش:</span>
               </h3>
               <ul className="space-y-2.5 text-micro text-[var(--color-text-secondary)] pr-4 list-decimal font-semibold leading-relaxed">
@@ -1024,7 +904,7 @@ export default function ExamPortal({
                 <button
                   type="button"
                   onClick={handleStartExamAction}
-                  className="flex-1 py-3 bg-[var(--color-warning-soft)]0 hover:bg-[var(--color-warning)] text-white rounded-xl text-caption font-black transition-all shadow-md flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 bg-[var(--color-warning-soft)]0 hover:bg-[var(--color-warning-solid)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-black transition-all shadow-md flex items-center justify-center gap-1.5"
                 >
                   <span>ادامه آزمون نیمه‌کاره</span>
                   <ArrowLeft className="w-4 h-4" />
@@ -1033,7 +913,7 @@ export default function ExamPortal({
                 <button
                   type="button"
                   onClick={handleStartExamAction}
-                  className="flex-1 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-black transition-all shadow-md flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-black transition-all shadow-md flex items-center justify-center gap-1.5"
                 >
                   <span>شروع آزمون جدید</span>
                   <ArrowLeft className="w-4 h-4" />
@@ -1088,16 +968,17 @@ export default function ExamPortal({
                   )}
                 </div>
 
-                {/* Countdown timer clock */}
-                <div
-                  className={`px-3 py-1.5 rounded-xl font-bold font-mono text-caption md:text-label flex items-center gap-1.5 ${timerSeconds < 300 ? 'bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/20 text-[var(--color-danger)] animate-pulse' : 'bg-[var(--color-glass-light-fill)] text-[var(--color-text-secondary)]'}`}
-                >
-                  <Clock className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <span>{formatTime(timerSeconds)}</span>
-                </div>
+                {/* Isolated countdown avoids rerendering the full answer form every second. */}
+                <ExamCountdown
+                  key={`${activeExam.id}-${activeSubmission?.startedAt || 'new'}`}
+                  durationMinutes={activeExam.duration || 60}
+                  startedAt={activeSubmission?.startedAt}
+                  onExpire={() => handleAutoSubmit(true)}
+                />
 
                 {/* Mobile Navigator trigger */}
                 <button
+                  type="button"
                   onClick={() => setMobileNavOpen(true)}
                   className="sm:hidden p-1.5 text-[var(--color-text-secondary)] hover:bg-[var(--color-glass-light-fill)] rounded-lg border border-[var(--color-glass-light-stroke)]"
                   title="نمایش فهرست سوالات"
@@ -1170,6 +1051,8 @@ export default function ExamPortal({
                         تصویر پیوست و کانتکست سوال:
                       </span>
                       <img
+                        loading="lazy"
+                        decoding="async"
                         src={activeQuestion.imageUrl}
                         alt="Question Visual Context"
                         referrerPolicy="no-referrer"
@@ -1190,6 +1073,7 @@ export default function ExamPortal({
                           متن درک مطلب مربوطه
                         </span>
                         <button
+                          type="button"
                           onClick={() => setIsPassageExpanded(!isPassageExpanded)}
                           className="text-micro  bg-[var(--color-surface)] border px-2 py-1 rounded-md text-[var(--color-text-secondary)] font-bold flex items-center gap-1"
                         >
@@ -1252,6 +1136,8 @@ export default function ExamPortal({
                             >
                               {hasImg && opt.imageUrl && (
                                 <img
+                                  loading="lazy"
+                                  decoding="async"
                                   src={opt.imageUrl}
                                   alt={opt.text}
                                   referrerPolicy="no-referrer"
@@ -1260,7 +1146,7 @@ export default function ExamPortal({
                               )}
                               <div className="flex items-center gap-2.5 w-full">
                                 <div
-                                  className={`w-4 .h-4 rounded-full border flex items-center justify-center shrink-0 ${checked ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent)] text-white' : 'border-[var(--color-glass-light-stroke)]  bg-[var(--color-surface)]'}`}
+                                  className={`w-4 .h-4 rounded-full border flex items-center justify-center shrink-0 ${checked ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)]' : 'border-[var(--color-glass-light-stroke)]  bg-[var(--color-surface)]'}`}
                                 >
                                   {checked && (
                                     <div className="w-1.5 h-1.5  bg-[var(--color-surface)] rounded-full" />
@@ -1324,7 +1210,7 @@ export default function ExamPortal({
                               }
                               className={`py-4 px-3 rounded-2xl border text-caption font-black transition-all cursor-pointer text-center ${
                                 checked
-                                  ? 'bg-[var(--color-accent)] border-[var(--color-accent)]/20 text-white shadow-md'
+                                  ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)] shadow-md'
                                   : 'bg-[var(--color-glass-light-fill)] border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover: bg-[var(--color-surface)] hover:border-[var(--color-glass-light-stroke)]'
                               }`}
                             >
@@ -1583,7 +1469,7 @@ export default function ExamPortal({
                               }`}
                             >
                               <div
-                                className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${checked ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent)] text-white' : 'border-[var(--color-glass-light-stroke)]  bg-[var(--color-surface)]'}`}
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${checked ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)]' : 'border-[var(--color-glass-light-stroke)]  bg-[var(--color-surface)]'}`}
                               >
                                 {checked && (
                                   <div className="w-1.5 h-1.5  bg-[var(--color-surface)] rounded-full" />
@@ -1609,7 +1495,7 @@ export default function ExamPortal({
                     onClick={() => toggleFlagQuestion(activeQuestion.id)}
                     className={`px-3 py-2 rounded-xl text-caption font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
                       flaggedQuestions[activeQuestion.id]
-                        ? 'bg-[var(--color-warning)]/80 hover:bg-[var(--color-warning)] text-[var(--color-warning)]/80 border-[var(--color-warning)]/20 shadow-3xs'
+                        ? 'bg-[var(--color-warning-solid)]/80 hover:bg-[var(--color-warning-solid)] text-[var(--color-warning)]/80 border-[var(--color-warning)]/20 shadow-3xs'
                         : ' bg-[var(--color-surface)] hover:bg-[var(--color-glass-light-fill)] text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]'
                     }`}
                   >
@@ -1640,7 +1526,7 @@ export default function ExamPortal({
                       <button
                         type="button"
                         onClick={() => setCurrentQuestionIdx(currentQuestionIdx + 1)}
-                        className="px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-black shadow-xs flex items-center gap-1.5"
+                        className="px-5 py-2 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-black shadow-xs flex items-center gap-1.5"
                       >
                         <span>ثبت و سوال بعدی</span>
                         <ArrowLeft className="w-4 h-4" />
@@ -1649,7 +1535,7 @@ export default function ExamPortal({
                       <button
                         type="button"
                         onClick={triggerSubmitDialog}
-                        className="px-5 py-2 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white rounded-xl text-caption font-black shadow-md flex items-center gap-1.5"
+                        className="px-5 py-2 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] rounded-xl text-caption font-black shadow-md flex items-center gap-1.5"
                       >
                         <span>ثبت و اتمام آزمون</span>
                         <CheckCircle2 className="w-4.5 h-4.5" />
@@ -1682,7 +1568,7 @@ export default function ExamPortal({
                       <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] shrink-0" />
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-warning)] border border-[var(--color-warning)]/20 shrink-0" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-warning-solid)] border border-[var(--color-warning)]/20 shrink-0" />
                       <span>علامت‌گذاری شده</span>
                     </div>
                     <div className="flex items-center gap-1 flex-row-reverse justify-end text-[var(--color-accent)]">
@@ -1711,7 +1597,7 @@ export default function ExamPortal({
                             cur
                               ? 'bg-[var(--color-accent-soft)] border-2 border-[var(--color-accent)]/20 text-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/30'
                               : flg
-                                ? 'bg-[var(--color-warning)] text-[var(--color-warning)]/80 border-[var(--color-warning)]/20 hover:bg-[var(--color-warning)]'
+                                ? 'bg-[var(--color-warning-solid)] text-[var(--color-warning)]/80 border-[var(--color-warning)]/20 hover:bg-[var(--color-warning-solid)]'
                                 : ans
                                   ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/30 hover:bg-[var(--color-success-soft)]'
                                   : 'bg-[var(--color-glass-light-fill)] text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)] hover:bg-[var(--color-glass-light-fill)]'
@@ -2043,7 +1929,7 @@ export default function ExamPortal({
                   <button
                     type="button"
                     onClick={handleExitToPortal}
-                    className="w-full py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-black transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full py-3 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-black transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                     id="btn-return-to-main"
                   >
                     <span>بازگشت به صفحه اصلی آزمون</span>
@@ -2063,25 +1949,25 @@ export default function ExamPortal({
             dir="rtl"
             id="modal-submit-confirmation"
           >
-          {/* Scrim — opacity only: a backdrop-filter under an opacity animation
+            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
               freezes its frame, which lingers past unmount. */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="absolute inset-0 scrim"
-          />
-          {/* Veil blur — full strength on frame 1; ramped off fast on exit. */}
-          <motion.div
-            aria-hidden="true"
-            initial={false}
-            exit={{
-              backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-              transition: { duration: 0.12 },
-            }}
-            className="absolute inset-0 pointer-events-none veil-blur"
-          />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16, ease: 'easeOut' }}
+              className="absolute inset-0 scrim"
+            />
+            {/* Veil blur — full strength on frame 1; ramped off fast on exit. */}
+            <motion.div
+              aria-hidden="true"
+              initial={false}
+              exit={{
+                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+                transition: { duration: 0.12 },
+              }}
+              className="absolute inset-0 pointer-events-none veil-blur"
+            />
             <div className="relative w-full max-w-md @container">
               {/* Halo blur dies fast on exit so nothing lingers behind the closing panel */}
               <motion.div
@@ -2094,81 +1980,81 @@ export default function ExamPortal({
                 }}
                 className="pointer-events-none absolute area-blur"
               />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative glx-strong rounded-3xl border w-full p-6 space-y-5 text-right"
-            >
-              <div className="flex items-center gap-2.5 border-b border-[var(--color-glass-light-stroke)] pb-3">
-                <div className="w-9 h-9 rounded-full bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <h3 className="text-label font-black text-[var(--color-text-primary)]">
-                  تأیید نهایی و ارسال برگه آزمون
-                </h3>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-caption font-extrabold text-[var(--color-text-secondary)] leading-relaxed">
-                  آیا اطمینان دارید که مایل به ثبت نهایی و تحویل برگه آزمون خود هستید؟ پس از تحویل،
-                  دسترسی شما خاتمه یافته و پاسخ‌برگ برای تصحیح برای معلم ارسال می‌گردد.
-                </p>
-
-                {/* Question Status Grid */}
-                <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--color-glass-light-fill)] rounded-2xl border border-[var(--color-glass-light-stroke)] text-caption font-bold text-[var(--color-text-secondary)]">
-                  <div className="space-y-0.5">
-                    <span className="text-micro text-[var(--color-text-tertiary)] block">
-                      سوالات پاسخ داده شده:
-                    </span>
-                    <span className="text-[var(--color-success)] font-black text-label">
-                      {toPersianDigits(totalAnsweredCount)}
-                    </span>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative glx-strong rounded-3xl border w-full p-6 space-y-5 text-right"
+              >
+                <div className="flex items-center gap-2.5 border-b border-[var(--color-glass-light-stroke)] pb-3">
+                  <div className="w-9 h-9 rounded-full bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] flex items-center justify-center">
+                    <AlertTriangle className="w-5 h-5" />
                   </div>
-                  <div className="space-y-0.5 border-r border-[var(--color-glass-light-stroke)] pr-3">
-                    <span className="text-micro text-[var(--color-text-tertiary)] block">
-                      سوالات بدون پاسخ:
-                    </span>
-                    <span
-                      className={
-                        totalUnansweredCount > 0
-                          ? 'text-[var(--color-warning)] font-black text-label'
-                          : 'text-[var(--color-text-secondary)] text-label'
-                      }
-                    >
-                      {toPersianDigits(totalUnansweredCount)}
-                    </span>
+                  <h3 className="text-label font-black text-[var(--color-text-primary)]">
+                    تأیید نهایی و ارسال برگه آزمون
+                  </h3>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-caption font-extrabold text-[var(--color-text-secondary)] leading-relaxed">
+                    آیا اطمینان دارید که مایل به ثبت نهایی و تحویل برگه آزمون خود هستید؟ پس از
+                    تحویل، دسترسی شما خاتمه یافته و پاسخ‌برگ برای تصحیح برای معلم ارسال می‌گردد.
+                  </p>
+
+                  {/* Question Status Grid */}
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--color-glass-light-fill)] rounded-2xl border border-[var(--color-glass-light-stroke)] text-caption font-bold text-[var(--color-text-secondary)]">
+                    <div className="space-y-0.5">
+                      <span className="text-micro text-[var(--color-text-tertiary)] block">
+                        سوالات پاسخ داده شده:
+                      </span>
+                      <span className="text-[var(--color-success)] font-black text-label">
+                        {toPersianDigits(totalAnsweredCount)}
+                      </span>
+                    </div>
+                    <div className="space-y-0.5 border-r border-[var(--color-glass-light-stroke)] pr-3">
+                      <span className="text-micro text-[var(--color-text-tertiary)] block">
+                        سوالات بدون پاسخ:
+                      </span>
+                      <span
+                        className={
+                          totalUnansweredCount > 0
+                            ? 'text-[var(--color-warning)] font-black text-label'
+                            : 'text-[var(--color-text-secondary)] text-label'
+                        }
+                      >
+                        {toPersianDigits(totalUnansweredCount)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-[var(--color-danger-soft)]/50 border border-[var(--color-danger)]/20 rounded-xl text-micro text-[var(--color-danger)]/80 leading-relaxed font-semibold">
+                    <strong>توجه:</strong> پس از ارسال، تصحیح خودکار انجام شده و امکان ویرایش یا
+                    بازیابی پاسخ‌ها برای دانش‌آموز غیرفعال خواهد شد.
                   </div>
                 </div>
 
-                <div className="p-3 bg-[var(--color-danger-soft)]/50 border border-[var(--color-danger)]/20 rounded-xl text-micro text-[var(--color-danger)]/80 leading-relaxed font-semibold">
-                  <strong>توجه:</strong> پس از ارسال، تصحیح خودکار انجام شده و امکان ویرایش یا
-                  بازیابی پاسخ‌ها برای دانش‌آموز غیرفعال خواهد شد.
+                {/* Action Buttons inside Modal */}
+                <div className="flex gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmSubmitOpen(false)}
+                    className="px-4 py-2.5 bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-xl text-caption font-bold border transition-colors cursor-pointer"
+                  >
+                    انصراف و بازگشت به آزمون
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsConfirmSubmitOpen(false);
+                      handleAutoSubmit();
+                    }}
+                    className="flex-1 py-2.5 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] rounded-xl text-caption font-black shadow-md flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <span>تأیید و ارسال نهایی</span>
+                    <Check className="w-4 h-4" />
+                  </button>
                 </div>
-              </div>
-
-              {/* Action Buttons inside Modal */}
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsConfirmSubmitOpen(false)}
-                  className="px-4 py-2.5 bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-xl text-caption font-bold border transition-colors cursor-pointer"
-                >
-                  انصراف و بازگشت به آزمون
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsConfirmSubmitOpen(false);
-                    handleAutoSubmit();
-                  }}
-                  className="flex-1 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white rounded-xl text-caption font-black shadow-md flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <span>تأیید و ارسال نهایی</span>
-                  <Check className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
+              </motion.div>
             </div>
           </div>
         )}
@@ -2182,25 +2068,25 @@ export default function ExamPortal({
             dir="rtl"
             id="mobile-navigation-drawer-backdrop"
           >
-          {/* Scrim — opacity only: a backdrop-filter under an opacity animation
+            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
               freezes its frame, which lingers past unmount. */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="absolute inset-0 scrim"
-          />
-          {/* Veil blur — full strength on frame 1; ramped off fast on exit. */}
-          <motion.div
-            aria-hidden="true"
-            initial={false}
-            exit={{
-              backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-              transition: { duration: 0.12 },
-            }}
-            className="absolute inset-0 pointer-events-none veil-blur"
-          />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16, ease: 'easeOut' }}
+              className="absolute inset-0 scrim"
+            />
+            {/* Veil blur — full strength on frame 1; ramped off fast on exit. */}
+            <motion.div
+              aria-hidden="true"
+              initial={false}
+              exit={{
+                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
+                transition: { duration: 0.12 },
+              }}
+              className="absolute inset-0 pointer-events-none veil-blur"
+            />
             <div className="relative w-full max-w-md @container">
               {/* Halo blur dies fast on exit so nothing lingers behind the closing panel */}
               <motion.div
@@ -2213,69 +2099,73 @@ export default function ExamPortal({
                 }}
                 className="pointer-events-none absolute area-blur"
               />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              className="relative glx-strong rounded-t-3xl w-full p-5 space-y-4 text-right max-h-[70vh] overflow-y-auto"
-            >
-              <div className="flex justify-between items-center border-b pb-2">
-                <h3 className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-[var(--color-accent)]" />
-                  <span>بروشور سوالات برگه</span>
-                </h3>
-                <button
-                  onClick={() => setMobileNavOpen(false)}
-                  className="p-1 hover:bg-[var(--color-glass-light-fill)] rounded-full text-[var(--color-text-tertiary)]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-5 gap-2 text-center text-caption font-black py-2">
-                {activeExam.questions.map((q, idx) => {
-                  const ans = checkIsQuestionAnswered(q.id, q.type);
-                  const flg = !!flaggedQuestions[q.id];
-                  const cur = idx === currentQuestionIdx;
-
-                  const isClickable = allowBacktrack || cur;
-
-                  return (
-                    <button
-                      key={q.id}
-                      disabled={!isClickable}
-                      onClick={() => {
-                        setCurrentQuestionIdx(idx);
-                        setMobileNavOpen(false);
-                      }}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${
-                        cur
-                          ? 'bg-[var(--color-accent-soft)] border-2 border-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                          : flg
-                            ? 'bg-[var(--color-warning)] text-[var(--color-warning)]/80 border-[var(--color-warning)]/20'
-                            : ans
-                              ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/30'
-                              : 'bg-[var(--color-glass-light-fill)] text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)]'
-                      } ${!isClickable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                    >
-                      {toPersianDigits(idx + 1)}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileNavOpen(false);
-                  triggerSubmitDialog();
-                }}
-                className="w-full py-3 bg-[var(--color-danger)] text-white rounded-xl text-caption font-black shadow-md flex items-center justify-center gap-1 cursor-pointer"
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                className="relative glx-strong rounded-t-3xl w-full p-5 space-y-4 text-right max-h-[70vh] overflow-y-auto"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>تحویل و پایان آزمون برخط</span>
-              </button>
-            </motion.div>
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h3 className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-[var(--color-accent)]" />
+                    <span>بروشور سوالات برگه</span>
+                  </h3>
+                  <button
+                    type="button"
+                    aria-label="بستن فهرست سؤال‌ها"
+                    title="بستن"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="p-1 hover:bg-[var(--color-glass-light-fill)] rounded-full text-[var(--color-text-tertiary)]"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2 text-center text-caption font-black py-2">
+                  {activeExam.questions.map((q, idx) => {
+                    const ans = checkIsQuestionAnswered(q.id, q.type);
+                    const flg = !!flaggedQuestions[q.id];
+                    const cur = idx === currentQuestionIdx;
+
+                    const isClickable = allowBacktrack || cur;
+
+                    return (
+                      <button
+                        type="button"
+                        key={q.id}
+                        disabled={!isClickable}
+                        onClick={() => {
+                          setCurrentQuestionIdx(idx);
+                          setMobileNavOpen(false);
+                        }}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${
+                          cur
+                            ? 'bg-[var(--color-accent-soft)] border-2 border-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                            : flg
+                              ? 'bg-[var(--color-warning-solid)] text-[var(--color-warning)]/80 border-[var(--color-warning)]/20'
+                              : ans
+                                ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/30'
+                                : 'bg-[var(--color-glass-light-fill)] text-[var(--color-text-tertiary)] border-[var(--color-glass-light-stroke)]'
+                        } ${!isClickable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                      >
+                        {toPersianDigits(idx + 1)}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    triggerSubmitDialog();
+                  }}
+                  className="w-full py-3 bg-[var(--color-danger-solid)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-black shadow-md flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>تحویل و پایان آزمون برخط</span>
+                </button>
+              </motion.div>
             </div>
           </div>
         )}

@@ -53,14 +53,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       'inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none';
 
     const variants: Record<ButtonProps['variant'] & {}, string> = {
-      primary: 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-sm',
-      indigo: 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-sm',
+      primary:
+        'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] shadow-sm',
+      indigo:
+        'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] shadow-sm',
       secondary: 'glx-inset hover:brightness-105 text-[var(--color-text-primary)]',
       outline:
         'bg-transparent hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)]',
       ghost: 'bg-transparent hover:glx-inset text-[var(--color-text-secondary)]',
-      danger: 'bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90 text-white shadow-sm',
-      success: 'bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white shadow-sm',
+      danger:
+        'bg-[var(--color-danger-solid)] hover:bg-[var(--color-danger-solid)]/90 text-[var(--color-text-on-solid)] shadow-sm',
+      success:
+        'bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] shadow-sm',
       gold: 'bg-[var(--color-gold)] hover:bg-[var(--color-gold)]/90 text-[var(--color-ink)] shadow-sm',
     };
 
@@ -72,6 +76,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <button
+        type="button"
         ref={ref}
         disabled={disabled || isLoading}
         className={`${baseStyle} ${variants[variant]} ${sizes[size]} ${className}`}
@@ -465,6 +470,7 @@ export const Tabs = ({ tabs, activeTab, onChange, className = '' }: TabsProps) =
         const isActive = tab.id === activeTab;
         return (
           <button
+            type="button"
             key={tab.id}
             onClick={() => onChange(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 text-caption md:text-label font-bold rounded-xl transition-all cursor-pointer select-none ${isActive ? 'bg-[var(--color-gold)]/10 text-[var(--color-ink)] shadow-sm border border-[var(--color-glass-light-stroke)]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-glass-light-stroke)]/20'}`}
@@ -519,10 +525,49 @@ export const Modal = ({
     haloRef,
   );
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const panel = panelRef.current;
+    const trigger = triggerRef?.current;
+    panel?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab' || !panel) return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      trigger?.focus();
+    };
+  }, [isOpen, onClose, triggerRef]);
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
           {/* Scrim — fades via opacity, carries NO backdrop-filter. Animating opacity
               on a filtered layer freezes its last frame, and that frozen frame
               outlives the unmount — the ghost print left behind after closing. */}
@@ -547,7 +592,9 @@ export const Modal = ({
             className="fixed inset-0 pointer-events-none veil-blur"
           />
 
-          <div className={`relative w-full ${widthStyles[maxWidth]} z-10 @container`}>
+          <div
+            className={`relative w-full ${widthStyles[maxWidth]} z-10 @container max-sm:max-w-none`}
+          >
             {/* Halo rides the panel's grow/shrink with the same origin and curves, so
                 no detached glow patch floats where the panel will land. NO opacity on
                 it — opacity on a backdrop-filter layer freezes its frame. Exit ramps
@@ -588,8 +635,9 @@ export const Modal = ({
                 scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
               }}
               style={originStyle}
-              className="relative glx-strong w-full rounded-3xl flex flex-col max-h-[90vh]"
+              className="relative glx-strong flex max-h-[min(90vh,90dvh)] w-full flex-col rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0"
               role="dialog"
+              tabIndex={-1}
               aria-modal="true"
               aria-label={title}
             >
@@ -599,7 +647,9 @@ export const Modal = ({
                   {title}
                 </h3>
                 <button
+                  type="button"
                   onClick={onClose}
+                  aria-label="بستن پنجره"
                   className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:glx-inset hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -689,7 +739,9 @@ export const Drawer = ({
               <div className="p-6 flex items-center justify-between">
                 <h2 className="text-md font-black text-[var(--color-text-primary)]">{title}</h2>
                 <button
+                  type="button"
                   onClick={onClose}
+                  aria-label="بستن پنل"
                   className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:glx-inset hover:text-[var(--color-text-primary)] cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -724,7 +776,7 @@ export const Stepper = ({ steps, activeStep }: StepperProps) => {
 
       {/* Animated active path */}
       <div
-        className="absolute top-1/2 right-0 h-0.5 bg-[var(--color-accent)] -translate-y-1/2 z-0 transition-all duration-500"
+        className="absolute top-1/2 right-0 h-0.5 bg-[var(--color-accent-solid)] -translate-y-1/2 z-0 transition-all duration-500"
         style={{ width: `${(activeStep / (steps.length - 1)) * 100}%` }}
       />
 
@@ -734,7 +786,7 @@ export const Stepper = ({ steps, activeStep }: StepperProps) => {
         return (
           <div key={idx} className="flex flex-col items-center gap-2 z-10 relative">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-caption select-none ring-4 ring-white transition-all duration-300 ${isCompleted ? 'bg-[var(--color-accent)] text-white' : isActive ? 'glx border-2 border-[var(--color-accent)] text-[var(--color-accent)] font-extrabold' : 'glx border-2 border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-caption select-none ring-4 ring-white transition-all duration-300 ${isCompleted ? 'bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)]' : isActive ? 'glx border-2 border-[var(--color-accent)] text-[var(--color-accent)] font-extrabold' : 'glx border-2 border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'}`}
             >
               {isCompleted ? '✓' : formatPersianNumber(idx + 1)}
             </div>
@@ -930,36 +982,49 @@ interface TableColumn {
   align?: 'right' | 'center' | 'left';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TableRow = any;
-interface TableProps {
+interface TableProps<T> {
   headers: TableColumn[];
-  data: TableRow[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  renderRow: (row: any, idx: number) => React.ReactNode;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  renderMobileCard?: (row: any, idx: number) => React.ReactNode;
+  data: T[];
+  renderRow: (row: T, idx: number) => React.ReactNode;
+  renderMobileCard?: (row: T, idx: number) => React.ReactNode;
   emptyTitle?: string;
   emptyDesc?: string;
+  emptyAction?: React.ReactNode;
 }
 
-export const Table = ({
+export const Table = <T,>({
   headers,
   data,
   renderRow,
   renderMobileCard,
   emptyTitle = 'هیچ اطلاعاتی یافت نشد',
   emptyDesc = 'اطلاعاتی سازگار با فیلترهای کنونی در سیستم وجود ندارد.',
-}: TableProps) => {
+  emptyAction,
+}: TableProps<T>) => {
   if (data.length === 0) {
-    return <EmptyState title={emptyTitle} description={emptyDesc} />;
+    return (
+      <EmptyState
+        title={emptyTitle}
+        description={emptyDesc}
+        action={
+          emptyAction || (
+            <button type="button" className="btn-soft" onClick={() => window.location.reload()}>
+              بازخوانی اطلاعات
+            </button>
+          )
+        }
+      />
+    );
   }
 
   return (
     <div className="w-full">
       {/* Table for Desktop Viewports */}
       <div
-        className={`overflow-x-auto rounded-2xl border border-[var(--color-glass-light-stroke)] hidden ${renderMobileCard ? 'md:block' : 'block'}`}
+        tabIndex={0}
+        role="region"
+        aria-label="جدول داده؛ برای مشاهده ستون‌های بیشتر به‌صورت افقی پیمایش کنید"
+        className={`overflow-x-auto rounded-2xl border border-[var(--color-glass-light-stroke)] hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] ${renderMobileCard ? 'md:block' : 'block'}`}
       >
         <table className="w-full text-right border-collapse text-caption md:text-label glx-inset">
           <thead>
@@ -1024,10 +1089,6 @@ export const ExamTimer = ({
   useEffect(() => {
     onWarningRef.current = onWarning;
   }, [onWarning]);
-
-  useEffect(() => {
-    setSecondsLeft(durationMinutes * 60);
-  }, [durationMinutes]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1100,7 +1161,7 @@ export const ProgressBar = ({ value, max = 100, className = '', label }: Progres
       )}
       <div className="w-full h-2 bg-[var(--color-glass-light-stroke)] rounded-full overflow-hidden">
         <div
-          className="h-full bg-[var(--color-accent)] transition-all duration-300 rounded-full"
+          className="h-full bg-[var(--color-accent-solid)] transition-all duration-300 rounded-full"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -1116,9 +1177,10 @@ interface ToastProps {
   type?: 'success' | 'error' | 'warning' | 'info';
   onClose?: () => void;
   duration?: number;
+  action?: { label: string; onClick: () => void };
 }
 
-export const Toast = ({ message, type = 'info', onClose, duration = 4000 }: ToastProps) => {
+export const Toast = ({ message, type = 'info', onClose, duration = 4000, action }: ToastProps) => {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -1130,10 +1192,10 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000 }: Toas
   }, [duration, onClose]);
 
   const styles: Record<ToastProps['type'] & {}, string> = {
-    success: 'bg-[var(--color-success)] text-white',
-    error: 'bg-[var(--color-danger)] text-white',
-    warning: 'bg-[var(--color-warning)] text-white',
-    info: 'bg-[var(--color-ink)] text-white',
+    success: 'bg-[var(--color-success-solid)] text-[var(--color-text-on-solid)]',
+    error: 'bg-[var(--color-danger-solid)] text-[var(--color-text-on-solid)]',
+    warning: 'bg-[var(--color-warning-solid)] text-[var(--color-text-on-solid)]',
+    info: 'bg-[var(--color-ink)] text-[var(--color-text-on-solid)]',
   };
 
   const icons: Record<ToastProps['type'] & {}, React.ReactNode> = {
@@ -1145,15 +1207,30 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000 }: Toas
 
   return (
     <div
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-3 rounded-xl shadow-lg text-label font-bold flex items-center gap-2 transition-all duration-300 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
-      role="alert"
-      aria-live="polite"
+      className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[100] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2 rounded-xl px-4 py-3 text-label font-bold shadow-lg transition-all duration-300 sm:bottom-auto sm:top-4 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 sm:-translate-y-2'}`}
+      role={type === 'error' || type === 'warning' ? 'alert' : 'status'}
+      aria-live={type === 'error' || type === 'warning' ? 'assertive' : 'polite'}
+      aria-atomic="true"
     >
       {icons[type]}
       <span>{message}</span>
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="rounded-lg border border-current px-2 py-1 text-micro underline-offset-2 hover:underline"
+        >
+          {action.label}
+        </button>
+      )}
       {onClose && (
-        <button onClick={onClose} className="mr-2 cursor-pointer">
-          <X className="w-3.5 h-3.5" />
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="بستن پیام"
+          className="mr-2 cursor-pointer"
+        >
+          <X className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       )}
     </div>

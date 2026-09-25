@@ -4,8 +4,10 @@ import {
   formatPersianNumber,
   formatPersianDate,
   formatPersianDateTime,
+  formatPersianRelativeTime,
   validateIranianNationalId,
   toEnglishDigits,
+  normalizePersianText,
 } from '../../utils/persian';
 
 describe('toPersianDigits', () => {
@@ -32,6 +34,16 @@ describe('toEnglishDigits', () => {
   });
 });
 
+describe('normalizePersianText', () => {
+  it('normalizes Arabic letter and digit variants for search', () => {
+    expect(normalizePersianText('  علی کریمی ١٢۳  ')).toBe('علی کریمی 123');
+  });
+
+  it('normalizes half-spaces and diacritics', () => {
+    expect(normalizePersianText('دانش‌آمُوز')).toBe('دانش آموز');
+  });
+});
+
 describe('formatPersianNumber', () => {
   it('formats a number', () => {
     const result = formatPersianNumber(1234567);
@@ -51,10 +63,11 @@ describe('formatPersianNumber', () => {
 });
 
 describe('formatPersianDate', () => {
-  it('returns a string for valid ISO date', () => {
-    const result = formatPersianDate('2026-06-21T00:00:00Z');
-    expect(typeof result).toBe('string');
-    expect(result.length).toBeGreaterThan(0);
+  it('returns a Tehran-time Jalali date with Persian digits', () => {
+    const result = formatPersianDate('2026-03-21T00:00:00Z');
+    expect(result).toContain('فروردین');
+    expect(result).toMatch(/[۰-۹]/);
+    expect(result).not.toMatch(/[0-9]/);
   });
 
   it('returns fallback for invalid input', () => {
@@ -65,6 +78,21 @@ describe('formatPersianDate', () => {
   it('handles null', () => {
     const result = formatPersianDate(null);
     expect(typeof result).toBe('string');
+  });
+});
+
+describe('formatPersianRelativeTime', () => {
+  const now = new Date('2026-09-25T12:00:00Z');
+
+  it('formats past and future values with Persian digits', () => {
+    expect(formatPersianRelativeTime('2026-09-22T12:00:00Z', now)).toContain('۳');
+    expect(formatPersianRelativeTime('2026-09-25T14:00:00Z', now)).toContain('۲');
+  });
+
+  it('handles current, invalid, and null dates', () => {
+    expect(formatPersianRelativeTime(now, now)).toBe('اکنون');
+    expect(formatPersianRelativeTime('invalid', now)).toBe('—');
+    expect(formatPersianRelativeTime(null, now)).toBe('—');
   });
 });
 

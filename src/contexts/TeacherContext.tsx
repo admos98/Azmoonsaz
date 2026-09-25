@@ -47,7 +47,21 @@ export function TeacherProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    fetchTeacher();
+    let active = true;
+    authService
+      .getCurrentTeacher()
+      .then((profile) => {
+        if (active) setTeacher(profile);
+      })
+      .catch(() => {
+        if (active) setTeacher(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (

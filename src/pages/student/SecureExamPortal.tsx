@@ -236,12 +236,12 @@ export default function SecureExamPortal({
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-white/3 text-[var(--color-text-primary)] flex flex-col"
+      className="min-h-screen bg-[var(--color-on-dark-subtle)] text-[var(--color-text-primary)] flex flex-col"
     >
-      <header className="border-b border-[var(--color-glass-light-stroke)] bg-white">
+      <header className="border-b border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-2xl bg-[var(--color-accent)] text-white flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
@@ -254,6 +254,7 @@ export default function SecureExamPortal({
             </div>
           </div>
           <button
+            type="button"
             onClick={onBackToTeacher}
             className="text-caption font-bold text-[var(--color-accent)] hover:underline"
           >
@@ -273,7 +274,7 @@ export default function SecureExamPortal({
         {phase === 'login' && (
           <form
             onSubmit={handleStartSession}
-            className="bg-white rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-6 md:p-8 max-w-xl mx-auto space-y-5"
+            className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-6 md:p-8 max-w-xl mx-auto space-y-5"
           >
             <div className="text-center space-y-2">
               <Lock className="w-12 h-12 mx-auto text-[var(--color-accent)]" />
@@ -289,7 +290,7 @@ export default function SecureExamPortal({
               <input
                 value={examCode}
                 onChange={(e) => setExamCode(e.target.value.toUpperCase())}
-                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-white/3 px-4 py-3 text-label font-bold text-left ltr"
+                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left ltr"
               />
             </label>
             <label className="block space-y-1.5 text-right">
@@ -300,12 +301,13 @@ export default function SecureExamPortal({
                 value={nationalId}
                 onChange={(e) => setNationalId(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 placeholder="مثلاً 1000000001"
-                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-white/3 px-4 py-3 text-label font-bold text-left tracking-widest"
+                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
               />
             </label>
             <button
+              type="submit"
               disabled={loading || nationalId.length !== 10}
-              className="w-full rounded-xl bg-[var(--color-accent)] disabled:bg-[var(--color-accent-soft)]/40 text-white py-3 text-label font-black flex items-center justify-center gap-2"
+              className="w-full rounded-xl bg-[var(--color-accent-solid)] disabled:bg-[var(--color-accent-soft)]/40 text-[var(--color-text-on-solid)] py-3 text-label font-black flex items-center justify-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -318,27 +320,28 @@ export default function SecureExamPortal({
         )}
 
         {phase === 'ready' && exam && student && (
-          <div className="bg-white rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-6 md:p-8 max-w-2xl mx-auto space-y-5 text-center">
+          <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-6 md:p-8 max-w-2xl mx-auto space-y-5 text-center">
             <CheckCircle2 className="w-14 h-14 text-[var(--color-success)] mx-auto" />
             <h2 className="font-black text-[var(--color-text-primary)]">سلام، {student.name}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-caption">
-              <div className="bg-white/3 rounded-2xl p-3">
+              <div className="bg-[var(--color-on-dark-subtle)] rounded-2xl p-3">
                 <span className="block text-[var(--color-text-tertiary)]">آزمون</span>
                 <strong>{exam.title}</strong>
               </div>
-              <div className="bg-white/3 rounded-2xl p-3">
+              <div className="bg-[var(--color-on-dark-subtle)] rounded-2xl p-3">
                 <span className="block text-[var(--color-text-tertiary)]">درس</span>
                 <strong>{exam.subject}</strong>
               </div>
-              <div className="bg-white/3 rounded-2xl p-3">
+              <div className="bg-[var(--color-on-dark-subtle)] rounded-2xl p-3">
                 <span className="block text-[var(--color-text-tertiary)]">زمان</span>
                 <strong>{toPersianDigits(exam.durationMinutes)} دقیقه</strong>
               </div>
             </div>
             <button
+              type="button"
               onClick={handleLoadPayload}
               disabled={loading}
-              className="rounded-xl bg-[var(--color-accent)] disabled:bg-[var(--color-accent-soft)]/40 text-white px-6 py-3 text-label font-black inline-flex items-center gap-2"
+              className="rounded-xl bg-[var(--color-accent-solid)] disabled:bg-[var(--color-accent-soft)]/40 text-[var(--color-text-on-solid)] px-6 py-3 text-label font-black inline-flex items-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -352,7 +355,7 @@ export default function SecureExamPortal({
 
         {phase === 'take' && exam && (
           <div className="space-y-5">
-            <div className="bg-white rounded-3xl border border-[var(--color-glass-light-stroke)] p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-10 shadow-xs">
+            <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-10 shadow-xs">
               <div>
                 <h2 className="font-black text-[var(--color-text-primary)]">{exam.title}</h2>
                 <p className="text-caption text-[var(--color-text-tertiary)] mt-1">
@@ -368,9 +371,10 @@ export default function SecureExamPortal({
                       {toPersianDigits(queuedCount)} پاسخ همگام‌نشده (آفلاین)
                     </span>
                     <button
+                      type="button"
                       onClick={handleSyncQueued}
                       disabled={syncing}
-                      className="bg-[var(--color-warning)] hover:bg-[var(--color-warning)] px-2 py-1 rounded-lg font-black text-[var(--color-warning)] inline-flex items-center gap-1 cursor-pointer transition-colors"
+                      className="bg-[var(--color-warning-solid)] hover:bg-[var(--color-warning-solid)] px-2 py-1 rounded-lg font-black text-[var(--color-warning)] inline-flex items-center gap-1 cursor-pointer transition-colors"
                     >
                       {syncing ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -398,9 +402,10 @@ export default function SecureExamPortal({
                   </span>
                 )}
                 <button
+                  type="button"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="rounded-xl bg-[var(--color-success)] disabled:bg-[var(--color-success)] text-white px-5 py-2.5 font-black inline-flex items-center gap-2 shadow-sm hover:bg-[var(--color-success)]/90 cursor-pointer"
+                  className="rounded-xl bg-[var(--color-success-solid)] disabled:bg-[var(--color-success-solid)] text-[var(--color-text-on-solid)] px-5 py-2.5 font-black inline-flex items-center gap-2 shadow-sm hover:bg-[var(--color-success-solid)]/90 cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   ارسال نهایی پاسخ‌ها
@@ -411,7 +416,7 @@ export default function SecureExamPortal({
             {questions.map((question, index) => (
               <section
                 key={question.id}
-                className="bg-white rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-5 md:p-6 space-y-4"
+                className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-5 md:p-6 space-y-4"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-glass-light-stroke)] pb-3">
                   <h3 className="font-black text-[var(--color-text-primary)] text-label">
@@ -427,6 +432,8 @@ export default function SecureExamPortal({
                 {question.body?.imageUrl && (
                   <div className="my-3">
                     <img
+                      loading="lazy"
+                      decoding="async"
                       src={question.body!.imageUrl}
                       alt="پیوست سوال"
                       className="max-h-64 rounded-2xl object-cover border border-[var(--color-glass-light-stroke)] shadow-xs"
@@ -438,24 +445,27 @@ export default function SecureExamPortal({
                     const selected = answers[question.id] === option.id;
                     return (
                       <button
+                        type="button"
                         key={option.id}
                         onClick={() => handleSaveAnswer(question.id, option.id)}
                         className={
                           (selected
                             ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)] text-[var(--color-accent)] shadow-xs font-black '
-                            : 'border-[var(--color-glass-light-stroke)] bg-white/3 text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)] ') +
+                            : 'border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)] ') +
                           'rounded-2xl border p-4 text-right text-caption transition-all flex items-center justify-between cursor-pointer'
                         }
                       >
                         <span>{option.text}</span>
                         {option.imageUrl && (
                           <img
+                            loading="lazy"
+                            decoding="async"
                             src={option.imageUrl}
                             alt="گزینه"
                             className="w-10 h-10 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] ml-2"
                           />
                         )}
-                        <span className="font-mono text-micro text-[var(--color-text-tertiary)] font-bold bg-white px-2 py-0.5 rounded-md border">
+                        <span className="font-mono text-micro text-[var(--color-text-tertiary)] font-bold bg-[var(--color-surface)] px-2 py-0.5 rounded-md border">
                           {option.id}
                         </span>
                       </button>
@@ -468,7 +478,7 @@ export default function SecureExamPortal({
         )}
 
         {phase === 'submitted' && (
-          <div className="bg-white rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-8 max-w-xl mx-auto text-center space-y-4 animate-in zoom-in-95 duration-200">
+          <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-8 max-w-xl mx-auto text-center space-y-4 animate-in zoom-in-95 duration-200">
             <CheckCircle2 className="w-16 h-16 text-[var(--color-success)] mx-auto" />
             <h2 className="font-black text-[var(--color-text-primary)] text-heading-3">
               پاسخ شما با موفقیت در سامانه ثبت نهایی شد.

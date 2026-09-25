@@ -1,18 +1,20 @@
 {
   "name": "examforge",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "check:bundle": "node tools/check-bundle.mjs",
+    "check:theme": "node tools/check-theme-tokens.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
-    "check": "npm run typecheck && npm run lint && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run check:theme && npm run check:a11y-buttons && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "check:env": "node tools/check-env.mjs",
@@ -25,7 +27,8 @@
     "deploy:check": "node tools/deploy-readiness.mjs",
     "cleanup:generated": "node tools/cleanup-generated.mjs",
     "predeploy": "npm run lint && npm run build && npm run verify:prod && npm run deploy:check",
-    "test:e2e": "npx playwright test"
+    "test:e2e": "npx playwright test",
+    "check:a11y-buttons": "node tools/check-icon-buttons.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",

@@ -17,7 +17,10 @@ import { logger } from '../lib/logger';
 import { getSupabasePublicClient } from '../lib/supabasePublic';
 import { publicEnv } from '../config/env';
 import { teacherGet, teacherPost, getTeacherAccessToken } from './teacherApi';
-import { uploadQuestionImage as storageUploadQuestionImage, uploadTeacherAvatar } from './storageService';
+import {
+  uploadQuestionImage as storageUploadQuestionImage,
+  uploadTeacherAvatar,
+} from './storageService';
 
 export const authService = {
   async loginTeacher(email: string, password = ''): Promise<Teacher> {
@@ -93,7 +96,9 @@ export const authService = {
 };
 
 export const teacherProfileService = {
-  async save(profile: Pick<Teacher, 'name' | 'subject' | 'bio' | 'avatarUrl' | 'schools' | 'schedule'>): Promise<Teacher> {
+  async save(
+    profile: Pick<Teacher, 'name' | 'subject' | 'bio' | 'avatarUrl' | 'schools' | 'schedule'>,
+  ): Promise<Teacher> {
     const response = await teacherPost<{ teacher: Teacher }>('/api/teacher/profile', profile);
     return response.teacher;
   },
@@ -181,12 +186,13 @@ export const studentService = {
 };
 
 export const questionService = {
-  async getQuestions(): Promise<Question[]> {
+  async getQuestions(options?: { throwOnError?: boolean }): Promise<Question[]> {
     try {
       const response = await teacherGet<{ questions: Question[] }>('/api/teacher/questions');
       return response.questions;
     } catch (err) {
       logger.error('Question fetch failed:', err);
+      if (options?.throwOnError) throw err;
       return [];
     }
   },

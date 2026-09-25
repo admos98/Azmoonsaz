@@ -30,6 +30,10 @@ import { questionService } from '../../services/api';
 import { ConfirmDialog, Dropdown } from '../../components/UIComponents';
 import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
 import { useToast } from '../../hooks/useToast';
+import { usePersistentPreference } from '../../hooks/usePersistentPreference';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
+import { formatPersianDate, normalizePersianText, toPersianDigits } from '../../utils/persian';
 
 // Local enhanced interface to handle optional tags, chapters, difficulty, and completeness statuses
 interface RichQuestion extends Question {
@@ -45,10 +49,16 @@ export default function Questions() {
   const { showToast, toastElement } = useToast();
   // Rich list state
   const [questions, setQuestions] = useState<RichQuestion[]>([]);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   // View & UI State
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [viewMode, setViewMode] = usePersistentPreference<'card' | 'table'>(
+    'questions:view',
+    'card',
+    (value): value is 'card' | 'table' => value === 'card' || value === 'table',
+  );
   const [previewQuestion, setPreviewQuestion] = useState<RichQuestion | null>(null);
   const [showAddEditDrawer, setShowAddEditDrawer] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'add' | 'edit'>('add');
@@ -67,15 +77,118 @@ export default function Questions() {
   );
   const [drawerOrigin] = useOriginFromTrigger(drawerTriggerRef, drawerPanelRef, showAddEditDrawer);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = usePersistentPreference<'newest' | 'oldest' | 'title'>(
+    'questions:sort',
+    'newest',
+    (value): value is 'newest' | 'oldest' | 'title' =>
+      value === 'newest' || value === 'oldest' || value === 'title',
+  );
+  const [pageSize, setPageSize] = usePersistentPreference<number>(
+    'questions:page-size',
+    20,
+    (value): value is number => value === 10 || value === 20 || value === 50,
+  );
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filters state
-  const [selectedGrade, setSelectedGrade] = useState<string>('all');
-  const [selectedSubject, setSelectedSubject] = useState<string>('all');
-  const [selectedSection, setSelectedSection] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
-  const [selectedTag, setSelectedTag] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedGrade, setSelectedGrade, resetSelectedGrade] = usePersistentPreference(
+    'questions:grade',
+    'all',
+  );
+  const [selectedSubject, setSelectedSubject, resetSelectedSubject] = usePersistentPreference(
+    'questions:subject',
+    'all',
+  );
+  const [selectedSection, setSelectedSection, resetSelectedSection] = usePersistentPreference(
+    'questions:section',
+    'all',
+  );
+  const [selectedType, setSelectedType, resetSelectedType] = usePersistentPreference(
+    'questions:type',
+    'all',
+  );
+  const [selectedDifficulty, setSelectedDifficulty, resetSelectedDifficulty] =
+    usePersistentPreference('questions:difficulty', 'all');
+  const [selectedTag, setSelectedTag, resetSelectedTag] = usePersistentPreference(
+    'questions:tag',
+    'all',
+  );
+  const [selectedStatus, setSelectedStatus, resetSelectedStatus] = usePersistentPreference(
+    'questions:status',
+    'all',
+  );
+  const urlFiltersReady = useRef(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const setIfPresent = (key: string, setter: (value: string) => void) => {
+      const value = params.get(key);
+      if (value) setter(value);
+    };
+    setIfPresent('q', setSearchQuery);
+    setIfPresent('grade', setSelectedGrade);
+    setIfPresent('subject', setSelectedSubject);
+    setIfPresent('section', setSelectedSection);
+    setIfPresent('type', setSelectedType);
+    setIfPresent('difficulty', setSelectedDifficulty);
+    setIfPresent('tag', setSelectedTag);
+    setIfPresent('status', setSelectedStatus);
+    const urlSort = params.get('sort');
+    if (urlSort === 'newest' || urlSort === 'oldest' || urlSort === 'title') setSortOrder(urlSort);
+    const urlPageSize = Number(params.get('pageSize'));
+    if (urlPageSize === 10 || urlPageSize === 20 || urlPageSize === 50) setPageSize(urlPageSize);
+    urlFiltersReady.current = true;
+  }, [
+    setPageSize,
+    setSelectedDifficulty,
+    setSelectedGrade,
+    setSelectedSection,
+    setSelectedStatus,
+    setSelectedSubject,
+    setSelectedTag,
+    setSelectedType,
+    setSortOrder,
+  ]);
+
+  useEffect(() => {
+    if (!urlFiltersReady.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const values: Record<string, string> = {
+      q: searchQuery,
+      grade: selectedGrade,
+      subject: selectedSubject,
+      section: selectedSection,
+      type: selectedType,
+      difficulty: selectedDifficulty,
+      tag: selectedTag,
+      status: selectedStatus,
+      sort: sortOrder,
+      pageSize: String(pageSize),
+    };
+    Object.entries(values).forEach(([key, value]) => {
+      if (
+        !value ||
+        value === 'all' ||
+        (key === 'sort' && value === 'newest') ||
+        (key === 'pageSize' && value === '20')
+      )
+        params.delete(key);
+      else params.set(key, value);
+    });
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+  }, [
+    pageSize,
+    searchQuery,
+    selectedDifficulty,
+    selectedGrade,
+    selectedSection,
+    selectedStatus,
+    selectedSubject,
+    selectedTag,
+    selectedType,
+    sortOrder,
+  ]);
 
   useEffect(() => {
     const fetchQuestions = async () => {
@@ -175,17 +288,46 @@ export default function Questions() {
     },
   ]);
 
+  const questionFormSnapshot = JSON.stringify([
+    formGrade,
+    formSubject,
+    formSection,
+    formType,
+    formDifficulty,
+    formPoints,
+    formText,
+    formTitle,
+    formTagsString,
+    formExplanation,
+    formSampleAnswer,
+    formImageUrl,
+    formOptions,
+    formCorrectTrueFalse,
+    formFillBlanks,
+    formMatchingPairs,
+    formOrderingItems,
+    formRubrics,
+    formParts,
+  ]);
+  const [savedQuestionFormSnapshot, setSavedQuestionFormSnapshot] = useState(questionFormSnapshot);
+  const drawerWasOpenRef = useRef(false);
+  useEffect(() => {
+    if (showAddEditDrawer && !drawerWasOpenRef.current) {
+      setSavedQuestionFormSnapshot(questionFormSnapshot);
+    }
+    drawerWasOpenRef.current = showAddEditDrawer;
+  }, [showAddEditDrawer, questionFormSnapshot]);
+  const guardQuestionDraft = useUnsavedChanges(
+    showAddEditDrawer && questionFormSnapshot !== savedQuestionFormSnapshot,
+  );
+  const closeQuestionEditor = () => guardQuestionDraft(() => setShowAddEditDrawer(false));
+
   // Unique list generators for filter indicators
   const uniqueSubjects = Array.from(new Set(questions.map((q) => q.category).filter(Boolean)));
   const uniqueSections = Array.from(new Set(questions.map((q) => q.section).filter(Boolean)));
   const uniqueTags = Array.from(new Set(questions.flatMap((q) => q.tags || []).filter(Boolean)));
 
   // Persiarized helper converters
-  const toPersianDigits = (str: string | number | undefined): string => {
-    if (str === undefined) return '';
-    const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    return String(str).replace(/[0-9]/g, (w) => farsiDigits[parseInt(w)]);
-  };
 
   const getTypeNameInPersian = (type: QuestionType) => {
     const names: Record<QuestionType, string> = {
@@ -455,6 +597,7 @@ export default function Questions() {
       parts: formType === 'cloze' || formType === 'reading_comprehension' ? formParts : undefined,
     };
 
+    setSaveState('saving');
     try {
       if (drawerMode === 'add') {
         const created = await questionService.createQuestion(modifiedQuestionPayload);
@@ -485,9 +628,17 @@ export default function Questions() {
         };
         setQuestions(questions.map((q) => (q.id === activeQuestionId ? enrichedUpdated : q)));
       }
+      const savedAt = new Date();
+      setLastSavedAt(savedAt);
+      setSaveState('saved');
+      showToast(
+        drawerMode === 'add' ? 'سؤال جدید به بانک اضافه شد.' : 'تغییرات سؤال ذخیره شد.',
+        'success',
+      );
       setShowAddEditDrawer(false);
     } catch (_err) {
-      showToast('خطا در ذخیره‌سازی سوال', 'error');
+      setSaveState('failed');
+      showToast('سؤال ذخیره نشد؛ اطلاعات واردشده حفظ شده است.', 'error');
     }
   };
 
@@ -507,19 +658,24 @@ export default function Questions() {
       setQuestions(questions.filter((q) => q.id !== questionToDelete.id));
       showToast('سوال حذف شد.', 'success');
     } catch (_err) {
-      showToast('خطا در پاک کردن سوال', 'error');
+      const failedQuestion = questionToDelete;
+      showToast('سؤال حذف نشد؛ دوباره تلاش کنید.', 'error', {
+        label: 'تلاش دوباره',
+        onClick: () => setQuestionToDelete(failedQuestion),
+      });
     } finally {
       setQuestionToDelete(null);
     }
   };
 
   // Filter application pipeline
+  const normalizedSearch = normalizePersianText(searchQuery);
   const filteredQuestions = questions.filter((q) => {
     const matchesSearch =
-      q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      !normalizedSearch ||
+      [q.title, q.text, q.category, ...(q.tags || [])].some((value) =>
+        normalizePersianText(value).includes(normalizedSearch),
+      );
 
     const matchesGrade = selectedGrade === 'all' || q.grade === selectedGrade;
     const matchesSubject = selectedSubject === 'all' || q.category === selectedSubject;
@@ -541,6 +697,32 @@ export default function Questions() {
     );
   });
 
+  const sortedQuestions = [...filteredQuestions].sort((a, b) => {
+    if (sortOrder === 'title') return a.title.localeCompare(b.title, 'fa');
+    const aTime = new Date(a.createdAt || 0).getTime();
+    const bTime = new Date(b.createdAt || 0).getTime();
+    return sortOrder === 'oldest' ? aTime - bTime : bTime - aTime;
+  });
+  const totalPages = Math.max(1, Math.ceil(sortedQuestions.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const visibleQuestions = sortedQuestions.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  if (loading) {
+    return (
+      <div className="space-y-6" role="status" aria-label="در حال بارگذاری اطلاعات">
+        <div className="h-28 rounded-3xl bg-[var(--color-surface-secondary)] skeleton" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-36 rounded-2xl bg-[var(--color-surface-secondary)] skeleton"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="space-y-6 animate-in fade-in duration-300 text-right font-sans mb-12"
@@ -548,6 +730,7 @@ export default function Questions() {
       id="questions-tab-view"
     >
       {toastElement}
+      <SaveStatusIndicator state={saveState} savedAt={lastSavedAt} />
 
       {/* Page Title Board */}
       <div
@@ -569,6 +752,7 @@ export default function Questions() {
           {/* Card / Table Toggle */}
           <div className="glx border rounded-xl p-1 flex items-center gap-1 shrink-0">
             <button
+              type="button"
               onClick={() => setViewMode('card')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === 'card'
@@ -580,6 +764,7 @@ export default function Questions() {
               <Grid className="w-4 h-4" />
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === 'table'
@@ -594,12 +779,13 @@ export default function Questions() {
 
           {/* Add Question Button */}
           <button
+            type="button"
             id="btn-add-question-trigger"
             onClick={(e) => {
               drawerTriggerRef.current = e.currentTarget;
               openCreateDrawer();
             }}
-            className="flex-1 md:flex-none px-4.5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] hover:scale-[1.01] active:scale-[0.99] text-white rounded-xl text-caption font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="flex-1 md:flex-none px-4.5 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] hover:scale-[1.01] active:scale-[0.99] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>افزودن سوال جدید</span>
@@ -782,19 +968,80 @@ export default function Questions() {
           selectedStatus !== 'all') && (
           <div className="flex justify-start pt-2 border-t border-[var(--color-glass-light-stroke)]">
             <button
+              type="button"
               onClick={() => {
                 setSearchQuery('');
-                setSelectedGrade('all');
-                setSelectedSubject('all');
-                setSelectedSection('all');
-                setSelectedType('all');
-                setSelectedDifficulty('all');
-                setSelectedTag('all');
-                setSelectedStatus('all');
+                resetSelectedGrade();
+                resetSelectedSubject();
+                resetSelectedSection();
+                resetSelectedType();
+                resetSelectedDifficulty();
+                resetSelectedTag();
+                resetSelectedStatus();
               }}
               className="px-3.5 py-1.5 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro font-bold transition-all cursor-pointer"
             >
               حذف فیلترها و نمایش همگانی
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-caption">
+          <label htmlFor="question-sort" className="font-bold">
+            مرتب‌سازی
+          </label>
+          <select
+            id="question-sort"
+            value={sortOrder}
+            onChange={(event) => {
+              setSortOrder(event.target.value as 'newest' | 'oldest' | 'title');
+              setCurrentPage(1);
+            }}
+            className="glx-inset rounded-xl border px-3 py-2"
+          >
+            <option value="newest">جدیدترین</option>
+            <option value="oldest">قدیمی‌ترین</option>
+            <option value="title">عنوان</option>
+          </select>
+          <label htmlFor="question-page-size" className="font-bold">
+            در هر صفحه
+          </label>
+          <select
+            id="question-page-size"
+            value={pageSize}
+            onChange={(event) => {
+              setPageSize(Number(event.target.value));
+              setCurrentPage(1);
+            }}
+            className="glx-inset rounded-xl border px-3 py-2"
+          >
+            <option value={10}>۱۰</option>
+            <option value={20}>۲۰</option>
+            <option value={50}>۵۰</option>
+          </select>
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2 text-caption">
+            <button
+              type="button"
+              className="btn-soft"
+              disabled={safePage === 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            >
+              قبلی
+            </button>
+            <span aria-live="polite">
+              صفحه {toPersianDigits(safePage)} از {toPersianDigits(totalPages)}
+            </span>
+            <button
+              type="button"
+              className="btn-soft"
+              disabled={safePage === totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            >
+              بعدی
             </button>
           </div>
         )}
@@ -807,7 +1054,7 @@ export default function Questions() {
             viewMode === 'card' ? (
               /* CARD GRID VIEW MODE */
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5" id="questions-grid">
-                {filteredQuestions.map((q) => {
+                {visibleQuestions.map((q) => {
                   const hasImage = !!q.imageUrl || q.options?.some((o) => o.imageUrl);
                   const subquestionsCount = q.parts?.length || 0;
 
@@ -903,6 +1150,7 @@ export default function Questions() {
 
                         <div className="flex gap-1.5">
                           <button
+                            type="button"
                             onClick={(e) => {
                               previewTriggerRef.current = e.currentTarget;
                               setPreviewQuestion(q);
@@ -913,6 +1161,7 @@ export default function Questions() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
+                            type="button"
                             onClick={(e) => {
                               drawerTriggerRef.current = e.currentTarget;
                               openEditDrawer(q);
@@ -923,6 +1172,7 @@ export default function Questions() {
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => handleDeleteQuestion(q.id, q.title)}
                             className="p-1.5 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg transition-all cursor-pointer"
                             title="حذف سوال"
@@ -957,7 +1207,7 @@ export default function Questions() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--color-glass-light-stroke)]">
-                      {filteredQuestions.map((q) => {
+                      {visibleQuestions.map((q) => {
                         const hasImage = !!q.imageUrl || q.options?.some((o) => o.imageUrl);
                         const subquestionsCount = q.parts?.length || 0;
 
@@ -1034,6 +1284,7 @@ export default function Questions() {
                             <td className="p-4 text-center">
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     previewTriggerRef.current = e.currentTarget;
                                     setPreviewQuestion(q);
@@ -1044,6 +1295,7 @@ export default function Questions() {
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     drawerTriggerRef.current = e.currentTarget;
                                     openEditDrawer(q);
@@ -1054,6 +1306,7 @@ export default function Questions() {
                                   <Edit className="w-3.5 h-3.5" />
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => handleDeleteQuestion(q.id, q.title)}
                                   className="p-1 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg cursor-pointer"
                                   title="حذف"
@@ -1143,6 +1396,7 @@ export default function Questions() {
                 {/* Header */}
                 <div className="px-6 py-4.5 glx border-b flex items-center justify-between">
                   <button
+                    type="button"
                     onClick={() => setPreviewQuestion(null)}
                     className="px-3 py-1.5 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 transition-all font-bold rounded-xl text-micro cursor-pointer"
                   >
@@ -1164,9 +1418,7 @@ export default function Questions() {
                   <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
                   <span>
                     بروزرسانی شده در:{' '}
-                    {toPersianDigits(
-                      new Date(previewQuestion.createdAt).toLocaleDateString('fa-IR'),
-                    )}
+                    {toPersianDigits(formatPersianDate(previewQuestion.createdAt))}
                   </span>
                 </div>
               </motion.div>
@@ -1191,7 +1443,7 @@ export default function Questions() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16, ease: 'easeOut' }}
-              onClick={() => setShowAddEditDrawer(false)}
+              onClick={closeQuestionEditor}
               className="absolute inset-0 scrim"
             />
             {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
@@ -1231,7 +1483,7 @@ export default function Questions() {
                 <div className="px-6 py-5 glx border-b flex items-center justify-between">
                   <button
                     type="button"
-                    onClick={() => setShowAddEditDrawer(false)}
+                    onClick={closeQuestionEditor}
                     className="p-1 px-3 bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-xl font-bold cursor-pointer"
                   >
                     بستن قالب ×
@@ -1502,9 +1754,11 @@ export default function Questions() {
                           {formImageUrl ? (
                             <div className="flex items-center gap-2">
                               <img
+                                loading="lazy"
+                                decoding="async"
                                 src={formImageUrl}
                                 alt="تصویر بارگذاری شده در فرم"
-                                className="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-white"
+                                className="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]"
                               />
                               <button
                                 type="button"
@@ -1541,7 +1795,7 @@ export default function Questions() {
                             <button
                               type="button"
                               onClick={addOptionRow}
-                              className="px-2.5 py-1 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-micro font-bold cursor-pointer"
+                              className="px-2.5 py-1 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-lg text-micro font-bold cursor-pointer"
                             >
                               + افزودن گزینه نو
                             </button>
@@ -1577,6 +1831,8 @@ export default function Questions() {
                                   {/* Remove opt */}
                                   <button
                                     type="button"
+                                    aria-label={`حذف گزینه شماره ${toPersianDigits(oIdx + 1)}`}
+                                    title="حذف گزینه"
                                     onClick={() => removeOptionRow(oIdx)}
                                     className="mr-auto p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
                                   >
@@ -1624,6 +1880,8 @@ export default function Questions() {
                                       {opt.imageUrl ? (
                                         <div className="flex items-center gap-1.5">
                                           <img
+                                            loading="lazy"
+                                            decoding="async"
                                             src={opt.imageUrl}
                                             className="w-6 h-6 rounded object-cover border"
                                             alt="گزینه"
@@ -1708,7 +1966,7 @@ export default function Questions() {
                             <button
                               type="button"
                               onClick={() => setFormFillBlanks([...formFillBlanks, ''])}
-                              className="px-2 py-0.5 bg-[var(--color-accent)] text-white rounded text-micro font-bold"
+                              className="px-2 py-0.5 bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] rounded text-micro font-bold"
                             >
                               + الحاق محل جدید
                             </button>
@@ -1764,7 +2022,7 @@ export default function Questions() {
                                   { left: '', right: '' },
                                 ])
                               }
-                              className="px-2.5 py-1 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-lg text-micro font-bold cursor-pointer"
+                              className="px-2.5 py-1 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-lg text-micro font-bold cursor-pointer"
                             >
                               + درج جفت جدید
                             </button>
@@ -1835,7 +2093,7 @@ export default function Questions() {
                             <button
                               type="button"
                               onClick={() => setFormOrderingItems([...formOrderingItems, ''])}
-                              className="px-2 py-0.5 bg-[var(--color-accent)] text-white rounded text-micro font-bold"
+                              className="px-2 py-0.5 bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] rounded text-micro font-bold"
                             >
                               + گام جدید
                             </button>
@@ -1906,7 +2164,7 @@ export default function Questions() {
                               <button
                                 type="button"
                                 onClick={addRubricRow}
-                                className="px-3 py-1 bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90 text-white rounded-lg text-micro font-bold transition-all cursor-pointer"
+                                className="px-3 py-1 bg-[var(--color-danger-solid)] hover:bg-[var(--color-danger-solid)]/90 text-[var(--color-text-on-solid)] rounded-lg text-micro font-bold transition-all cursor-pointer"
                               >
                                 + معیار جدید
                               </button>
@@ -2013,7 +2271,7 @@ export default function Questions() {
                             <button
                               type="button"
                               onClick={addPartRow}
-                              className="px-2.5 py-1 bg-[var(--color-accent)] text-white rounded text-micro font-bold"
+                              className="px-2.5 py-1 bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] rounded text-micro font-bold"
                             >
                               + افزودن زیرسوال تابعه
                             </button>
@@ -2094,18 +2352,18 @@ export default function Questions() {
                       <div className="pt-4 border-t border-[var(--color-glass-light-stroke)] flex gap-3 justify-end">
                         <button
                           type="button"
-                          onClick={() => setShowAddEditDrawer(false)}
+                          onClick={closeQuestionEditor}
                           className="px-4.5 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-semibold rounded-xl cursor-pointer"
                         >
                           انصراف
                         </button>
                         <button
                           type="submit"
-                          className="px-5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl shadow-sm cursor-pointer"
+                          className="px-5 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl shadow-sm cursor-pointer"
                         >
                           {drawerMode === 'add'
                             ? 'ثبت و الحاق به بانک سوالات ملی'
-                            : 'ذخیره دگرگونی ها'}
+                            : 'ذخیره تغییرات'}
                         </button>
                       </div>
                     </form>

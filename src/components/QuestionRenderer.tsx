@@ -6,6 +6,7 @@
 import React from 'react';
 import { Check, Award, Info } from 'lucide-react';
 import { Question, QuestionType, QuestionPart, RubricCriterion } from '../types';
+import { toPersianDigits } from '../utils/persian';
 
 interface QuestionRendererProps {
   question: Partial<Question> & {
@@ -27,12 +28,6 @@ export default function QuestionRenderer({
   question,
   showCorrectAnswers = true,
 }: QuestionRendererProps) {
-  const toPersianDigits = (str: string | number | undefined): string => {
-    if (str === undefined) return '';
-    const farsiDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    return String(str).replace(/[0-9]/g, (w) => farsiDigits[parseInt(w)]);
-  };
-
   const getDifficultyLabel = (diff: string | undefined): string => {
     if (diff === 'easy') return 'آسان';
     if (diff === 'medium') return 'متوسط';
@@ -123,12 +118,14 @@ export default function QuestionRenderer({
         {question.imageUrl && (
           <div className="mt-2.5 relative group inline-block max-w-full">
             <img
+              loading="lazy"
+              decoding="async"
               src={question.imageUrl}
               alt="ضمیمه سوال"
               referrerPolicy="no-referrer"
               className="rounded-xl border max-h-64 object-contain max-w-full glx"
             />
-            <span className="absolute bottom-2 right-2 bg-black/30 text-white rounded-md px-2 py-0.5 text-micro font-mono">
+            <span className="absolute bottom-2 right-2 bg-black/30 text-[var(--color-text-on-solid)] rounded-md px-2 py-0.5 text-micro font-mono">
               پیوست اصلی تصویر سوال
             </span>
           </div>
@@ -169,7 +166,7 @@ export default function QuestionRenderer({
                     <span
                       className={`w-6 h-6 shrink-0 rounded-lg flex items-center justify-center font-bold text-micro ${
                         showCorrectAnswers && isCorrect
-                          ? 'bg-[var(--color-success)] text-white'
+                          ? 'bg-[var(--color-success-solid)] text-[var(--color-text-on-solid)]'
                           : 'glx-inset text-[var(--color-text-primary)]'
                       }`}
                     >
@@ -183,6 +180,8 @@ export default function QuestionRenderer({
                       {opt.imageUrl && (
                         <div className="mt-2 block">
                           <img
+                            loading="lazy"
+                            decoding="async"
                             src={opt.imageUrl}
                             alt={`تصویر گزینه ${letters[index] || index}`}
                             referrerPolicy="no-referrer"
@@ -224,7 +223,7 @@ export default function QuestionRenderer({
               >
                 <span>{item.label}</span>
                 {showCorrectAnswers && isSelected && (
-                  <span className="bg-[var(--color-success)] text-white p-0.5 rounded-full">
+                  <span className="bg-[var(--color-success-solid)] text-[var(--color-text-on-solid)] p-0.5 rounded-full">
                     <Check className="w-3 h-3" />
                   </span>
                 )}
@@ -406,7 +405,7 @@ export default function QuestionRenderer({
             className="bg-[var(--color-accent-soft)]/40 border border-[var(--color-accent)]/20/70 rounded-2xl p-4.5 space-y-3"
             id="passage-container"
           >
-            <span className="bg-[var(--color-accent)] text-white rounded-lg px-2.5 py-0.5 text-micro font-bold inline-block">
+            <span className="bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] rounded-lg px-2.5 py-0.5 text-micro font-bold inline-block">
               متن درک مطلب (Passage)
             </span>
             <p className="text-caption text-[var(--color-text-primary)] leading-relaxed leading-[1.8] font-medium pre-wrap">
@@ -417,6 +416,8 @@ export default function QuestionRenderer({
             {question.imageUrl && (
               <div className="mt-2 text-right">
                 <img
+                  loading="lazy"
+                  decoding="async"
                   src={question.imageUrl}
                   alt="پیوست درک مطلب"
                   referrerPolicy="no-referrer"
@@ -487,7 +488,7 @@ export default function QuestionRenderer({
             className="bg-[var(--color-info-soft)]/30/40 border border-[var(--color-info)]/20/70 p-4.5 rounded-2xl text-caption text-[var(--color-text-primary)] leading-loose leading-[1.8]"
             id="cloze-passage"
           >
-            <span className="bg-[var(--color-info-soft)]/80 text-white rounded-lg px-2 py-0.5 text-micro font-bold mb-3 inline-block">
+            <span className="bg-[var(--color-info-soft)]/80 text-[var(--color-text-on-solid)] rounded-lg px-2 py-0.5 text-micro font-bold mb-3 inline-block">
               متن کلوز تست (Cloze Passage)
             </span>
             <p className="font-medium whitespace-pre-wrap">{question.text}</p>

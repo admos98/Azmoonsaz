@@ -34,9 +34,7 @@ type NavGroup = {
 const navGroups: NavGroup[] = [
   {
     label: 'مدیریت',
-    items: [
-      { id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard },
-    ],
+    items: [{ id: 'dashboard', label: 'داشبورد', icon: LayoutDashboard }],
   },
   {
     label: 'آزمون‌ها',
@@ -76,19 +74,24 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
       {/* Teacher Profile */}
       <button
         type="button"
-        onClick={() => { onTabChange('profile'); setMobileOpen(false); }}
-        className="mx-4 my-4 p-3 rounded-xl bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] flex items-center gap-3 text-right cursor-pointer hover:bg-white/10 transition-colors"
+        onClick={() => {
+          onTabChange('profile');
+          setMobileOpen(false);
+        }}
+        className="mx-4 my-4 p-3 rounded-xl bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] flex items-center gap-3 text-right cursor-pointer hover:bg-[var(--color-on-dark-hover)] transition-colors"
         id="sidebar-profile"
       >
         {teacher?.avatarUrl ? (
           <img
+            loading="eager"
+            decoding="async"
             src={teacher.avatarUrl}
             alt={teacher.name}
             referrerPolicy="no-referrer"
             className="w-10 h-10 rounded-full object-cover border-2 border-[var(--color-glass-ink-stroke)]"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-[var(--color-accent)]/20 border-2 border-[var(--color-glass-ink-stroke)] flex items-center justify-center text-[var(--color-accent)] text-label font-bold">
+          <div className="w-10 h-10 rounded-full bg-[var(--color-accent-solid)]/20 border-2 border-[var(--color-glass-ink-stroke)] flex items-center justify-center text-[var(--color-accent)] text-label font-bold">
             {teacher?.name?.[0] || '?'}
           </div>
         )}
@@ -154,6 +157,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
     <div className="p-4 space-y-2 border-t border-[var(--color-glass-light-stroke)]">
       {/* Switch Role */}
       <button
+        type="button"
         id="btn-switch-role"
         onClick={() => {
           onSwitchRole();
@@ -167,12 +171,13 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
 
       {/* Logout */}
       <button
+        type="button"
         id="btn-logout"
         onClick={() => {
           onLogout();
           setMobileOpen(false);
         }}
-        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-caption text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors font-semibold cursor-pointer"
+        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-caption text-[var(--color-danger)] hover:bg-[var(--color-danger-solid)]/10 transition-colors font-semibold cursor-pointer"
       >
         <LogOut className="w-3.5 h-3.5" />
         <span>خروج از سامانه</span>
@@ -184,6 +189,7 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
     <>
       {/* Mobile Hamburger */}
       <button
+        type="button"
         className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-xl glx cursor-pointer"
         onClick={() => setMobileOpen(true)}
         aria-label="باز کردن منو"
@@ -243,7 +249,8 @@ export default function Sidebar({ currentTab, onTabChange, onLogout, onSwitchRol
           >
             {/* Close button */}
             <button
-              className="absolute top-4 left-4 p-1 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-on-dark)] hover:bg-white/15 cursor-pointer"
+              type="button"
+              className="absolute top-4 left-4 p-1 rounded-lg text-[var(--color-text-tertiary)] hover:text-[var(--color-text-on-dark)] hover:bg-[var(--color-on-dark-hover-strong)] cursor-pointer"
               onClick={() => setMobileOpen(false)}
               aria-label="بستن منو"
             >

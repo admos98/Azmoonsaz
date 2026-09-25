@@ -9,7 +9,9 @@ export async function uploadTeacherAvatar(file: File): Promise<string> {
   if (!userData.user) throw new Error('نشست دبیر معتبر نیست.');
   const extension = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const path = `${userData.user.id}/avatar-${Date.now()}.${extension}`;
-  const { error } = await supabase.storage.from('teacher-avatars').upload(path, file, { cacheControl: '3600', upsert: true });
+  const { error } = await supabase.storage
+    .from('teacher-avatars')
+    .upload(path, file, { cacheControl: '3600', upsert: true });
   if (error) throw error;
   const { data } = supabase.storage.from('teacher-avatars').getPublicUrl(path);
   return data.publicUrl;

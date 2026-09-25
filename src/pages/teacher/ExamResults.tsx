@@ -31,7 +31,7 @@ import {
 import { logger } from '../../lib/logger';
 import { Exam, Submission, Question, ClassGroup, Student, StudentAnswer } from '../../types';
 import { Button, Card, Table, Dropdown } from '../../components/UIComponents';
-import { formatPersianNumber } from '../../services/persianHelpers';
+import { toPersianDigits } from '../../utils/persian';
 import { gradingService } from '../../services/api';
 
 interface ExamResultsProps {
@@ -39,9 +39,11 @@ interface ExamResultsProps {
   onBack: () => void;
 }
 
-// Persian helper to translate numbers
-const toPersianDigits = (str: string | number): string => {
-  return formatPersianNumber(str);
+const formatAnswerValue = (value: unknown): string => {
+  if (value === null || value === undefined || value === '') return '';
+  if (Array.isArray(value)) return value.map(String).join('، ');
+  if (typeof value === 'object') return Object.values(value as Record<string, unknown>).join('، ');
+  return String(value);
 };
 
 export default function ExamResults({ exam, onBack }: ExamResultsProps) {
@@ -74,7 +76,6 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
   // Active view constraints
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
-  const [activeSubmission, setActiveSubmission] = useState<any | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   // States for search & filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,18 +98,6 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   // AI assistant simulation state
   const [aiLoadingQuestionId, setAiLoadingQuestionId] = useState<string | null>(null);
   const [_aiMessage, setAiMessage] = useState<string | null>(null);
-
-  // Re-sync active submission object when state updates or sub selection shifts
-  useEffect(() => {
-    if (selectedSubmissionId) {
-      const sub = submissions.find((s) => s.id === selectedSubmissionId);
-      if (sub) {
-        setActiveSubmission(sub);
-      }
-    } else {
-      setActiveSubmission(null);
-    }
-  }, [selectedSubmissionId, submissions]);
 
   // Construct complete row data pairing cohort with submissions
   let studentRows = effectiveCohort.map((student) => {
@@ -204,6 +193,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     }));
 
   studentRows = [...realOnlyRows, ...studentRows];
+  const activeSubmission = selectedSubmissionId
+    ? studentRows.find((row) => row.id === selectedSubmissionId) || null
+    : null;
 
   // Calculate OVERVIEW stats analytics
   const totalCohortsCount = studentRows.length;
@@ -276,8 +268,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   });
 
   // Start evaluating a single submission
-  const startGrading = (row: any) => {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
+  const startGrading = (row: (typeof studentRows)[number]) => {
     if (row.status === 'absent') {
       alert('این دانش‌آموز غایب بوده و پاسخ‌برگی ارسال نکرده است.');
       return;
@@ -430,7 +421,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
       setAiLoadingQuestionId(null);
       setAiMessage(
-        `هوش مصنوعی پیشنهاد نمره را ثبت کرد. لطفا بازبینی نموده و کلیه بارم‌ها را تایید کنید.`,
+        `هوش مصنوعی پیشنهاد نمره را ثبت کرد. لطفاً پیشنهاد را بازبینی و بارم‌ها را تأیید کنید.`,
       );
     }, 1200);
   };
@@ -589,6 +580,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border">
               <div className="flex items-center gap-4">
                 <button
+                  type="button"
                   id="btn-return-exams-list-arrow"
                   onClick={onBack}
                   className="p-2 hover:brightness-105 rounded-2xl text-[var(--color-text-tertiary)] cursor-pointer transition-all border border-[var(--color-glass-light-stroke)]"
@@ -618,6 +610,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               {/* Advanced Export actions */}
               <div className="flex items-center gap-2 self-stretch md:self-auto">
                 <button
+                  type="button"
                   onClick={handleExportCSV}
                   className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-[var(--color-glass-light-fill)] hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] py-2.5 px-4 rounded-xl text-caption font-bold transition-all cursor-pointer"
                   id="btn-export-csv"
@@ -626,8 +619,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <span>خروجی CSV</span>
                 </button>
                 <button
+                  type="button"
                   onClick={handleExportExcelMock}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white py-2.5 px-4 rounded-xl text-caption font-bold transition-all cursor-pointer shadow-sm shadow-[var(--color-success)]/10"
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] py-2.5 px-4 rounded-xl text-caption font-bold transition-all cursor-pointer shadow-sm shadow-[var(--color-success)]/10"
                   id="btn-export-excel"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
@@ -804,6 +798,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   </h3>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     setSearchQuery('');
                     setClassFilter('all');
@@ -1142,6 +1137,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               <div className="glx p-5 rounded-3xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
                   <button
+                    type="button"
+                    aria-label="بازگشت به فهرست پاسخ‌برگ‌ها"
+                    title="بازگشت"
                     id="btn-close-and-return-list"
                     onClick={() => setSelectedSubmissionId(null)}
                     className="p-2 border border-[var(--color-glass-light-stroke)] hover:brightness-105 rounded-2xl text-[var(--color-text-tertiary)] cursor-pointer"
@@ -1268,7 +1266,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                 {stdAnsObj ? (
                                   q.type === 'single_choice' ? (
                                     q.options?.find((o) => o.id === stdAnswerValue)?.text ||
-                                    `گزینه ${toPersianDigits(stdAnswerValue)}`
+                                    `گزینه ${toPersianDigits(String(stdAnswerValue))}`
                                   ) : q.type === 'multiple_choice' &&
                                     Array.isArray(stdAnswerValue) ? (
                                     stdAnswerValue
@@ -1398,7 +1396,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                 ● برگه دست‌نویس داوطلب:
                               </span>
                               <div className="glx border rounded-xl p-4 text-caption font-bold text-[var(--color-text-primary)] font-sans leading-relaxed whitespace-pre-wrap min-h-[110px]">
-                                {stdAnswerValue || (
+                                {formatAnswerValue(stdAnswerValue) || (
                                   <span className="text-[var(--color-text-tertiary)] font-normal">
                                     ورقه سفید رها شده است.
                                   </span>
@@ -1445,7 +1443,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                   </span>
                                 ) : (
                                   <>
-                                    <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent)] animate-bounce" />
+                                    <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent)]" />
                                     <span>پیشنهاد نمره با هوش مصنوعی</span>
                                   </>
                                 )}
@@ -1577,7 +1575,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               className={`px-4.5 py-2.5 text-micro font-black rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                                 isGraded
                                   ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20'
-                                  : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'
+                                  : 'bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] hover:bg-[var(--color-accent-solid-hover)]'
                               }`}
                             >
                               {isGraded ? (
@@ -1696,14 +1694,16 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                 {/* Bottom Master action keys */}
                 <div className="space-y-3 pt-2">
                   <button
+                    type="button"
                     id="btn-grading-finalize-worksheet"
                     onClick={handleFinalizeGrading}
-                    className="w-full py-3 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white rounded-xl text-caption font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[var(--color-success)]/10"
+                    className="w-full py-3 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] rounded-xl text-caption font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[var(--color-success)]/10"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>تکمیل تصحیح و ثبت نهایی کارنامه</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSelectedSubmissionId(null)}
                     className="w-full py-2.5 glx-inset hover:glx-inset text-[var(--color-text-tertiary)] rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border border-[var(--color-glass-light-stroke)]"
                   >

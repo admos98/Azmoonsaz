@@ -49,7 +49,6 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   }, []);
   useEffect(() => {
     let active = true;
-    setQuestionsLoading(true);
     questionService
       .getQuestions()
       .then((questions) => {
@@ -175,7 +174,9 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
+            type="button"
             id="btn-back-to-exams-from-wizard"
+            aria-label="بازگشت به آزمون‌ها"
             onClick={onBack}
             className="p-1.5 hover:glx-inset rounded-lg text-[var(--color-text-tertiary)] cursor-pointer"
           >
@@ -201,7 +202,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               key={sNum}
               className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
                 step >= sNum
-                  ? 'bg-[var(--color-accent)] text-white font-black scale-105'
+                  ? 'bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] font-black scale-105'
                   : 'glx-inset text-[var(--color-text-tertiary)] border border-[var(--color-glass-light-stroke)]'
               }`}
             >
@@ -546,7 +547,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
                 گام پایانی: مرور کلی ساختار آزمون
               </h4>
               <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
-                کلیه پارامترها را بازرسی کنید تا کدهای ورود توزیع گردند.
+                تنظیمات را بررسی کنید و سپس کدهای ورود را منتشر کنید.
               </p>
             </div>
             <span className="px-3 py-1 bg-[var(--color-success-soft)] text-[var(--color-success)] text-micro font-bold rounded-full">
@@ -623,6 +624,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
         <div>
           {step > 1 && (
             <button
+              type="button"
               id="wizard-btn-prev"
               onClick={() => setStep(step - 1)}
               className="px-4 py-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl text-caption font-semibold border transition-all flex items-center gap-1.5 cursor-pointer"
@@ -644,6 +646,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
 
           {step < 4 ? (
             <button
+              type="button"
               id="wizard-btn-next"
               onClick={() => {
                 if (step === 1 && !title) {
@@ -656,16 +659,17 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
                 }
                 setStep(step + 1);
               }}
-              className="px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-5 py-2 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <span>مرحله بعدی</span>
               <ArrowLeft className="w-4 h-4" />
             </button>
           ) : (
             <button
+              type="button"
               id="wizard-btn-publish"
               onClick={handlePublish}
-              className="px-5 py-2 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white rounded-xl text-caption font-black shadow-xs flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] rounded-xl text-caption font-black shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-4.5 h-4.5" />
               <span>ثبت، زمان‌بندی و انتشار آزمون عمومی</span>

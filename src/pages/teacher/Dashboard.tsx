@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useRef } from 'react';
+import { AnimatePresence } from 'motion/react';
 import {
   FileText,
   Users,
@@ -13,27 +13,17 @@ import {
   Clock,
   ChevronLeft,
   Upload,
-  FileSpreadsheet,
-  CheckCircle,
   Eye,
   BookOpen,
 } from 'lucide-react';
 
-import { logger } from '../../lib/logger';
-import { Student, Exam, Submission, Question, ClassGroup } from '../../types';
 import { Button, Card, StatusBadge, EmptyState, Table } from '../../components/UIComponents';
-import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
 import { TheMark } from '../../components/TheMark';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
-import {
-  studentService,
-  examService,
-  gradingService,
-  classService,
-  questionService,
-} from '../../services/api';
 import { useTeacher } from '../../contexts/TeacherContext';
+import { useDashboardData } from '../../hooks/useDashboardData';
 import { useToast } from '../../hooks/useToast';
+import StudentImportWizard from '../../features/student-import/StudentImportWizard';
 
 interface DashboardProps {
   onNavigate: (tab: string) => void;
@@ -42,128 +32,35 @@ interface DashboardProps {
 
 export default function Dashboard({ onNavigate, onSelectExamForResults }: DashboardProps) {
   const { teacher } = useTeacher();
-  const { showToast, toastElement } = useToast();
-  // Setup local state to support real-time user mutations
-  const [localStudents, setLocalStudents] = useState<Student[]>([]);
-  const [localExams, setLocalExams] = useState<Exam[]>([]);
-  const [localSubmissions, setLocalSubmissions] = useState<Submission[]>([]);
-  const [_loading, setLoading] = useState(true);
-  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
-  const [localQuestions, setLocalQuestions] = useState<Question[]>([]);
+  const { toastElement } = useToast();
+  const {
+    students: localStudents,
+    exams: localExams,
+    submissions: localSubmissions,
+    classGroups,
+    questions: localQuestions,
+    addImportedStudents,
+  } = useDashboardData();
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      setLoading(true);
-      try {
-        const [studentsData, examsData, submissionsData] = await Promise.all([
-          studentService.getStudents(),
-          examService.getExams(),
-          gradingService.getSubmissions(),
-        ]);
-        setLocalStudents(studentsData);
-        setLocalExams(examsData);
-        setLocalSubmissions(submissionsData);
-        classService
-          .getClassGroups()
-          .then(setClassGroups)
-          .catch(() => {});
-        questionService
-          .getQuestions()
-          .then(setLocalQuestions)
-          .catch(() => {});
-      } catch (err) {
-        logger.error('Error loading dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadDashboardData();
-  }, []);
-
-  // Excel import simulator state
+  // Shared, real CSV/XLSX import workflow. The trigger is retained so the
+  // wizard grows from and collapses back into the button that opened it.
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
-
-  // The Excel import panel grows out of / collapses back into whichever button
-  // opened it (quick action or empty state), so it is captured at click time.
   const excelTriggerRef = useRef<HTMLElement | null>(null);
-  const excelPanelRef = useRef<HTMLDivElement>(null);
-  const [excelOrigin] = useOriginFromTrigger(excelTriggerRef, excelPanelRef, isExcelModalOpen);
-  const [_excelFile, setExcelFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const [importStep, setImportStep] = useState<'idle' | 'reading' | 'mapping' | 'preview' | 'done'>(
-    'idle',
-  );
-  const [importProgress, setImportProgress] = useState(0);
 
   // Simulated new students parsed from file
   // Dynamic values based on actual data
   const currentStudents = localStudents;
   const currentExams = localExams;
   const currentSubmissions = localSubmissions;
+  const upcomingExams = currentExams.filter(
+    (exam) => exam.status === 'active' || exam.status === 'scheduled',
+  );
 
   // Stats computation
-  const totalExams = currentExams.length;
   const activeExams = currentExams.filter((e) => e.status === 'active').length;
   const scheduledExams = currentExams.filter((e) => e.status === 'scheduled').length;
   const totalStudents = currentStudents.length;
   const pendingGradings = currentSubmissions.filter((s) => s.status === 'submitted').length;
-
-  // Excel Drag Drop event handlers
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelected(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelected(e.target.files[0]);
-    }
-  };
-
-  const handleFileSelected = (file: File) => {
-    setExcelFile(file);
-    setImportStep('reading');
-    setImportProgress(10);
-
-    // Simulate Reading Steps
-    setTimeout(() => {
-      setImportProgress(40);
-      setImportStep('mapping');
-
-      setTimeout(() => {
-        setImportProgress(75);
-
-        setTimeout(() => {
-          setImportProgress(100);
-          setImportStep('preview');
-        }, 600);
-      }, 700);
-    }, 600);
-  };
-
-  const handleConfirmImport = () => {
-    // TODO: Implement real Excel parsing with papaparse/xlsx
-    showToast('ورود اکسل هنوز پیاده‌سازی نشده است.', 'warning');
-    setIsExcelModalOpen(false);
-    setImportStep('idle');
-    setExcelFile(null);
-    setImportProgress(0);
-  };
 
   // Helper resolvers for table
   const getStudentClassLabel = (studentId: string) => {
@@ -177,8 +74,6 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     return currentExams.find((e) => e.id === examId)?.title || 'آزمون عمومی';
   };
 
-
-
   return (
     <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
       {toastElement}
@@ -189,10 +84,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         id="dashboard-hero-banner"
       >
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[var(--color-accent)]/8 rounded-full blur-[80px] filter" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[var(--color-accent-solid)]/8 rounded-full blur-[80px] filter" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="text-right">
+        <div className="dashboard-hero-content relative z-10">
+          <div className="dashboard-hero-copy text-right">
             <span className="bg-[var(--color-glass-light-fill)] text-[var(--color-text-secondary)] text-micro font-bold px-3 py-1 rounded-full border border-[var(--color-glass-light-stroke)]">
               {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
@@ -200,13 +95,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               سلام، استاد {teacher?.name || 'گرمی'} عزیز
             </h2>
             <p className="text-caption md:text-label mt-2 max-w-2xl leading-relaxed text-[var(--color-text-secondary)]">
-              {formatPersianNumber(totalExams)} آزمون جاری فعال و{' '}
-              {formatPersianNumber(pendingGradings)} پاسخ‌برگ در صف تصحیح.
+              {formatPersianNumber(activeExams)} آزمون فعال و {formatPersianNumber(pendingGradings)}{' '}
+              پاسخ‌برگ در صف تصحیح.
             </p>
           </div>
           {/* Buttons: bottom-left, with blurred Mark logo centered above */}
-          <div className="absolute bottom-6 left-6 z-20 flex flex-col items-end">
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 opacity-10 pointer-events-none">
+          <div className="dashboard-hero-controls">
+            <div className="dashboard-hero-mark">
               <TheMark
                 variant="row"
                 size={80}
@@ -214,17 +109,19 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 className="blur-[4px] brightness-200 invert"
               />
             </div>
-            <div className="flex gap-3">
+            <div className="dashboard-hero-actions">
               <button
                 id="hero-btn-new-exam"
+                type="button"
                 onClick={() => onNavigate('exams/new')}
-                className="px-5 py-3 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white rounded-xl text-caption font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
+                className="px-5 py-3 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>طراحی آزمون نو</span>
               </button>
               <button
                 id="hero-btn-questions"
+                type="button"
                 onClick={() => onNavigate('questions')}
                 className="px-5 py-3 bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-glass-light-fill)]/30 text-[var(--color-text-primary)] border border-[var(--color-glass-light-stroke)] rounded-xl text-caption font-semibold transition-all cursor-pointer"
               >
@@ -235,202 +132,213 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch" id="dashboard-widget-pair">
-      {/* 2. Stats Grid (5 Cards) */}
       <div
-        className="glx rounded-2xl p-5 grid grid-cols-2 gap-3 content-stretch"
-        id="stats-grid-layouts"
+        className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch"
+        id="dashboard-widget-pair"
       >
-        {/* Card 1: Students */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-total-students">
-          <div className="flex items-center justify-between">
-            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-              تعداد دانش‌آموزان
-            </span>
-            <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-              <Users className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-              {formatPersianNumber(totalStudents)}{' '}
-              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                نفر
+        {/* 2. Stats Grid (5 Cards) */}
+        <div
+          className="glx rounded-2xl p-5 grid grid-cols-2 gap-3 content-stretch"
+          id="stats-grid-layouts"
+        >
+          {/* Card 1: Students */}
+          <Card className="flex flex-col justify-between" id="stat-card-total-students">
+            <div className="flex items-center justify-between">
+              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
+                تعداد دانش‌آموزان
               </span>
-            </span>
-          </div>
-        </Card>
-
-        {/* Card 2: Total Questions */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-total-questions">
-          <div className="flex items-center justify-between">
-            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-              تعداد کل سوالات
-            </span>
-            <div className="p-2.5 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)]">
-              <BookOpen className="w-4 h-4" />
+              <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+                <Users className="w-4 h-4" />
+              </div>
             </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-              {formatPersianNumber(localQuestions.length)}{' '}
-              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                سوال
+            <div className="mt-4">
+              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+                {formatPersianNumber(totalStudents)}{' '}
+                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                  نفر
+                </span>
               </span>
-            </span>
-            <span className="text-micro text-[var(--color-text-tertiary)] mt-1.5 block">
-              منطبق با کتب درسی جدید
-            </span>
-          </div>
-        </Card>
-
-        {/* Card 3: Active Exams */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-active-exams">
-          <div className="flex items-center justify-between">
-            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-              آزمون‌های فعال در کلاس
-            </span>
-            <div className="p-2.5 rounded-xl bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
-              <Clock className="w-4 h-4" />
             </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-              {formatPersianNumber(activeExams)}{' '}
-              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                آزمون
+          </Card>
+
+          {/* Card 2: Total Questions */}
+          <Card className="flex flex-col justify-between" id="stat-card-total-questions">
+            <div className="flex items-center justify-between">
+              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
+                تعداد کل سوالات
               </span>
-            </span>
-            <span
-              className={`text-micro font-bold mt-1.5 block ${activeExams > 0 ? 'text-[var(--color-warning)] animate-pulse' : 'text-[var(--color-text-tertiary)]'}`}
-            >
-              {activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمون در حال برگذاری نیست'}
-            </span>
-          </div>
-        </Card>
-
-        {/* Card 4: Submissions Pending Grading */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-pending-reviews">
-          <div className="flex items-center justify-between">
-            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-              نیازمند تصحیح تشریحی
-            </span>
-            <div className="p-2.5 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
-              <CheckSquare className="w-4 h-4" />
+              <div className="p-2.5 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)]">
+                <BookOpen className="w-4 h-4" />
+              </div>
             </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-              {formatPersianNumber(pendingGradings)}{' '}
-              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                برگه
+            <div className="mt-4">
+              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+                {formatPersianNumber(localQuestions.length)}{' '}
+                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                  سوال
+                </span>
               </span>
-            </span>
-            <span className="text-micro text-[var(--color-danger)] font-bold mt-1.5 block">
-              پاسخ‌های تشریحی چشم‌براه نمره
-            </span>
-          </div>
-        </Card>
-
-        {/* Card 5: Scheduled Exams */}
-        <Card hoverable className="flex flex-col justify-between" id="stat-card-scheduled-exams">
-          <div className="flex items-center justify-between">
-            <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-              آزمون‌های زمان‌بندی‌شده
-            </span>
-            <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-              <CalendarIcon className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-              {formatPersianNumber(scheduledExams)}{' '}
-              <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                مورد
+              <span className="text-micro text-[var(--color-text-tertiary)] mt-1.5 block">
+                منطبق با کتب درسی جدید
               </span>
-            </span>
-            <span className="text-micro text-[var(--color-text-tertiary)] mt-1.5 block">
-              برنامه‌ریزی آغاز در روزهای آتی
-            </span>
-          </div>
-        </Card>
-      </div>
-
-      {/* 3. Quick Actions Row */}
-      <div className="glx p-6 rounded-2xl text-right" id="quick-actions-section">
-        <h3 className="text-label font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-          <span>اقدامات سریع</span>
-        </h3>
-
-        <div className="grid grid-cols-2 gap-3.5" id="quick-action-btns">
-          <button
-            id="qa-btn-import-excel"
-            onClick={(e) => {
-              excelTriggerRef.current = e.currentTarget;
-              setIsExcelModalOpen(true);
-            }}
-            className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
-          >
-            <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
-              <Upload className="w-5 h-5" />
             </div>
-            <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-              ورود از اکسل
-            </span>
-          </button>
+          </Card>
 
-          <button
-            id="qa-btn-add-question"
-            onClick={() => onNavigate('questions')}
-            className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
-          >
-            <div className="p-2.5 bg-[var(--color-success-soft)] text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
-              <Plus className="w-5 h-5" />
+          {/* Card 3: Active Exams */}
+          <Card className="flex flex-col justify-between" id="stat-card-active-exams">
+            <div className="flex items-center justify-between">
+              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
+                آزمون‌های فعال در کلاس
+              </span>
+              <div className="p-2.5 rounded-xl bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
+                <Clock className="w-4 h-4" />
+              </div>
             </div>
-            <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-              سوال جدید
-            </span>
-          </button>
+            <div className="mt-4">
+              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+                {formatPersianNumber(activeExams)}{' '}
+                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                  آزمون
+                </span>
+              </span>
+              <span
+                className={`text-micro font-bold mt-1.5 block ${activeExams > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-tertiary)]'}`}
+              >
+                {activeExams > 0
+                  ? 'هم‌اکنون درگاه پاسخ فعال است'
+                  : 'هیچ آزمونی در حال برگزاری نیست'}
+              </span>
+            </div>
+          </Card>
 
-          <button
-            id="qa-btn-new-exam"
-            onClick={() => onNavigate('exams/new')}
-            className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
-          >
-            <div className="p-2.5 bg-[var(--color-warning-soft)] text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
-              <FileText className="w-5 h-5" />
+          {/* Card 4: Submissions Pending Grading */}
+          <Card className="flex flex-col justify-between" id="stat-card-pending-reviews">
+            <div className="flex items-center justify-between">
+              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
+                نیازمند تصحیح تشریحی
+              </span>
+              <div className="p-2.5 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
+                <CheckSquare className="w-4 h-4" />
+              </div>
             </div>
-            <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-              آزمون جدید
-            </span>
-          </button>
+            <div className="mt-4">
+              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+                {formatPersianNumber(pendingGradings)}{' '}
+                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                  برگه
+                </span>
+              </span>
+              <span className="text-micro text-[var(--color-danger)] font-bold mt-1.5 block">
+                پاسخ‌های تشریحی در انتظار نمره
+              </span>
+            </div>
+          </Card>
 
-          <button
-            id="qa-btn-view-results"
-            onClick={() => onNavigate('results')}
-            className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
-          >
-            <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
-              <Eye className="w-5 h-5" />
+          {/* Card 5: Scheduled Exams */}
+          <Card className="flex flex-col justify-between" id="stat-card-scheduled-exams">
+            <div className="flex items-center justify-between">
+              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
+                آزمون‌های زمان‌بندی‌شده
+              </span>
+              <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+                <CalendarIcon className="w-4 h-4" />
+              </div>
             </div>
-            <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-              مشاهده نتایج
-            </span>
-          </button>
-
-          <button
-            id="qa-btn-correct-essays"
-            onClick={() => onNavigate('results')}
-            className="p-4 bg-[var(--color-danger-soft)]/70 hover:bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer"
-          >
-            <div className="p-2.5 bg-[var(--color-danger)]/10 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
-              <CheckSquare className="w-5 h-5" />
+            <div className="mt-4">
+              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
+                {formatPersianNumber(scheduledExams)}{' '}
+                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+                  مورد
+                </span>
+              </span>
+              <span className="text-micro text-[var(--color-text-tertiary)] mt-1.5 block">
+                برنامه‌ریزی آغاز در روزهای آتی
+              </span>
             </div>
-            <span className="text-caption font-bold text-[var(--color-danger)]">تصحیح تشریحی</span>
-          </button>
+          </Card>
         </div>
-      </div>
 
+        {/* 3. Quick Actions Row */}
+        <div className="glx p-6 rounded-2xl text-right" id="quick-actions-section">
+          <h3 className="text-label font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+            <span>اقدامات سریع</span>
+          </h3>
+
+          <div className="grid grid-cols-2 gap-3.5" id="quick-action-btns">
+            <button
+              type="button"
+              id="qa-btn-import-excel"
+              onClick={(e) => {
+                excelTriggerRef.current = e.currentTarget;
+                setIsExcelModalOpen(true);
+              }}
+              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            >
+              <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
+                <Upload className="w-5 h-5" />
+              </div>
+              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+                ورود از اکسل
+              </span>
+            </button>
+
+            <button
+              type="button"
+              id="qa-btn-add-question"
+              onClick={() => onNavigate('questions')}
+              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            >
+              <div className="p-2.5 bg-[var(--color-success-soft)] text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
+                <Plus className="w-5 h-5" />
+              </div>
+              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+                سوال جدید
+              </span>
+            </button>
+
+            <button
+              type="button"
+              id="qa-btn-new-exam"
+              onClick={() => onNavigate('exams/new')}
+              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            >
+              <div className="p-2.5 bg-[var(--color-warning-soft)] text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
+                <FileText className="w-5 h-5" />
+              </div>
+              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+                آزمون جدید
+              </span>
+            </button>
+
+            <button
+              type="button"
+              id="qa-btn-view-results"
+              onClick={() => onNavigate('results')}
+              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+            >
+              <div className="p-2.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
+                <Eye className="w-5 h-5" />
+              </div>
+              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+                مشاهده نتایج
+              </span>
+            </button>
+
+            <button
+              type="button"
+              id="qa-btn-correct-essays"
+              onClick={() => onNavigate('results')}
+              className="p-4 bg-[var(--color-danger-soft)]/70 hover:bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer"
+            >
+              <div className="p-2.5 bg-[var(--color-danger-solid)]/10 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
+                <CheckSquare className="w-5 h-5" />
+              </div>
+              <span className="text-caption font-bold text-[var(--color-danger)]">
+                تصحیح تشریحی
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Main Core Columns */}
@@ -442,25 +350,26 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-label font-bold text-[var(--color-text-primary)]">
-                  آزمون‌های زمان‌بندی‌شده مابعد و پیش‌رو
+                  آزمون‌های فعال و پیش‌رو
                 </h3>
                 <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
                   سنجش‌های در حال آماده‌سازی یا فعال کنونی
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => onNavigate('exams')}
                 className="text-micro text-[var(--color-accent)] font-bold hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <span>مدیریت کلیه آزمون‌ها</span>
+                <span>مدیریت آزمون‌ها</span>
                 <ChevronLeft className="w-3 h-3" />
               </button>
             </div>
 
             <AnimatePresence mode="wait">
-              {currentExams.length > 0 ? (
+              {upcomingExams.length > 0 ? (
                 <div className="space-y-3" id="upcoming-exams-list">
-                  {currentExams.map((ex) => (
+                  {upcomingExams.map((ex) => (
                     <div
                       key={ex.id}
                       className="p-4 rounded-2xl glx hover:brightness-105 transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 text-right"
@@ -545,10 +454,11 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => onNavigate('results')}
                 className="text-micro text-[var(--color-accent)] font-bold hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <span>مشاهده کلیه نتایج</span>
+                <span>مشاهده نتایج</span>
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -709,223 +619,16 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             </AnimatePresence>
           </div>
         </div>
+      </div>
 
-    </div>
-
-      {/* 8. Interactively Functional Excel Import Modal Component */}
-      <AnimatePresence>
-        {isExcelModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            id="excel-import-modal-backdrop"
-          >
-            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
-                freezes its frame, which lingers past unmount. */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: 'easeOut' }}
-              className="absolute inset-0 scrim"
-            />
-            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
-                un-blur never lingers behind the closing panel. */}
-            <motion.div
-              aria-hidden="true"
-              initial={false}
-              exit={{
-                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-                transition: { duration: 0.12 },
-              }}
-              className="absolute inset-0 pointer-events-none veil-blur"
-            />
-            <div className="relative w-full max-w-lg @container">
-              {/* Halo blur dies fast on exit so nothing lingers behind the closing panel */}
-              <motion.div
-                aria-hidden="true"
-                initial={false}
-                exit={{
-                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                  backgroundColor: 'rgba(26, 28, 34, 0)',
-                  transition: { duration: 0.14 },
-                }}
-                className="pointer-events-none absolute area-blur"
-              />
-              <motion.div
-                ref={excelPanelRef}
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
-                style={excelOrigin ?? { transformOrigin: 'center bottom' }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="relative glx-strong w-full rounded-3xl overflow-hidden text-right text-caption glx-sheen"
-                id="excel-import-dialog"
-              >
-                {/* Modal Header */}
-                <div className="p-5 border-b border-[var(--color-glass-light-stroke)] glx-inset flex items-center justify-between">
-                  <button
-                    onClick={() => {
-                      setIsExcelModalOpen(false);
-                      setImportStep('idle');
-                      setExcelFile(null);
-                    }}
-                    className="p-1 px-2.5 glx-inset hover:brightness-110 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] rounded-xl transition-all font-bold cursor-pointer"
-                  >
-                    بستن ×
-                  </button>
-                  <span className="font-bold text-[var(--color-text-primary)] text-label flex items-center gap-1.5">
-                    <FileSpreadsheet className="w-5 h-5 text-[var(--color-success)]" />
-                    ورود اطلاعات دانش‌آموزان از طریق فایل اکسل / CSV
-                  </span>
-                </div>
-
-                {/* Modal Body / Active Step Controls */}
-                <div className="p-6 space-y-5">
-                  {importStep === 'idle' && (
-                    <div className="space-y-4">
-                      <p className="text-[var(--color-text-tertiary)] leading-relaxed text-micro">
-                        برای ورود فله‌ای مشخصات دانش‌آموزان و قراردهی آن‌ها در کلاس‌ها، می‌توانید
-                        فایل خروجی سناد یا فایل دستی اکسل با پسوندهای{' '}
-                        <strong className="font-semibold text-[var(--color-text-secondary)]">
-                          .xlsx
-                        </strong>{' '}
-                        یا{' '}
-                        <strong className="font-semibold text-[var(--color-text-secondary)]">
-                          .csv
-                        </strong>{' '}
-                        را بارگذاری کنید.
-                      </p>
-                      <p className="text-[var(--color-warning)] font-bold text-micro bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/10 p-2 rounded-xl text-center">
-                        در نسخه آزمایشی، داده‌ها به صورت شبیه‌سازی‌شده خوانده می‌شوند.
-                      </p>
-
-                      <div
-                        onDragEnter={handleDrag}
-                        onDragOver={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDrop={handleDrop}
-                        className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all ${
-                          dragActive
-                            ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)]/30'
-                            : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
-                        }`}
-                      >
-                        <Upload className="w-10 h-10 text-[var(--color-text-tertiary)] animate-bounce" />
-                        <div className="text-center space-y-1">
-                          <p className="font-bold text-[var(--color-text-secondary)]">
-                            فایل خود را به این قسمت بکشید و رها کنید
-                          </p>
-                          <p className="text-micro text-[var(--color-text-tertiary)]">
-                            یا برای انتخاب فایل از روی حافظه کلیک کنید
-                          </p>
-                        </div>
-
-                        <label className="mt-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white font-bold rounded-xl text-micro cursor-pointer shadow-xs transition-all">
-                          انتخاب فایل اکسل
-                          <input
-                            type="file"
-                            accept=".xlsx,.xls,.csv"
-                            className="hidden"
-                            onChange={handleFileChange}
-                          />
-                        </label>
-                      </div>
-
-                      <div className="p-3.5 bg-[var(--color-accent-soft)]/30 border border-[var(--color-accent-soft)]/40 rounded-xl text-[var(--color-accent)] flex items-start gap-2 text-micro">
-                        <span className="font-bold">نکته راهنما:</span>
-                        <span>
-                          ستون‌های الزامی در فایل اکسل باید شامل «نام و نام خانوادگی»، «کد ملی» و
-                          «پایه تحصیلی» باشد.
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Progress Loading Simulated Screen */}
-                  {(importStep === 'reading' || importStep === 'mapping') && (
-                    <div className="py-8 space-y-4 text-center">
-                      <div className="w-12 h-12 rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-accent)] animate-spin mx-auto" />
-                      <div className="space-y-1.5">
-                        <p className="font-bold text-[var(--color-text-primary)]">
-                          {importStep === 'reading'
-                            ? 'درحال بارگذاری و استخراج بیت‌های فایل...'
-                            : 'درحال قرینه‌سازی با سطوح سنادی استان...'}
-                        </p>
-                        <p className="text-micro text-[var(--color-text-tertiary)]">
-                          لطفاً از بستن این کادر یا رفرش تب مرورگر خود خودداری نمایید.
-                        </p>
-                      </div>
-                      <div className="w-64 glx-inset h-2.5 rounded-full overflow-hidden mx-auto mt-2">
-                        <div
-                          className="bg-[var(--color-accent)] h-full transition-all duration-300"
-                          style={{ width: `${importProgress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Simulated Excel Preview Screen prior Confirmation */}
-                  {importStep === 'preview' && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 p-3 bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-xl">
-                        <CheckCircle className="w-4 h-4 shrink-0" />
-                        <span className="font-bold">
-                          فایل به خوبی تحلیل گردید! تعداد ۳ دانش‌آموز معتبر جدید استخراج شد.
-                        </span>
-                      </div>
-
-                      <p className="text-[var(--color-text-tertiary)] text-micro">
-                        پیش‌نمایش رکوردهای خوانده‌شده قبل از درج نهایی دیتابیس:
-                      </p>
-
-                      <div className="border glx rounded-xl overflow-hidden p-6 text-center">
-                        <p className="text-label text-[var(--color-text-tertiary)] font-bold">
-                          پیش‌نمایش داده‌ها پس از پیاده‌سازی واقعی ورود اکسل نمایش داده خواهد شد.
-                        </p>
-                      </div>
-
-                      <div className="flex justify-end gap-2.5 pt-3 border-t border-[var(--color-glass-light-stroke)]">
-                        <button
-                          onClick={() => {
-                            setImportStep('idle');
-                            setExcelFile(null);
-                          }}
-                          className="px-4 py-2 glx-inset hover:brightness-110 text-[var(--color-text-secondary)] font-bold rounded-xl cursor-pointer"
-                        >
-                          لغو و تفکیک دگر
-                        </button>
-                        <button
-                          onClick={handleConfirmImport}
-                          className="px-4.5 py-2.5 bg-[var(--color-success)] hover:bg-[var(--color-success)]/90 text-white font-bold rounded-xl cursor-pointer shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          تأیید و افزودن به لیست دانش‌آموزان
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SUCCESS final Simulation state */}
-                  {importStep === 'done' && (
-                    <div className="py-8 space-y-3 text-center">
-                      <div className="w-14 h-14 bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10 rounded-full flex items-center justify-center mx-auto">
-                        <CheckCircle className="w-8 h-8" />
-                      </div>
-                      <h4 className="text-label font-bold text-[var(--color-text-primary)]">
-                        عملیات انتقال پرونده‌ها پیروز بود!
-                      </h4>
-                      <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed max-w-xs mx-auto">
-                        تعداد ۳ دانش‌آموز جدید وارد بانک اطلاعاتی گردید و اینک در بخش آمار و
-                        کلاس‌بندی سازماندهی شده‌اند.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
+      <StudentImportWizard
+        open={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        triggerRef={excelTriggerRef}
+        classGroups={classGroups}
+        existingStudents={currentStudents}
+        onImported={addImportedStudents}
+      />
     </div>
   );
 }
