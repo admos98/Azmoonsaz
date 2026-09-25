@@ -47,6 +47,10 @@ const NewExam = lazy(loadNewExam);
 const SettingsHub = lazy(loadSettingsHub);
 const TeacherProfile = lazy(loadTeacherProfile);
 
+// Dev-only material laboratory (`/dev/fixtures`). Rendered before auth so the
+// visual baseline can be captured without a backend; never linked from nav.
+const FixtureGallery = lazy(() => import('./pages/dev/FixtureGallery'));
+
 // Toast state shared via simple emitter for App-level toasts
 const toastQueue: Array<{
   id: number;
@@ -289,6 +293,24 @@ export default function App() {
           setUserRole('teacher');
         }}
       />
+    );
+  }
+
+  // Dev-only material laboratory — bypasses auth so primitives can be
+  // inspected without a backend session.
+  if (currentPath.startsWith('/dev/')) {
+    return (
+      <Suspense
+        fallback={
+          <div
+            className="min-h-screen bg-[var(--color-page-bg)]"
+            role="status"
+            aria-label="در حال بارگذاری آزمایشگاه مواد"
+          />
+        }
+      >
+        <FixtureGallery />
+      </Suspense>
     );
   }
 
