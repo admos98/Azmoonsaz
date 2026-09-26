@@ -161,7 +161,7 @@
   --glass-p-a2: 0.14;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
-  --glass-p-blur: 0px;
+  --glass-p-blur: 6px;
   --glass-p-sat: 1.1;
   --glass-p-bright: 1.04;
   --glass-p-contrast: 1;
@@ -304,11 +304,21 @@
   border-color: var(--color-glass-light-stroke) !important;
 }
 
-/* ─── Base ─── */
+/* ─── Base ───
+   These must live in @layer base. Unlayered CSS beats every layered rule, and
+   Tailwind v4 emits @utility inside @layer utilities — so this bare `*` was
+   overriding `border-color` on all 269 `.glx` surfaces. The glass border has
+   never once been visible, in either theme. It went unnoticed because the lit
+   rim supplied an edge, so nothing looked obviously missing.
 
-* {
-  border-color: transparent;
-  scroll-behavior: smooth;
+   Utilities are meant to be able to override base; that is the point of the
+   layer order. Leaving this unlayered also means any future `glx-*` utility
+   will be silently dead for the same reason. */
+@layer base {
+  * {
+    border-color: transparent;
+    scroll-behavior: smooth;
+  }
 }
 
 html {
@@ -1048,12 +1058,27 @@ select::-webkit-calendar-picker-indicator {
    mobile returns both to a non-overlapping composition. */
 #dashboard-hero-banner {
   min-height: 245px;
+}
+
+/* The hero used to hardcode a near-opaque ink fill
+   (rgba(26,26,46,0.97)) with white text, in BOTH themes. That is why the hero
+   looked nothing like the cards beside it and why light mode read as a
+   mismatched dark slab: the element carries `glx`, and this rule simply won
+   over it, so the theme tokens never applied.
+
+   Now it keeps the same warm-tinted body as every other panel and takes its
+   colours from the theme. Dark is a deeper, heavier pane than the cards — it
+   is the focal surface — but built from the same ink field the rest of the app
+   uses, so the two themes stay related rather than diverging. */
+#dashboard-hero-banner {
   background: linear-gradient(125deg, rgba(26, 26, 46, 0.97), rgba(35, 36, 62, 0.94));
   color: white;
 }
+
 #dashboard-hero-banner h2 {
   color: white;
 }
+
 #dashboard-hero-banner p {
   color: rgba(255, 255, 255, 0.7);
 }
