@@ -6,7 +6,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { TeacherProvider } from './contexts/TeacherContext';
 import Topbar from './components/Topbar';
-import { GlassFilters, GlassSheen } from './components/GlassSystem';
+import { GlassFilters } from './components/GlassSystem';
 import Login from './pages/teacher/Login';
 import Onboarding from './pages/teacher/Onboarding';
 import ResetPassword from './pages/teacher/ResetPassword';
@@ -417,7 +417,7 @@ export default function App() {
                 </div>
               }
             >
-              <GlassSheen>{renderTeacherContent()}</GlassSheen>
+              {renderTeacherContent()}
             </Suspense>
           </div>
         </div>

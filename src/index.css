@@ -157,8 +157,8 @@
   --glass-h-rext: 0px;
 
   /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill */
-  --glass-p-a1: 0.2;
-  --glass-p-a2: 0.09;
+  --glass-p-a1: 0.3;
+  --glass-p-a2: 0.14;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 0px;
@@ -169,7 +169,7 @@
   --glass-p-bw: 1px;
   --glass-p-ba: 0.22;
   --glass-p-bc: 26 28 34;
-  --glass-shn-t: 0.68;
+  --glass-shn-t: 0.22;
   --glass-shn-b: 0;
 
   /* Drop shadow (lifted) */
@@ -253,8 +253,8 @@
   --glass-scrim-color: 0 0 0;
   --glass-h-fill: 0.2;
   --glass-h-tint: 0 0 0;
-  --glass-p-a1: 0.26;
-  --glass-p-a2: 0.16;
+  --glass-p-a1: 0.3;
+  --glass-p-a2: 0.18;
   --glass-p-tint: 36 33 44;
   --glass-p-ba: 0.16;
   --glass-p-bc: 255 255 255;
@@ -353,22 +353,42 @@ select::-webkit-calendar-picker-indicator {
 }
 
 /* ─── SVG Displacement Filter ─── */
-/* Defined once at app root via <GlassFilters /> component.
-   Uses url(#lg-displace) in backdrop-filter on .glx-strong. */
+/* Defined once at app root via <GlassFilters />.
+   NOT currently referenced: no backdrop-filter in this file uses
+   url(#lg-displace), so `.glx-strong` has no refraction today. The filter is
+   kept mounted and harmless, but the previous "Uses url(#lg-displace) in
+   backdrop-filter on .glx-strong" claim was stale. Either wire it up here or
+   delete <GlassFilters /> — do not leave the comment describing a behaviour
+   that does not exist. */
 
 /* ─── Liquid Glass surfaces — pre-computed rgba (no color-mix for Firefox/Safari) ─── */
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
    Grounded over warm paper bg. Specular rim + bezel. */
 @utility glx {
-  background: linear-gradient(
-    var(--glass-p-angle),
-    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
-    rgb(var(--glass-p-tint) / var(--glass-p-a2))
-  );
+  /* Layer 1+2: the specular rim, replaced from what used to be a hard 1px
+     `inset 0 1px 0` bar. A 2px band, strongest mid-edge, faded to nothing both
+     downward and toward both corners — so it reads as a lit edge rather than a
+     drawn border. Value is subtle (0.22), per the Mark material.
+     Layer 3: the body fill, unchanged apart from its new 0.30 alpha. */
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / var(--glass-shn-t)), rgb(255 255 255 / 0)) 0 0 / 100%
+      2px no-repeat,
+    linear-gradient(
+        90deg,
+        rgb(255 255 255 / 0) 0%,
+        rgb(255 255 255 / 0.9) 22%,
+        rgb(255 255 255 / 0.9) 78%,
+        rgb(255 255 255 / 0) 100%
+      )
+      0 0 / 100% 2px no-repeat,
+    linear-gradient(
+      var(--glass-p-angle),
+      rgb(var(--glass-p-tint) / var(--glass-p-a1)),
+      rgb(var(--glass-p-tint) / var(--glass-p-a2))
+    );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / var(--glass-shn-t)),
     inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
     var(--glass-sh-x) var(--glass-sh-y) var(--glass-sh-blur) var(--glass-sh-spread)
       rgb(var(--glass-sh-color) / var(--glass-sh-a));
@@ -378,17 +398,29 @@ select::-webkit-calendar-picker-indicator {
     brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
 }
 
-/* Strong glass — primary modals + hero.
-   Adds refraction via SVG displacement filter (Chromium). */
+/* Strong glass — primary modals + hero. Heavier shadow, no own blur. */
 @utility glx-strong {
-  background: linear-gradient(
-    var(--glass-p-angle),
-    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
-    rgb(var(--glass-p-tint) / var(--glass-p-a2))
-  );
+  /* Same three-layer body as `glx`: fading specular band, corner falloff, then
+     the fill. Kept identical so a dropdown and a modal read as one material at
+     two weights, differing only in shadow and blur. */
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / var(--glass-shn-t)), rgb(255 255 255 / 0)) 0 0 / 100%
+      2px no-repeat,
+    linear-gradient(
+        90deg,
+        rgb(255 255 255 / 0) 0%,
+        rgb(255 255 255 / 0.9) 22%,
+        rgb(255 255 255 / 0.9) 78%,
+        rgb(255 255 255 / 0) 100%
+      )
+      0 0 / 100% 2px no-repeat,
+    linear-gradient(
+      var(--glass-p-angle),
+      rgb(var(--glass-p-tint) / var(--glass-p-a1)),
+      rgb(var(--glass-p-tint) / var(--glass-p-a2))
+    );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / var(--glass-shn-t)),
     inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
     0 26px 70px -24px rgb(var(--glass-sh-color) / 0.34);
   /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own

@@ -2,14 +2,16 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * GlassSystem — Liquid Glass SVG filters + sheen utility wrapper.
+ * GlassSystem — the SVG displacement-map definitions.
  *
  * Rendered once at app root via <GlassFilters />.
- * The displacement map creates the lens-bend refraction that
- * distinguishes liquid glass from plain backdrop-blur.
+ *
+ * Note: no backdrop-filter currently references url(#lg-displace), so this
+ * filter is mounted but unused. The pointer sheen that used to live here
+ * (GlassSheen, wrapping the whole routed page) was removed in Phase 2 — the
+ * effect now belongs to floating surfaces via the `.glx-sheen` class, which
+ * Topbar and Students apply directly.
  */
-
-import React from 'react';
 
 /**
  * GlassFilters
@@ -58,46 +60,5 @@ export function GlassFilters() {
         <feBlend mode="normal" in="bent" in2="SourceGraphic" />
       </filter>
     </svg>
-  );
-}
-
-/**
- * GlassSheen — wraps children in a div that responds to pointer
- * movement with a dynamic specular highlight (the "wet" slide of light
- * across the glass surface).
- *
- * Zero JS re-renders: uses CSS custom properties updated by a single
- * pointermove listener attached to the element.
- */
-export function GlassSheen({ children }: { children: React.ReactNode }) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const rafRef = React.useRef<number | null>(null);
-
-  React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const updateSheen = (e: MouseEvent) => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      const rect = el.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      rafRef.current = requestAnimationFrame(() => {
-        el.style.setProperty('--lg-sheen-x', `${x}%`);
-        el.style.setProperty('--lg-sheen-y', `${y}%`);
-      });
-    };
-
-    el.addEventListener('mousemove', updateSheen);
-    return () => {
-      el.removeEventListener('mousemove', updateSheen);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  return (
-    <div ref={containerRef} className="glx-sheen">
-      {children}
-    </div>
   );
 }
