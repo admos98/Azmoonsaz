@@ -410,7 +410,7 @@ export default function Topbar({
         {/* Avatar pill — pic absolutely pinned (never moves), only pill width animates */}
         <div className="relative flex items-center">
           <div
-            className={`relative h-10 rounded-full overflow-hidden glx-strong glass-edge glx-refract cursor-pointer transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            className={`relative h-10 rounded-full overflow-hidden glx-strong glass-edge glx-refract data-glass-sheen cursor-pointer transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               avatarExpanded ? 'w-[200px]' : 'w-10'
             }`}
             onMouseEnter={() => {
@@ -504,7 +504,7 @@ export default function Topbar({
         {/* Search — smooth pill expand from icon */}
         <div
           ref={searchRef}
-          className={`relative h-11 flex items-center overflow-hidden glx-strong glass-edge glx-refract rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          className={`relative h-11 flex items-center overflow-hidden glx-strong glass-edge glx-refract data-glass-sheen rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
             showSearch ? 'w-[200px] glx-inset' : 'w-11 glx-inset'
           }`}
           onMouseEnter={() => !showHamburgerMenu && setShowSearch(true)}
@@ -561,7 +561,7 @@ export default function Topbar({
 
             {/* Panel 1: App info + date */}
             <div
-              className="fixed z-[60] glx-strong glass-edge glx-refract rounded-2xl"
+              className="fixed z-[60] glx-strong glass-edge glx-refract data-glass-sheen rounded-2xl"
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(0),
@@ -592,7 +592,7 @@ export default function Topbar({
 
             {/* Panel 2: Teacher profile */}
             <div
-              className="fixed z-[60] glx-strong glass-edge glx-refract rounded-2xl"
+              className="fixed z-[60] glx-strong glass-edge glx-refract data-glass-sheen rounded-2xl"
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(1),
@@ -642,7 +642,7 @@ export default function Topbar({
 
             {/* Panel 3: Management options */}
             <div
-              className="fixed z-[60] glx-strong glass-edge glx-refract rounded-2xl"
+              className="fixed z-[60] glx-strong glass-edge glx-refract data-glass-sheen rounded-2xl"
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(2),
@@ -697,7 +697,7 @@ export default function Topbar({
 
             {/* Panel 4: Exam panel + settings */}
             <div
-              className="fixed z-[60] glx-strong glass-edge glx-refract rounded-2xl"
+              className="fixed z-[60] glx-strong glass-edge glx-refract data-glass-sheen rounded-2xl"
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(3),
@@ -802,7 +802,7 @@ export default function Topbar({
             <div aria-hidden="true" className="absolute area-blur" />
             <div
               ref={notifRef}
-              className="relative w-full glx-strong glass-edge glx-refract rounded-2xl overflow-hidden glx-sheen"
+              className="relative w-full glx-strong glass-edge glx-refract data-glass-sheen rounded-2xl overflow-hidden glx-sheen"
               style={{
                 transformOrigin: bellRect
                   ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`

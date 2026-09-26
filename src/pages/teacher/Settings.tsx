@@ -21,11 +21,14 @@ import {
   Rows3,
   List,
   RotateCcw,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { Card, Badge, Button } from '../../components/UIComponents';
 import PreferenceSelector from '../../components/PreferenceSelector';
 import { useTheme, type ThemePreference } from '../../contexts/ThemeContext';
 import { useMotionPreference, type MotionPreference } from '../../contexts/MotionContext';
+import { useGlassQuality, type GlassPreference } from '../../contexts/GlassContext';
 import { isSecureBackendMode, getRuntimeModeLabel } from '../../config/runtimeMode';
 import { publicEnv } from '../../config/env';
 import {
@@ -40,6 +43,7 @@ export default function Settings() {
   const supabaseConfigured = publicEnv.isSupabaseConfigured;
   const { preference, setPreference } = useTheme();
   const { motionPreference, setMotionPreference } = useMotionPreference();
+  const { glassPreference, resolvedGlass, isAutoDetected, setGlassPreference } = useGlassQuality();
   const [density, setDensity] = usePersistentPreference<'comfortable' | 'compact'>(
     'workspace:density',
     'comfortable',
@@ -73,6 +77,16 @@ export default function Settings() {
     { value: 'system', label: 'سیستم', description: 'هماهنگ با دستگاه', icon: Monitor },
     { value: 'reduced', label: 'کاهش‌یافته', description: 'کمترین حرکت ممکن', icon: Accessibility },
     { value: 'full', label: 'کامل', description: 'حرکت‌های رابط کاربری', icon: Gauge },
+  ];
+  const glassOptions: Array<{
+    value: GlassPreference;
+    label: string;
+    description: string;
+    icon: typeof Monitor;
+  }> = [
+    { value: null, label: 'خودکار', description: 'تنظیم بر اساس توان دستگاه', icon: Monitor },
+    { value: 'full', label: 'کامل', description: 'شیشه مایع با شکست نور', icon: Sparkles },
+    { value: 'light', label: 'سبک', description: 'شیشه ساده و کم‌هزینه', icon: Zap },
   ];
   const densityOptions: Array<{
     value: 'comfortable' | 'compact';
@@ -145,6 +159,23 @@ export default function Settings() {
           value={motionPreference}
           options={motionOptions}
           onChange={setMotionPreference}
+        />
+      </Card>
+
+      <Card>
+        <div className="mb-5">
+          <h3 className="text-label font-bold text-[var(--color-text-primary)]">کیفیت شیشه</h3>
+          <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
+            حالت خودکار در نخستین بازدید بر پایه توان دستگاه انتخاب می‌شود. اکنون{' '}
+            {resolvedGlass === 'full' ? 'کامل' : 'سبک'} است
+            {isAutoDetected ? ' (خودکار)' : ''}.
+          </p>
+        </div>
+        <PreferenceSelector<GlassPreference>
+          label="انتخاب کیفیت شیشه"
+          value={glassPreference}
+          options={glassOptions}
+          onChange={setGlassPreference}
         />
       </Card>
 

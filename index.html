@@ -36,6 +36,23 @@
           motionPreference === 'reduced' || systemReducesMotion ? 'reduce' : 'full';
         document.documentElement.dataset.motionPreference = motionPreference;
         document.documentElement.dataset.motion = resolvedMotion;
+
+        // Glass quality — 'full' for the liquid-glass treatment, 'light' for the cheap
+        // one on older hardware. Auto-detected on first visit so a slow device never
+        // pays for a tier it cannot render, then persisted like the two above.
+        const glassKey = 'azmoonsaz-glass';
+        let glassPreference = null;
+        try {
+          const savedGlass = localStorage.getItem(glassKey);
+          if (savedGlass === 'full' || savedGlass === 'light') glassPreference = savedGlass;
+        } catch {}
+        if (glassPreference === null) {
+          const memory = navigator.deviceMemory || 8;
+          const cores = navigator.hardwareConcurrency || 8;
+          glassPreference = memory <= 4 || cores <= 4 ? 'light' : 'full';
+        }
+        document.documentElement.dataset.glassPreference = glassPreference;
+        document.documentElement.dataset.glass = glassPreference;
       })();
     </script>
     <title>آزمون‌ساز | سامانه مدیریت آزمون آنلاین</title>

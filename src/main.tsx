@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ConnectivityStatus from './components/ConnectivityStatus';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { MotionProvider } from './contexts/MotionContext';
+import { GlassProvider } from './contexts/GlassContext';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -12,8 +13,10 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <ThemeProvider>
         <MotionProvider>
-          <ConnectivityStatus />
-          <App />
+          <GlassProvider>
+            <ConnectivityStatus />
+            <App />
+          </GlassProvider>
         </MotionProvider>
       </ThemeProvider>
     </ErrorBoundary>

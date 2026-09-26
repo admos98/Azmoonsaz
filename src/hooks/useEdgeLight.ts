@@ -29,6 +29,15 @@
 import { useEffect } from 'react';
 
 const RIM = '.glass-edge';
+/**
+ * Opt-in marker for the pointer sheen. D5: the sheen is for FLOATING CHROME
+ * only — the hero, topbar buttons, menu panels, modals, sheets and toasts.
+ * It is deliberately NOT the default, because `.glass-edge` is on all 292
+ * panels and a cursor-reactive edge on an in-page card turns the whole page
+ * into a light-up-the-grid toy. Ordinary panels keep the resting rim, which is
+ * the part that makes them read as glass; they do not track the pointer.
+ */
+const SHEEN = '[data-glass-sheen]';
 
 /** Pointer jitter under this distance (px) reuses the last position, so a
  *  still mouse cannot make the rim micro-jitter. */
@@ -106,7 +115,11 @@ export function useEdgeLight(enabled = true) {
       }
       lastX = x;
       lastY = y;
-      relight(document.elementFromPoint(x, y)?.closest<HTMLElement>(RIM) ?? null, x, y);
+      relight(
+        document.elementFromPoint(x, y)?.closest<HTMLElement>(RIM + SHEEN) ?? null,
+        x,
+        y,
+      );
     };
 
     const rest = () => {

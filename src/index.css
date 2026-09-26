@@ -59,6 +59,15 @@
   --color-surface: #fffdfa;
   --color-surface-secondary: #f3f1ec;
 
+  /* Depth field — the tonal structure <body> paints so backdrop-filter has
+     something to sample. A flat page returns its own colour through blur(),
+     which is why a panel on it can only ever be a tinted rectangle. Peaks are
+     deliberately tiny (5% / 3% / 2.2%): enough for a panel to read as
+     translucent, far too little to compete with body text. */
+  --depth-a: rgba(26, 26, 46, 0.05); /* ink, upper-left */
+  --depth-b: rgba(245, 179, 1, 0.03); /* gold, upper-right */
+  --depth-c: rgba(26, 26, 46, 0.022); /* ink, lower-right */
+
   /* Ink field — sidebar, hero on dark */
   --color-ink-field: #1a1a2e;
   --color-ink-stroke: #393744;
@@ -156,9 +165,13 @@
   --glass-h-mid: 0.75;
   --glass-h-rext: 0px;
 
-  /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill */
-  --glass-p-a1: 0.3;
-  --glass-p-a2: 0.14;
+  /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill
+     A1 is the EDGE density and A2 the CENTRE. A pane of glass is thickest where
+     the light enters it and thinnest in the middle, so a linear top-to-bottom
+     ramp (the previous `--glass-p-angle: 108deg` fill) was the wrong shape for
+     the material: it varied the panel top-to-bottom instead of inward. */
+  --glass-p-a1: 0.3; /* at the rim */
+  --glass-p-a2: 0.14; /* at the centre */
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 6px;
@@ -185,10 +198,21 @@
      Light is a hard material: near-white rim, short falloff, visible lift.
      Dark is a soft material: dimmer, dimmer still, and much longer falloff, so
      in dark mode the highlight reads as a slow sheen rather than an outline. */
-  --glass-edge-t: 4.2%; /* rim thickness, % of the panel's inline size */
-  --glass-edge-min: 1.5px;
-  --glass-edge-max: 3.6px;
-  --glass-edge-base: 0.5; /* resting rim strength */
+  /* Edge geometry. `--glass-edge-t` is now the INSET GLOW reach, measured
+     inward from the border, and `--glass-edge-w` is the lit band's own width.
+     They are separate because they solve different problems: the band is the
+     light ON the edge, the glow is the light that has passed THROUGH the glass
+     and is still scattering as it reaches the surface. */
+  --glass-edge-w: 2.5px; /* lit band — visible on any background */
+  --glass-edge-w-min: 1px;
+  --glass-edge-w-max: 4px;
+  --glass-edge-t: 14px; /* inward glow reach */
+  --glass-edge-t-min: 6px;
+  --glass-edge-t-max: 22px;
+  --glass-edge-line: 0.5; /* sub-pixel outer line — the crispness */
+  --glass-edge-ink: 0.2; /* the DEFINING line. See note below. */
+  --glass-edge-base: 0.85; /* resting lit band */
+  --glass-edge-glow: 0.5; /* inward scatter, the part that reads as depth */
   --glass-edge-hot: 0.55; /* extra strength at the edge nearest the pointer */
   --glass-edge-spread: 38%; /* pointer falloff, % of the panel's inline size */
   --glass-edge-color: 255 255 255;
@@ -279,6 +303,14 @@
   --glass-p-tint: 36 33 44;
   --glass-p-ba: 0.16;
   --glass-p-bc: 255 255 255;
+
+  /* Dark depth field — the same three anchors, tuned for a dark ground. A
+     translucent panel needs a tonal gradient behind it in both themes or the
+     fill flattens to a single value; in dark it is additionally the only
+     thing giving the material a luminance range to work with. */
+  --depth-a: rgba(120, 132, 255, 0.05);
+  --depth-b: rgba(245, 179, 1, 0.022);
+  --depth-c: rgba(196, 132, 252, 0.03);
   --glass-sh-a: 0.55;
   --glass-sh-color: 0 0 0;
   --glass-row-hover: 0.12;
@@ -287,10 +319,16 @@
      light: a dimmer resting rim, half the lift, nearly double the falloff, and
      a thinner band. The result is a highlight that arrives slowly and leaves
      slowly, instead of the crisp outline light mode gets. */
-  --glass-edge-t: 3.1%;
-  --glass-edge-min: 1.25px;
-  --glass-edge-max: 2.6px;
-  --glass-edge-base: 0.26;
+  --glass-edge-w: 1.75px;
+  --glass-edge-w-min: 1px;
+  --glass-edge-w-max: 3px;
+  --glass-edge-t: 20px;
+  --glass-edge-t-min: 10px;
+  --glass-edge-t-max: 30px;
+  --glass-edge-line: 0.3;
+  --glass-edge-ink: 0.2;
+  --glass-edge-base: 0.34;
+  --glass-edge-glow: 0.1;
   --glass-edge-hot: 0.3;
   --glass-edge-spread: 72%;
 }
@@ -341,10 +379,22 @@ body {
   direction: rtl;
   text-align: right;
   background: var(--color-paper-warm);
+  /* ── Depth field ───────────────────────────────────────────────────────
+     A frosted panel can only read as glass if there is something behind it to
+     be glass. A flat page returns its own colour through `blur()`, so the
+     previous 1% tints produced a tinted rectangle — a tinted rectangle is a
+     card, not a pane. This is a single `::before` on <body>, below all
+     content, fixed to the viewport: one composited layer for the whole app,
+     never per-panel. It gives `backdrop-filter` real tonal structure to
+     sample, giving panels something to separate from.
+
+     Kept deliberately quiet: peak values are 0.05/0.03/0.022. Anything stronger
+     competes with body text and reads as a wallpaper rather than a surface. */
   background-image:
-    radial-gradient(circle at 10% 18%, rgba(26, 26, 46, 0.01) 0%, transparent 32%),
-    radial-gradient(circle at 90% 80%, rgba(245, 179, 1, 0.012) 0%, transparent 26%);
-  background-size: 160% 160%;
+    radial-gradient(ellipse 90% 70% at 14% 8%, var(--depth-a) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 65% at 88% 22%, var(--depth-b) 0%, transparent 58%),
+    radial-gradient(ellipse 100% 80% at 70% 96%, var(--depth-c) 0%, transparent 62%);
+  background-attachment: fixed;
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -448,16 +498,23 @@ select::-webkit-calendar-picker-indicator {
      have a positioning utility. */
   isolation: isolate;
 
-  /* Thickness. The percentage resolves against the panel's inline size. */
-  --eg-t: clamp(
-    var(--glass-edge-min),
-    var(--glass-edge-t),
-    var(--glass-edge-max)
+  /* The lit band, sized as a fraction of the panel so a chip and a modal do not
+     share one stripe. The band is what the eye reads as an EDGE; the glow
+     below is what makes it read as glass rather than paint. */
+  --eg-w: clamp(
+    var(--glass-edge-w-min),
+    var(--glass-edge-w),
+    var(--glass-edge-w-max)
   );
-  /* Resting rim, lit from above: top, mid (the sides), bottom. */
+  --eg-t: clamp(
+    var(--glass-edge-t-min),
+    var(--glass-edge-t),
+    var(--glass-edge-t-max)
+  );
+  /* Resting band, lit from above: top, mid (the sides), bottom. */
   --eg-top: var(--glass-edge-base);
-  --eg-mid: calc(var(--glass-edge-base) * 0.5);
-  --eg-bot: calc(var(--glass-edge-base) * 0.28);
+  --eg-mid: calc(var(--glass-edge-base) * 0.55);
+  --eg-bot: calc(var(--glass-edge-base) * 0.3);
   /* Pointer flare. Zero whenever the pointer is away. */
   --eg-flare: calc(var(--eg-boost, 0) * var(--glass-edge-hot));
 }
@@ -469,7 +526,7 @@ select::-webkit-calendar-picker-indicator {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: var(--eg-t);
+  padding: var(--eg-w);
   pointer-events: none;
   z-index: 1;
   background:
@@ -481,7 +538,7 @@ select::-webkit-calendar-picker-indicator {
         rgb(var(--glass-edge-color) / calc(var(--eg-flare) * 0.45)) 34%,
         rgb(var(--glass-edge-color) / 0) 68%
       ),
-    /* resting rim — light from above */
+    /* resting band — light from above */
       linear-gradient(
         to bottom,
         rgb(var(--glass-edge-color) / var(--eg-top)) 0%,
@@ -498,17 +555,72 @@ select::-webkit-calendar-picker-indicator {
   mask-composite: exclude;
 }
 
+/* ─── The inward glow — part 3 of the rim, and the part that was impossible ──
+   A masked ring has no interior: `mask-composite: exclude` confines the whole
+   gradient to the band, so the light can never travel inward and the top edge
+   measured a flat 0.5 → 0.496 alpha across the hero. That is why the rim read
+   as a drawn line no matter how the values were tuned.
+
+   An `inset` box-shadow is the one primitive that can. Three stacked shadows,
+   each with a negative spread, produce a genuine falloff from the border into
+   the panel — light that has passed through the glass and is still scattering.
+   Same colour, same direction, no extra element, no extra compositing layer. */
+.glass-edge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 0;
+  pointer-events: none;
+  z-index: 0;
+  /* 2. THE INWARD GLOW. Part 3 of the rim, and the part a mask cannot express.
+     `mask-composite: exclude` confines a ring's gradient to the band, so light
+     can never travel inward — the top edge measured a flat 0.5 → 0.496 alpha
+     across the hero. That is why the rim read as a drawn line no matter how
+     the values were tuned. An `inset` box-shadow is the one primitive that can:
+     three stacked shadows, each wider than the last, produce a genuine
+     falloff from the border into the panel. No extra element, no layer. */
+  box-shadow:
+    inset 0 0 var(--eg-t) rgb(var(--glass-edge-color) / calc(var(--glass-edge-glow) * 0.5)),
+    inset 0 0 calc(var(--eg-t) * 2.2)
+      rgb(var(--glass-edge-color) / var(--glass-edge-glow));
+}
+
 /* ─── Liquid Glass surfaces — pre-computed rgba (no color-mix for Firefox/Safari) ─── */
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
    Grounded over warm paper bg. The lit rim is `.glass-edge`, not a fixed band. */
-@utility glx {
-  background: linear-gradient(
-    var(--glass-p-angle),
-    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
-    rgb(var(--glass-p-tint) / var(--glass-p-a2))
+/* The body fill — RADIAL, edge-dense. A pane of glass is thickest where the
+   light enters and thinnest in the middle, so density falls off INWARD. The
+   previous linear gradient at 108deg varied the panel top-to-bottom instead,
+   which left the centre as opaque as the edge and read as a card. Shared by
+   `glx` and `glx-strong` so they are one material at two weights. */
+@utility glass-body {
+  background: radial-gradient(
+    140% 140% at 50% 50%,
+    rgb(var(--glass-p-tint) / var(--glass-p-a2)) 0%,
+    rgb(var(--glass-p-tint) / calc((var(--glass-p-a1) + var(--glass-p-a2)) / 2))
+      55%,
+    rgb(var(--glass-p-tint) / var(--glass-p-a1)) 100%
   );
-  border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
+}
+
+@utility glx {
+  @apply glass-body;
+  /* ── 0. THE DEFINING LINE ──────────────────────────────────────────────
+     Part 1 of the rim, and the only one that needs no mask. A white rim on a
+     white panel is arithmetically invisible: at 100% opacity the maximum
+     possible Δ against this cream page is 7/255, and against the composited
+     fill it is 4. No amount of tuning makes a white line show on cream. The
+     edge is defined by a DARKENED line instead — the total-internal-reflection
+     boundary you see on real glass — and the bright band above it is the
+     shine. Reinstating the border is the fix, not a regression: it was removed
+     because the rim was supposed to supply the edge, and the rim never could.
+
+     1px on the outside, `background-clip: padding-box` so the radial body
+     still meets the line cleanly. */
+  border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-edge-ink));
+  background-clip: padding-box;
   box-shadow:
     inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
     var(--glass-sh-x) var(--glass-sh-y) var(--glass-sh-blur) var(--glass-sh-spread)
@@ -521,15 +633,9 @@ select::-webkit-calendar-picker-indicator {
 
 /* Strong glass — primary modals + hero. Heavier shadow, no own blur. */
 @utility glx-strong {
-  /* Same body as `glx` — one fill gradient, and the lit rim comes from
-     `.glass-edge`. Kept identical so a dropdown and a modal read as one
-     material at two weights, differing only in shadow and blur. */
-  background: linear-gradient(
-    var(--glass-p-angle),
-    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
-    rgb(var(--glass-p-tint) / var(--glass-p-a2))
-  );
+  @apply glass-body;
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
+  background-clip: padding-box;
   box-shadow:
     inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
     0 26px 70px -24px rgb(var(--glass-sh-color) / 0.34);
@@ -557,6 +663,26 @@ select::-webkit-calendar-picker-indicator {
    purpose — refraction belongs on the hero, topbar buttons and menu buttons,
    where a bent backdrop is the point. Under body text it is a legibility
    problem. */
+/* ─── Glass quality tiers ───────────────────────────────────────────────
+   Resolved pre-paint in index.html from `azmoonsaz-glass`, auto-detected from
+   deviceMemory / hardwareConcurrency on first visit and overridable in
+   Settings. 'light' drops the expensive parts only — refraction, the depth
+   field, and the two-shadow inward glow — and keeps the rim, because the rim
+   is the part that makes a panel read as glass at all. It is a tier, not a
+   downgrade to plain boxes. */
+:root[data-glass='light'] {
+  --glass-p-blur: 4px;
+  --glass-bg-blur: 4px;
+  --glass-edge-glow: 0.22;
+  --glass-edge-t: 9px;
+  --glass-edge-w: 1.5px;
+}
+/* The depth field is three full-page gradients; on a weak GPU that is a
+   large surface repainting for a decorative reason. */
+:root[data-glass='light'] body {
+  background-image: none;
+}
+
 @utility glx-refract {
   /* Always present, in every engine. This is the floor, not the effect. */
   backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
