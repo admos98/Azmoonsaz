@@ -1733,7 +1733,7 @@ export default function Questions() {
                       </div>
 
                       {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
-                      <div className="glx p-4 rounded-xl border space-y-2">
+                      <div className="relative glx glass-edge p-4 rounded-xl border space-y-2">
                         <span className="text-micro text-[var(--color-text-primary)] font-bold block">
                           الصاق پرونده تصویر برای کل سوال (اختیاری):
                         </span>
@@ -1914,7 +1914,7 @@ export default function Questions() {
 
                       {/* True / False picker builder */}
                       {formType === 'true_false' && (
-                        <div className="glx p-4 rounded-xl border space-y-2">
+                        <div className="relative glx glass-edge p-4 rounded-xl border space-y-2">
                           <span className="font-bold text-[var(--color-text-secondary)] text-micro block">
                             انتخاب گزینه پاسخ درست:
                           </span>
@@ -1958,7 +1958,7 @@ export default function Questions() {
 
                       {/* Fill blank builder */}
                       {formType === 'fill_blank' && (
-                        <div className="glx p-4 rounded-xl border space-y-3">
+                        <div className="relative glx glass-edge p-4 rounded-xl border space-y-3">
                           <div className="flex justify-between items-center mb-1 glx p-2 rounded-lg border">
                             <strong className="text-[var(--color-text-primary)] text-micro">
                               کلید واژه‌های صحیح برای جاهای خالی:
@@ -2085,7 +2085,7 @@ export default function Questions() {
 
                       {/* Ordering lists builder */}
                       {formType === 'ordering' && (
-                        <div className="glx p-4 rounded-xl border space-y-3">
+                        <div className="relative glx glass-edge p-4 rounded-xl border space-y-3">
                           <div className="flex justify-between items-center pb-2 border-b">
                             <span className="font-bold text-micro text-[var(--color-text-primary)]">
                               سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)

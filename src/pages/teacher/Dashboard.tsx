@@ -80,7 +80,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
       {/* 1. Welcome Card Hero — liquid glass with The Mark watermark */}
       <div
-        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx-strong"
+        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx glass-edge-strong"
         id="dashboard-hero-banner"
       >
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
@@ -138,7 +138,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       >
         {/* 2. Stats Grid (5 Cards) */}
         <div
-          className="glx rounded-2xl p-5 grid grid-cols-2 gap-3 content-stretch"
+          className="relative glx glass-edge rounded-2xl p-5 grid grid-cols-2 gap-3 content-stretch"
           id="stats-grid-layouts"
         >
           {/* Card 1: Students */}
@@ -259,7 +259,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         </div>
 
         {/* 3. Quick Actions Row */}
-        <div className="glx p-6 rounded-2xl text-right" id="quick-actions-section">
+        <div className="relative glx glass-edge p-6 rounded-2xl text-right" id="quick-actions-section">
           <h3 className="text-label font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
             <span>اقدامات سریع</span>
           </h3>

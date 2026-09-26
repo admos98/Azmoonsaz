@@ -577,7 +577,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             id="panel-results-list"
           >
             {/* Top Navigation & Action Title Raw header bar */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border">
+            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx glass-edge p-6 rounded-3xl border">
               <div className="flex items-center gap-4">
                 <button
                   type="button"
@@ -633,7 +633,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             {/* Comprehensive Analytics Metrics Dashboard grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
               {/* Card 1: Total Allocated classes */}
-              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
+              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     کل کارنامه تخصصی
@@ -656,7 +656,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 2: Participated */}
-              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
+              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     تعداد شرکت‌کنندگان
@@ -679,7 +679,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 3: Absents */}
-              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
+              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     غائبین ارزیابی
@@ -702,7 +702,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 4: Average score */}
-              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
+              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     میانگین کلی نمرات
@@ -722,7 +722,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 5: Highest score */}
-              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
+              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     بالاترین نمره کلاس
@@ -742,7 +742,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 6: Needs correction */}
-              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
+              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     نیازمند تصحیح تشریحی
@@ -765,7 +765,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               </div>
 
               {/* Card 7: Completed corrections */}
-              <div className="glx border rounded-2xl p-4 flex flex-col justify-between">
+              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
                     تصحیح‌های تکمیل‌شده
@@ -789,7 +789,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             </div>
 
             {/* Smart Reactive Filters Panel */}
-            <div className="glx border rounded-3xl p-5 md:p-6 space-y-4">
+            <div className="relative glx glass-edge border rounded-3xl p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-3">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4.5 h-4.5 text-[var(--color-accent)]" />
@@ -1210,7 +1210,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   return (
                     <div
                       key={q.id}
-                      className="glx border rounded-3xl p-5 md:p-6 space-y-4"
+                      className="relative glx glass-edge border rounded-3xl p-5 md:p-6 space-y-4"
                       id={`sheet-qscol-${q.id}`}
                     >
                       {/* Section heading bar */}

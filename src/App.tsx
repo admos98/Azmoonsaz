@@ -18,6 +18,8 @@ import { getSupabasePublicClient } from './lib/supabasePublic';
 import { authService } from './services/api';
 import { teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
+import { useEdgeLight } from './hooks/useEdgeLight';
+import { useMotionPreference } from './contexts/MotionContext';
 import CommandPalette from './components/CommandPalette';
 import { requestAppNavigation } from './hooks/useUnsavedChanges';
 import {
@@ -37,6 +39,14 @@ function WorkspacePreferenceApplier() {
   useEffect(() => {
     document.documentElement.dataset.density = density;
   }, [density]);
+  return null;
+}
+
+/** Drives the glass rim. Rendered null, like WorkspacePreferenceApplier — it
+ *  only exists to install its delegated pointer listener. */
+function EdgeLightDriver() {
+  const { motionPreference } = useMotionPreference();
+  useEdgeLight(motionPreference !== 'reduced');
   return null;
 }
 
@@ -373,6 +383,7 @@ export default function App() {
   return (
     <TeacherProvider>
       <WorkspacePreferenceApplier />
+      <EdgeLightDriver />
       <GlassFilters />
       <div className="min-h-screen bg-[var(--color-page-bg)] flex" dir="rtl" id="app-teacher-shell">
         {/* Background depth layer — stage surface that main panel floats above */}

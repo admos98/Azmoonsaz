@@ -124,7 +124,7 @@ export const Card = ({
         whileHover={{ y: -4, scale: 1.01 }}
         whileTap={{ scale: 0.995 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className={`glx rounded-xl p-5 md:p-6 transition-all ${className}`}
+        className={`glx glass-edge rounded-xl p-5 md:p-6 transition-all ${className}`}
         {...spreadProps}
       >
         {children}
@@ -132,7 +132,10 @@ export const Card = ({
     );
   }
   return (
-    <div className={`${glassClass} rounded-xl p-5 md:p-6 ${className}`} {...props}>
+    <div
+      className={`${glassClass} glass-edge rounded-xl p-5 md:p-6 ${className}`}
+      {...props}
+    >
       {children}
     </div>
   );
@@ -409,7 +412,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                 /* No area-blur halo and no drop shadow: the trigger button already
                    carries the glass, and a floating list needs neither. */
                 style={{ ...listStyle, boxShadow: 'none', transformOrigin: 'top center' }}
-                className="glx-strong rounded-xl max-h-56 overflow-y-auto"
+                className="relative glx-strong glass-edge rounded-xl max-h-56 overflow-y-auto"
               >
                 {options.map((opt, i) => (
                   <React.Fragment key={opt.value}>
@@ -635,7 +638,7 @@ export const Modal = ({
                 scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
               }}
               style={originStyle}
-              className="relative glx-strong flex max-h-[min(90vh,90dvh)] w-full flex-col rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0"
+              className="relative glx-strong glass-edge flex max-h-[min(90vh,90dvh)] w-full flex-col rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0"
               role="dialog"
               tabIndex={-1}
               aria-modal="true"
@@ -733,7 +736,7 @@ export const Drawer = ({
               animate={{ x: 0 }}
               exit={{ x: placement === 'right' ? '100%' : '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className={`relative w-screen ${widthStyles[width]} glx-strong flex flex-col divide-y divide-[var(--color-glass-light-stroke)]`}
+              className={`relative w-screen ${widthStyles[width]} glx-strong glass-edge flex flex-col divide-y divide-[var(--color-glass-light-stroke)]`}
             >
               {/* Head */}
               <div className="p-6 flex items-center justify-between">
@@ -816,7 +819,7 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
   return (
-    <div className="flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed glx rounded-3xl space-y-4">
+    <div className="relative flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed glx glass-edge rounded-3xl space-y-4">
       <div className="p-4 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-full">
         {icon || <HelpCircle className="w-8 h-8" />}
       </div>
@@ -951,7 +954,7 @@ export const FileDropzone = ({
       onDragLeave={handleDrag}
       onDrop={handleDrop}
       onClick={triggerInput}
-      className={`border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:brightness-105 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${isDragActive ? 'border-[var(--color-accent)]/100 glx' : 'border-[var(--color-glass-light-stroke)] glx'}`}
+      className={`border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:brightness-105 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${isDragActive ? 'border-[var(--color-accent)]/100 glx glass-edge' : 'border-[var(--color-glass-light-stroke)] glx'}`}
     >
       <input
         ref={fileInputRef}

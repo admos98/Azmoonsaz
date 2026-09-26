@@ -201,7 +201,7 @@ export default function Exams({
     <div className="space-y-6 animate-in fade-in duration-300" id="exams-tab-view">
       {toastElement}
       {/* Upper Panel Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx p-6 rounded-2xl">
+      <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx glass-edge p-6 rounded-2xl">
         <div>
           <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)] flex items-center gap-2">
             <FileText className="w-5 h-5 text-[var(--color-accent)]" />
@@ -268,7 +268,7 @@ export default function Exams({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="glx rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
+                className="glx glass-edge rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
                 id={`exam-box-${ex.id}`}
               >
                 {/* Visual Status Indicator Strip on Top */}

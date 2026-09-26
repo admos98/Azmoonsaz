@@ -498,7 +498,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
           </div>
 
           {/* SECTION 1: زمان‌بندی آزمون */}
-          <div className="glx p-6 rounded-3xl border space-y-4">
+          <div className="relative glx glass-edge p-6 rounded-3xl border space-y-4">
             <h3 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
               <Calendar className="w-5 h-5 text-[var(--color-accent)]" />
               <span>۱. زمان‌بندی دقیق برگزاری آزمون</span>
@@ -606,7 +606,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
           </div>
 
           {/* SECTION 2: دسترسی دانش‌آموزان */}
-          <div className="glx p-6 rounded-3xl border space-y-4">
+          <div className="relative glx glass-edge p-6 rounded-3xl border space-y-4">
             <h3 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
               <Users className="w-5 h-5 text-[var(--color-accent)]" />
               <span>۲. سطوح دسترسی و حضور دانش‌آموزان</span>
@@ -848,7 +848,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
               {/* Custom checkboxes behavior */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
                   <input
                     type="checkbox"
                     id="auto-submit-toggle"
@@ -869,7 +869,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
                   <input
                     type="checkbox"
                     id="allow-backtrack-behavior"
@@ -890,7 +890,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
                   <input
                     type="checkbox"
                     id="auto-save-answers-toggle"
@@ -911,7 +911,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
                   <input
                     type="checkbox"
                     id="shuffle-questions-behavior"
@@ -932,7 +932,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3.5 glx border rounded-2xl">
+                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
                   <input
                     type="checkbox"
                     id="shuffle-options-behavior"
@@ -1057,7 +1057,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
           </details>
 
           {/* SECTION 4: نمایش نتیجه */}
-          <div className="glx p-6 rounded-3xl border space-y-4">
+          <div className="relative glx glass-edge p-6 rounded-3xl border space-y-4">
             <h3 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
               <Eye className="w-5 h-5 text-[var(--color-accent)]" />
               <span>۴. الگوهای انتشار نتایج و کارنامه</span>
@@ -1183,7 +1183,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
           </div>
 
           {/* SECTION 5: دستورالعمل قبل از شروع */}
-          <div className="glx p-6 rounded-3xl border space-y-4">
+          <div className="relative glx glass-edge p-6 rounded-3xl border space-y-4">
             <h3 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
               <FileText className="w-5 h-5 text-[var(--color-accent)]" />
               <span>۵. دستورالعمل نمایش قبل از شروع آزمون</span>

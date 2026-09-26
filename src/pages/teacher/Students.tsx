@@ -457,7 +457,7 @@ export default function Students() {
 
       {/* Primary Tab Headers */}
       <div
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx p-6 rounded-2xl"
+        className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx glass-edge p-6 rounded-2xl"
         id="students-control-board"
       >
         <div>
@@ -500,7 +500,7 @@ export default function Students() {
 
       {/* Multi-Filter Panel: Search, Grade, Class Group, and Status! */}
       <div
-        className="glx p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center"
+        className="relative glx glass-edge p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center"
         id="multi-filter-wrapper"
       >
         {/* Real-time search by name/nationalId */}

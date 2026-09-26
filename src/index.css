@@ -169,8 +169,29 @@
   --glass-p-bw: 1px;
   --glass-p-ba: 0.22;
   --glass-p-bc: 26 28 34;
-  --glass-shn-t: 0.22;
   --glass-shn-b: 0;
+
+  /* ── Edge light — the lit rim of a glass panel ──────────────────────────
+     Replaces the old fixed 2px top band (--glass-shn-t). The rim is now drawn
+     on all four edges by `.glass-edge`, and its behaviour differs per theme:
+
+       thickness  = clamp() of a % of the panel's own size, so a 40px chip and
+                    a 600px card get rims in proportion instead of the same
+                    2px stripe on both.
+       base       = the resting rim, present with no pointer at all.
+       hot        = how much the edge nearest the pointer lifts above base.
+       spread     = pointer falloff, as a % of the panel's smaller side.
+
+     Light is a hard material: near-white rim, short falloff, visible lift.
+     Dark is a soft material: dimmer, dimmer still, and much longer falloff, so
+     in dark mode the highlight reads as a slow sheen rather than an outline. */
+  --glass-edge-t: 3.5%; /* rim thickness, % of the panel's inline size */
+  --glass-edge-min: 1.5px;
+  --glass-edge-max: 3px;
+  --glass-edge-base: 0.5; /* resting rim strength */
+  --glass-edge-hot: 0.55; /* extra strength at the edge nearest the pointer */
+  --glass-edge-spread: 38%; /* pointer falloff, % of the panel's inline size */
+  --glass-edge-color: 255 255 255;
 
   /* Drop shadow (lifted) */
   --glass-sh-x: 0px;
@@ -261,6 +282,17 @@
   --glass-sh-a: 0.55;
   --glass-sh-color: 0 0 0;
   --glass-row-hover: 0.12;
+
+  /* Dark edge light — the same mechanism, a softer material. Compared with
+     light: a dimmer resting rim, half the lift, nearly double the falloff, and
+     a thinner band. The result is a highlight that arrives slowly and leaves
+     slowly, instead of the crisp outline light mode gets. */
+  --glass-edge-t: 2.6%;
+  --glass-edge-min: 1.25px;
+  --glass-edge-max: 2.25px;
+  --glass-edge-base: 0.26;
+  --glass-edge-hot: 0.3;
+  --glass-edge-spread: 72%;
 }
 
 /* Compatibility layer for older utility-coded surfaces while they are migrated
@@ -361,32 +393,111 @@ select::-webkit-calendar-picker-indicator {
    delete <GlassFilters /> — do not leave the comment describing a behaviour
    that does not exist. */
 
+/* ─── Edge light ───
+   The lit rim of a glass panel. Four properties make it behave like light on a
+   physical edge rather than a drawn border:
+
+   1. SIZE-RELATIVE THICKNESS. `--eg-t` is a clamp() whose middle term is a
+      percentage, so the rim is a fraction of the panel's own inline size
+      before it hits the floor or the ceiling. A 600px card, a 260px row and a
+      120px chip get visibly different rims instead of the same 2px stripe
+      drawn three times. The clamp bounds are the real control: under the floor
+      a rim would vanish, over the ceiling it would read as a border rather than
+      a highlight.
+
+   2. ALL FOUR EDGES, WEIGHTED. The ring is masked to the padding box, so it
+      traces the border-radius exactly. Inside it one vertical gradient runs
+      bright at the top to dim at the bottom. Light falls from above, so the top
+      is the lit edge, the sides catch a mid value, and the bottom is the
+      shadowed one. A single flat ring reads as a border; this reads as a solid.
+
+   3. THE POINTER FLARE. A radial gradient centred on `--eg-x`/`--eg-y` is
+      composited over the base. Because the mask keeps it inside the ring, the
+      brightest point of the flare is always on whichever edge the pointer is
+      nearest, and it falls off across the rim by real distance — which is what
+      makes the highlight track the cursor. No per-edge bookkeeping in CSS; the
+      geometry does it. `--eg-flare` is driven to 0 when the pointer is away, so
+      at rest only the base gradient is showing.
+
+   4. SEPARATE LAYER. The ring lives in `::before`, so `.glx` and `.glx-strong`
+      — which carry `backdrop-filter` — are never animated and never gain a
+      pseudo-element. Animating opacity on a filtered element freezes its frame,
+      and that frame survives unmount as a ghost left on screen. This is also why
+      `.glx-sheen` had to move to `::after`: one element has one `::before`, and
+      the two classes are used together.
+
+   Per-theme weighting lives in the tokens. Light is a hard material — a
+   near-white rim with a short falloff. Dark is a soft one — dimmer, and with a
+   larger flare radius so the highlight spreads into a slow sheen rather than an
+   outline. */
+@utility glass-edge {
+  /* NOT `position: relative`. A custom @utility can land after Tailwind's
+     built-in position utilities in the cascade, which would silently override
+     `fixed` on the Topbar and break the shell. `::before` needs a positioned
+     ancestor, so call sites add `relative` themselves when they do not already
+     have a positioning utility. */
+  isolation: isolate;
+
+  /* Thickness. The percentage resolves against the panel's inline size. */
+  --eg-t: clamp(
+    var(--glass-edge-min),
+    var(--glass-edge-t),
+    var(--glass-edge-max)
+  );
+  /* Resting rim, lit from above: top, mid (the sides), bottom. */
+  --eg-top: var(--glass-edge-base);
+  --eg-mid: calc(var(--glass-edge-base) * 0.5);
+  --eg-bot: calc(var(--glass-edge-base) * 0.28);
+  /* Pointer flare. Zero whenever the pointer is away. */
+  --eg-flare: calc(var(--eg-boost, 0) * var(--glass-edge-hot));
+}
+
+/* The ring: a gradient masked to the padding box, so it follows the
+   border-radius exactly instead of being clipped square. */
+.glass-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--eg-t);
+  pointer-events: none;
+  z-index: 1;
+  background:
+    /* pointer flare — brightest on the edge the pointer is nearest */
+      radial-gradient(
+        ellipse var(--glass-edge-spread) var(--glass-edge-spread) at
+          var(--eg-x, 50%) var(--eg-y, 50%),
+        rgb(var(--glass-edge-color) / var(--eg-flare)) 0%,
+        rgb(var(--glass-edge-color) / calc(var(--eg-flare) * 0.45)) 34%,
+        rgb(var(--glass-edge-color) / 0) 68%
+      ),
+    /* resting rim — light from above */
+      linear-gradient(
+        to bottom,
+        rgb(var(--glass-edge-color) / var(--eg-top)) 0%,
+        rgb(var(--glass-edge-color) / var(--eg-mid)) 52%,
+        rgb(var(--glass-edge-color) / var(--eg-bot)) 100%
+      );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
 /* ─── Liquid Glass surfaces — pre-computed rgba (no color-mix for Firefox/Safari) ─── */
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
-   Grounded over warm paper bg. Specular rim + bezel. */
+   Grounded over warm paper bg. The lit rim is `.glass-edge`, not a fixed band. */
 @utility glx {
-  /* Layer 1+2: the specular rim, replaced from what used to be a hard 1px
-     `inset 0 1px 0` bar. A 2px band, strongest mid-edge, faded to nothing both
-     downward and toward both corners — so it reads as a lit edge rather than a
-     drawn border. Value is subtle (0.22), per the Mark material.
-     Layer 3: the body fill, unchanged apart from its new 0.30 alpha. */
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / var(--glass-shn-t)), rgb(255 255 255 / 0)) 0 0 / 100%
-      2px no-repeat,
-    linear-gradient(
-        90deg,
-        rgb(255 255 255 / 0) 0%,
-        rgb(255 255 255 / 0.9) 22%,
-        rgb(255 255 255 / 0.9) 78%,
-        rgb(255 255 255 / 0) 100%
-      )
-      0 0 / 100% 2px no-repeat,
-    linear-gradient(
-      var(--glass-p-angle),
-      rgb(var(--glass-p-tint) / var(--glass-p-a1)),
-      rgb(var(--glass-p-tint) / var(--glass-p-a2))
-    );
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
+    rgb(var(--glass-p-tint) / var(--glass-p-a2))
+  );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
     inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
@@ -400,25 +511,14 @@ select::-webkit-calendar-picker-indicator {
 
 /* Strong glass — primary modals + hero. Heavier shadow, no own blur. */
 @utility glx-strong {
-  /* Same three-layer body as `glx`: fading specular band, corner falloff, then
-     the fill. Kept identical so a dropdown and a modal read as one material at
-     two weights, differing only in shadow and blur. */
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / var(--glass-shn-t)), rgb(255 255 255 / 0)) 0 0 / 100%
-      2px no-repeat,
-    linear-gradient(
-        90deg,
-        rgb(255 255 255 / 0) 0%,
-        rgb(255 255 255 / 0.9) 22%,
-        rgb(255 255 255 / 0.9) 78%,
-        rgb(255 255 255 / 0) 100%
-      )
-      0 0 / 100% 2px no-repeat,
-    linear-gradient(
-      var(--glass-p-angle),
-      rgb(var(--glass-p-tint) / var(--glass-p-a1)),
-      rgb(var(--glass-p-tint) / var(--glass-p-a2))
-    );
+  /* Same body as `glx` — one fill gradient, and the lit rim comes from
+     `.glass-edge`. Kept identical so a dropdown and a modal read as one
+     material at two weights, differing only in shadow and blur. */
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
+    rgb(var(--glass-p-tint) / var(--glass-p-a2))
+  );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
     inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
@@ -542,7 +642,11 @@ select::-webkit-calendar-picker-indicator {
   position: relative;
   isolation: isolate;
 }
-.glx-sheen::before {
+/* Sheen overlay — the wet slide of light. Uses ::after, not ::before, because
+   `.glass-edge` owns ::before for the lit rim and the two classes are used
+   together (Topbar notifications, Students panel): one element can only have one
+   ::before. */
+.glx-sheen::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -557,7 +661,7 @@ select::-webkit-calendar-picker-indicator {
   pointer-events: none;
   z-index: 1;
 }
-.glx-sheen:hover::before {
+.glx-sheen:hover::after {
   opacity: 1;
 }
 
@@ -693,7 +797,7 @@ select::-webkit-calendar-picker-indicator {
 :root[data-motion='reduce'] .skeleton {
   animation: none;
 }
-:root[data-motion='reduce'] .glx-sheen:hover::before {
+:root[data-motion='reduce'] .glx-sheen:hover::after {
   opacity: 0;
 }
 :root[data-motion='reduce'] *,
@@ -709,7 +813,7 @@ select::-webkit-calendar-picker-indicator {
   .skeleton {
     animation: none;
   }
-  .glx-sheen:hover::before {
+  .glx-sheen:hover::after {
     opacity: 0;
   }
   *,
@@ -1075,7 +1179,7 @@ select::-webkit-calendar-picker-indicator {
   .scrim,
   .veil-blur,
   .area-blur,
-  .glx-sheen::before {
+  .glx-sheen::after {
     display: none !important;
   }
 }

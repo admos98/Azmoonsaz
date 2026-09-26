@@ -236,7 +236,7 @@ export default function TeacherProfile({
     <div className="mx-auto max-w-7xl space-y-6">
       <ProfileHeader tab={tab} setTab={handleTabChange} />
 
-      <section className="profile-cover glx overflow-hidden rounded-[28px] p-5 sm:p-7">
+      <section className="relative profile-cover glx glass-edge overflow-hidden rounded-[28px] p-5 sm:p-7">
         <div className="relative z-10 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
           <button
             type="button"
@@ -305,7 +305,7 @@ export default function TeacherProfile({
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
-        <section className="glx panel-shell space-y-5">
+        <section className="relative glx glass-edge panel-shell space-y-5">
           <SectionTitle
             icon={<UserRound />}
             title="اطلاعات دبیر"
@@ -385,7 +385,7 @@ export default function TeacherProfile({
           </div>
         </section>
 
-        <section className="glx panel-shell">
+        <section className="relative glx glass-edge panel-shell">
           <SectionTitle
             icon={<CalendarDays />}
             title="برنامه هفتگی"
