@@ -80,7 +80,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
       {/* 1. Welcome Card Hero — liquid glass with The Mark watermark */}
       <div
-        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx glass-edge-strong"
+        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx glass-edge glx-refract"
         id="dashboard-hero-banner"
       >
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />

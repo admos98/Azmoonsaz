@@ -378,7 +378,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           ref={ref}
           type="button"
           onClick={() => setOpen(!open)}
-          className={`w-full flex items-center justify-between glx border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
+          className={`relative w-full flex items-center justify-between glx glass-edge glx-refract border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
             compact ? 'px-2.5 py-1.5 text-caption' : 'px-3.5 py-2.5 text-label'
           } ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'}`}
         >
@@ -412,7 +412,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                 /* No area-blur halo and no drop shadow: the trigger button already
                    carries the glass, and a floating list needs neither. */
                 style={{ ...listStyle, boxShadow: 'none', transformOrigin: 'top center' }}
-                className="relative glx-strong glass-edge rounded-xl max-h-56 overflow-y-auto"
+                className="relative glx-strong glass-edge glx-refract rounded-xl max-h-56 overflow-y-auto"
               >
                 {options.map((opt, i) => (
                   <React.Fragment key={opt.value}>
@@ -954,7 +954,7 @@ export const FileDropzone = ({
       onDragLeave={handleDrag}
       onDrop={handleDrop}
       onClick={triggerInput}
-      className={`border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:brightness-105 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${isDragActive ? 'border-[var(--color-accent)]/100 glx glass-edge' : 'border-[var(--color-glass-light-stroke)] glx'}`}
+      className={`relative border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:brightness-105 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${isDragActive ? 'border-[var(--color-accent)]/100 glx glass-edge' : 'border-[var(--color-glass-light-stroke)] glx'}`}
     >
       <input
         ref={fileInputRef}

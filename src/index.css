@@ -185,9 +185,9 @@
      Light is a hard material: near-white rim, short falloff, visible lift.
      Dark is a soft material: dimmer, dimmer still, and much longer falloff, so
      in dark mode the highlight reads as a slow sheen rather than an outline. */
-  --glass-edge-t: 3.5%; /* rim thickness, % of the panel's inline size */
+  --glass-edge-t: 4.2%; /* rim thickness, % of the panel's inline size */
   --glass-edge-min: 1.5px;
-  --glass-edge-max: 3px;
+  --glass-edge-max: 3.6px;
   --glass-edge-base: 0.5; /* resting rim strength */
   --glass-edge-hot: 0.55; /* extra strength at the edge nearest the pointer */
   --glass-edge-spread: 38%; /* pointer falloff, % of the panel's inline size */
@@ -287,9 +287,9 @@
      light: a dimmer resting rim, half the lift, nearly double the falloff, and
      a thinner band. The result is a highlight that arrives slowly and leaves
      slowly, instead of the crisp outline light mode gets. */
-  --glass-edge-t: 2.6%;
+  --glass-edge-t: 3.1%;
   --glass-edge-min: 1.25px;
-  --glass-edge-max: 2.25px;
+  --glass-edge-max: 2.6px;
   --glass-edge-base: 0.26;
   --glass-edge-hot: 0.3;
   --glass-edge-spread: 72%;
@@ -528,6 +528,48 @@ select::-webkit-calendar-picker-indicator {
   backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
     brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
 }
+
+/* ─── Refraction — the bent edge, for chrome and hero only ───
+   The rim (`.glass-edge`) makes an edge READ as lit. This makes the backdrop
+   actually MOVE at the edge, which is the other half of liquid glass and the
+   part that was missing entirely — #lg-displace was mounted at app root and
+   referenced by nothing.
+
+   The @supports split is load-bearing, not defensive styling.
+   `backdrop-filter: url(#…)` is Chromium-only, and Safari does not degrade
+   gracefully: it treats the whole declaration as invalid and drops it, so a
+   surface whose ONLY backdrop-filter is url() renders with no glass at all.
+   The base rule therefore always carries blur(), and url() is layered on top
+   only where it is understood. Safari keeps frosted glass; Chromium gains the
+   bend. Neither looks broken.
+
+   Stack it with a body: `glx-strong glx-refract`. Kept separate from `glx` on
+   purpose — refraction belongs on the hero, topbar buttons and menu buttons,
+   where a bent backdrop is the point. Under body text it is a legibility
+   problem. */
+@utility glx-refract {
+  /* Always present, in every engine. This is the floor, not the effect. */
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
+    brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
+
+  /* The bend, layered on only where url() is understood. This @supports must
+     be NESTED INSIDE the @utility. Written as a sibling plain
+     `.glx-refract { }` rule it is silently deleted by the build: Tailwind v4
+     strips any plain selector whose name collides with a registered @utility,
+     so the refraction would never have shipped. Found by reading dist CSS,
+     not by the source or by any error. */
+  @supports (backdrop-filter: url("#x")) {
+    backdrop-filter: url('#lg-lens') blur(var(--glass-p-blur))
+      saturate(var(--glass-p-sat)) brightness(var(--glass-p-bright))
+      contrast(var(--glass-p-contrast));
+  }
+}
+/* The block above must be a PLAIN class, not another @utility. Tailwind v4
+   treats utilities as tree-shakeable and drops any selector written for a
+   utility name that is not present in the scanned source — the base
+   `.glx-refract` rule survived (it is used in markup) but the identical
+   selector nested in @supports did not, so the refraction would never have
+   applied. The build output is the only place this was visible. */
 
 /* Ink glass — sidebar (dark field with warm gold tint) */
 @utility glx-dark {
