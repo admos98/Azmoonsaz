@@ -14,7 +14,7 @@ import {
 import { normalizePersianText } from '../utils/persian';
 import { usePersistentPreference } from '../hooks/usePersistentPreference';
 import { preloadTeacherPage } from '../utils/teacherPageLoaders';
-import { classService, examService, studentService } from '../services/api';
+import { useTeacherCollections } from '../contexts/TeacherContext';
 
 type Command = {
   id: string;
@@ -85,8 +85,7 @@ export default function CommandPalette({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [entityCommands, setEntityCommands] = useState<Command[]>([]);
-  const [entitiesLoading, setEntitiesLoading] = useState(false);
+  const { exams, students, classGroups, status } = useTeacherCollections();
   const [recentCommandIds, setRecentCommandIds] = usePersistentPreference<string[]>(
     'commands:recent',
     [],
@@ -97,6 +96,40 @@ export default function CommandPalette({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const shortcutPrefixRef = useRef(false);
   const shortcutTimerRef = useRef<number | null>(null);
+
+  // Live entities ride the shared collections cache — the palette used to
+  // fire its own 3-request fetch the first time it opened.
+  const entityCommands = useMemo<Command[]>(
+    () => [
+      ...exams.map((exam) => ({
+        id: `exam:${exam.id}`,
+        destination: 'exams',
+        label: exam.title,
+        description: 'آزمون',
+        keywords: `آزمون امتحان ${exam.status}`,
+        icon: BookOpen,
+      })),
+      ...students.map((student) => ({
+        id: `student:${student.id}`,
+        destination: 'students',
+        label: student.name,
+        description: `دانش‌آموز پایه ${student.grade}`,
+        keywords: `دانش آموز ${student.nationalId}`,
+        icon: Users,
+      })),
+      ...classGroups.map((classGroup) => ({
+        id: `class:${classGroup.id}`,
+        destination: 'classes',
+        label: classGroup.name,
+        description: `کلاس پایه ${classGroup.grade}`,
+        keywords: 'کلاس گروه پایه',
+        icon: GraduationCap,
+      })),
+    ],
+    [exams, students, classGroups],
+  );
+  const entitiesLoading =
+    status.exams === 'loading' || status.students === 'loading' || status.classGroups === 'loading';
 
   const availableCommands = useMemo(() => [...commands, ...entityCommands], [entityCommands]);
   const filtered = useMemo(() => {
@@ -157,7 +190,6 @@ export default function CommandPalette({
           if (!current) {
             setQuery('');
             setActiveIndex(0);
-            if (!entityCommands.length) setEntitiesLoading(true);
           }
           return !current;
         });
@@ -176,54 +208,6 @@ export default function CommandPalette({
     else triggerRef.current?.focus();
   }, [open]);
 
-  useEffect(() => {
-    if (!open || entityCommands.length) return;
-    let active = true;
-    Promise.all([
-      examService.getExams(),
-      studentService.getStudents(),
-      classService.getClassGroups(),
-    ])
-      .then(([exams, students, classes]) => {
-        if (!active) return;
-        setEntityCommands([
-          ...exams.map((exam) => ({
-            id: `exam:${exam.id}`,
-            destination: 'exams',
-            label: exam.title,
-            description: 'آزمون',
-            keywords: `آزمون امتحان ${exam.status}`,
-            icon: BookOpen,
-          })),
-          ...students.map((student) => ({
-            id: `student:${student.id}`,
-            destination: 'students',
-            label: student.name,
-            description: `دانش‌آموز پایه ${student.grade}`,
-            keywords: `دانش آموز ${student.nationalId}`,
-            icon: Users,
-          })),
-          ...classes.map((classGroup) => ({
-            id: `class:${classGroup.id}`,
-            destination: 'classes',
-            label: classGroup.name,
-            description: `کلاس پایه ${classGroup.grade}`,
-            keywords: 'کلاس گروه پایه',
-            icon: GraduationCap,
-          })),
-        ]);
-      })
-      .catch(() => {
-        // Destination commands remain available when live entity search is unavailable.
-      })
-      .finally(() => {
-        if (active) setEntitiesLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [entityCommands.length, open]);
-
   const run = (command: Command) => {
     setRecentCommandIds((current) =>
       [command.id, ...current.filter((id) => id !== command.id)].slice(0, 4),
@@ -240,10 +224,9 @@ export default function CommandPalette({
         onClick={() => {
           setQuery('');
           setActiveIndex(0);
-          if (!entityCommands.length) setEntitiesLoading(true);
           setOpen(true);
         }}
-        className="command-palette-trigger fixed bottom-4 left-4 z-40 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface-primary)]/90 px-3 text-caption font-bold text-[var(--color-text-secondary)] shadow-lg backdrop-blur-xl hover:text-[var(--color-text-primary)]"
+        className="command-palette-trigger fixed bottom-4 left-4 z-40 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]/90 chrome-blur px-3 text-caption font-bold text-[var(--color-text-secondary)] shadow-lg hover:text-[var(--color-text-primary)]"
         aria-label="باز کردن جستجو و فرمان‌ها"
       >
         <Search className="h-4 w-4" />
@@ -258,7 +241,7 @@ export default function CommandPalette({
 
       {open && (
         <div
-          className="fixed inset-0 z-[100] flex items-start justify-center bg-[var(--color-overlay)] p-4 pt-[12vh] backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-start justify-center scrim veil-blur p-4 pt-[12vh]"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setOpen(false);

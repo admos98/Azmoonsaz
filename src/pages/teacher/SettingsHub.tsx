@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { HelpCircle, SlidersHorizontal } from 'lucide-react';
 import Settings from './Settings';
-import Questions from './Questions';
 import QuestionBankHealth from '../../components/QuestionBankHealth';
+import { Tabs } from '../../components/UIComponents';
+
+/* The question bank (~2,400 LOC) loads only when its tab opens — the
+   settings-only visitor never downloads it. */
+const Questions = lazy(() => import('./Questions'));
 
 type SettingsTab = 'system' | 'questions';
 
@@ -14,7 +18,6 @@ export default function SettingsHub({
   onNavigate?: (tab: string) => void;
 }) {
   const [tab, setTab] = useState<SettingsTab>(initialTab);
-  const tabs: SettingsTab[] = ['system', 'questions'];
   const activate = (next: SettingsTab) => {
     setTab(next);
     onNavigate?.(next === 'system' ? 'settings' : 'questions');
@@ -29,51 +32,33 @@ export default function SettingsHub({
             پیکربندی سامانه و مدیریت بانک سوالات
           </p>
         </div>
-        <div
-          className="segmented-control"
-          role="tablist"
+        <Tabs
+          tabs={[
+            { id: 'system', label: 'تنظیمات', icon: <SlidersHorizontal aria-hidden="true" /> },
+            { id: 'questions', label: 'بانک سوالات', icon: <HelpCircle aria-hidden="true" /> },
+          ]}
+          activeTab={tab}
+          onChange={(id) => activate(id as SettingsTab)}
+          className="w-full sm:w-auto"
           aria-label="بخش‌های تنظیمات"
-          onKeyDown={(event) => {
-            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-            event.preventDefault();
-            const current = tabs.indexOf(tab);
-            const direction = event.key === 'ArrowLeft' ? 1 : -1;
-            activate(tabs[(current + direction + tabs.length) % tabs.length]);
-            requestAnimationFrame(() =>
-              event.currentTarget.querySelector<HTMLElement>('[aria-selected="true"]')?.focus(),
-            );
-          }}
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'system'}
-            tabIndex={tab === 'system' ? 0 : -1}
-            className={tab === 'system' ? 'active' : ''}
-            onClick={() => activate('system')}
-          >
-            <SlidersHorizontal aria-hidden="true" />
-            تنظیمات
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'questions'}
-            tabIndex={tab === 'questions' ? 0 : -1}
-            className={tab === 'questions' ? 'active' : ''}
-            onClick={() => activate('questions')}
-          >
-            <HelpCircle aria-hidden="true" />
-            بانک سوالات
-          </button>
-        </div>
+        />
       </div>
       {tab === 'system' ? (
         <Settings />
       ) : (
         <div className="space-y-6">
           <QuestionBankHealth />
-          <Questions />
+          <Suspense
+            fallback={
+              <div
+                className="h-64 rounded-2xl glx skeleton"
+                role="status"
+                aria-label="در حال بارگذاری بانک سوالات"
+              />
+            }
+          >
+            <Questions />
+          </Suspense>
         </div>
       )}
     </div>

@@ -20,6 +20,15 @@
 @theme {
   /* Typography */
   --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
+  /* Body size. Declared so the var() reference in `body` resolves to a real
+     token instead of silently living in its fallback value. */
+  --font-size-base: 0.9375rem;
+  /* Type-weight ramp. Vazirmatn goes muddy at 800–900 in UI sizes, so the
+     heavy utility classes clamp to 700 — UI chrome lives at 600–700 and
+     heavy weights are reserved for the display scale. Retune every heading
+     in the app by changing these two lines. */
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
 
   /* Spacing (4px base) */
   --spacing-0: 0px;
@@ -115,9 +124,28 @@
   /* Text */
   --color-text-primary: #1a1a2e;
   --color-text-secondary: #5e5a68;
-  --color-text-tertiary: #716e78;
+  /* Tertiary is the HINT tier — kept clearly lighter than secondary so the
+     two grays never read as one accidental value (audit F5). */
+  --color-text-tertiary: #8a8694;
   --color-text-on-dark: #f9fafb;
   --color-text-on-dark-secondary: #d1d5db;
+
+  /* Focus — the ONE keyboard-focus color for the whole app. Consumed by the
+     shared focus-visible baseline and by library components. Gold reads on
+     both themes, so no dark override is needed. */
+  --color-focus-ring: rgba(245, 179, 1, 0.72);
+
+  /* Login marketing surface — deliberately light-only (the art panel is a
+     supplied photograph backdrop, never themed). Single-sourced here so the
+     values are still controlled from one place. */
+  --color-login-paper: #f7f7f5;
+  --color-login-art-paper: #f4f1e9;
+  --color-login-gold-ink: #765500;
+
+  /* Hero focal pane. Light mode leaves it transparent — the hero is plain
+     warm glass like every other panel (the `glx` utility supplies the
+     material). Dark theme gives it a deeper ink pane, the page's anchor. */
+  --color-hero-pane: transparent;
 }
 
 /* ─── Liquid Glass recipe — ported from glass-lab.html (user-tuned values) ───
@@ -127,17 +155,15 @@
   color-scheme: light;
   /* Runtime-only variables live outside @theme so Tailwind cannot inline the
      light value into utilities that must change without a rebuild. */
-  --ui-inset-fill: rgba(250, 248, 245, 0.82);
+  --ui-inset-fill: rgba(250, 248, 245, 0.9);
 
   /* Full-screen veil (Control-Center style backdrop behind popups) */
   /* Full-screen veil blur. Separate token from --glass-bg-blur on purpose:
      dimming the whole screen and glassing an in-page card are different jobs,
      and the screen one is what should stay subtle. */
-  --glass-bg-blur: 7px;
-  --glass-veil-blur: 4px;
-  --glass-bg-sat: 1.1;
-  --glass-bg-bright: 0.97;
-  --glass-bg-contrast: 0.92;
+  --glass-bg-blur: 12px;
+  --glass-veil-blur: 6px;
+  --glass-bg-sat: 1.35;
   --glass-scrim-a: 0.15;
   /* Neutral, not blue. The veil covers the WHOLE screen behind a panel, so any
      blue here multiplies across the entire page — this is what made the
@@ -148,28 +174,23 @@
   --glass-h-ratio: 0.17;
   --glass-h-blur: 5px;
   --glass-h-sat: 1.1;
-  --glass-h-bright: 1.2;
   --glass-h-fill: 0.22;
   --glass-h-tint: 26 28 34;
   --glass-h-fo: 1.15;
   --glass-h-bias: 0.7;
-  --glass-h-mid: 0.75;
   --glass-h-rext: 0px;
 
   /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill */
-  --glass-p-a1: 0.3;
-  --glass-p-a2: 0.14;
+  --glass-p-a1: 0.17;
+  --glass-p-a2: 0.08;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
-  --glass-p-blur: 6px;
-  --glass-p-sat: 1.1;
-  --glass-p-bright: 1.04;
-  --glass-p-contrast: 1;
+  --glass-p-blur: 18px;
+  --glass-p-sat: 1.45;
   --glass-p-radius: 28px;
   --glass-p-bw: 1px;
   --glass-p-ba: 0.22;
   --glass-p-bc: 26 28 34;
-  --glass-shn-b: 0;
 
   /* ── Edge light — the lit rim of a glass panel ──────────────────────────
      Replaces the old fixed 2px top band (--glass-shn-t). The rim is now drawn
@@ -192,13 +213,29 @@
   --glass-edge-hot: 0.55; /* extra strength at the edge nearest the pointer */
   --glass-edge-spread: 38%; /* pointer falloff, % of the panel's inline size */
   --glass-edge-color: 255 255 255;
+  /* Dispersion — the rim is never neutral white (measured off iOS 26: top rim
+     (157,225,255), bottom rim (131,245,245)). Tint per edge zone. */
+  --glass-edge-tint-top: 205 236 255;
+  --glass-edge-tint-mid: 255 255 255;
+  --glass-edge-tint-bot: 168 244 234;
+  /* Lens band — the bent edge. A wider ring just inside the rim that
+     re-filters the backdrop with a SHARPER blur + brightness lift, so the
+     edge reads as thick refractive glass over a calm centre. */
+  --glass-lens-t: 12px;
+  --glass-lens-blur: 2.5px;
+  --glass-lens-sat: 1.6;
+  --glass-lens-bright: 1.07;
+  /* Text micro-shadow — imperceptible ambient that keeps labels readable over
+     busy glass without hiding the backdrop. */
+  --glass-text-ambient: 255 255 255;
+  --glass-text-ambient-a: 0.5;
 
   /* Drop shadow (lifted) */
   --glass-sh-x: 0px;
   --glass-sh-y: 12px;
   --glass-sh-blur: 38px;
   --glass-sh-spread: -16px;
-  --glass-sh-a: 0.2;
+  --glass-sh-a: 0.12;
   --glass-sh-color: 26 28 34;
 
   /* Row hover tint (menu / dropdown / list) */
@@ -221,20 +258,20 @@
    themes, so system and explicit preferences stay visually consistent. */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --ui-inset-fill: rgba(33, 31, 41, 0.94);
-  --color-page-bg: #18161d;
-  --color-paper-warm: #18161d;
-  --color-surface: #211f29;
-  --color-surface-secondary: #2a2734;
-  --color-ink-field: #100f15;
+  --ui-inset-fill: rgba(40, 37, 52, 0.97);
+  --color-page-bg: #171622;
+  --color-paper-warm: #171622;
+  --color-surface: #252334;
+  --color-surface-secondary: #2e2b40;
+  --color-ink-field: #12111c;
   --color-ink-stroke: #716d80;
 
-  --color-glass-light-fill: rgba(36, 33, 43, 0.72);
+  --color-glass-light-fill: rgba(52, 49, 66, 0.72);
   --color-glass-light-stroke: rgba(255, 255, 255, 0.12);
   --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
   --color-glass-light-bottom: rgba(0, 0, 0, 0.35);
-  --color-glass-panel-fill: rgba(33, 31, 41, 0.86);
-  --color-inset-fill: rgba(33, 31, 41, 0.94);
+  --color-glass-panel-fill: rgba(50, 47, 64, 0.8);
+  --color-inset-fill: rgba(40, 37, 52, 0.94);
   --color-inset-side-sheen: rgba(255, 255, 255, 0.045);
   --color-inset-side-shade: rgba(0, 0, 0, 0.16);
   --color-glass-shadow: rgba(0, 0, 0, 0.42);
@@ -244,11 +281,15 @@
   --color-gold: #f8c542;
   --color-gold-soft: #382d10;
   --color-gold-glow: rgba(248, 197, 66, 0.18);
+
+  /* Hero focal pane — built from the ink field, one step deeper than the
+     cards because the hero anchors the page. */
+  --color-hero-pane: linear-gradient(125deg, rgba(16, 15, 21, 0.97), rgba(26, 26, 46, 0.94));
   --color-accent: #dcd9e6;
   --color-accent-hover: #ffffff;
-  --color-accent-soft: #2e2b39;
-  --color-accent-solid: #565274;
-  --color-accent-solid-hover: #6a6692;
+  --color-accent-soft: #322f47;
+  --color-accent-solid: #5b5880;
+  --color-accent-solid-hover: #6d6a96;
   --color-text-on-solid: #ffffff;
 
   --color-success: #67e3b1;
@@ -266,7 +307,9 @@
 
   --color-text-primary: #f4f5f8;
   --color-text-secondary: #c6c3d1;
-  --color-text-tertiary: #a19eac;
+  /* Dark hierarchy inverts: hints sit DIMMER than secondary (closer to the
+     page), again with a deliberate gap between the two grays. */
+  --color-text-tertiary: #8c8998;
   --color-text-on-dark: #f9fafb;
   --color-text-on-dark-secondary: #d1d5db;
 
@@ -274,25 +317,34 @@
   --glass-scrim-color: 0 0 0;
   --glass-h-fill: 0.2;
   --glass-h-tint: 0 0 0;
-  --glass-p-a1: 0.3;
-  --glass-p-a2: 0.18;
-  --glass-p-tint: 36 33 44;
+  --glass-p-a1: 0.62;
+  --glass-p-a2: 0.48;
+  --glass-p-tint: 52 49 66;
   --glass-p-ba: 0.16;
   --glass-p-bc: 255 255 255;
-  --glass-sh-a: 0.55;
+  --glass-sh-a: 0.28;
   --glass-sh-color: 0 0 0;
   --glass-row-hover: 0.12;
+  --glass-text-ambient: 0 0 0;
+  --glass-text-ambient-a: 0.45;
 
   /* Dark edge light — the same mechanism, a softer material. Compared with
      light: a dimmer resting rim, half the lift, nearly double the falloff, and
      a thinner band. The result is a highlight that arrives slowly and leaves
      slowly, instead of the crisp outline light mode gets. */
   --glass-edge-t: 3.1%;
-  --glass-edge-min: 1.25px;
-  --glass-edge-max: 2.6px;
-  --glass-edge-base: 0.26;
-  --glass-edge-hot: 0.3;
-  --glass-edge-spread: 72%;
+  --glass-edge-min: 1.5px;
+  --glass-edge-max: 3px;
+  --glass-edge-base: 0.34;
+  --glass-edge-hot: 0.34;
+  --glass-edge-spread: 60%;
+  --glass-edge-tint-top: 205 232 255;
+  --glass-edge-tint-mid: 255 255 255;
+  --glass-edge-tint-bot: 168 240 234;
+  --glass-lens-t: 10px;
+  --glass-lens-blur: 2px;
+  --glass-lens-sat: 1.5;
+  --glass-lens-bright: 1.1;
 }
 
 /* Compatibility layer for older utility-coded surfaces while they are migrated
@@ -355,11 +407,6 @@ body {
   color: var(--color-ink);
 }
 
-:where(button, a, input, select, textarea, [role='button'], [role='tab']):focus-visible {
-  outline: 3px solid rgba(245, 179, 1, 0.72);
-  outline-offset: 3px;
-}
-
 :where(button, [role='button']):disabled {
   cursor: not-allowed;
 }
@@ -393,15 +440,6 @@ select {
 select::-webkit-calendar-picker-indicator {
   opacity: 0;
 }
-
-/* ─── SVG Displacement Filter ─── */
-/* Defined once at app root via <GlassFilters />.
-   NOT currently referenced: no backdrop-filter in this file uses
-   url(#lg-displace), so `.glx-strong` has no refraction today. The filter is
-   kept mounted and harmless, but the previous "Uses url(#lg-displace) in
-   backdrop-filter on .glx-strong" claim was stale. Either wire it up here or
-   delete <GlassFilters /> — do not leave the comment describing a behaviour
-   that does not exist. */
 
 /* ─── Edge light ───
    The lit rim of a glass panel. Four properties make it behave like light on a
@@ -471,7 +509,13 @@ select::-webkit-calendar-picker-indicator {
   border-radius: inherit;
   padding: var(--eg-t);
   pointer-events: none;
-  z-index: 1;
+  z-index: 2;
+  /* plus-lighter = additive light. This is what PINS the rim luminance: the
+     rim line adds its own light on top of whatever fill/backdrop is beneath,
+     so the specular spike survives over bright fills where alpha compositing
+     would flatten to invisible (measured pre-fix: rim == fill == L246).
+     isolation on .glass-edge contains the blend to the panel. */
+  mix-blend-mode: plus-lighter;
   background:
     /* pointer flare — brightest on the edge the pointer is nearest */
       radial-gradient(
@@ -481,12 +525,13 @@ select::-webkit-calendar-picker-indicator {
         rgb(var(--glass-edge-color) / calc(var(--eg-flare) * 0.45)) 34%,
         rgb(var(--glass-edge-color) / 0) 68%
       ),
-    /* resting rim — light from above */
+    /* resting rim — light from above, with chromatic dispersion: cyan at the
+       top edge, green-cyan at the bottom (iOS 26 measured values). */
       linear-gradient(
         to bottom,
-        rgb(var(--glass-edge-color) / var(--eg-top)) 0%,
-        rgb(var(--glass-edge-color) / var(--eg-mid)) 52%,
-        rgb(var(--glass-edge-color) / var(--eg-bot)) 100%
+        rgb(var(--glass-edge-tint-top) / var(--eg-top)) 0%,
+        rgb(var(--glass-edge-tint-mid) / var(--eg-mid)) 52%,
+        rgb(var(--glass-edge-tint-bot) / var(--eg-bot)) 100%
       );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -498,7 +543,54 @@ select::-webkit-calendar-picker-indicator {
   mask-composite: exclude;
 }
 
-/* ─── Liquid Glass surfaces — pre-computed rgba (no color-mix for Firefox/Safari) ─── */
+/* ─── Lens band — the bent edge ────────────────────────────────────────────
+   A wider ring just inside the rim that re-filters the ALREADY-composited
+   panel with a sharper, brighter, more saturated chain. The blur
+   discontinuity between band and body is what reads as refraction; the
+   brightness lift is the edge lensing iOS shows (+10..15 L in the last 12px).
+
+   Chromium additionally displaces the backdrop with #lg-lens (feDisplacementMap
+   + stretched gradient map, defined in index.html) — true geometric bending of
+   the rim zone. Safari/Firefox keep the band without the bend (the @supports
+   guard is load-bearing: url() in backdrop-filter invalidates the WHOLE
+   declaration where unsupported, so it must never ride the base rule).
+
+   :not(.glx-sheen) — sheen owns ::after on the same elements (Topbar). */
+.glass-edge:not(.glx-sheen)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--glass-lens-t);
+  pointer-events: none;
+  z-index: 1;
+  backdrop-filter: blur(var(--glass-lens-blur)) saturate(var(--glass-lens-sat))
+    brightness(var(--glass-lens-bright));
+  /* Chromatic fringe inside the band — faint cyan at top, green at bottom,
+     layered OVER the filtered backdrop so the rim zone carries the dispersion
+     even where the backdrop is featureless. */
+  background: linear-gradient(
+    to bottom,
+    rgb(120 190 255 / 0.09) 0%,
+    rgb(120 190 255 / 0) 22%,
+    rgb(90 230 210 / 0) 78%,
+    rgb(90 230 210 / 0.09) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+@supports (backdrop-filter: url('#x')) {
+  .glass-edge:not(.glx-sheen)::after {
+    backdrop-filter: url('#lg-lens') blur(var(--glass-lens-blur))
+      saturate(var(--glass-lens-sat)) brightness(var(--glass-lens-bright));
+  }
+}
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
    Grounded over warm paper bg. The lit rim is `.glass-edge`, not a fixed band. */
@@ -510,40 +602,42 @@ select::-webkit-calendar-picker-indicator {
   );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
-    inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
     var(--glass-sh-x) var(--glass-sh-y) var(--glass-sh-blur) var(--glass-sh-spread)
       rgb(var(--glass-sh-color) / var(--glass-sh-a));
+  /* Text micro-shadow: a 1px ambient that lifts label contrast over busy
+     glass. Imperceptible on calm backdrops, decisive over dense content. */
+  text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
   /* In-page surface (cards, topbar): has no halo of its own, so it carries
-     the background-veil blur — scrolling content must never bleed through. */
-  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
-    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
+     the background-veil blur — scrolling content must never bleed through.
+     Chain is deliberately blur+saturate ONLY: brightness/contrast corrections
+     were near-identity filters paid for on every surface, every frame. */
+  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
 }
 
 /* Strong glass — primary modals + hero. Heavier shadow, no own blur. */
 @utility glx-strong {
   /* Same body as `glx` — one fill gradient, and the lit rim comes from
      `.glass-edge`. Kept identical so a dropdown and a modal read as one
-     material at two weights, differing only in shadow and blur. */
+     material at two weights, differing only in shadow and blur.
+     Modals sit over the most content → +6% fill over the card recipe
+     (iOS: opacity scales with content density underneath). */
   background: linear-gradient(
     var(--glass-p-angle),
-    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
-    rgb(var(--glass-p-tint) / var(--glass-p-a2))
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a1) + 0.06)),
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a2) + 0.05))
   );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
-    inset 0 -1px 1px rgb(var(--glass-sh-color) / var(--glass-shn-b)),
     0 26px 70px -24px rgb(var(--glass-sh-color) / 0.34);
+  text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
   /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own
      blur stays at --glass-p-blur (0) — the double blur comes from the layers. */
-  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
-    brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
 }
 
-/* ─── Refraction — the bent edge, for chrome and hero only ───
+/* ─── Refraction — the bent edge, whitelist-only ───────────────────────────
    The rim (`.glass-edge`) makes an edge READ as lit. This makes the backdrop
-   actually MOVE at the edge, which is the other half of liquid glass and the
-   part that was missing entirely — #lg-displace was mounted at app root and
-   referenced by nothing.
+   actually MOVE at the edge, which is the other half of liquid glass.
 
    The @supports split is load-bearing, not defensive styling.
    `backdrop-filter: url(#…)` is Chromium-only, and Safari does not degrade
@@ -553,14 +647,14 @@ select::-webkit-calendar-picker-indicator {
    only where it is understood. Safari keeps frosted glass; Chromium gains the
    bend. Neither looks broken.
 
-   Stack it with a body: `glx-strong glx-refract`. Kept separate from `glx` on
-   purpose — refraction belongs on the hero, topbar buttons and menu buttons,
-   where a bent backdrop is the point. Under body text it is a legibility
-   problem. */
+   WHITELIST: refraction is allowed ONLY on static chrome — surfaces that do
+   not animate their size and do not sit under body text. Today that list is
+   EMPTY (every former member animated or hid its own backdrop). Reintroducing
+   `glx-refract` in markup requires adding the file to REFRACT_ALLOWLIST in
+   tools/check-glass-discipline.mjs — a deliberate, reviewed act. */
 @utility glx-refract {
   /* Always present, in every engine. This is the floor, not the effect. */
-  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
-    brightness(var(--glass-p-bright)) contrast(var(--glass-p-contrast));
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
 
   /* The bend, layered on only where url() is understood. This @supports must
      be NESTED INSIDE the @utility. Written as a sibling plain
@@ -570,9 +664,56 @@ select::-webkit-calendar-picker-indicator {
      not by the source or by any error. */
   @supports (backdrop-filter: url("#x")) {
     backdrop-filter: url('#lg-lens') blur(var(--glass-p-blur))
-      saturate(var(--glass-p-sat)) brightness(var(--glass-p-bright))
-      contrast(var(--glass-p-contrast));
+      saturate(var(--glass-p-sat));
   }
+}
+
+/* ─── data-lens — refraction armed on a SETTLED panel ─────────────────────
+   `glx-refract` is a static class, so it would bend the backdrop for the whole
+   life of a panel — including the 0.32s it is scaling from the button. A
+   displacement map resampled under a transform is wrong on every frame of that
+   animation, and the user is looking straight at it.
+
+   So the bend is applied through a data attribute instead, and Topbar sets it
+   only once the open animation has finished. The transition below is on a
+   `::before`-free element — this is the panel's OWN backdrop-filter, not a
+   filtered pseudo-element — and it is a discrete-ish opacity ramp on a filter
+   swap, which the compositor can hand off without re-blurring every frame.
+
+   Tiers: `lite` and `off` strip it, because refraction is the single most
+   expensive thing in the material and those tiers exist for weak GPUs. */
+[data-lens] {
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
+  animation: lensIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes lensIn {
+  from {
+    backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
+  }
+  to {
+    backdrop-filter: url('#lg-lens') blur(var(--glass-p-blur))
+      saturate(var(--glass-p-sat));
+  }
+}
+
+/* The bend is Chromium-only. Where url() is not understood the keyframe would
+   animate to an invalid value and simply never apply — which is the correct
+   degradation, but only in the browsers that DROP the declaration. In a
+   browser that keeps the base rule and ignores the url() token the panel would
+   still fade its base blur, which reads as a flicker. So the whole mechanism
+   is gated: no @supports, no attribute, no fade. */
+@supports not (backdrop-filter: url("#x")) {
+  [data-lens] {
+    backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
+    animation: none;
+  }
+}
+
+:root[data-glass='lite'] [data-lens],
+:root[data-glass='off'] [data-lens] {
+  animation: none;
+  backdrop-filter: none;
 }
 /* The block above must be a PLAIN class, not another @utility. Tailwind v4
    treats utilities as tree-shakeable and drops any selector written for a
@@ -593,7 +734,13 @@ select::-webkit-calendar-picker-indicator {
   backdrop-filter: blur(14px) saturate(1.35);
 }
 
-/* Inset/concave glass — inputs, wells */
+/* Inset/concave glass — inputs, wells, inner rows.
+   Deliberately BLUR-FREE (surface-discipline rule: backdrop-filter is a
+   property of containers, not controls — and this material sits ON an already
+   filtered panel, so its own blur was invisible anyway; it was the single
+   biggest multiplier of simultaneous backdrop-filter surfaces). The inset
+   look is carried by the fill + inset shadows; the fill alpha is raised to
+   compensate for the lost blur. */
 @utility glx-inset {
   background: var(--ui-inset-fill);
   border: 1px solid var(--color-glass-light-stroke);
@@ -602,13 +749,71 @@ select::-webkit-calendar-picker-indicator {
     inset 0 -1px 1px var(--color-glass-light-bottom),
     inset 2px 0 2px var(--color-inset-side-sheen),
     inset -2px 0 2px var(--color-inset-side-shade);
-  backdrop-filter: blur(10px) saturate(1.5) brightness(1.02);
 }
 /* Tailwind resolves @theme references inside custom utilities at build time.
    Keep the theme-dependent fill as a runtime override so data-theme changes
    actually update existing inset controls. */
 .glx-inset {
   background: var(--ui-inset-fill) !important;
+}
+
+/* ─── Material tiers — degrade the material, never the design ─────────────
+   Apple ships one glass that the OS cheapens on old hardware. We do the same
+   with one attribute, resolved ONCE at boot (see the probe in index.html):
+
+     data-glass="full"  — everything (modern GPUs)
+     data-glass="lite"  — blur-free tinted fill + rim + shadow; the rim and
+                          geometry carry the read (older laptops, mid phones,
+                          prefers-reduced-transparency)
+     data-glass="off"   — solid token fills + borders + shadows (forced-colors,
+                          ≤2 GB devices, user override)
+
+   These rules are UNLAYERED on purpose: unlayered declarations beat anything
+   Tailwind emits inside @layer utilities, regardless of specificity. The
+   tier swap is a token swap — surfaces never know which tier is active.
+   The user can override the probe in Settings (azmoonsaz-glass). */
+
+:root[data-glass='lite'] {
+  /* Raise fill alphas to keep contrast without blur */
+  --glass-p-a1: 0.58;
+  --glass-p-a2: 0.44;
+}
+:root[data-glass='lite'] :is(.glx, .glx-strong, .glx-refract, .glx-dark, .bgfx, .veil-blur, .chrome-blur) {
+  backdrop-filter: none;
+}
+:root[data-glass='lite'] .glass-edge::after {
+  backdrop-filter: none;
+}
+/* The halo is a decorative blur blob — meaningless without blur, so it goes.
+   Veil/scrim layers stay (neutralized above): their color dimming is what
+   keeps modals legible and must survive every tier. */
+:root[data-glass='lite'] .area-blur {
+  display: none;
+}
+
+:root[data-glass='off'] {
+  --glass-p-a1: 0.97;
+  --glass-p-a2: 0.97;
+  --ui-inset-fill: rgba(250, 248, 245, 1);
+}
+:root[data-glass='off'][data-theme='dark'] {
+  --ui-inset-fill: rgba(33, 31, 41, 1);
+}
+:root[data-glass='off'] :is(.glx, .glx-strong, .glx-refract, .glx-dark, .bgfx, .veil-blur, .chrome-blur) {
+  backdrop-filter: none;
+}
+:root[data-glass='off'] .glass-edge::after {
+  backdrop-filter: none;
+}
+:root[data-glass='off'] .area-blur {
+  display: none;
+}
+/* forced-colors also strips backdrop-filter; give surfaces a solid border so
+   silhouette survives the browser's palette override. */
+@media (forced-colors: active) {
+  :is(.glx, .glx-strong, .glx-inset) {
+    border: 1px solid CanvasText;
+  }
 }
 
 /* Area blur — ratio-sized halo behind popup panels (liquid glass).
@@ -623,8 +828,7 @@ select::-webkit-calendar-picker-indicator {
   );
   pointer-events: none;
   background: rgb(var(--glass-h-tint) / var(--glass-h-fill));
-  backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat))
-    brightness(var(--glass-h-bright));
+  backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat));
   /* Feathered falloff: linear ease 0 → solid across the rim band (no mid
      plateau = no visible edge line once the blur is alive) */
   -webkit-mask-image:
@@ -665,8 +869,7 @@ select::-webkit-calendar-picker-indicator {
    one). Use on full-screen backdrop elements instead of a flat bg-black/30. */
 @utility bgfx {
   background: rgb(var(--glass-scrim-color) / var(--glass-scrim-a));
-  backdrop-filter: blur(var(--glass-veil-blur)) saturate(var(--glass-bg-sat))
-    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
+  backdrop-filter: blur(var(--glass-veil-blur)) saturate(var(--glass-bg-sat));
 }
 
 /* Veil, split into two layers. NEVER animate opacity on an element that has a
@@ -678,8 +881,15 @@ select::-webkit-calendar-picker-indicator {
   background: rgb(var(--glass-scrim-color) / var(--glass-scrim-a));
 }
 @utility veil-blur {
-  backdrop-filter: blur(var(--glass-veil-blur)) saturate(var(--glass-bg-sat))
-    brightness(var(--glass-bg-bright)) contrast(var(--glass-bg-contrast));
+  backdrop-filter: blur(var(--glass-veil-blur)) saturate(var(--glass-bg-sat));
+}
+
+/* Floating chrome that manages its own fill (command-palette trigger, sticky
+   list headers) — the STANDARD background chain, named so the tier system can
+   neutralize it. Never write Tailwind `backdrop-blur-*` in markup: an
+   untracked blur is a blur the budget cannot see. */
+@utility chrome-blur {
+  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
 }
 
 /* Transparent-fill option: same glass, no tint (pure blur panel).
@@ -704,7 +914,7 @@ select::-webkit-calendar-picker-indicator {
   inset: 0;
   border-radius: inherit;
   background: radial-gradient(
-    circle at var(--lg-sheen-x, 90%) var(--lg-sheen-y, 0%),
+    circle at 90% 0%,
     rgba(255, 255, 255, 0.1) 0%,
     transparent 50%
   );
@@ -783,11 +993,12 @@ select::-webkit-calendar-picker-indicator {
   font-size: 2.25rem;
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  /* No negative tracking: Persian is cursive — tightened spacing visually
+     cramps the joins between letters. */
 }
 @utility text-heading-1 {
   font-size: 1.75rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
 }
 @utility text-heading-2 {
@@ -878,168 +1089,9 @@ select::-webkit-calendar-picker-indicator {
   }
 }
 
-/* ─── Profile hub and information architecture ─── */
-.profile-cover {
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.76), rgba(250, 249, 246, 0.58));
-}
-.profile-panel,
-.panel-shell {
-  padding: 24px;
-  border: 1px solid var(--color-glass-light-stroke);
-  border-radius: 24px;
-  background: var(--color-glass-panel-fill);
-  box-shadow: 0 16px 40px -32px var(--color-glass-shadow-strong);
-  backdrop-filter: blur(14px) saturate(1.08);
-}
-.profile-section-title,
-.section-title {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-}
-.profile-section-title > svg,
-.section-title > svg {
-  width: 19px;
-  color: var(--color-ink);
-}
-.profile-section-title h2,
-.section-title h2 {
-  font-size: 16px;
-  font-weight: 900;
-}
-.profile-section-title p,
-.section-title p {
-  margin-top: 3px;
-  color: var(--color-text-tertiary);
-  font-size: 12px;
-}
-.profile-field-title,
-.field-label {
-  display: block;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 800;
-}
-.profile-input {
-  width: 100%;
-  min-height: 44px;
-  margin-top: 7px;
-  padding: 0 13px;
-  border-radius: 14px;
-  border: 1px solid var(--color-glass-light-stroke);
-  background: var(--color-glass-panel-fill);
-  color: var(--color-text-primary);
-  outline: none;
-  font-size: 14px;
-}
-.profile-input:focus {
-  border-color: rgba(26, 26, 46, 0.35);
-  box-shadow: 0 0 0 3px rgba(245, 179, 1, 0.14);
-}
-.btn-brand,
-.btn-soft {
-  min-height: 42px;
-  padding: 0 17px;
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.btn-brand {
-  background: var(--color-accent-solid);
-  color: var(--color-text-on-solid);
-  box-shadow: 0 10px 24px -16px var(--color-glass-shadow-strong);
-}
-.btn-brand:hover {
-  background: var(--color-accent-solid-hover);
-}
-.btn-soft {
-  border: 1px solid var(--color-glass-light-stroke);
-  background: var(--color-glass-panel-fill);
-  color: var(--color-text-primary);
-}
-.segmented-control {
-  display: inline-flex;
-  padding: 4px;
-  border: 1px solid var(--color-glass-light-stroke);
-  border-radius: 16px;
-  background: var(--color-glass-panel-fill);
-}
-.segmented-control button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 13px;
-  border-radius: 12px;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-  font-weight: 800;
-}
-.segmented-control svg {
-  width: 15px;
-}
-.segmented-control button.active {
-  background: var(--color-accent-solid);
-  color: var(--color-text-on-solid);
-  box-shadow: 0 7px 16px -12px var(--color-glass-shadow-strong);
-}
-.schedule-card {
-  position: relative;
-  display: grid;
-  grid-template-columns: 0.8fr 0.8fr 0.8fr 1.3fr 1.2fr 1.2fr auto;
-  gap: 8px;
-  align-items: end;
-  padding: 12px;
-  border: 1px solid var(--color-glass-light-stroke);
-  border-radius: 16px;
-  background: var(--color-glass-light-fill);
-}
-.schedule-card label {
-  min-width: 0;
-}
-.schedule-card label > span {
-  display: block;
-  margin: 0 2px 6px;
-  color: var(--color-text-tertiary);
-  font-size: 12px;
-  font-weight: 700;
-}
-.schedule-card input,
-.schedule-card select {
-  width: 100%;
-  min-width: 0;
-  height: 44px;
-  padding: 0 9px;
-  border: 1px solid rgba(26, 26, 46, 0.1);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.82);
-  font-size: 13px;
-}
-.schedule-delete {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border-radius: 12px;
-  color: var(--color-danger);
-}
-.schedule-delete:hover {
-  background: var(--color-danger-soft);
-}
-.empty-quiet {
-  min-height: 150px;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 8px;
-  color: var(--color-text-tertiary);
-  font-size: 13px;
-}
+/* ─── Profile hub and information architecture ───
+   (Second-system classes .profile-* / .segmented-control / .schedule-card /
+   .empty-quiet were absorbed into the component library — see phase 3b.) */
 
 /* Dashboard reordering: two matched five-tile widgets, then two equal operational panels. */
 #stats-grid-layouts > :last-child {
@@ -1060,27 +1112,20 @@ select::-webkit-calendar-picker-indicator {
   min-height: 245px;
 }
 
-/* The hero used to hardcode a near-opaque ink fill
-   (rgba(26,26,46,0.97)) with white text, in BOTH themes. That is why the hero
-   looked nothing like the cards beside it and why light mode read as a
-   mismatched dark slab: the element carries `glx`, and this rule simply won
-   over it, so the theme tokens never applied.
-
-   Now it keeps the same warm-tinted body as every other panel and takes its
-   colours from the theme. Dark is a deeper, heavier pane than the cards — it
-   is the focal surface — but built from the same ink field the rest of the app
-   uses, so the two themes stay related rather than diverging. */
+/* The hero's colours are fully token-driven — no hardcoded slab. Light mode:
+   plain warm glass via `glx`, ink-on-glass text like every other panel.
+   Dark mode: the deeper focal pane comes from --color-hero-pane. */
 #dashboard-hero-banner {
-  background: linear-gradient(125deg, rgba(26, 26, 46, 0.97), rgba(35, 36, 62, 0.94));
-  color: white;
+  background: var(--color-hero-pane);
+  color: var(--color-text-primary);
 }
 
 #dashboard-hero-banner h2 {
-  color: white;
+  color: var(--color-text-primary);
 }
 
 #dashboard-hero-banner p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
 }
 .dashboard-hero-content {
   min-height: 181px;
@@ -1094,13 +1139,21 @@ select::-webkit-calendar-picker-indicator {
   bottom: 24px;
   z-index: 20;
 }
+/* The Mark watermark is tuned per theme: on light glass it sits back as a
+   quiet ink ghost; on the dark pane it is brightened to stay visible. */
 .dashboard-hero-mark {
   position: absolute;
   inset-inline-start: 0;
   bottom: 132px;
-  opacity: 0.16;
-  filter: blur(1.5px) brightness(1.8);
+  opacity: 0.1;
+  filter: blur(1.5px);
   pointer-events: none;
+}
+:root[data-theme='dark'] .dashboard-hero-mark {
+  opacity: 0.16;
+  /* Same ghost treatment the mark always had on the ink pane: flipped to a
+     light watermark so it survives on the deep hero. */
+  filter: blur(1.5px) invert(1) brightness(1.8);
 }
 .dashboard-hero-actions {
   display: flex;
@@ -1112,7 +1165,7 @@ select::-webkit-calendar-picker-indicator {
   display: grid;
   grid-template-columns: minmax(440px, 1.08fr) minmax(400px, 0.92fr);
   gap: 18px;
-  background: #f7f7f5;
+  background: var(--color-login-paper);
 }
 .login-form-column {
   display: flex;
@@ -1125,7 +1178,7 @@ select::-webkit-calendar-picker-indicator {
   min-height: calc(100vh - 48px);
   border-radius: 30px;
   color: var(--color-ink);
-  background-color: #f4f1e9;
+  background-color: var(--color-login-art-paper);
   background-image: image-set(
     url('/login-education-light.avif') type('image/avif'),
     url('/login-education-light.webp') type('image/webp'),
@@ -1147,20 +1200,20 @@ select::-webkit-calendar-picker-indicator {
   transform: translateY(-50%);
   max-width: 42%;
   padding: 22px;
-  border: 1px solid rgba(26, 26, 46, 0.08);
+  border: 1px solid var(--color-glass-light-stroke);
   border-radius: 22px;
   background: rgba(250, 248, 242, 0.76);
   backdrop-filter: blur(12px);
 }
 .login-art-copy span {
-  color: #765500;
+  color: var(--color-login-gold-ink);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 .login-art-copy h2 {
   margin: 11px 0;
   font-size: clamp(25px, 3vw, 40px);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.4;
 }
 .login-art-copy p {
@@ -1168,10 +1221,28 @@ select::-webkit-calendar-picker-indicator {
   font-size: 13px;
 }
 
+/* Login is a brand-stable LIGHT marketing surface (photographic art panel,
+   never themed — see the token block above). Under data-theme=dark the text
+   tokens flipped INSIDE it → headline, wordmark and CTA rendered white-on-white
+   (audit 2026-09-27). Pin the token set to the light values, scoped to the
+   login shell only, so the whole page behaves as the light-only surface the
+   art always was. */
+:root[data-theme='dark'] .login-shell {
+  --color-ink: #1a1a2e;
+  --color-accent: #343242;
+  --color-accent-solid: #343242;
+  --color-text-on-solid: #ffffff;
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #5e5a68;
+  --color-text-tertiary: #8a8694;
+  --color-glass-light-stroke: rgba(26, 28, 34, 0.12);
+  --ui-inset-fill: rgba(255, 255, 255, 0.9);
+}
+
 @media (max-width: 900px) {
   .login-shell {
     display: flex;
-    background: #f7f7f5;
+    background: var(--color-login-paper);
   }
   .login-art {
     display: none;
@@ -1203,27 +1274,8 @@ select::-webkit-calendar-picker-indicator {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
-  .segmented-control {
-    width: 100%;
-    overflow: auto;
-  }
-  .segmented-control button {
-    flex: 1;
-    white-space: nowrap;
-  }
-  .schedule-card {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .schedule-delete {
-    align-self: end;
-  }
 }
 @media (max-width: 520px) {
-  .profile-panel,
-  .panel-shell {
-    padding: 18px;
-    border-radius: 20px;
-  }
   .dashboard-hero-actions {
     grid-template-columns: 1fr;
   }
@@ -1272,8 +1324,13 @@ select::-webkit-calendar-picker-indicator {
   outline-offset: 2px;
 }
 
+/* ONE press physics for the whole app: a subtle scale-down. Library buttons
+   used to ship their own active:scale on top of the old global translateY —
+   two competing identities on the same control. This is the single source;
+   components may override with a stronger Tailwind active:scale-* if a
+   control genuinely needs it. */
 :where(button, [role='button']):active:not(:disabled, [aria-disabled='true']) {
-  transform: translateY(1px);
+  transform: scale(0.98);
 }
 
 :where(button, input, select, textarea):disabled,

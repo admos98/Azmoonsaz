@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { GraduationCap, Building2, BookOpen } from 'lucide-react';
 import { authService } from '../../services/api';
-import { Dropdown } from '../../components/UIComponents';
+import { Dropdown, Input } from '../../components/UIComponents';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 
 interface OnboardingProps {
@@ -114,20 +114,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         <div className="glx-strong rounded-3xl border p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* School Name */}
-            <div>
-              <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
-                <Building2 className="w-3.5 h-3.5 inline-block ml-1" />
-                نام مدرسه
-              </label>
-              <input
-                type="text"
-                value={schoolName}
-                onChange={(e) => setSchoolName(e.target.value)}
-                placeholder="مثال: دبیرستان نمونه دولتی علوم"
-                className="w-full glx border text-label text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-[var(--color-text-tertiary)]"
-                autoFocus
-              />
-            </div>
+            <Input
+              label={
+                <>
+                  <Building2 className="w-3.5 h-3.5 inline-block ml-1" />
+                  نام مدرسه
+                </>
+              }
+              type="text"
+              value={schoolName}
+              onChange={(e) => setSchoolName(e.target.value)}
+              placeholder="مثال: دبیرستان نمونه دولتی علوم"
+              autoFocus
+            />
 
             {/* Subject */}
             <div>
@@ -147,18 +146,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
             {/* Custom Subject */}
             {subject === 'سایر' && (
-              <div>
-                <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
-                  رشته دیگر
-                </label>
-                <input
-                  type="text"
-                  value={customSubject}
-                  onChange={(e) => setCustomSubject(e.target.value)}
-                  placeholder="رشته خود را وارد کنید"
-                  className="w-full glx border text-label text-[var(--color-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-[var(--color-text-tertiary)]"
-                />
-              </div>
+              <Input
+                label="رشته دیگر"
+                type="text"
+                value={customSubject}
+                onChange={(e) => setCustomSubject(e.target.value)}
+                placeholder="رشته خود را وارد کنید"
+              />
             )}
 
             {error && (

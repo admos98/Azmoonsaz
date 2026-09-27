@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GraduationCap, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Input } from '../../components/UIComponents';
 import { getSupabasePublicClient } from '../../lib/supabasePublic';
 
 interface ResetPasswordProps {
@@ -161,30 +162,26 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
 
         <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2">
-                رمز عبور جدید
-              </label>
-              <div className="relative">
-                <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  dir="ltr"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="حداقل ۶ کاراکتر"
-                  className="w-full glx border text-label text-[var(--color-text-primary)] pr-10 pl-10 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all placeholder-[var(--color-text-tertiary)]"
-                  autoFocus
-                />
+            <Input
+              label="رمز عبور جدید"
+              type={showPassword ? 'text' : 'password'}
+              dir="ltr"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="حداقل ۶ کاراکتر"
+              icon={<Lock className="w-4 h-4" />}
+              trailing={
                 <button
                   type="button"
+                  aria-label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
+                  className="p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </div>
-            </div>
+              }
+              autoFocus
+            />
 
             {error && (
               <p className="text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/20 rounded-lg px-3 py-2">

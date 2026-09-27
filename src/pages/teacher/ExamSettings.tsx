@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  ArrowRight,
   Save,
   Clock,
   ShieldAlert,
@@ -27,10 +26,12 @@ import {
   Laptop,
   Eye,
 } from 'lucide-react';
-import { Exam, ExamSettings as SettingsType, ClassGroup, Student } from '../../types';
-import { classService, studentService } from '../../services/api';
+import { Exam, ExamSettings as SettingsType } from '../../types';
+import { Button, Input, PageHeader, SearchInput, Textarea, Toggle } from '../../components/UIComponents';
+import { useToast } from '../../hooks/useToast';
 import { formatPersianDate, normalizePersianText, toPersianDigits } from '../../utils/persian';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { useTeacherCollections } from '../../contexts/TeacherContext';
 
 interface ExamSettingsProps {
   exam: Exam;
@@ -57,19 +58,8 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
     exam.settings.requireNationalId ?? true,
   );
   const [entryCode, setEntryCode] = useState<string>(exam.settings.entryCode || '');
-  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
-  const [allStudents, setAllStudents] = useState<Student[]>([]);
-
-  useEffect(() => {
-    classService
-      .getClassGroups()
-      .then(setClassGroups)
-      .catch(() => {});
-    studentService
-      .getStudents()
-      .then(setAllStudents)
-      .catch(() => {});
-  }, []);
+  // Classes and students ride the shared collections cache — no private fetch.
+  const { classGroups, students: allStudents } = useTeacherCollections();
   const [maxAttempts, setMaxAttempts] = useState<number>(exam.settings.maxAttempts || 1);
   const [limitToSpecificStudents, setLimitToSpecificStudents] = useState<boolean>(
     !!(exam.settings.allowedStudents && exam.settings.allowedStudents.length > 0),
@@ -312,10 +302,13 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
   };
 
   // Handle Publishing Action with link generation
+  const { showToast, toastElement } = useToast();
+
   const handlePublishExam = () => {
     if (validationErrors.length > 0) {
-      alert(
+      showToast(
         'پیکربندی آزمون دارای برخی خطاهای اساسی است و قابل انتشار نیست. لطفاً ابتدا خطاهای موجود در پنل مرور چپ را اصلاح نمایید.',
+        'error',
       );
       return;
     }
@@ -399,44 +392,28 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
   return (
     <div
-      className="space-y-6 text-right animate-in fade-in duration-300"
+      className="space-y-6 text-right"
       dir="rtl"
       id="exam-settings-subview"
     >
       {/* 1. Header and navigation row */}
-      <div className="glx px-6 py-5 rounded-3xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            id="btn-back-to-exams-list-from-settings"
-            onClick={handleBack}
-            className="p-2 hover:brightness-105 rounded-xl text-[var(--color-text-tertiary)] cursor-pointer border border-[var(--color-glass-light-stroke)] transition-all font-semibold"
-            title="بازگشت به فهرست آزمون‌ها"
-          >
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <div>
-            <h2 className="text-label md:text-body font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
-              <Compass className="w-5 h-5 text-[var(--color-accent)]" />
-              <span>تنظیمات و انتشار آزمون</span>
-            </h2>
-            <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
-              پیکربندی زمان‌بندی، سطوح محدودیت دسترسی، کلیدها، رفتار تصادفی سیستم و صدور لینک ورودی
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 w-full md:w-auto self-end md:self-center">
-          <button
-            type="button"
-            id="btn-settings-save-shortcut"
-            onClick={handleSaveSettings}
-            className="flex-1 md:flex-none px-4.5 py-2 hover:brightness-105 text-[var(--color-text-secondary)] glx border rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
-            <span>ذخیره پیش‌نویس موقت</span>
-          </button>
-        </div>
+      <div className="glx px-6 py-5 rounded-3xl border">
+        <PageHeader
+          level={2}
+          title="تنظیمات و انتشار آزمون"
+          subtitle="پیکربندی زمان‌بندی، سطوح محدودیت دسترسی، کلیدها، رفتار تصادفی سیستم و صدور لینک ورودی"
+          back={{ label: 'بازگشت', onClick: handleBack }}
+          actions={
+            <Button
+              id="btn-settings-save-shortcut"
+              variant="secondary"
+              onClick={handleSaveSettings}
+              icon={<Save className="w-4 h-4" />}
+            >
+              ذخیره پیش‌نویس موقت
+            </Button>
+          }
+        />
       </div>
 
       {/* 2. Main Double-Column Layout */}
@@ -489,7 +466,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
               </div>
 
               {showRecommendationsApplied && (
-                <div className="p-3 bg-[var(--color-success-solid)]/25 border border-[var(--color-success)]/20 text-[var(--color-success)] rounded-xl text-micro font-bold animate-in slide-in-from-top-2 duration-300 flex items-center gap-2">
+                <div className="p-3 bg-[var(--color-success-solid)]/25 border border-[var(--color-success)]/20 text-[var(--color-success)] rounded-xl text-micro font-bold flex items-center gap-2">
                   <CheckCircle className="w-4.5 h-4.5" />
                   <span>معیارهای امنیتی با موفقیت روی برگه آزمون سوار و ذخیره شدند!</span>
                 </div>
@@ -569,24 +546,21 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
             {/* Duration and Timezone in same row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--color-glass-light-stroke)]">
-              <div className="space-y-1.5">
-                <label className="text-caption font-bold text-[var(--color-text-secondary)] block flex items-center gap-1">
-                  <Clock className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <span>مدت زمان مجاز آزمون پس از ورود (دقیقه):</span>
-                </label>
-                <input
-                  type="number"
-                  min={5}
-                  max={240}
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                  className="w-full glx border text-caption font-bold text-[var(--color-text-primary)] p-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-[var(--color-accent-soft)]/30"
-                />
-                <span className="text-micro text-[var(--color-text-tertiary)] block leading-relaxed">
-                  هر دانش‌آموز پس از ورود دقیقاً این میزان فرصت دارد پیش از قفل شدن آزمون پاسخ‌ها را
-                  بفرستد.
-                </span>
-              </div>
+              <Input
+                label={
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+                    <span>مدت زمان مجاز آزمون پس از ورود (دقیقه):</span>
+                  </span>
+                }
+                type="number"
+                min={5}
+                max={240}
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                className="font-bold"
+                helperText="هر دانش‌آموز پس از ورود دقیقاً این میزان فرصت دارد پیش از قفل شدن آزمون پاسخ‌ها را بفرستد."
+              />
 
               <div className="space-y-1.5">
                 <span className="text-caption font-bold text-[var(--color-text-secondary)] block">
@@ -679,16 +653,13 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                 </div>
 
                 {limitToSpecificStudents && (
-                  <div className="space-y-3 p-4 glx rounded-2xl border animate-in slide-in-from-top-1.5 duration-300">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="جستجوی دانش‌آموز با نام یا کدملی..."
-                        value={studentSearchQuery}
-                        onChange={(e) => setStudentSearchQuery(e.target.value)}
-                        className="flex-1 glx border px-3 py-2 rounded-xl text-caption"
-                      />
-                    </div>
+                  <div className="space-y-3 p-4 glx rounded-2xl border">
+                    <SearchInput
+                      placeholder="جستجوی دانش‌آموز با نام یا کدملی..."
+                      value={studentSearchQuery}
+                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                      className="text-caption"
+                    />
 
                     <div className="max-h-48 overflow-y-auto space-y-1 glx p-2 rounded-xl border">
                       {filteredStudents.length === 0 ? (
@@ -763,46 +734,25 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
             {/* National Id toggle & Entry custom Password */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--color-glass-light-stroke)]">
-              <div className="flex items-start gap-3 p-3 glx border rounded-2xl">
-                <input
-                  type="checkbox"
+              <Toggle
                   id="national-id-login-toggle"
                   checked={requireNationalId}
-                  onChange={(e) => setRequireNationalId(e.target.checked)}
-                  className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
+                  onChange={setRequireNationalId}
+                  label="ورود با اعتبارسنجی کد ملی"
+                  description="تطابق هویت الزامی دانش‌آموز بر اساس شماره کد ملی او در سیستم به هنگام کلیک ورود."
+                  className="p-3.5 glx border rounded-2xl"
                 />
-                <div className="space-y-0.5">
-                  <label
-                    htmlFor="national-id-login-toggle"
-                    className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                  >
-                    ورود با اعتبارسنجی کد ملی
-                  </label>
-                  <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                    تطابق هویت الزامی دانش‌آموز بر اساس شماره کد ملی او در سیستم به هنگام کلیک ورود.
-                  </p>
-                </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="optional-entry-code-input"
-                  className="text-caption font-bold text-[var(--color-text-primary)] display block"
-                >
-                  کد ورود اختیاری (رمز آزمون):
-                </label>
-                <input
-                  type="text"
-                  id="optional-entry-code-input"
-                  placeholder="مثال: MATH2026 (اختیاری)"
-                  value={entryCode}
-                  onChange={(e) => setEntryCode(e.target.value)}
-                  className="w-full glx border text-caption text-[var(--color-text-secondary)] p-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-[var(--color-accent-soft)]/30 font-semibold text-center"
-                />
-                <p className="text-micro text-[var(--color-text-primary)] leading-normal">
-                  رمز مشترکی است که کل دانش‌آموزان قبل آغاز باید آن را در کیبورد خود کلید کنند.
-                </p>
-              </div>
+              <Input
+                label="کد ورود اختیاری (رمز آزمون):"
+                id="optional-entry-code-input"
+                type="text"
+                placeholder="مثال: MATH2026 (اختیاری)"
+                value={entryCode}
+                onChange={(e) => setEntryCode(e.target.value)}
+                className="font-semibold text-center"
+                helperText="رمز مشترکی است که کل دانش‌آموزان قبل آغاز باید آن را در کیبورد خود کلید کنند."
+              />
             </div>
 
             {/* Max attempts */}
@@ -811,13 +761,15 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                 تعداد تلاش مجاز برای شرکت در کل آزمون:
               </span>
               <div className="flex items-center gap-2">
-                <input
+                <Input
+                  wrapperClassName="w-20 shrink-0"
+                  size="sm"
                   type="number"
                   min={1}
                   max={5}
                   value={maxAttempts}
                   onChange={(e) => setMaxAttempts(Number(e.target.value))}
-                  className="w-20 glx border text-caption font-bold text-[var(--color-text-secondary)] p-1.5 rounded-lg text-center"
+                  className="font-bold text-center"
                 />
                 <span className="text-caption text-[var(--color-text-tertiary)]">
                   مرتبه آزمون مجدد
@@ -848,111 +800,50 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
               {/* Custom checkboxes behavior */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
-                  <input
-                    type="checkbox"
-                    id="auto-submit-toggle"
-                    checked={autoSubmit}
-                    onChange={(e) => setAutoSubmit(e.target.checked)}
-                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                  />
-                  <div className="space-y-0.5">
-                    <label
-                      htmlFor="auto-submit-toggle"
-                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                    >
-                      ارسال خودکار پس از پایان زمان
-                    </label>
-                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                      بسته شدن سیستم و ثبت نهایی امن برگه به محض صفر شدن ثانیه‌شمار.
-                    </p>
-                  </div>
-                </div>
+                <Toggle
+                  id="auto-submit-toggle"
+                  checked={autoSubmit}
+                  onChange={setAutoSubmit}
+                  label="ارسال خودکار پس از پایان زمان"
+                  description="بسته شدن سیستم و ثبت نهایی امن برگه به محض صفر شدن ثانیه‌شمار."
+                  className="p-3.5 glx glass-edge border rounded-2xl"
+                />
 
-                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
-                  <input
-                    type="checkbox"
-                    id="allow-backtrack-behavior"
-                    checked={allowBacktrack}
-                    onChange={(e) => setAllowBacktrack(e.target.checked)}
-                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                  />
-                  <div className="space-y-0.5">
-                    <label
-                      htmlFor="allow-backtrack-behavior"
-                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                    >
-                      امکان بازگشت به سوالات قبلی
-                    </label>
-                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                      دانش‌آموز بتواند سوالات رد کرده را برگردد و مجدد جواب دهد.
-                    </p>
-                  </div>
-                </div>
+                <Toggle
+                  id="allow-backtrack-behavior"
+                  checked={allowBacktrack}
+                  onChange={setAllowBacktrack}
+                  label="امکان بازگشت به سوالات قبلی"
+                  description="دانش‌آموز بتواند سوالات رد کرده را برگردد و مجدد جواب دهد."
+                  className="p-3.5 glx glass-edge border rounded-2xl"
+                />
 
-                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
-                  <input
-                    type="checkbox"
-                    id="auto-save-answers-toggle"
-                    checked={autoSaveAnswers}
-                    onChange={(e) => setAutoSaveAnswers(e.target.checked)}
-                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                  />
-                  <div className="space-y-0.5">
-                    <label
-                      htmlFor="auto-save-answers-toggle"
-                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                    >
-                      ذخیره خودکار پاسخ‌ها (Auto-saves)
-                    </label>
-                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                      پشتیبان‌گیری پیوسته بر ابر پس از زدن هر دکمه جهت جلوگیری از قطعی برق دسکتاپ.
-                    </p>
-                  </div>
-                </div>
+                <Toggle
+                  id="auto-save-answers-toggle"
+                  checked={autoSaveAnswers}
+                  onChange={setAutoSaveAnswers}
+                  label="ذخیره خودکار پاسخ‌ها (Auto-saves)"
+                  description="پشتیبان‌گیری پیوسته بر ابر پس از زدن هر دکمه جهت جلوگیری از قطعی برق دسکتاپ."
+                  className="p-3.5 glx glass-edge border rounded-2xl"
+                />
 
-                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
-                  <input
-                    type="checkbox"
-                    id="shuffle-questions-behavior"
-                    checked={shuffleQuestions}
-                    onChange={(e) => setShuffleQuestions(e.target.checked)}
-                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                  />
-                  <div className="space-y-0.5">
-                    <label
-                      htmlFor="shuffle-questions-behavior"
-                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                    >
-                      جابه‌جایی ترتیب سوالات (Shuffle)
-                    </label>
-                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                      تولید خودکار دفترچه‌های مجزا با ترتیب سوالات به هم‌ریخته برای کنترل تقلب.
-                    </p>
-                  </div>
-                </div>
+                <Toggle
+                  id="shuffle-questions-behavior"
+                  checked={shuffleQuestions}
+                  onChange={setShuffleQuestions}
+                  label="جابه‌جایی ترتیب سوالات (Shuffle)"
+                  description="تولید خودکار دفترچه‌های مجزا با ترتیب سوالات به هم‌ریخته برای کنترل تقلب."
+                  className="p-3.5 glx glass-edge border rounded-2xl"
+                />
 
-                <div className="relative flex items-start gap-3 p-3.5 glx glass-edge border rounded-2xl">
-                  <input
-                    type="checkbox"
-                    id="shuffle-options-behavior"
-                    checked={shuffleOptions}
-                    onChange={(e) => setShuffleOptions(e.target.checked)}
-                    className="mt-1 w-4.5 h-4.5 text-[var(--color-accent)] rounded-md border-[var(--color-glass-light-stroke)] focus:ring-[var(--color-accent)] cursor-pointer"
-                  />
-                  <div className="space-y-0.5">
-                    <label
-                      htmlFor="shuffle-options-behavior"
-                      className="text-caption font-bold text-[var(--color-text-primary)] cursor-pointer"
-                    >
-                      جابه‌جایی ترتیب گزینه‌ها
-                    </label>
-                    <p className="text-micro text-[var(--color-text-tertiary)] leading-normal">
-                      جابه‌جایی الف-ب-ج-د به صورت تصادفی در سیستم روی مرورگر دانش‌آموزان به هنگام
-                      لود.
-                    </p>
-                  </div>
-                </div>
+                <Toggle
+                  id="shuffle-options-behavior"
+                  checked={shuffleOptions}
+                  onChange={setShuffleOptions}
+                  label="جابه‌جایی ترتیب گزینه‌ها"
+                  description="جابه‌جایی الف-ب-ج-د به صورت تصادفی در سیستم روی مرورگر دانش‌آموزان به هنگام لود."
+                  className="p-3.5 glx glass-edge border rounded-2xl"
+                />
               </div>
 
               {/* Question pagination layouts (1 question per page vs all in one page) */}
@@ -1020,23 +911,14 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <input
-                    type="checkbox"
-                    id="beast-mode-toggle"
-                    checked={beastMode}
-                    onChange={(e) => setBeastMode(e.target.checked)}
-                    className="mt-1.5 w-5 h-5 text-[var(--color-danger)] rounded-md border-[var(--color-danger)]/20 focus:ring-[var(--color-danger)] cursor-pointer"
-                  />
+                  <Toggle checked={beastMode} onChange={setBeastMode} className="mt-1" />
                   <div className="space-y-1.5 flex-1">
-                    <label
-                      htmlFor="beast-mode-toggle"
-                      className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-2 cursor-pointer"
-                    >
+                    <span className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-2">
                       <ShieldAlert
                         className={`w-5 h-5 ${beastMode ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-tertiary)]'}`}
                       />
                       <span>فعال‌سازی وضعیت فراحفاظتی (Beast Mode 🔒)</span>
-                    </label>
+                    </span>
                     <p className="text-micro leading-relaxed text-[var(--color-text-tertiary)]">
                       رویدادهایی مانند خروج از تب، تغییر پنجره و تلاش برای کپی‌کردن را ثبت می‌کند و
                       محدودیت‌های قابل‌اعمال مرورگر را فعال می‌سازد. مرورگر نمی‌تواند استفاده از
@@ -1190,19 +1072,14 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
             </h3>
 
             <div className="space-y-2">
-              <label
-                htmlFor="intro-instructions"
-                className="text-caption font-bold text-[var(--color-text-primary)] block"
-              >
-                متن راهنمای شروع آزمون برای دانش‌آموزان:
-              </label>
-              <textarea
+              <Textarea
+                label="متن راهنمای شروع آزمون برای دانش‌آموزان:"
                 id="intro-instructions"
                 rows={4}
                 value={startInstructions}
                 onChange={(e) => setStartInstructions(e.target.value)}
                 placeholder="توضیحات و قوانین ورود به برگه را در اینجا بنویسید..."
-                className="w-full glx border text-caption text-[var(--color-text-primary)] p-3.5 rounded-2xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-[var(--color-accent-soft)]/30 leading-relaxed text-right"
+                className="rounded-2xl"
               />
               <div className="flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
                 <span>دستور فوق درست قبل شرکت دانش‌آموز بر مانیتور او هک خواهد شد.</span>
@@ -1453,7 +1330,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
             {/* Mock link generator display panel */}
             {examLink && (
-              <div className="p-3 glx rounded-2xl border border-[var(--color-accent)]/20 space-y-2.5 animate-in slide-in-from-top-2 duration-300">
+              <div className="p-3 glx rounded-2xl border border-[var(--color-accent)]/20 space-y-2.5">
                 <span className="text-micro font-bold text-[var(--color-text-primary)] flex items-center gap-1">
                   <Link className="w-3.5 h-3.5 text-[var(--color-accent)]" />
                   <span>لینک اختصاصی شرکت در آزمون صادر شد:</span>
@@ -1504,6 +1381,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
           </div>
         </div>
       </div>
+      {toastElement}
     </div>
   );
 }

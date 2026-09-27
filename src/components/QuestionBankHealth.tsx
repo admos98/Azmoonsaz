@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
+import { Button, Card, PageHeader } from './UIComponents';
 import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
-import { questionService } from '../services/api';
-import { Question } from '../types';
+import { useTeacherCollections } from '../contexts/TeacherContext';
 
 type HealthItem = { label: string; count: number };
 type LoadState = 'loading' | 'ready' | 'error';
@@ -36,19 +36,16 @@ function HealthBar({ items, total }: { items: HealthItem[]; total: number }) {
 }
 
 export default function QuestionBankHealth() {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [loadState, setLoadState] = useState<LoadState>('loading');
-  const load = () => {
-    setLoadState('loading');
-    questionService
-      .getQuestions({ throwOnError: true })
-      .then((result) => {
-        setQuestions(result);
-        setLoadState('ready');
-      })
-      .catch(() => setLoadState('error'));
-  };
-  useEffect(load, []); // eslint-disable-line react-hooks/set-state-in-effect -- starts an external request
+  // The health readout rides the shared questions cache; the retry button
+  // re-runs the collection loader instead of a private fetch.
+  const { questions, status, reload } = useTeacherCollections();
+  const loadState: LoadState =
+    status.questions === 'loading'
+      ? 'loading'
+      : status.questions === 'error'
+        ? 'error'
+        : 'ready';
+  const load = () => void reload('questions');
 
   const data = useMemo(() => {
     const grades = ['هفتم', 'هشتم', 'نهم'].map((label) => ({
@@ -72,14 +69,17 @@ export default function QuestionBankHealth() {
   }, [questions]);
 
   return (
-    <section className="profile-panel space-y-5" aria-busy={loadState === 'loading'}>
-      <div className="profile-section-title">
-        <BookOpen aria-hidden="true" />
-        <div>
-          <h2>سلامت بانک سوالات</h2>
-          <p>پوشش سوال‌ها بر اساس پایه و ساختار</p>
-        </div>
-      </div>
+    <Card
+      glassLayer="light"
+      className="rounded-3xl space-y-5"
+      aria-busy={loadState === 'loading'}
+    >
+      <PageHeader
+        level={2}
+        icon={<BookOpen className="h-5 w-5" />}
+        title="سلامت بانک سوالات"
+        subtitle="پوشش سوال‌ها بر اساس پایه و ساختار"
+      />
       {loadState === 'loading' && (
         <div
           role="status"
@@ -94,9 +94,9 @@ export default function QuestionBankHealth() {
           className="grid min-h-32 place-items-center gap-3 text-center text-caption text-[var(--color-danger)]"
         >
           <span>دریافت وضعیت بانک سوالات انجام نشد.</span>
-          <button type="button" className="btn-soft" onClick={load}>
-            <RefreshCw className="h-4 w-4" /> تلاش دوباره
-          </button>
+          <Button variant="secondary" size="sm" onClick={load} icon={<RefreshCw className="h-4 w-4" />}>
+            تلاش دوباره
+          </Button>
         </div>
       )}
       {loadState === 'ready' && (
@@ -104,11 +104,11 @@ export default function QuestionBankHealth() {
           {questions.length ? (
             <div className="grid gap-6 md:grid-cols-2">
               <div>
-                <h3 className="profile-field-title mb-3">پایه تحصیلی</h3>
+                <h3 className="mb-3 block text-caption md:text-label font-bold text-[var(--color-text-secondary)]">پایه تحصیلی</h3>
                 <HealthBar items={data.grades} total={questions.length} />
               </div>
               <div>
-                <h3 className="profile-field-title mb-3">نوع سوال</h3>
+                <h3 className="mb-3 block text-caption md:text-label font-bold text-[var(--color-text-secondary)]">نوع سوال</h3>
                 <HealthBar items={data.types} total={questions.length} />
               </div>
             </div>
@@ -125,6 +125,6 @@ export default function QuestionBankHealth() {
           )}
         </>
       )}
-    </section>
+    </Card>
   );
 }

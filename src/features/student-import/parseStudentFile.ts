@@ -74,10 +74,6 @@ export async function parseStudentFile(file: File): Promise<StudentImportRow[]> 
   throw new Error('فقط فایل CSV، XLSX یا XLS پذیرفته می‌شود.');
 }
 
-export function isValidIranianNationalId(value: string): boolean {
-  if (!/^\d{10}$/.test(value) || /^(\d)\1{9}$/.test(value)) return false;
-  const digits = value.split('').map(Number);
-  const remainder =
-    digits.slice(0, 9).reduce((sum, digit, index) => sum + digit * (10 - index), 0) % 11;
-  return digits[9] === (remainder < 2 ? remainder : 11 - remainder);
-}
+/* Re-exported so existing callers/tests keep working; the implementation
+   lives in ./nationalId (zero-dep) so validators never pull xlsx in. */
+export { isValidIranianNationalId } from './nationalId';

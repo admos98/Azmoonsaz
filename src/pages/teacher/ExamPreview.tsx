@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   ArrowRight,
   Eye,
@@ -34,14 +34,22 @@ import {
   QuestionOption,
   QuestionPart,
   RubricCriterion,
-  ClassGroup,
 } from '../../types';
-import { classService, questionService } from '../../services/api';
-import { Dropdown } from '../../components/UIComponents';
-import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
+import {
+  Button,
+  ConfirmDialog,
+  Dropdown,
+  EmptyState,
+  Input,
+  Modal,
+  SearchInput,
+  Textarea,
+} from '../../components/UIComponents';
+import { useToast } from '../../hooks/useToast';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
-import { motion, AnimatePresence } from 'motion/react';
 import { toPersianDigits } from '../../utils/persian';
+import { getTypeNameInPersian } from '../../utils/question-type-labels';
+import { useTeacherCollections } from '../../contexts/TeacherContext';
 
 interface ExamPreviewProps {
   exam: Exam;
@@ -72,6 +80,8 @@ export default function ExamPreview({
   onNavigateToSettings,
 }: ExamPreviewProps) {
   // Local reactive exam state
+  const { showToast, toastElement } = useToast();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [localExam, setLocalExam] = useState<Exam>({ ...exam });
   const [savedFingerprint, setSavedFingerprint] = useState(() => JSON.stringify(exam));
   const hasUnsavedChanges = JSON.stringify(localExam) !== savedFingerprint;
@@ -86,17 +96,7 @@ export default function ExamPreview({
 
   // Active question being edited in drawer/modal (null means closed)
   const [editingQuestion, setEditingQuestion] = useState<Partial<Question> | null>(null);
-  const drawerPanelRef = useRef<HTMLDivElement>(null);
   const drawerTriggerRef = useRef<HTMLElement | null>(null);
-  // Area-blur halo: bigger negative-inset box, same viewport origin point —
-  // the hook measures and returns its origin alongside the panel's.
-  const drawerHaloRef = useRef<HTMLDivElement>(null);
-  const [drawerOrigin, drawerHaloOrigin] = useOriginFromTrigger(
-    drawerTriggerRef,
-    drawerPanelRef,
-    editingQuestion !== null,
-    drawerHaloRef,
-  );
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
   const [targetSectionIdForNew, setTargetSectionIdForNew] = useState<string>('');
 
@@ -108,18 +108,8 @@ export default function ExamPreview({
   const [replaceFilterType, setReplaceFilterType] = useState<string>('all');
   const [replaceFilterDifficulty, setReplaceFilterDifficulty] = useState<string>('all');
   const [replaceSearchQuery, setReplaceSearchQuery] = useState<string>('');
-  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
-  const [bankQuestions, setBankQuestions] = useState<Question[]>([]);
-  useEffect(() => {
-    classService
-      .getClassGroups()
-      .then(setClassGroups)
-      .catch(() => {});
-    questionService
-      .getQuestions()
-      .then(setBankQuestions)
-      .catch(() => {});
-  }, []);
+  // Classes and the question bank ride the shared collections cache.
+  const { classGroups, questions: bankQuestions } = useTeacherCollections();
 
   // Persian digit converter helper
 
@@ -136,24 +126,6 @@ export default function ExamPreview({
     if (diff === 'hard')
       return 'bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] border-[var(--color-danger)]/20';
     return 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/20';
-  };
-
-  const getTypeNameInPersian = (type: QuestionType | undefined): string => {
-    if (!type) return '';
-    const names: Record<QuestionType, string> = {
-      single_choice: 'چهارگزینه‌ای تک‌پاسخ',
-      multiple_choice: 'چندگزینه‌ای چندپاسخ',
-      true_false: 'درست / نادرست',
-      matching: 'وصل‌کردنی',
-      ordering: 'مرتب‌سازی',
-      fill_blank: 'جای خالی',
-      short_answer: 'پاسخ کوتاه',
-      long_answer: 'تشریحی بلند',
-      cloze: 'کلوز تست',
-      reading_comprehension: 'درک مطلب متنی',
-      image_based: 'سوال تصویری',
-    };
-    return names[type] || 'طرح عمومی';
   };
 
   // 1. Dynamic Validation System — pure derived state
@@ -287,10 +259,9 @@ export default function ExamPreview({
     });
   };
 
-  // Delete question from section and questions array
-  const deleteQuestion = (questionId: string) => {
-    const confirmed = window.confirm('آیا از حذف این سوال از برگه آزمون مطمئن هستید؟');
-    if (!confirmed) return;
+  // Delete question from section and questions array — gated by the designed
+  // ConfirmDialog instead of browser chrome (open + confirm pair below).
+  const runDeleteQuestion = (questionId: string) => {
 
     const updatedSections = localExam.sections.map((sec) => ({
       ...sec,
@@ -591,7 +562,7 @@ export default function ExamPreview({
 
   return (
     <div
-      className="space-y-6 animate-in fade-in duration-300 text-right glx p-1 md:p-3 rounded-2xl"
+      className="space-y-6 text-right glx p-1 md:p-3 rounded-2xl"
       dir="rtl"
       id="exam-preview-edit-canvas"
     >
@@ -1058,10 +1029,8 @@ export default function ExamPreview({
                         {/* 3. Short Answer Area */}
                         {isShortAnswer && (
                           <div className="space-y-2 mt-2">
-                            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              محل پاسخ کوتاه دانش‌آموز:
-                            </label>
-                            <input
+                            <Input
+                              label="محل پاسخ کوتاه دانش‌آموز:"
                               type="text"
                               disabled={viewMode === 'teacher'}
                               placeholder={
@@ -1071,7 +1040,6 @@ export default function ExamPreview({
                               }
                               value={studentAnswers[q.id] || ''}
                               onChange={(e) => handleStudentAnswerChange(q.id, e.target.value)}
-                              className="w-full glx border text-label text-[var(--color-text-primary)] px-3.5 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-[var(--color-text-tertiary)]"
                             />
                             {viewMode === 'teacher' && q.correctAnswer && (
                               <div className="bg-[var(--color-success-soft)] text-[var(--color-success)] border-l-2 border-[var(--color-success)]/20 p-2 text-micro rounded-md font-medium">
@@ -1084,10 +1052,8 @@ export default function ExamPreview({
                         {/* 4. Long Answer Form / Area */}
                         {isLongAnswer && (
                           <div className="space-y-3.5 mt-2">
-                            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              محل پاسخ تشریحی دانش‌آموز:
-                            </label>
-                            <textarea
+                            <Textarea
+                              label="محل پاسخ تشریحی دانش‌آموز:"
                               rows={3}
                               disabled={viewMode === 'teacher'}
                               placeholder={
@@ -1097,7 +1063,6 @@ export default function ExamPreview({
                               }
                               value={studentAnswers[q.id] || ''}
                               onChange={(e) => handleStudentAnswerChange(q.id, e.target.value)}
-                              className="w-full glx border text-label text-[var(--color-text-primary)] p-3.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:ring-1 focus:ring-[var(--color-accent-soft)] placeholder-[var(--color-text-tertiary)] leading-relaxed text-right"
                             />
 
                             {/* Rubric evaluation criteria info boxes */}
@@ -1352,7 +1317,7 @@ export default function ExamPreview({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => deleteQuestion(q.id)}
+                                onClick={() => setConfirmDeleteId(q.id)}
                                 className="p-2 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg border border-[var(--color-danger)]/10 cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
                               >
                                 <Trash2 className="w-3.5 h-3.5 text-[var(--color-danger)]" />
@@ -1404,7 +1369,7 @@ export default function ExamPreview({
                 onSave(localExam);
                 setSavedFingerprint(JSON.stringify(localExam));
               } else {
-                alert('پیش‌نویس جدید آزمون با موفقیت در فضای ابری ذخیره شد.');
+                showToast('پیش‌نویس جدید آزمون با موفقیت در فضای ابری ذخیره شد.', 'success');
               }
             }}
             className="flex-1 sm:flex-none px-5 py-2.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-bold rounded-xl text-caption transition-all border border-[var(--color-accent-soft)] cursor-pointer text-center"
@@ -1419,7 +1384,7 @@ export default function ExamPreview({
                 setSavedFingerprint(JSON.stringify(localExam));
                 onNavigateToSettings(localExam);
               } else {
-                alert('تغییرات شما ذخیره شد. در حال هدایت به تنظیمات توزیع آزمون...');
+                showToast('تغییرات شما ذخیره شد. در حال هدایت به تنظیمات توزیع آزمون...', 'info');
               }
             }}
             className="flex-1 sm:flex-none px-5 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl text-caption shadow-xs hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer text-center"
@@ -1429,32 +1394,21 @@ export default function ExamPreview({
         </div>
       </div>
 
-      {/* MODAL 1: REPLACE QUESTION BANK */}
-      {replacingQuestionId && (
-        <div
-          className="fixed inset-0 z-50 bg-[var(--color-glass-light-fill)]/60 flex items-center justify-center p-4"
-          id="replace-modal-backdrop"
-        >
-          <div
-            className="glx-strong rounded-3xl w-full max-w-3xl overflow-hidden border flex flex-col max-h-[85vh] text-right font-sans"
-            dir="rtl"
-          >
-            {/* Modal Header */}
-            <div className="px-6 py-4.5 glx border-b flex items-center justify-between">
-              <h3 className="font-extrabold text-[var(--color-text-primary)] text-caption md:text-label flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-[var(--color-accent)] animate-spin-slow" />
-                <span>جایگزینی سوال با مخزن بانک سوالات همگام</span>
-              </h3>
-              <button
-                type="button"
-                aria-label="بستن پنجره جایگزینی سؤال"
-                title="بستن"
-                onClick={() => setReplacingQuestionId(null)}
-                className="p-1 hover:glx-inset rounded-lg text-[var(--color-text-tertiary)] cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* MODAL 1: REPLACE QUESTION BANK — library chrome */}
+      <Modal
+        isOpen={replacingQuestionId !== null}
+        onClose={() => setReplacingQuestionId(null)}
+        title="جایگزینی سوال با مخزن بانک سوالات همگام"
+        icon={<RefreshCw className="w-5 h-5 animate-spin-slow" />}
+        maxWidth="3xl"
+        bodyClassName="flex flex-col overflow-hidden text-right font-sans"
+        footerClassName="justify-center"
+        footer={
+          <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
+            تطبیق‌دهنده هوشمند آزمون‌ساز همگام دبیـران
+          </span>
+        }
+      >
 
             {/* Smart Filters Header block inside modal */}
             <div className="p-4 glx-inset border-b border-[var(--color-glass-light-stroke)] space-y-3">
@@ -1534,12 +1488,10 @@ export default function ExamPreview({
               </div>
 
               {/* Text search querying inside modal */}
-              <input
-                type="text"
+              <SearchInput
                 placeholder="جستجو در کل صورت سوال یا موضوعات..."
                 value={replaceSearchQuery}
                 onChange={(e) => setReplaceSearchQuery(e.target.value)}
-                className="w-full glx border text-label text-[var(--color-text-primary)] px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 text-right"
               />
             </div>
 
@@ -1593,124 +1545,48 @@ export default function ExamPreview({
                       {/* Select and apply button */}
                       <div className="border-t border-[var(--color-glass-light-stroke)] pt-2.5 flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
                         <span>بارم استاندارد: {toPersianDigits(bq.points)} نمره</span>
-                        <button
-                          type="button"
-                          onClick={() => handleExecuteReplacement(bq)}
-                          className="px-4 py-1.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl text-micro cursor-pointer transition-all shadow-3xs"
-                        >
+                        <Button size="sm" onClick={() => handleExecuteReplacement(bq)}>
                           تایید و جایگزینی این سوال
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <div className="py-12 text-center text-[var(--color-text-tertiary)] select-none space-y-2">
-                  <HelpCircle className="w-10 h-10 mx-auto text-[var(--color-text-primary)]" />
-                  <p className="text-caption font-bold text-[var(--color-text-secondary)]">
-                    سوال همخوانی داری در بانک یافت نشد
-                  </p>
-                  <p className="text-micro">فیلترها را بردارید یا کلمه جستجو را کوتاه کنید.</p>
-                </div>
+                <EmptyState
+                  compact
+                  icon={<HelpCircle className="w-8 h-8" />}
+                  title="سوال همخوانی داری در بانک یافت نشد"
+                  description="فیلترها را بردارید یا کلمه جستجو را کوتاه کنید."
+                />
               )}
             </div>
+      </Modal>
 
-            {/* Modal Footer comments */}
-            <div className="glx border-t p-3 text-center text-micro text-[var(--color-text-tertiary)] font-semibold">
-              <span>تطبیق‌دهنده هوشمند آزمون‌ساز همگام دبیـران</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: MEGA ADD/EDIT MANUAL QUESTION PANEL (SIDE DRAWER DESIGN) */}
-      <AnimatePresence>
-        {editingQuestion && (
-          <div className="fixed inset-0 z-50" id="drawer-container-backdrop">
-            {/* Scrim — opacity-only: a backdrop-filter under an opacity animation
-              freezes its last frame, which lingers after close. */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: 'easeOut' }}
-              onClick={() => setEditingQuestion(null)}
-              className="fixed inset-0 scrim"
-            />
-            {/* Veil blur — static: full blur on frame 1 (no latency), ramped off on exit */}
-            <motion.div
-              aria-hidden="true"
-              initial={false}
-              exit={{
-                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-                transition: { duration: 0.12 },
-              }}
-              className="fixed inset-0 pointer-events-none veil-blur"
-            />
-
-            {/* Container sized to the panel (left dock preserved) so the ratio halo resolves */}
-            <div className="absolute left-0 top-0 h-full w-full max-w-xl @container z-10">
-              {/* Halo rides the panel's grow/shrink (same origin + curves) so no detached
-                glow floats where the panel lands; NO opacity — that would freeze the
-                filter's last frame past unmount. */}
-              <motion.div
-                aria-hidden="true"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{
-                  scale: 0,
-                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                  backgroundColor: 'rgba(26, 28, 34, 0)',
-                  transition: {
-                    scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                    backdropFilter: { duration: 0.14 },
-                    backgroundColor: { duration: 0.14 },
-                  },
-                }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                ref={drawerHaloRef}
-                style={drawerHaloOrigin}
-                className="pointer-events-none absolute area-blur"
-              />
-              <motion.div
-                ref={drawerPanelRef}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{
-                  opacity: 0,
-                  scale: 0,
-                  transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                }}
-                transition={{
-                  opacity: { duration: 0.16 },
-                  scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-                }}
-                style={drawerOrigin}
-                className="relative w-full h-full glx-strong z-10 flex flex-col border-r overflow-hidden text-caption text-right font-sans"
-                dir="rtl"
-                id="drawer-edit-form"
-              >
-                {/* Drawer Header */}
-                <div className="px-5 py-4 glx border-b flex items-center justify-between">
-                  <h3 className="font-extrabold text-[var(--color-text-primary)] text-caption md:text-label flex items-center gap-1.5">
-                    <Sliders className="w-5 h-5 text-[var(--color-accent)]" />
-                    <span>
-                      {isAddingNew
-                        ? 'طرح سوال تازه برای برگه آزمون'
-                        : 'ویرایش جزئیات فنی و بارم سوال'}
-                    </span>
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setEditingQuestion(null)}
-                    className="p-1 px-3 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-xl font-bold cursor-pointer"
-                  >
-                    انصراف ×
-                  </button>
-                </div>
-
-                {/* Drawer scrolling form content */}
-                <div className="p-5 overflow-y-auto space-y-5 flex-1">
+      {/* MODAL 2: MEGA ADD/EDIT MANUAL QUESTION PANEL — library side drawer */}
+      <Modal
+        isOpen={editingQuestion !== null}
+        onClose={() => setEditingQuestion(null)}
+        title={
+          isAddingNew
+            ? 'طرح سوال تازه برای برگه آزمون'
+            : 'ویرایش جزئیات فنی و بارم سوال'
+        }
+        icon={<Sliders className="w-5 h-5" />}
+        variant="side"
+        triggerRef={drawerTriggerRef}
+        bodyClassName="p-5 overflow-y-auto space-y-5 flex-1 text-caption text-right font-sans"
+        footer={
+          <>
+            <Button className="flex-1" onClick={handleSaveDrawerQuestion}>
+              ثبت نهایی و بازگشت به ورقه املاکی
+            </Button>
+            <Button variant="ghost" className="flex-1" onClick={() => setEditingQuestion(null)}>
+              لغو تغییرات
+            </Button>
+          </>
+        }
+      >
                   {/* Type selector */}
                   <div className="space-y-1 glx p-3 rounded-2xl border">
                     <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
@@ -1752,26 +1628,23 @@ export default function ExamPreview({
 
                   {/* Title & Points row */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="md:col-span-2 space-y-1 glx p-3.5 rounded-2xl border">
-                      <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                        عنوان خلاصه سوال:
-                      </label>
-                      <input
+                    <div className="md:col-span-2 glx p-3.5 rounded-2xl border">
+                      <Input
+                        label="عنوان خلاصه سوال:"
+                        size="sm"
                         type="text"
                         value={editingQuestion.title || ''}
                         onChange={(e) =>
                           setEditingQuestion({ ...editingQuestion, title: e.target.value })
                         }
-                        className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption px-2.5 py-1.5 rounded-lg focus:outline-hidden focus:border-[var(--color-accent)]/40"
                         placeholder="مثال: سوال مضاف‌الیه ادبیات"
                       />
                     </div>
 
-                    <div className="space-y-1 glx p-3.5 rounded-2xl border text-center">
-                      <label className="text-micro text-[var(--color-text-tertiary)] font-bold block text-right">
-                        بارم (امتیاز عددی):
-                      </label>
-                      <input
+                    <div className="glx p-3.5 rounded-2xl border text-center">
+                      <Input
+                        label="بارم (امتیاز عددی):"
+                        size="sm"
                         type="number"
                         step="0.25"
                         min="0"
@@ -1779,40 +1652,39 @@ export default function ExamPreview({
                         onChange={(e) =>
                           setEditingQuestion({ ...editingQuestion, points: Number(e.target.value) })
                         }
-                        className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption text-center font-bold px-2 py-1.5 rounded-lg focus:outline-hidden font-mono focus:border-[var(--color-accent)]/40"
+                        className="text-center font-bold font-mono"
                       />
                     </div>
                   </div>
 
                   {/* Question Text Prompt */}
-                  <div className="space-y-1 glx p-4 rounded-2xl border">
-                    <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                      متن اصلی صورت سوال:
-                    </label>
-                    <textarea
+                  <div className="glx p-4 rounded-2xl border">
+                    <Textarea
+                      label="متن اصلی صورت سوال:"
+                      size="sm"
                       rows={4}
                       value={editingQuestion.text || ''}
                       onChange={(e) =>
                         setEditingQuestion({ ...editingQuestion, text: e.target.value })
                       }
-                      className="w-full bg-[var(--color-glass-light-fill)] border border-[var(--color-glass-light-stroke)] text-caption p-3 rounded-lg focus:outline-hidden focus:border-[var(--color-accent)]/40 leading-relaxed text-right placeholder-[var(--color-text-tertiary)]"
                       placeholder="صورت سوال علمی، پیوند‌ها و نمادها را در اینجا تایپ کنید..."
                     />
                   </div>
 
                   {/* Image URL / media upload simulation */}
                   <div className="space-y-2 glx p-3.5 rounded-2xl border">
-                    <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                    <span className="text-micro text-[var(--color-text-tertiary)] font-bold block">
                       تصویر یا نمودار پیوست سوال:
-                    </label>
+                    </span>
                     <div className="flex gap-2">
-                      <input
+                      <Input
+                        wrapperClassName="flex-1"
+                        size="sm"
                         type="text"
                         value={editingQuestion.imageUrl || ''}
                         onChange={(e) =>
                           setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })
                         }
-                        className="w-full glx border text-caption px-2.5 py-1.5 rounded-lg placeholder-[var(--color-text-tertiary)] focus:outline-hidden"
                         placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
                       />
                       {editingQuestion.imageUrl && (
@@ -2154,30 +2026,22 @@ export default function ExamPreview({
                       </div>
                     </div>
                   )}
-                </div>
+      </Modal>
 
-                {/* Save trigger inside drawer */}
-                <div className="p-4 glx border-t flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSaveDrawerQuestion}
-                    className="flex-1 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl text-center shadow-xs cursor-pointer text-caption"
-                  >
-                    ثبت نهایی و بازگشت به ورقه املاکی
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingQuestion(null)}
-                    className="flex-1 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-bold rounded-xl text-center cursor-pointer text-caption"
-                  >
-                    لغو تغییرات
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
+      {toastElement}
+      <ConfirmDialog
+        isOpen={confirmDeleteId !== null}
+        title="حذف سوال از برگه"
+        message="آیا از حذف این سوال از برگه آزمون مطمئن هستید؟"
+        confirmText="حذف سوال"
+        cancelText="انصراف"
+        variant="danger"
+        onConfirm={() => {
+          if (confirmDeleteId) runDeleteQuestion(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

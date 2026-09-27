@@ -2,20 +2,25 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import CommandPalette from '../../components/CommandPalette';
 
-vi.mock('../../services/api', () => ({
-  examService: {
-    getExams: vi.fn().mockResolvedValue([{ id: 'e1', title: 'آزمون زیست', status: 'draft' }]),
-  },
-  studentService: {
-    getStudents: vi
-      .fn()
-      .mockResolvedValue([
-        { id: 's1', name: 'علی رضایی', grade: 'هفتم', nationalId: '0000000019' },
-      ]),
-  },
-  classService: {
-    getClassGroups: vi.fn().mockResolvedValue([{ id: 'c1', name: 'کلاس ۷۰۱', grade: 'هفتم' }]),
-  },
+// The palette reads live entities from the shared teacher collections cache.
+vi.mock('../../contexts/TeacherContext', () => ({
+  useTeacherCollections: () => ({
+    exams: [{ id: 'e1', title: 'آزمون زیست', status: 'draft' }],
+    students: [{ id: 's1', name: 'علی رضایی', grade: 'هفتم', nationalId: '0000000019' }],
+    classGroups: [{ id: 'c1', name: 'کلاس ۷۰۱', grade: 'هفتم' }],
+    status: { exams: 'ready', students: 'ready', questions: 'ready', classGroups: 'ready', submissions: 'ready' },
+    reload: vi.fn(),
+    upsertExam: vi.fn(),
+    removeExam: vi.fn(),
+    upsertStudent: vi.fn(),
+    addStudents: vi.fn(),
+    removeStudent: vi.fn(),
+    upsertQuestion: vi.fn(),
+    removeQuestion: vi.fn(),
+    upsertClassGroup: vi.fn(),
+    removeClassGroup: vi.fn(),
+    upsertSubmission: vi.fn(),
+  }),
 }));
 
 describe('CommandPalette', () => {

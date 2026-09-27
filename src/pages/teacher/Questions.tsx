@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   HelpCircle,
-  Search,
   PlusCircle,
   Image as ImageIcon,
   Grid,
@@ -23,17 +22,28 @@ import {
   Sliders,
   CloudLightning,
 } from 'lucide-react';
-import { logger } from '../../lib/logger';
 import { Question, QuestionType, QuestionPart, RubricCriterion } from '../../types';
 import QuestionRenderer from '../../components/QuestionRenderer';
 import { questionService } from '../../services/api';
-import { ConfirmDialog, Dropdown } from '../../components/UIComponents';
-import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
+import {
+  Button,
+  ConfirmDialog,
+  DifficultyBadge,
+  Dropdown,
+  EmptyState,
+  Input,
+  Modal,
+  PageHeader,
+  SearchInput,
+  Textarea,
+} from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
 import { formatPersianDate, normalizePersianText, toPersianDigits } from '../../utils/persian';
+import { getTypeNameInPersian } from '../../utils/question-type-labels';
+import { useTeacherCollections } from '../../contexts/TeacherContext';
 
 // Local enhanced interface to handle optional tags, chapters, difficulty, and completeness statuses
 interface RichQuestion extends Question {
@@ -47,9 +57,38 @@ interface RichQuestion extends Question {
 
 export default function Questions() {
   const { showToast, toastElement } = useToast();
-  // Rich list state
-  const [questions, setQuestions] = useState<RichQuestion[]>([]);
-  const [loading, setLoading] = useState(true);
+  // The question bank rides the shared cache — NewExam and ExamPreview see a
+  // new question immediately, no remount refetch needed.
+  const { questions: rawQuestions, status, upsertQuestion, removeQuestion } =
+    useTeacherCollections();
+  const loading = status.questions === 'loading';
+
+  // Display-list enrichment, stable per cache cycle: difficulty/section/tags
+  // are derived deterministically by index — identical to the previous
+  // per-fetch behavior.
+  const questions = useMemo<RichQuestion[]>(() => {
+    const difficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard'];
+    const sections = [
+      'بخش اول: مفاهیم مبنا',
+      'بخش دوم: ساختار سلولی',
+      'فصل سوم: منطق عددی',
+      'بخش چهارم: قواعد صرفی',
+    ];
+    const tagSets = [
+      ['کنکوری', 'محاسباتی', 'فرمول‌محور'],
+      ['زیست', 'درک_شکل', 'آزمایشگاهی'],
+      ['دستورزبان', 'درک_ادبی', 'واژگان'],
+      ['کلوز', 'مهارت_درک_بهتر', 'ترجمه_فوری'],
+    ];
+    return rawQuestions.map((q, idx) => ({
+      ...q,
+      difficulty: q.difficulty || difficulties[idx % difficulties.length],
+      section: q.section || sections[idx % sections.length],
+      tags: q.tags || tagSets[idx % tagSets.length],
+      completenessStatus: q.completenessStatus || (idx % 6 === 5 ? 'incomplete' : 'complete'),
+    }));
+  }, [rawQuestions]);
+
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
@@ -65,17 +104,10 @@ export default function Questions() {
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
 
   // Panel origins — each overlay grows out of (and collapses back into) the
-  // button that opened it instead of popping from its own centre.
+  // button that opened it. The library Modal owns panel/halo refs and origin
+  // measurement internally; call sites only capture the trigger element.
   const previewTriggerRef = useRef<HTMLElement | null>(null);
   const drawerTriggerRef = useRef<HTMLElement | null>(null);
-  const previewPanelRef = useRef<HTMLDivElement>(null);
-  const drawerPanelRef = useRef<HTMLDivElement>(null);
-  const [previewOrigin] = useOriginFromTrigger(
-    previewTriggerRef,
-    previewPanelRef,
-    previewQuestion !== null,
-  );
-  const [drawerOrigin] = useOriginFromTrigger(drawerTriggerRef, drawerPanelRef, showAddEditDrawer);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = usePersistentPreference<'newest' | 'oldest' | 'title'>(
     'questions:sort',
@@ -190,43 +222,6 @@ export default function Questions() {
     sortOrder,
   ]);
 
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      setLoading(true);
-      try {
-        const data = await questionService.getQuestions();
-        const enriched = data.map((q, idx) => {
-          const difficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard'];
-          const sections = [
-            'بخش اول: مفاهیم مبنا',
-            'بخش دوم: ساختار سلولی',
-            'فصل سوم: منطق عددی',
-            'بخش چهارم: قواعد صرفی',
-          ];
-          const tagSets = [
-            ['کنکوری', 'محاسباتی', 'فرمول‌محور'],
-            ['زیست', 'درک_شکل', 'آزمایشگاهی'],
-            ['دستورزبان', 'درک_ادبی', 'واژگان'],
-            ['کلوز', 'مهارت_درک_بهتر', 'ترجمه_فوری'],
-          ];
-          return {
-            ...q,
-            difficulty: q.difficulty || difficulties[idx % difficulties.length],
-            section: q.section || sections[idx % sections.length],
-            tags: q.tags || tagSets[idx % tagSets.length],
-            completenessStatus: q.completenessStatus || (idx % 6 === 5 ? 'incomplete' : 'complete'),
-          };
-        });
-        setQuestions(enriched);
-      } catch (err) {
-        logger.error('Error fetching questions:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchQuestions();
-  }, []);
-
   const [formGrade, setFormGrade] = useState('هفتم');
   const [formSubject, setFormSubject] = useState('علوم تجربی');
   const [formSection, setFormSection] = useState('فصل اول');
@@ -328,38 +323,6 @@ export default function Questions() {
   const uniqueTags = Array.from(new Set(questions.flatMap((q) => q.tags || []).filter(Boolean)));
 
   // Persiarized helper converters
-
-  const getTypeNameInPersian = (type: QuestionType) => {
-    const names: Record<QuestionType, string> = {
-      single_choice: 'چهارگزینه‌ای تک‌پاسخ',
-      multiple_choice: 'چندگزینه‌ای چندپاسخ',
-      true_false: 'درست / نادرست',
-      matching: 'وصل‌کردنی',
-      ordering: 'مرتب‌سازی ترتیبی',
-      fill_blank: 'جای خالی (کوتاه)',
-      short_answer: 'پاسخ کوتاه',
-      long_answer: 'تشریحی (طرح درس)',
-      cloze: 'کلوز تست (Cloze Test)',
-      reading_comprehension: 'درک مطلب متنی',
-      image_based: 'سوال تصویری',
-    };
-    return names[type] || 'طرح متفرقه';
-  };
-
-  const getDifficultyLabel = (diff: string | undefined): string => {
-    if (diff === 'easy') return 'آسان';
-    if (diff === 'medium') return 'متوسط';
-    if (diff === 'hard') return 'سخت';
-    return 'متوسط';
-  };
-
-  const getDifficultyBadgeColor = (diff: string | undefined): string => {
-    if (diff === 'easy')
-      return 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15';
-    if (diff === 'hard')
-      return 'bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] border-[var(--color-danger)]/10';
-    return 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/20';
-  };
 
   // Image Upload handler (Simulation)
   const handleMockImageUpload = async (
@@ -610,7 +573,7 @@ export default function Questions() {
           sampleAnswer: formType === 'long_answer' ? formSampleAnswer : undefined,
           explanation: formExplanation || undefined,
         };
-        setQuestions([enrichedCreated, ...questions]);
+        upsertQuestion(enrichedCreated);
       } else {
         if (!activeQuestionId) return;
         const updated = await questionService.updateQuestion(
@@ -626,7 +589,7 @@ export default function Questions() {
           sampleAnswer: formType === 'long_answer' ? formSampleAnswer : undefined,
           explanation: formExplanation || undefined,
         };
-        setQuestions(questions.map((q) => (q.id === activeQuestionId ? enrichedUpdated : q)));
+        upsertQuestion(enrichedUpdated);
       }
       const savedAt = new Date();
       setLastSavedAt(savedAt);
@@ -655,7 +618,7 @@ export default function Questions() {
     if (!questionToDelete) return;
     try {
       await questionService.deleteQuestion(questionToDelete.id);
-      setQuestions(questions.filter((q) => q.id !== questionToDelete.id));
+      removeQuestion(questionToDelete.id);
       showToast('سوال حذف شد.', 'success');
     } catch (_err) {
       const failedQuestion = questionToDelete;
@@ -725,7 +688,7 @@ export default function Questions() {
 
   return (
     <div
-      className="space-y-6 animate-in fade-in duration-300 text-right font-sans mb-12"
+      className="space-y-6 text-right font-sans mb-12"
       dir="rtl"
       id="questions-tab-view"
     >
@@ -737,16 +700,10 @@ export default function Questions() {
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border"
         id="questions-title-plate"
       >
-        <div className="space-y-1">
-          <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-[var(--color-accent)]" />
-            <span>مدیریت بانک سوالات نهایی و تستی</span>
-          </h2>
-          <p className="text-micro text-[var(--color-text-tertiary)]">
-            بانک تخصصی با پشتیبانی از ۱۱ نوع قالب تستی، تشریحی، وصل‌کردنی، مرتب‌سازی، درک‌مطلب و
-            کلوز تست با بارگذاری متنی و تصویری
-          </p>
-        </div>
+        <PageHeader
+          title="مدیریت بانک سوالات نهایی و تستی"
+          subtitle="بانک تخصصی با پشتیبانی از ۱۱ نوع قالب تستی، تشریحی، وصل‌کردنی، مرتب‌سازی، درک‌مطلب و کلوز تست با بارگذاری متنی و تصویری"
+        />
 
         <div className="flex items-center gap-2 w-full md:w-auto">
           {/* Card / Table Toggle */}
@@ -778,18 +735,17 @@ export default function Questions() {
           </div>
 
           {/* Add Question Button */}
-          <button
-            type="button"
+          <Button
             id="btn-add-question-trigger"
             onClick={(e) => {
               drawerTriggerRef.current = e.currentTarget;
               openCreateDrawer();
             }}
-            className="flex-1 md:flex-none px-4.5 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] hover:scale-[1.01] active:scale-[0.99] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            icon={<PlusCircle className="w-4 h-4" />}
+            className="flex-1 md:flex-none"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>افزودن سوال جدید</span>
-          </button>
+            افزودن سوال جدید
+          </Button>
         </div>
       </div>
 
@@ -808,16 +764,11 @@ export default function Questions() {
             <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
               جستجو در متن سوال یا برچسب‌ها:
             </label>
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-              <input
-                type="text"
-                placeholder="کلمه کلیدی، عنوان، هشتگ یا درس..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full glx border text-label text-[var(--color-text-primary)] pr-9 pl-3.5 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-[var(--color-accent-soft)]/30 transition-all text-right"
-              />
-            </div>
+            <SearchInput
+              placeholder="کلمه کلیدی، عنوان، هشتگ یا درس..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
           {/* Type Filter */}
@@ -992,57 +943,61 @@ export default function Questions() {
           <label htmlFor="question-sort" className="font-bold">
             مرتب‌سازی
           </label>
-          <select
+          <Dropdown
             id="question-sort"
+            compact
             value={sortOrder}
-            onChange={(event) => {
-              setSortOrder(event.target.value as 'newest' | 'oldest' | 'title');
+            onChange={(v) => {
+              setSortOrder(v as 'newest' | 'oldest' | 'title');
               setCurrentPage(1);
             }}
-            className="glx-inset rounded-xl border px-3 py-2"
-          >
-            <option value="newest">جدیدترین</option>
-            <option value="oldest">قدیمی‌ترین</option>
-            <option value="title">عنوان</option>
-          </select>
+            options={[
+              { value: 'newest', label: 'جدیدترین' },
+              { value: 'oldest', label: 'قدیمی‌ترین' },
+              { value: 'title', label: 'عنوان' },
+            ]}
+            className="w-28"
+          />
           <label htmlFor="question-page-size" className="font-bold">
             در هر صفحه
           </label>
-          <select
+          <Dropdown
             id="question-page-size"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
+            compact
+            value={String(pageSize)}
+            onChange={(v) => {
+              setPageSize(Number(v));
               setCurrentPage(1);
             }}
-            className="glx-inset rounded-xl border px-3 py-2"
-          >
-            <option value={10}>۱۰</option>
-            <option value={20}>۲۰</option>
-            <option value={50}>۵۰</option>
-          </select>
+            options={[
+              { value: '10', label: '۱۰' },
+              { value: '20', label: '۲۰' },
+              { value: '50', label: '۵۰' },
+            ]}
+            className="w-20"
+          />
         </div>
         {totalPages > 1 && (
           <div className="flex items-center gap-2 text-caption">
-            <button
-              type="button"
-              className="btn-soft"
+            <Button
+              variant="secondary"
+              size="sm"
               disabled={safePage === 1}
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
             >
               قبلی
-            </button>
+            </Button>
             <span aria-live="polite">
               صفحه {toPersianDigits(safePage)} از {toPersianDigits(totalPages)}
             </span>
-            <button
-              type="button"
-              className="btn-soft"
+            <Button
+              variant="secondary"
+              size="sm"
               disabled={safePage === totalPages}
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
             >
               بعدی
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -1085,11 +1040,7 @@ export default function Questions() {
                             )}
                           </div>
 
-                          <div
-                            className={`px-2 py-0.5 rounded-full border text-micro font-bold ${getDifficultyBadgeColor(q.difficulty)}`}
-                          >
-                            {getDifficultyLabel(q.difficulty)}
-                          </div>
+                          <DifficultyBadge difficulty={q.difficulty} />
                         </div>
 
                         {/* Title block */}
@@ -1251,11 +1202,7 @@ export default function Questions() {
 
                             {/* Difficulty */}
                             <td className="p-4 text-center">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-micro font-bold border ${getDifficultyBadgeColor(q.difficulty)}`}
-                              >
-                                {getDifficultyLabel(q.difficulty)}
-                              </span>
+                              <DifficultyBadge difficulty={q.difficulty} />
                             </td>
 
                             {/* Score Gained */}
@@ -1325,181 +1272,69 @@ export default function Questions() {
             )
           ) : (
             /* EMPTY FILTERED QUESTIONS STATE */
-            <div
-              className="glx border rounded-3xl p-16 text-center text-[var(--color-text-tertiary)] select-none space-y-3"
-              id="empty-questions"
-            >
-              <div className="w-16 h-16 rounded-full glx border mx-auto flex items-center justify-center text-[var(--color-text-primary)]">
-                <HelpCircle className="w-8 h-8" />
-              </div>
-              <h4 className="font-bold text-[var(--color-text-secondary)] text-caption">
-                هیچ سوالی با فیلترهای بالا همخوانی ندارد
-              </h4>
-              <p className="text-micro text-[var(--color-text-tertiary)] max-w-md mx-auto">
-                می‌توانید فیلترهای جستجو، سطح سختی یا نوع سوالات را تغییر دهید یا نسبت به افزودن
-                سوال جدید به مخزن اقدام کنید.
-              </p>
+            <div id="empty-questions">
+              <EmptyState
+                icon={<HelpCircle className="w-8 h-8" />}
+                title="هیچ سوالی با فیلترهای بالا همخوانی ندارد"
+                description="می‌توانید فیلترهای جستجو، سطح سختی یا نوع سوالات را تغییر دهید یا نسبت به افزودن سوال جدید به مخزن اقدام کنید."
+              />
             </div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* REUSABLE live preview question modal overlay */}
-      <AnimatePresence>
+      {/* REUSABLE live preview question modal — library chrome */}
+      <Modal
+        isOpen={previewQuestion !== null}
+        onClose={() => setPreviewQuestion(null)}
+        title="شبیه‌ساز پیش‌نمایش سوال در برگه پاسخ‌نامه"
+        icon={<Sparkles className="w-4 h-4" />}
+        maxWidth="lg"
+        triggerRef={previewTriggerRef}
+        footerClassName="justify-between"
+        footer={
+          previewQuestion && (
+            <>
+              <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
+              <span>
+                بروزرسانی شده در:{' '}
+                {toPersianDigits(formatPersianDate(previewQuestion.createdAt))}
+              </span>
+            </>
+          )
+        }
+      >
         {previewQuestion && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            id="live-preview-overlay"
-          >
-            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
-                freezes its frame, which lingers past unmount. */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: 'easeOut' }}
-              className="absolute inset-0 scrim"
-            />
-            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
-                un-blur never lingers behind the closing panel. */}
-            <motion.div
-              aria-hidden="true"
-              initial={false}
-              exit={{
-                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-                transition: { duration: 0.12 },
-              }}
-              className="absolute inset-0 pointer-events-none veil-blur"
-            />
-            <div className="relative w-full max-w-2xl @container">
-              {/* Halo blur dies fast on exit so nothing lingers behind the closing panel */}
-              <motion.div
-                aria-hidden="true"
-                initial={false}
-                exit={{
-                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                  backgroundColor: 'rgba(26, 28, 34, 0)',
-                  transition: { duration: 0.14 },
-                }}
-                className="pointer-events-none absolute area-blur"
-              />
-              <motion.div
-                ref={previewPanelRef}
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
-                style={previewOrigin ?? { transformOrigin: 'center bottom' }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="relative glx rounded-3xl w-full overflow-hidden border flex flex-col max-h-[90vh]"
-                id="preview-box"
-              >
-                {/* Header */}
-                <div className="px-6 py-4.5 glx border-b flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewQuestion(null)}
-                    className="px-3 py-1.5 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] hover:text-[var(--color-danger)]/80 transition-all font-bold rounded-xl text-micro cursor-pointer"
-                  >
-                    بستن پیش‌نمایش ×
-                  </button>
-                  <h3 className="font-bold text-[var(--color-text-primary)] text-caption flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-[var(--color-accent)]" />
-                    <span>شبیه‌ساز پیش‌نمایش سوال در برگه پاسخ‌نامه</span>
-                  </h3>
-                </div>
-
-                {/* Renderer core scroll */}
-                <div className="p-6 overflow-y-auto flex-1">
-                  <QuestionRenderer question={previewQuestion} showCorrectAnswers={true} />
-                </div>
-
-                {/* Footer comments */}
-                <div className="glx border-t p-4 flex justify-between items-center text-micro text-[var(--color-text-tertiary)] font-medium">
-                  <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
-                  <span>
-                    بروزرسانی شده در:{' '}
-                    {toPersianDigits(formatPersianDate(previewQuestion.createdAt))}
-                  </span>
-                </div>
-              </motion.div>
-            </div>
-          </div>
+          <QuestionRenderer question={previewQuestion} showCorrectAnswers={true} />
         )}
-      </AnimatePresence>
+      </Modal>
 
       {/* MEGA ADD / EDIT — same centered, rounded glass panel as every other
           overlay (was a full-height side slab with a border-l and a halo sized
           off its full height, which read as an odd, mismatched ratio). */}
-      <AnimatePresence>
-        {showAddEditDrawer && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            id="add-edit-drawer-overlay"
-          >
-            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
-                freezes its frame, which lingers past unmount. */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: 'easeOut' }}
-              onClick={closeQuestionEditor}
-              className="absolute inset-0 scrim"
-            />
-            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
-                un-blur never lingers behind the closing panel. */}
-            <motion.div
-              aria-hidden="true"
-              initial={false}
-              exit={{
-                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-                transition: { duration: 0.12 },
-              }}
-              className="absolute inset-0 pointer-events-none veil-blur"
-            />
-            <div className="relative w-full max-w-5xl @container">
-              {/* Halo blur dies fast on exit so nothing lingers behind the closing panel */}
-              <motion.div
-                aria-hidden="true"
-                initial={false}
-                exit={{
-                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                  backgroundColor: 'rgba(26, 28, 34, 0)',
-                  transition: { duration: 0.14 },
-                }}
-                className="pointer-events-none absolute area-blur"
-              />
-              <motion.div
-                ref={drawerPanelRef}
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                style={drawerOrigin ?? { transformOrigin: 'center bottom' }}
-                className="relative w-full glx rounded-3xl overflow-hidden border flex flex-col max-h-[88vh] text-caption text-right"
-                id="add-edit-drawer"
-              >
-                {/* Drawer Header */}
-                <div className="px-6 py-5 glx border-b flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={closeQuestionEditor}
-                    className="p-1 px-3 bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-xl font-bold cursor-pointer"
-                  >
-                    بستن قالب ×
-                  </button>
-                  <h3 className="font-bold text-[var(--color-text-primary)] text-label flex items-center gap-1.5">
-                    <CloudLightning className="w-5 h-5 text-[var(--color-accent)] animate-pulse" />
-                    <span>
-                      {drawerMode === 'add'
-                        ? 'افزودن و پیکربندی سوال نو در بانک'
-                        : 'ویرایش شناسنامه فنی و فرمول‌های سوال'}
-                    </span>
-                  </h3>
-                </div>
-
-                {/* Split layout inside drawer: Form on right, instant Realtime-rendered Live Preview on left! */}
-                <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+      <Modal
+        isOpen={showAddEditDrawer}
+        onClose={closeQuestionEditor}
+        title={
+          drawerMode === 'add'
+            ? 'افزودن و پیکربندی سوال نو در بانک'
+            : 'ویرایش شناسنامه فنی و فرمول‌های سوال'
+        }
+        icon={<CloudLightning className="w-5 h-5 animate-pulse" />}
+        maxWidth="5xl"
+        triggerRef={drawerTriggerRef}
+        bodyClassName="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 text-caption text-right"
+        footer={
+          <>
+            <Button variant="ghost" onClick={closeQuestionEditor}>
+              انصراف
+            </Button>
+            <Button type="submit" form="question-editor-form">
+              {drawerMode === 'add' ? 'ثبت و الحاق به بانک سوالات ملی' : 'ذخیره تغییرات'}
+            </Button>
+          </>
+        }
+      >
                   {/* Left Column (Realtime live visual preview of QuestionRenderer as the teacher types!) */}
                   <div
                     className="hidden lg:block lg:col-span-5 glx-inset p-5 overflow-y-auto border-l border-[var(--color-glass-light-stroke)]"
@@ -1565,7 +1400,7 @@ export default function Questions() {
                     className="lg:col-span-7 overflow-y-auto p-6 glx space-y-5"
                     id="drawer-form-contents"
                   >
-                    <form onSubmit={handleSaveQuestion} className="space-y-4">
+                    <form id="question-editor-form" onSubmit={handleSaveQuestion} className="space-y-4">
                       {/* 1. Grade, Subject, Section, Difficulty */}
                       <div className="glx p-4 rounded-2xl border space-y-3">
                         <span className="font-bold text-[var(--color-text-primary)] text-micro block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">
@@ -1600,34 +1435,26 @@ export default function Questions() {
                           </div>
 
                           {/* Subject */}
-                          <div className="space-y-1">
-                            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              موضوع درس:
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={formSubject}
-                              onChange={(e) => setFormSubject(e.target.value)}
-                              placeholder="مثال: علوم تجربی، ریاضی"
-                              className="w-full glx border px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
-                            />
-                          </div>
+                          <Input
+                            label="موضوع درس:"
+                            size="sm"
+                            type="text"
+                            required
+                            value={formSubject}
+                            onChange={(e) => setFormSubject(e.target.value)}
+                            placeholder="مثال: علوم تجربی، ریاضی"
+                          />
 
                           {/* Section */}
-                          <div className="space-y-1">
-                            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              بخش / فصل کتاب:
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={formSection}
-                              onChange={(e) => setFormSection(e.target.value)}
-                              placeholder="مثال: فصل اول یا مبحث فیزیک"
-                              className="w-full glx border px-3 py-2 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40"
-                            />
-                          </div>
+                          <Input
+                            label="بخش / فصل کتاب:"
+                            size="sm"
+                            type="text"
+                            required
+                            value={formSection}
+                            onChange={(e) => setFormSection(e.target.value)}
+                            placeholder="مثال: فصل اول یا مبحث فیزیک"
+                          />
 
                           {/* Difficulty */}
                           <div className="space-y-1">
@@ -1646,34 +1473,28 @@ export default function Questions() {
                           </div>
 
                           {/* Points / Barom */}
-                          <div className="space-y-1">
-                            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              امتیاز / بارم نمره:
-                            </label>
-                            <input
-                              type="number"
-                              min={0.25}
-                              max={20}
-                              step={0.25}
-                              value={formPoints}
-                              onChange={(e) => setFormPoints(Number(e.target.value))}
-                              className="w-full glx border p-2 rounded-xl focus:outline-hidden font-bold"
-                            />
-                          </div>
+                          <Input
+                            label="امتیاز / بارم نمره:"
+                            size="sm"
+                            type="number"
+                            min={0.25}
+                            max={20}
+                            step={0.25}
+                            value={formPoints}
+                            onChange={(e) => setFormPoints(Number(e.target.value))}
+                            className="font-bold"
+                          />
 
                           {/* Tags separated */}
-                          <div className="space-y-1">
-                            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              کلمات کلیدی / تگ‌ها (کاما جدا کننده):
-                            </label>
-                            <input
-                              type="text"
-                              value={formTagsString}
-                              onChange={(e) => setFormTagsString(e.target.value)}
-                              placeholder="کنکوری، تستی، مهم"
-                              className="w-full glx border px-3 py-2 rounded-xl focus:outline-hidden text-[var(--color-accent)] font-bold"
-                            />
-                          </div>
+                          <Input
+                            label="کلمات کلیدی / تگ‌ها (کاما جدا کننده):"
+                            size="sm"
+                            type="text"
+                            value={formTagsString}
+                            onChange={(e) => setFormTagsString(e.target.value)}
+                            placeholder="کنکوری، تستی، مهم"
+                            className="text-[var(--color-accent)] font-bold"
+                          />
                         </div>
                       </div>
 
@@ -1703,33 +1524,27 @@ export default function Questions() {
 
                       {/* 3. Title & Text prompts */}
                       <div className="space-y-3.5">
-                        <div className="space-y-1">
-                          <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                            عنوان خلاصه سوال (برای معلم):
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={formTitle}
-                            onChange={(e) => setFormTitle(e.target.value)}
-                            placeholder="ماشاالله: محاسبه سرعت زاویه‌ای"
-                            className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-bold"
-                          />
-                        </div>
+                        <Input
+                          label="عنوان خلاصه سوال (برای معلم):"
+                          size="sm"
+                          type="text"
+                          required
+                          value={formTitle}
+                          onChange={(e) => setFormTitle(e.target.value)}
+                          placeholder="ماشاالله: محاسبه سرعت زاویه‌ای"
+                          className="font-bold"
+                        />
 
-                        <div className="space-y-1">
-                          <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                            متن اصلی صورت سوال / مسئله (فرمول گذاری):
-                          </label>
-                          <textarea
-                            required
-                            rows={4}
-                            value={formText}
-                            onChange={(e) => setFormText(e.target.value)}
-                            placeholder="متن کامل سوال خود را به زبان فارسی روان تالیف کنید..."
-                            className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 font-medium leading-relaxed"
-                          />
-                        </div>
+                        <Textarea
+                          label="متن اصلی صورت سوال / مسئله (فرمول گذاری):"
+                          size="sm"
+                          required
+                          rows={4}
+                          value={formText}
+                          onChange={(e) => setFormText(e.target.value)}
+                          placeholder="متن کامل سوال خود را به زبان فارسی روان تالیف کنید..."
+                          className="font-medium"
+                        />
                       </div>
 
                       {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
@@ -2142,18 +1957,14 @@ export default function Questions() {
                       {formType === 'long_answer' && (
                         <div className="space-y-4">
                           {/* Sample answer */}
-                          <div className="space-y-1">
-                            <span className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              پاسخ تشریحی استاندارد نمونه (برای تصحیح و مقایسه هوشمند):
-                            </span>
-                            <textarea
-                              rows={3}
-                              value={formSampleAnswer}
-                              onChange={(e) => setFormSampleAnswer(e.target.value)}
-                              placeholder="نمونه پاسخ ایده‌آل بنویسید..."
-                              className="w-full glx border px-3 py-2 rounded-xl"
-                            />
-                          </div>
+                          <Textarea
+                            label="پاسخ تشریحی استاندارد نمونه (برای تصحیح و مقایسه هوشمند):"
+                            size="sm"
+                            rows={3}
+                            value={formSampleAnswer}
+                            onChange={(e) => setFormSampleAnswer(e.target.value)}
+                            placeholder="نمونه پاسخ ایده‌آل بنویسید..."
+                          />
 
                           {/* Rubric Criteria dynamic builder */}
                           <div className="bg-[var(--color-danger-soft)]/40/50 p-4 rounded-2xl border border-[var(--color-danger)]/10 space-y-3">
@@ -2335,45 +2146,18 @@ export default function Questions() {
                       )}
 
                       {/* 6. General explanation (teacher comments / solutions) */}
-                      <div className="space-y-1 pt-3.5 border-t border-[var(--color-glass-light-stroke)]">
-                        <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                          توضیح پاسخ تشریحی / راهنمای نمره‌دهی متفرقه (اختیاری):
-                        </label>
-                        <textarea
-                          rows={2}
-                          value={formExplanation}
-                          onChange={(e) => setFormExplanation(e.target.value)}
-                          placeholder="این یادداشت به دانش‌آموزان در قالب پاسخ‌برگ تشریحی سیستم نشان داده خواهد گردید..."
-                          className="w-full glx border px-3.5 py-2.5 rounded-xl text-micro leading-relaxed"
-                        />
-                      </div>
+                      <Textarea
+                        label="توضیح پاسخ تشریحی / راهنمای نمره‌دهی متفرقه (اختیاری):"
+                        size="sm"
+                        rows={2}
+                        value={formExplanation}
+                        onChange={(e) => setFormExplanation(e.target.value)}
+                        placeholder="این یادداشت به دانش‌آموزان در قالب پاسخ‌برگ تشریحی سیستم نشان داده خواهد گردید..."
+                      />
 
-                      {/* Submission triggers */}
-                      <div className="pt-4 border-t border-[var(--color-glass-light-stroke)] flex gap-3 justify-end">
-                        <button
-                          type="button"
-                          onClick={closeQuestionEditor}
-                          className="px-4.5 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-semibold rounded-xl cursor-pointer"
-                        >
-                          انصراف
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-5 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl shadow-sm cursor-pointer"
-                        >
-                          {drawerMode === 'add'
-                            ? 'ثبت و الحاق به بانک سوالات ملی'
-                            : 'ذخیره تغییرات'}
-                        </button>
-                      </div>
                     </form>
                   </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
+      </Modal>
 
       {/* Delete Question Confirmation */}
       <ConfirmDialog

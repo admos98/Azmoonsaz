@@ -6,22 +6,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Edit3, AlertCircle } from 'lucide-react';
 import {
+  Badge,
   Button,
   Card,
-  Modal,
-  Table,
-  Badge,
   ConfirmDialog,
   Dropdown,
+  Modal,
+  Table,
 } from '../../components/UIComponents';
 import { classService } from '../../services/api';
 import { ClassGroup } from '../../types';
 import { formatPersianNumber } from '../../services/persianHelpers';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { useTeacherCollections } from '../../contexts/TeacherContext';
 
 export default function Classes() {
-  const [classes, setClasses] = useState<ClassGroup[]>([]);
-  const [loading, setLoading] = useState(true);
+  // The class list rides the shared cache — this page used to refetch the
+  // whole collection after every mutation; patches make that unnecessary.
+  const { classGroups: classes, status, upsertClassGroup, removeClassGroup } =
+    useTeacherCollections();
+  const loading = status.classGroups === 'loading';
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassGroup | null>(null);
   const [formData, setFormData] = useState({ name: '', grade: '' });
@@ -31,36 +35,7 @@ export default function Classes() {
   );
   const closeClassEditor = () => guardClassDraft(() => setIsModalOpen(false));
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    classService
-      .getClassGroups()
-      .then((data) => {
-        if (active) setClasses(data);
-      })
-      .catch(() => {
-        if (active) setError('خطا در بارگذاری گروه‌های کلاسی.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const loadClasses = async () => {
-    setLoading(true);
-    try {
-      const data = await classService.getClassGroups();
-      setClasses(data);
-    } catch (_err) {
-      setError('خطا در بارگذاری گروه‌های کلاسی.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadError = status.classGroups === 'error';
 
   const handleOpenModal = (cls?: ClassGroup) => {
     if (cls) {
@@ -83,12 +58,17 @@ export default function Classes() {
 
     try {
       if (editingClass) {
-        await classService.updateClassGroup(editingClass.id, formData.name, formData.grade);
+        const updated = await classService.updateClassGroup(
+          editingClass.id,
+          formData.name,
+          formData.grade,
+        );
+        upsertClassGroup(updated);
       } else {
-        await classService.createClassGroup(formData.name, formData.grade);
+        const created = await classService.createClassGroup(formData.name, formData.grade);
+        upsertClassGroup(created);
       }
       setIsModalOpen(false);
-      await loadClasses();
     } catch (_err) {
       setError('خطایی در ذخیره‌سازی رخ داد.');
     }
@@ -115,7 +95,7 @@ export default function Classes() {
     const removed = classes.find((item) => item.id === classToDelete);
     if (!removed) return;
     if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
-    setClasses((current) => current.filter((item) => item.id !== removed.id));
+    removeClassGroup(removed.id);
     setUndoDelete(removed);
     setClassToDelete(null);
     deleteTimerRef.current = window.setTimeout(async () => {
@@ -123,9 +103,7 @@ export default function Classes() {
         await classService.deleteClassGroup(removed.id);
         setUndoDelete(null);
       } catch (_err) {
-        setClasses((current) =>
-          current.some((item) => item.id === removed.id) ? current : [...current, removed],
-        );
+        upsertClassGroup(removed);
         setUndoDelete(null);
         setError('کلاس حذف نشد و به فهرست بازگردانده شد. دوباره تلاش کنید.');
       }
@@ -136,14 +114,12 @@ export default function Classes() {
     if (!undoDelete) return;
     if (deleteTimerRef.current) window.clearTimeout(deleteTimerRef.current);
     deleteTimerRef.current = null;
-    setClasses((current) =>
-      current.some((item) => item.id === undoDelete.id) ? current : [...current, undoDelete],
-    );
+    upsertClassGroup(undoDelete);
     setUndoDelete(null);
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" dir="rtl">
+    <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-heading-1 font-black text-[var(--color-text-primary)]">
@@ -164,10 +140,10 @@ export default function Classes() {
         </Button>
       </div>
 
-      {error && (
+      {(error || loadError) && (
         <div className="bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/20 text-[var(--color-danger)]/80 p-4 rounded-2xl text-caption font-bold flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
-          {error}
+          {error || 'خطا در بارگذاری گروه‌های کلاسی.'}
         </div>
       )}
 
@@ -177,9 +153,9 @@ export default function Classes() {
           className="flex items-center justify-between gap-4 rounded-2xl bg-[var(--color-warning-soft)] p-4 text-caption font-bold text-[var(--color-text-primary)]"
         >
           <span>کلاس «{undoDelete.name}» حذف شد.</span>
-          <button type="button" className="btn-soft" onClick={undoClassDeletion}>
+          <Button variant="secondary" size="sm" onClick={undoClassDeletion}>
             بازگردانی
-          </button>
+          </Button>
         </div>
       )}
 

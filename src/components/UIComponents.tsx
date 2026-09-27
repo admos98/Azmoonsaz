@@ -9,25 +9,23 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
   Loader2,
-  UploadCloud,
   CheckCircle,
   AlertCircle,
   HelpCircle,
   Info,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   AlertTriangle,
+  ArrowRight,
+  Search,
+  RefreshCw,
 } from 'lucide-react';
-import { formatPersianNumber } from '../services/persianHelpers';
 
 /* ==========================================
    1. BUTTON COMPONENT
    ========================================== */
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?:
-    'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'gold' | 'indigo';
+    'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'gold';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
@@ -50,12 +48,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const baseStyle =
-      'inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none';
+      'inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50 disabled:pointer-events-none';
 
     const variants: Record<ButtonProps['variant'] & {}, string> = {
       primary:
-        'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] shadow-sm',
-      indigo:
         'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] shadow-sm',
       secondary: 'glx-inset hover:brightness-105 text-[var(--color-text-primary)]',
       outline:
@@ -114,7 +110,12 @@ export const Card = ({
     light: 'glx',
     strong: 'glx-strong',
     inset: 'glx-inset',
+    /* No material at all — for content nested inside an already-glass panel.
+       Glass-on-glass multiplies backdrop-filter cost and muddies the read:
+       real glass doesn't refract inside itself. */
+    none: '',
   }[glassLayer];
+  const edgeClass = glassClass ? 'glass-edge' : '';
 
   if (hoverable) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -124,7 +125,7 @@ export const Card = ({
         whileHover={{ y: -4, scale: 1.01 }}
         whileTap={{ scale: 0.995 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className={`glx glass-edge rounded-xl p-5 md:p-6 transition-all ${className}`}
+        className={`${glassClass} ${edgeClass} rounded-xl p-5 md:p-6 transition-all ${className}`.trim()}
         {...spreadProps}
       >
         {children}
@@ -133,7 +134,7 @@ export const Card = ({
   }
   return (
     <div
-      className={`${glassClass} glass-edge rounded-xl p-5 md:p-6 ${className}`}
+      className={`${glassClass} ${edgeClass} rounded-xl p-5 md:p-6 ${className}`.trim()}
       {...props}
     >
       {children}
@@ -182,26 +183,66 @@ export const Badge = ({ variant = 'info', children, className = '' }: BadgeProps
    ========================================== */
 interface StatusBadgeProps {
   status:
-    'draft' | 'scheduled' | 'active' | 'completed' | 'ongoing' | 'submitted' | 'graded' | 'absent';
+    | 'draft'
+    | 'scheduled'
+    | 'active'
+    | 'completed'
+    | 'ongoing'
+    | 'submitted'
+    | 'graded'
+    | 'absent'
+    | 'present'
+    | 'needs-grading';
   className?: string;
 }
 
 export const StatusBadge = ({ status, className = '' }: StatusBadgeProps) => {
+  // Canonical status labels + tones for the whole app (one source of truth).
+  // Live states pulse — the only place that animation is allowed.
   const config: Record<
     StatusBadgeProps['status'],
-    { variant: BadgeProps['variant']; label: string }
+    { variant: BadgeProps['variant']; label: string; live?: boolean }
   > = {
     draft: { variant: 'info', label: 'پیش\u200cنویس' },
-    scheduled: { variant: 'info', label: 'زمان\u200cبندی شده' },
-    active: { variant: 'success', label: 'فعال / در حال برگزاری' },
-    completed: { variant: 'primary', label: 'پایان یافته' },
-    ongoing: { variant: 'warning', label: 'در حال آزمون' },
+    scheduled: { variant: 'info', label: 'برنامه\u200cریزی شده' },
+    active: { variant: 'warning', label: 'در حال برگزاری', live: true },
+    completed: { variant: 'success', label: 'برگزار شده' },
+    ongoing: { variant: 'warning', label: 'در حال آزمون', live: true },
     submitted: { variant: 'info', label: 'تحویل داده شده' },
     graded: { variant: 'success', label: 'تصحیح شده' },
     absent: { variant: 'danger', label: 'غایب' },
+    present: { variant: 'success', label: 'حاضر' },
+    'needs-grading': { variant: 'warning', label: 'نیازمند تصحیح' },
   };
 
   const item = config[status] || { variant: 'info' as const, label: String(status) };
+
+  return (
+    <Badge
+      variant={item.variant}
+      className={`${item.live ? 'animate-pulse ' : ''}${className}`}
+    >
+      {item.label}
+    </Badge>
+  );
+};
+
+/* ==========================================
+   4B. DIFFICULTY BADGE COMPONENT
+   ========================================== */
+interface DifficultyBadgeProps {
+  difficulty?: 'easy' | 'medium' | 'hard';
+  className?: string;
+}
+
+export const DifficultyBadge = ({ difficulty, className = '' }: DifficultyBadgeProps) => {
+  const config: Record<string, { variant: BadgeProps['variant']; label: string }> = {
+    easy: { variant: 'success', label: 'آسان' },
+    medium: { variant: 'warning', label: 'متوسط' },
+    hard: { variant: 'danger', label: 'سخت' },
+  };
+
+  const item = config[difficulty ?? 'medium'];
 
   return (
     <Badge variant={item.variant} className={className}>
@@ -213,11 +254,16 @@ export const StatusBadge = ({ status, className = '' }: StatusBadgeProps) => {
 /* ==========================================
    5. INPUT COMPONENT
    ========================================== */
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+  label?: React.ReactNode;
   error?: string;
   helperText?: string;
+  /** Leading decorative icon (inline-start / physical right in this RTL app) — non-interactive */
   icon?: React.ReactNode;
+  /** Trailing interactive slot (physical left in this RTL app) — e.g. a show-password button */
+  trailing?: React.ReactNode;
+  /** sm: compact fields inside dense editor rows; md (default): standard form field */
+  size?: 'sm' | 'md';
   wrapperClassName?: string;
 }
 
@@ -228,6 +274,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       error,
       helperText,
       icon,
+      trailing,
+      size = 'md',
       id,
       className = '',
       wrapperClassName = '',
@@ -238,6 +286,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const generatedId = useId();
     const inputId = id || generatedId;
+    const sizeBase =
+      size === 'sm'
+        ? 'text-micro px-2.5 py-1.5 rounded-lg'
+        : 'text-label px-4 py-2.5 rounded-xl';
     return (
       <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
         {label && (
@@ -253,12 +305,17 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             type={type}
-            className={`w-full text-label px-4 py-2.5 glx-inset hover:brightness-105 border rounded-xl outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${icon ? 'pr-11' : ''} ${className}`}
+            className={`w-full ${sizeBase} glx-inset hover:brightness-105 border outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${icon ? 'pr-11' : ''} ${trailing ? 'pl-11' : ''} ${className}`}
             {...props}
           />
           {icon && (
             <div className="absolute top-1/2 -translate-y-1/2 right-3 text-[var(--color-text-tertiary)] pointer-events-none">
               {icon}
+            </div>
+          )}
+          {trailing && (
+            <div className="absolute top-1/2 -translate-y-1/2 left-2 flex items-center">
+              {trailing}
             </div>
           )}
         </div>
@@ -327,6 +384,36 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Listbox keyboard model: ArrowDown/ArrowUp move focus between enabled
+    // options (Enter/Space activate natively), Escape closes back to the trigger.
+    const handleListKeyDown = (event: React.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        dropdownRef.current?.querySelector('button')?.focus();
+        return;
+      }
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      event.preventDefault();
+      const opts = Array.from(
+        listRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [],
+      );
+      if (!opts.length) return;
+      const current = opts.indexOf(document.activeElement as HTMLButtonElement);
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      opts[(current + delta + opts.length) % opts.length]?.focus();
+    };
+
+    // When the list opens, park focus on the selected option (or first enabled)
+    // so screen readers and keyboard users start inside the listbox.
+    useLayoutEffect(() => {
+      if (!open) return;
+      const opts = Array.from(
+        listRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [],
+      );
+      (opts.find((o) => o.getAttribute('aria-selected') === 'true') || opts[0])?.focus();
+    }, [open]);
+
     // Portal geometry: anchored to the trigger button and measured in a layout
     // effect so the list never flashes at the document origin before first paint.
     const [listStyle, setListStyle] = useState<React.CSSProperties>({
@@ -378,7 +465,10 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           ref={ref}
           type="button"
           onClick={() => setOpen(!open)}
-          className={`relative w-full flex items-center justify-between glx glass-edge glx-refract border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={open ? `${dropdownId}-list` : undefined}
+          className={`relative w-full flex items-center justify-between glx glass-edge border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
             compact ? 'px-2.5 py-1.5 text-caption' : 'px-3.5 py-2.5 text-label'
           } ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'}`}
         >
@@ -412,17 +502,24 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                 /* No area-blur halo and no drop shadow: the trigger button already
                    carries the glass, and a floating list needs neither. */
                 style={{ ...listStyle, boxShadow: 'none', transformOrigin: 'top center' }}
-                className="relative glx-strong glass-edge glx-refract rounded-xl max-h-56 overflow-y-auto"
+                id={`${dropdownId}-list`}
+                role="listbox"
+                aria-label={label || placeholder}
+                onKeyDown={handleListKeyDown}
+                className="relative glx-strong glass-edge rounded-xl max-h-56 overflow-y-auto"
               >
                 {options.map((opt, i) => (
                   <React.Fragment key={opt.value}>
                     {opt.group && options[i - 1]?.group !== opt.group && (
-                      <div className="px-3.5 pt-2.5 pb-1 text-micro font-black text-[var(--color-text-tertiary)] sticky top-0 bg-[var(--color-paper-warm)]/90 backdrop-blur-sm">
+                      <div className="px-3.5 pt-2.5 pb-1 text-micro font-black text-[var(--color-text-tertiary)] sticky top-0 bg-[var(--color-paper-warm)]/90 chrome-blur">
                         {opt.group}
                       </div>
                     )}
                     <button
                       type="button"
+                      role="option"
+                      aria-selected={value === opt.value}
+                      aria-disabled={opt.disabled || undefined}
                       disabled={opt.disabled}
                       onClick={() => {
                         onChange(opt.value);
@@ -464,17 +561,57 @@ interface TabsProps {
   activeTab: string;
   onChange: (id: string) => void;
   className?: string;
+  /** Accessible name for the tablist */
+  ariaLabel?: string;
 }
 
-export const Tabs = ({ tabs, activeTab, onChange, className = '' }: TabsProps) => {
+export const Tabs = ({ tabs, activeTab, onChange, className = '', ariaLabel }: TabsProps) => {
+  const baseId = useId();
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const focusTab = (index: number) => {
+    const next = (index + tabs.length) % tabs.length;
+    tabRefs.current[next]?.focus();
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    const current = tabs.findIndex((t) => t.id === activeTab);
+    // RTL reading order: ArrowLeft advances to the next tab, ArrowRight goes back
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      focusTab(current + 1);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      focusTab(current - 1);
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      focusTab(0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      focusTab(tabs.length - 1);
+    }
+  };
+
   return (
-    <div className={`flex items-center gap-1 glx-inset p-1.5 rounded-2xl w-fit ${className}`}>
-      {tabs.map((tab) => {
+    <div
+      role="tablist"
+      aria-label={ariaLabel}
+      onKeyDown={handleKeyDown}
+      className={`flex items-center gap-1 glx-inset p-1.5 rounded-2xl w-fit ${className}`}
+    >
+      {tabs.map((tab, index) => {
         const isActive = tab.id === activeTab;
         return (
           <button
             type="button"
             key={tab.id}
+            ref={(el) => {
+              tabRefs.current[index] = el;
+            }}
+            id={`${baseId}-tab-${tab.id}`}
+            role="tab"
+            aria-selected={isActive}
+            tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 text-caption md:text-label font-bold rounded-xl transition-all cursor-pointer select-none ${isActive ? 'bg-[var(--color-gold)]/10 text-[var(--color-ink)] shadow-sm border border-[var(--color-glass-light-stroke)]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-glass-light-stroke)]/20'}`}
           >
@@ -494,9 +631,20 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  /** Optional icon rendered before the title inside the header */
+  icon?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Tailwind max-w tokens: sm=md · md=lg · lg=2xl · 3xl=3xl · xl=4xl · 5xl=5xl */
+  maxWidth?: 'sm' | 'md' | 'lg' | '3xl' | 'xl' | '5xl';
+  /** 'center' (default): dialog / mobile bottom-sheet · 'side': full-height panel docked to the physical left edge */
+  variant?: 'center' | 'side';
+  /** Width classes for variant="side" (default 'max-w-xl') */
+  sideWidth?: string;
+  /** Replaces the default body classes (p-6 + scroll) — for custom layouts like two-pane editors */
+  bodyClassName?: string;
+  /** Replaces the default footer alignment (justify-end) — e.g. 'justify-between' */
+  footerClassName?: string;
   /** Optional trigger button ref — modal animates from/into this button */
   triggerRef?: React.RefObject<HTMLElement | null>;
 }
@@ -505,17 +653,25 @@ export const Modal = ({
   isOpen,
   onClose,
   title,
+  icon,
   children,
   footer,
   maxWidth = 'md',
+  variant = 'center',
+  sideWidth = 'max-w-xl border-r border-[var(--color-glass-light-stroke)]',
+  bodyClassName,
+  footerClassName,
   triggerRef,
 }: ModalProps) => {
   const widthStyles: Record<NonNullable<ModalProps['maxWidth']>, string> = {
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
+    '3xl': 'max-w-3xl',
     xl: 'max-w-4xl',
+    '5xl': 'max-w-5xl',
   };
+  const isSide = variant === 'side';
 
   const panelRef = useRef<HTMLDivElement>(null);
   // Area-blur halo: bigger negative-inset box, same viewport origin point —
@@ -570,7 +726,7 @@ export const Modal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+        <div className={`fixed inset-0 z-50 ${isSide ? '' : 'flex items-end justify-center p-0 sm:items-center sm:p-4'}`}>
           {/* Scrim — fades via opacity, carries NO backdrop-filter. Animating opacity
               on a filtered layer freezes its last frame, and that frozen frame
               outlives the unmount — the ghost print left behind after closing. */}
@@ -596,7 +752,11 @@ export const Modal = ({
           />
 
           <div
-            className={`relative w-full ${widthStyles[maxWidth]} z-10 @container max-sm:max-w-none`}
+            className={
+              isSide
+                ? 'absolute left-0 top-0 h-full z-10'
+                : `relative w-full ${widthStyles[maxWidth]} z-10 @container max-sm:max-w-none`
+            }
           >
             {/* Halo rides the panel's grow/shrink with the same origin and curves, so
                 no detached glow patch floats where the panel will land. NO opacity on
@@ -638,17 +798,24 @@ export const Modal = ({
                 scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
               }}
               style={originStyle}
-              className="relative glx-strong glass-edge flex max-h-[min(90vh,90dvh)] w-full flex-col rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0"
+              className={
+                isSide
+                  ? `relative glx-strong glass-edge flex h-full w-full flex-col ${sideWidth}`
+                  : 'relative glx-strong glass-edge flex max-h-[min(90vh,90dvh)] w-full flex-col rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0'
+              }
               role="dialog"
               tabIndex={-1}
               aria-modal="true"
               aria-label={title}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-glass-light-stroke)]">
-                <h3 className="text-label md:text-body font-black text-[var(--color-text-primary)] text-right">
-                  {title}
-                </h3>
+              <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-glass-light-stroke)] shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {icon && <span className="shrink-0 text-[var(--color-accent)]">{icon}</span>}
+                  <h3 className="text-label md:text-body font-black text-[var(--color-text-primary)] text-right">
+                    {title}
+                  </h3>
+                </div>
                 <button
                   type="button"
                   onClick={onClose}
@@ -659,14 +826,19 @@ export const Modal = ({
                 </button>
               </div>
 
-              {/* Scrollable Body */}
-              <div className="p-6 overflow-y-auto text-caption md:text-label text-[var(--color-text-secondary)] leading-relaxed text-right">
+              {/* Scrollable Body — bodyClassName replaces the default for custom layouts */}
+              <div
+                className={
+                  bodyClassName ??
+                  'p-6 overflow-y-auto text-caption md:text-label text-[var(--color-text-secondary)] leading-relaxed text-right'
+                }
+              >
                 {children}
               </div>
 
               {/* Footer */}
               {footer && (
-                <div className="px-6 py-4 glx-inset border-t border-[var(--color-glass-light-stroke)] flex items-center justify-end gap-3">
+                <div className={`px-6 py-4 glx-inset border-t border-[var(--color-glass-light-stroke)] flex items-center ${footerClassName ?? 'justify-end'} gap-3`}>
                   {footer}
                 </div>
               )}
@@ -679,135 +851,6 @@ export const Modal = ({
 };
 
 /* ==========================================
-   9. DRAWER COMPONENT
-   ========================================== */
-interface DrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  placement?: 'left' | 'right';
-  width?: 'sm' | 'md' | 'lg' | 'xl';
-  children: React.ReactNode;
-}
-
-export const Drawer = ({
-  isOpen,
-  onClose,
-  title,
-  placement = 'right',
-  width = 'md',
-  children,
-}: DrawerProps) => {
-  const widthStyles: Record<NonNullable<DrawerProps['width']>, string> = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-  };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          {/* Backdrop — dim only; blur is localized to the halo below */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bgfx"
-          />
-
-          {/* Drawer container */}
-          <div
-            className={`absolute inset-y-0 ${placement === 'right' ? 'right-0' : 'left-0'} max-w-full flex @container`}
-          >
-            {/* Area-blur halo — follows the drawer slide (own transform, static ancestor) */}
-            <motion.div
-              aria-hidden="true"
-              initial={{ x: placement === 'right' ? '100%' : '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: placement === 'right' ? '100%' : '-100%' }}
-              transition={{ type: 'tween', duration: 0.3 }}
-              className="absolute area-blur"
-            />
-            <motion.div
-              initial={{ x: placement === 'right' ? '100%' : '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: placement === 'right' ? '100%' : '-100%' }}
-              transition={{ type: 'tween', duration: 0.3 }}
-              className={`relative w-screen ${widthStyles[width]} glx-strong glass-edge flex flex-col divide-y divide-[var(--color-glass-light-stroke)]`}
-            >
-              {/* Head */}
-              <div className="p-6 flex items-center justify-between">
-                <h2 className="text-heading-3 font-black text-[var(--color-text-primary)]">
-                  {title}
-                </h2>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  aria-label="بستن پنل"
-                  className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:glx-inset hover:text-[var(--color-text-primary)] cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Children scroll */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 text-caption md:text-label">
-                {children}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
-};
-
-/* ==========================================
-   10. STEPPER COMPONENT
-   ========================================== */
-interface StepperProps {
-  steps: string[];
-  activeStep: number;
-}
-
-export const Stepper = ({ steps, activeStep }: StepperProps) => {
-  return (
-    <div className="flex items-center justify-between w-full relative mb-6">
-      {/* Background connector line */}
-      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[var(--color-glass-light-stroke)] -translate-y-1/2 z-0" />
-
-      {/* Animated active path */}
-      <div
-        className="absolute top-1/2 right-0 h-0.5 bg-[var(--color-accent-solid)] -translate-y-1/2 z-0 transition-all duration-500"
-        style={{ width: `${(activeStep / (steps.length - 1)) * 100}%` }}
-      />
-
-      {steps.map((step, idx) => {
-        const isCompleted = idx < activeStep;
-        const isActive = idx === activeStep;
-        return (
-          <div key={idx} className="flex flex-col items-center gap-2 z-10 relative">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-caption select-none ring-4 ring-white transition-all duration-300 ${isCompleted ? 'bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)]' : isActive ? 'glx border-2 border-[var(--color-accent)] text-[var(--color-accent)] font-extrabold' : 'glx border-2 border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'}`}
-            >
-              {isCompleted ? '✓' : formatPersianNumber(idx + 1)}
-            </div>
-            <span
-              className={`text-micro md:text-caption font-bold transition-all duration-300 ${isActive ? 'text-[var(--color-accent)] font-black' : isCompleted ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-tertiary)]'}`}
-            >
-              {step}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-/* ==========================================
    11. EMPTY STATE COMPONENT
    ========================================== */
 interface EmptyStateProps {
@@ -815,23 +858,47 @@ interface EmptyStateProps {
   title: string;
   description: string;
   action?: React.ReactNode;
+  /** Compact variant for inline spots: table cells, pickers, modal bodies */
+  compact?: boolean;
 }
 
-export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
+export const EmptyState = ({
+  icon,
+  title,
+  description,
+  action,
+  compact = false,
+}: EmptyStateProps) => {
   return (
-    <div className="relative flex flex-col items-center justify-center text-center p-10 md:p-14 border border-dashed glx glass-edge rounded-3xl space-y-4">
-      <div className="p-4 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-full">
-        {icon || <HelpCircle className="w-8 h-8" />}
+    <div
+      className={`relative flex flex-col items-center justify-center text-center border border-dashed glx glass-edge ${
+        compact ? 'p-6 md:p-8 space-y-2.5 rounded-2xl' : 'p-10 md:p-14 space-y-4 rounded-3xl'
+      }`}
+    >
+      <div
+        className={`bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-full ${
+          compact ? 'p-2.5' : 'p-4'
+        }`}
+      >
+        {icon || <HelpCircle className={compact ? 'w-5 h-5' : 'w-8 h-8'} />}
       </div>
-      <div className="space-y-1 w-full max-w-sm">
-        <h4 className="text-label md:text-body font-bold text-[var(--color-text-primary)]">
+      <div className={`space-y-1 w-full ${compact ? 'max-w-xs' : 'max-w-sm'}`}>
+        <h4
+          className={`font-bold text-[var(--color-text-primary)] ${
+            compact ? 'text-caption md:text-label' : 'text-label md:text-body'
+          }`}
+        >
           {title}
         </h4>
-        <p className="text-caption text-[var(--color-text-tertiary)] font-medium leading-relaxed">
+        <p
+          className={`text-[var(--color-text-tertiary)] font-medium leading-relaxed ${
+            compact ? 'text-micro md:text-caption' : 'text-caption'
+          }`}
+        >
           {description}
         </p>
       </div>
-      {action && <div className="pt-2">{action}</div>}
+      {action && <div className={compact ? 'pt-1' : 'pt-2'}>{action}</div>}
     </div>
   );
 };
@@ -899,86 +966,6 @@ export const ConfirmDialog = ({
 };
 
 /* ==========================================
-   13. FILE DROPZONE COMPONENT
-   ========================================== */
-interface FileDropzoneProps {
-  onFileSelect: (file: File) => void;
-  accept?: string;
-  label?: string;
-  description?: string;
-}
-
-export const FileDropzone = ({
-  onFileSelect,
-  accept = '.csv, .xlsx, .xls',
-  label = 'بارگذاری فایل اکسل و اسناد اکسل دانش\u200cآموزان',
-  description = 'فایل را به اینجا بکشید یا برای انتخاب فایل کلیک کنید',
-}: FileDropzoneProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragActive, setIsDragActive] = useState(false);
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setIsDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setIsDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileSelect(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      onFileSelect(e.target.files[0]);
-    }
-  };
-
-  const triggerInput = () => {
-    fileInputRef.current?.click();
-  };
-
-  return (
-    <div
-      onDragEnter={handleDrag}
-      onDragOver={handleDrag}
-      onDragLeave={handleDrag}
-      onDrop={handleDrop}
-      onClick={triggerInput}
-      className={`relative border-2 border-dashed rounded-3xl p-8 hover:border-[var(--color-accent)]/100 hover:brightness-105 transition-all text-center cursor-pointer flex flex-col items-center justify-center space-y-3 ${isDragActive ? 'border-[var(--color-accent)]/100 glx glass-edge' : 'border-[var(--color-glass-light-stroke)] glx'}`}
-    >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={handleChange}
-      />
-      <div className="p-3 bg-[var(--color-accent-soft)] rounded-full text-[var(--color-accent)]">
-        <UploadCloud className="w-6 h-6" />
-      </div>
-      <div>
-        <p className="text-caption md:text-label font-bold text-[var(--color-text-primary)]">
-          {label}
-        </p>
-        <p className="text-micro text-[var(--color-text-tertiary)] font-medium mt-1">
-          {description}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-/* ==========================================
    14. RESPONSIVE CUSTOM TABLE COMPONENT
    ========================================== */
 interface TableColumn {
@@ -995,6 +982,9 @@ interface TableProps<T> {
   emptyTitle?: string;
   emptyDesc?: string;
   emptyAction?: React.ReactNode;
+  /** Standard retry handler — renders the designed retry button in the empty state.
+   *  The design system never falls back to a full page reload. */
+  onRetry?: () => void;
 }
 
 export const Table = <T,>({
@@ -1005,6 +995,7 @@ export const Table = <T,>({
   emptyTitle = 'هیچ اطلاعاتی یافت نشد',
   emptyDesc = 'اطلاعاتی سازگار با فیلترهای کنونی در سیستم وجود ندارد.',
   emptyAction,
+  onRetry,
 }: TableProps<T>) => {
   if (data.length === 0) {
     return (
@@ -1012,11 +1003,17 @@ export const Table = <T,>({
         title={emptyTitle}
         description={emptyDesc}
         action={
-          emptyAction || (
-            <button type="button" className="btn-soft" onClick={() => window.location.reload()}>
-              بازخوانی اطلاعات
-            </button>
-          )
+          emptyAction ??
+          (onRetry ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw className="w-3.5 h-3.5" />}
+              onClick={onRetry}
+            >
+              تلاش دوباره
+            </Button>
+          ) : undefined)
         }
       />
     );
@@ -1033,7 +1030,7 @@ export const Table = <T,>({
       >
         <table className="w-full text-right border-collapse text-caption md:text-label glx-inset">
           <thead>
-            <tr className="glx-inset border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)] font-bold text-micro md:text-caption">
+            <tr className="border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)] font-bold text-micro md:text-caption">
               {headers.map((col, idx) => {
                 const alignStyles: Record<NonNullable<TableColumn['align']>, string> = {
                   right: 'text-right',
@@ -1068,108 +1065,354 @@ export const Table = <T,>({
 };
 
 /* ==========================================
-   15. EXAM TIMER COMPONENT
+   18. PAGE HEADER COMPONENT
+   One h1 per page (level=1 default); h2 only for sub-view headers.
    ========================================== */
-interface ExamTimerProps {
-  durationMinutes: number;
-  onTimeout: () => void;
-  onWarning?: () => void;
-  warningMinutes?: number;
+interface PageHeaderProps {
+  title: string;
+  subtitle?: string;
+  /** Accent chip icon rendered before the title */
+  icon?: React.ReactNode;
+  /** Action buttons rendered at the far (inline-end) side */
+  actions?: React.ReactNode;
+  /** Optional back button (RTL-aware: arrow points toward the start edge) */
+  back?: { label: string; onClick: () => void };
+  level?: 1 | 2;
+  className?: string;
 }
 
-export const ExamTimer = ({
-  durationMinutes,
-  onTimeout,
-  onWarning,
-  warningMinutes = 5,
-}: ExamTimerProps) => {
-  const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
-  const onTimeoutRef = useRef(onTimeout);
-  const onWarningRef = useRef(onWarning);
-
-  useEffect(() => {
-    onTimeoutRef.current = onTimeout;
-  }, [onTimeout]);
-
-  useEffect(() => {
-    onWarningRef.current = onWarning;
-  }, [onWarning]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onTimeoutRef.current();
-          return 0;
-        }
-        if (prev === warningMinutes * 60 && onWarningRef.current) {
-          onWarningRef.current();
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [warningMinutes]);
-
-  const hrs = Math.floor(secondsLeft / 3600);
-  const mins = Math.floor((secondsLeft % 3600) / 60);
-  const secs = secondsLeft % 60;
-
-  const isWarning = secondsLeft < warningMinutes * 60;
-
-  const formatTime = (num: number) => String(num).padStart(2, '0');
-
+export const PageHeader = ({
+  title,
+  subtitle,
+  icon,
+  actions,
+  back,
+  level = 1,
+  className = '',
+}: PageHeaderProps) => {
+  const Heading = (level === 1 ? 'h1' : 'h2') as 'h1';
   return (
-    <div
-      className={`inline-flex items-center gap-2.5 px-3 py-1.5 md:px-4 md:py-2.5 rounded-2xl border font-mono font-bold text-caption select-none transition-all ${isWarning ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)]/10 animate-pulse ring-2 ring-[var(--color-danger)]/20' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[var(--color-accent-soft)]'}`}
-    >
-      <Clock
-        className={`w-4 h-4 ${isWarning ? 'text-[var(--color-danger)]' : 'text-[var(--color-accent)]'}`}
-      />
-      <div className="flex items-center gap-0.5" dir="ltr">
-        {hrs > 0 && (
-          <>
-            <span>{formatPersianNumber(formatTime(hrs))}</span>
-            <span className="animate-pulse">:</span>
-          </>
+    <div className={`flex flex-wrap items-center gap-3 ${className}`}>
+      {back && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={back.onClick}
+          icon={<ArrowRight className="w-4 h-4" />}
+          className="shrink-0"
+        >
+          {back.label}
+        </Button>
+      )}
+      {icon && (
+        <div className="p-2.5 bg-[var(--color-accent-soft)] rounded-xl text-[var(--color-accent)] shrink-0">
+          {icon}
+        </div>
+      )}
+      <div className="min-w-0">
+        <Heading className="text-heading-3 font-black text-[var(--color-text-primary)]">
+          {title}
+        </Heading>
+        {subtitle && (
+          <p className="text-caption text-[var(--color-text-tertiary)] font-medium mt-0.5">
+            {subtitle}
+          </p>
         )}
-        <span>{formatPersianNumber(formatTime(mins))}</span>
-        <span className="animate-pulse">:</span>
-        <span>{formatPersianNumber(formatTime(secs))}</span>
       </div>
-      <span className="text-micro text-current font-sans leading-none pb-0.5">زمان باقی‌مانده</span>
+      {actions && <div className="flex items-center gap-2.5 ms-auto shrink-0">{actions}</div>}
     </div>
   );
 };
 
 /* ==========================================
-   16. PROGRESS BAR COMPONENT
+   19. STAT CARD COMPONENT
    ========================================== */
-interface ProgressBarProps {
-  value: number;
-  max?: number;
+interface StatCardProps {
+  label: string;
+  value: React.ReactNode;
+  unit?: string;
+  /** Micro footnote under the value — color comes from footnoteTone */
+  footnote?: React.ReactNode;
+  footnoteTone?: 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+  /** Color override for the value line (defaults to primary ink) */
+  valueClassName?: string;
+  icon?: React.ReactNode;
+  tone?: 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+  /** inset when the card sits inside an already-glass panel, light when standalone */
+  glassLayer?: 'light' | 'inset';
+  valueSize?: 'lg' | 'md';
+  id?: string;
   className?: string;
-  label?: string;
 }
 
-export const ProgressBar = ({ value, max = 100, className = '', label }: ProgressBarProps) => {
-  const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+const statToneChips: Record<NonNullable<StatCardProps['tone']>, string> = {
+  accent: 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]',
+  success: 'bg-[var(--color-success-soft)] text-[var(--color-success)]',
+  warning: 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]',
+  danger: 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]',
+  info: 'bg-[var(--color-info-soft)] text-[var(--color-info)]',
+  neutral: 'glx text-[var(--color-text-tertiary)]',
+};
+
+const statToneText: Record<NonNullable<StatCardProps['footnoteTone']>, string> = {
+  accent: 'text-[var(--color-accent)]',
+  success: 'text-[var(--color-success)]',
+  warning: 'text-[var(--color-warning)]',
+  danger: 'text-[var(--color-danger)]',
+  info: 'text-[var(--color-info)]',
+  neutral: 'text-[var(--color-text-tertiary)]',
+};
+
+export const StatCard = ({
+  label,
+  value,
+  unit,
+  footnote,
+  footnoteTone = 'neutral',
+  valueClassName = '',
+  icon,
+  tone = 'accent',
+  glassLayer = 'inset',
+  valueSize = 'lg',
+  id,
+  className = '',
+}: StatCardProps) => {
   return (
-    <div className={`w-full text-right ${className}`}>
-      {label && (
-        <div className="flex justify-between text-caption font-bold text-[var(--color-text-secondary)] mb-1">
-          <span>{label}</span>
-          <span>{formatPersianNumber(Math.round(percentage))}%</span>
+    <Card glassLayer={glassLayer} id={id} className={`flex flex-col justify-between ${className}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-micro font-bold text-[var(--color-text-tertiary)]">{label}</span>
+        {icon && <div className={`p-2.5 rounded-xl shrink-0 ${statToneChips[tone]}`}>{icon}</div>}
+      </div>
+      <div className="mt-4">
+        <span
+          className={`font-black tracking-tight leading-tight block ${
+            valueSize === 'lg' ? 'text-heading-1' : 'text-heading-2'
+          } ${valueClassName || 'text-[var(--color-text-primary)]'}`}
+        >
+          {value}
+          {unit && (
+            <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+              {' '}
+              {unit}
+            </span>
+          )}
+        </span>
+        {footnote && (
+          <span className={`text-micro font-semibold mt-1.5 block ${statToneText[footnoteTone]}`}>
+            {footnote}
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+/* ==========================================
+   20. SEARCH INPUT COMPONENT
+   ========================================== */
+export type SearchInputProps = Omit<InputProps, 'type' | 'icon'>;
+
+export const SearchInput = (props: SearchInputProps) => {
+  return <Input type="search" icon={<Search className="h-4 w-4" />} {...props} />;
+};
+
+/* ==========================================
+   21. TEXTAREA COMPONENT
+   ========================================== */
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: React.ReactNode;
+  error?: string;
+  helperText?: string;
+  /** sm: compact fields inside dense editor rows; md (default): standard form field */
+  size?: 'sm' | 'md';
+  /** When set, renders an LTR `used/max` counter under the field (controlled `value` required) */
+  maxCount?: number;
+  wrapperClassName?: string;
+}
+
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  (
+    {
+      label,
+      error,
+      helperText,
+      size = 'md',
+      maxCount,
+      value,
+      id,
+      className = '',
+      wrapperClassName = '',
+      rows = 3,
+      ...props
+    },
+    ref,
+  ) => {
+    const generatedId = useId();
+    const fieldId = id || generatedId;
+    const sizeBase =
+      size === 'sm'
+        ? 'text-micro px-2.5 py-1.5 rounded-lg'
+        : 'text-label px-4 py-2.5 rounded-xl';
+    const valueLength = typeof value === 'string' ? value.length : 0;
+    return (
+      <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
+        {label && (
+          <label
+            htmlFor={fieldId}
+            className="block text-caption md:text-label font-bold text-[var(--color-text-secondary)]"
+          >
+            {label}
+          </label>
+        )}
+        <textarea
+          id={fieldId}
+          ref={ref}
+          rows={rows}
+          value={value}
+          className={`w-full ${sizeBase} glx-inset hover:brightness-105 border outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] resize-y leading-relaxed ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${className}`}
+          {...props}
+        />
+        {maxCount !== undefined && (
+          <p
+            className="text-micro text-[var(--color-text-tertiary)] font-semibold tabular-nums text-left"
+            dir="ltr"
+            aria-live="polite"
+          >
+            {valueLength}/{maxCount}
+          </p>
+        )}
+        {error && (
+          <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>{error}</span>
+          </p>
+        )}
+        {!error && helperText && (
+          <p className="text-micro text-[var(--color-text-tertiary)] font-semibold">{helperText}</p>
+        )}
+      </div>
+    );
+  },
+);
+
+/* ==========================================
+   22. TOGGLE (SWITCH) COMPONENT
+   Accessible switch: role=switch + aria-checked; knob slides toward the
+   inline-end edge when on (correct in both RTL and LTR via dir variants).
+   ========================================== */
+interface ToggleProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  description?: string;
+  id?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+export const Toggle = ({
+  checked,
+  onChange,
+  label,
+  description,
+  id,
+  disabled = false,
+  className = '',
+}: ToggleProps) => {
+  const generatedId = useId();
+  const toggleId = id || generatedId;
+  return (
+    <div className={`flex items-start gap-3 ${className}`}>
+      <button
+        type="button"
+        id={toggleId}
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border px-0.5 transition-all cursor-pointer select-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
+          checked
+            ? 'bg-[var(--color-accent-solid)] border-transparent'
+            : 'glx-inset border-[var(--color-glass-light-stroke)]'
+        }`}
+      >
+        <span
+          className={`inline-block h-4.5 w-4.5 rounded-full shadow-sm transition-transform duration-200 ${
+            checked
+              ? 'bg-[var(--color-text-on-solid)] rtl:-translate-x-[1.375rem] ltr:translate-x-[1.375rem]'
+              : 'translate-x-0 bg-[var(--color-surface-secondary)]'
+          }`}
+        />
+      </button>
+      {(label || description) && (
+        <div className="space-y-0.5 min-w-0">
+          {label && (
+            <span className="block text-caption font-bold text-[var(--color-text-primary)]">
+              {label}
+            </span>
+          )}
+          {description && (
+            <span className="block text-micro text-[var(--color-text-tertiary)] leading-normal">
+              {description}
+            </span>
+          )}
         </div>
       )}
-      <div className="w-full h-2 bg-[var(--color-glass-light-stroke)] rounded-full overflow-hidden">
-        <div
-          className="h-full bg-[var(--color-accent-solid)] transition-all duration-300 rounded-full"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
+    </div>
+  );
+};
+
+/* ==========================================
+   23. FILTER BAR COMPONENT
+   One row: search + dropdown filters + optional clear-all.
+   ========================================== */
+interface FilterBarProps {
+  /** SearchInput slot — rendered first */
+  search?: React.ReactNode;
+  /** Dropdown filters and other inline controls */
+  children?: React.ReactNode;
+  hasActiveFilters?: boolean;
+  onClearAll?: () => void;
+  className?: string;
+}
+
+export const FilterBar = ({
+  search,
+  children,
+  hasActiveFilters = false,
+  onClearAll,
+  className = '',
+}: FilterBarProps) => {
+  return (
+    <div className={`flex flex-wrap items-center gap-2.5 ${className}`}>
+      {search}
+      {children}
+      {hasActiveFilters && onClearAll && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClearAll}
+          icon={<X className="w-3.5 h-3.5" />}
+          className="ms-auto"
+        >
+          پاک کردن فیلترها
+        </Button>
+      )}
+    </div>
+  );
+};
+
+/* ==========================================
+   17A. TOAST STACK CONTAINER
+   Fixed placement for the app's toast column. Toast itself is position-free;
+   the stack owns placement (bottom on mobile, top on sm+), so concurrent
+   toasts stack instead of overlapping.
+   ========================================== */
+export const ToastStack = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 px-4 max-sm:bottom-[max(1rem,env(safe-area-inset-bottom))] sm:top-4">
+      {children}
     </div>
   );
 };
@@ -1212,7 +1455,7 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000, action
 
   return (
     <div
-      className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[100] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2 rounded-xl px-4 py-3 text-label font-bold shadow-lg transition-all duration-300 sm:bottom-auto sm:top-4 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 sm:-translate-y-2'}`}
+      className={`pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-xl px-4 py-3 text-label font-bold shadow-lg transition-all duration-300 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
       role={type === 'error' || type === 'warning' ? 'alert' : 'status'}
       aria-live={type === 'error' || type === 'warning' ? 'assertive' : 'polite'}
       aria-atomic="true"
@@ -1241,6 +1484,3 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000, action
     </div>
   );
 };
-
-/* Re-export ChevronLeft and ChevronRight for consumers */
-export { ChevronLeft, ChevronRight };

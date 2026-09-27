@@ -298,7 +298,7 @@ export default function QuestionRenderer({
                 {question.rubrics.map((rub: RubricCriterion) => (
                   <div
                     key={rub.id}
-                    className="p-3 glx border border-[var(--color-danger)]/20/60 rounded-xl"
+                    className="p-3 glx border border-[var(--color-danger)]/20 rounded-xl"
                   >
                     <div className="flex justify-between items-center pb-1.5 border-b border-[var(--color-danger)]/20 mb-1.5">
                       <strong className="text-[var(--color-danger)] font-bold">{rub.title}</strong>
@@ -402,13 +402,13 @@ export default function QuestionRenderer({
         <div className="space-y-4 mt-3">
           {/* Main Passage box */}
           <div
-            className="bg-[var(--color-accent-soft)]/40 border border-[var(--color-accent)]/20/70 rounded-2xl p-4.5 space-y-3"
+            className="bg-[var(--color-accent-soft)]/40 border border-[var(--color-accent)]/20 rounded-2xl p-4.5 space-y-3"
             id="passage-container"
           >
             <span className="bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] rounded-lg px-2.5 py-0.5 text-micro font-bold inline-block">
               متن درک مطلب (Passage)
             </span>
-            <p className="text-caption text-[var(--color-text-primary)] leading-relaxed leading-[1.8] font-medium pre-wrap">
+            <p className="text-caption text-[var(--color-text-primary)] leading-[1.8] font-medium pre-wrap">
               {question.text}
             </p>
 
@@ -430,7 +430,7 @@ export default function QuestionRenderer({
           {/* Under subquestions parts listing! */}
           {question.parts && question.parts.length > 0 && (
             <div className="space-y-3 mt-4" id="comprehension-parts">
-              <span className="block font-bold text-[var(--color-text-primary)] text-caption border-r-2 border-[var(--color-accent)]/100 pr-2">
+              <span className="block font-bold text-[var(--color-text-primary)] text-caption border-r-2 border-[var(--color-accent)] pr-2">
                 زیرسوالات درک مطلب:
               </span>
 
@@ -485,7 +485,7 @@ export default function QuestionRenderer({
       {question.type === 'cloze' && (
         <div className="space-y-4 mt-3">
           <div
-            className="bg-[var(--color-info-soft)]/30/40 border border-[var(--color-info)]/20/70 p-4.5 rounded-2xl text-caption text-[var(--color-text-primary)] leading-loose leading-[1.8]"
+            className="bg-[var(--color-info-soft)]/30 border border-[var(--color-info)]/20 p-4.5 rounded-2xl text-caption text-[var(--color-text-primary)] leading-[1.8]"
             id="cloze-passage"
           >
             <span className="bg-[var(--color-info-soft)]/80 text-[var(--color-text-on-solid)] rounded-lg px-2 py-0.5 text-micro font-bold mb-3 inline-block">

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   FileText,
@@ -15,15 +15,37 @@ import {
   Calendar,
   Play,
 } from 'lucide-react';
-import { logger } from '../../lib/logger';
-import { Exam, ClassGroup } from '../../types';
-import { classService, examService } from '../../services/api';
+import {
+  Button,
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+} from '../../components/UIComponents';
+import { Exam } from '../../types';
+import { examService } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
+import { useTeacherCollections } from '../../contexts/TeacherContext';
 
-// Import subviews
-import ExamSettings from './ExamSettings';
-import ExamPreview from './ExamPreview';
-import ExamResults from './ExamResults';
+// Sub-views are lazy: together they weigh ~166 KB raw, and a teacher only
+// ever opens one at a time. Settings/Preview/Results each get their own chunk.
+const ExamSettings = lazy(() => import('./ExamSettings'));
+const ExamPreview = lazy(() => import('./ExamPreview'));
+const ExamResults = lazy(() => import('./ExamResults'));
+
+/** Sub-view loading state — mirrors the shell's page skeleton. */
+function SubViewLoader() {
+  return (
+    <div
+      className="space-y-4 p-6 rounded-2xl glx"
+      role="status"
+      aria-label="در حال بارگذاری بخش آزمون"
+    >
+      <div className="h-8 w-56 bg-[var(--color-glass-light-fill)] skeleton rounded-xl" />
+      <div className="h-24 bg-[var(--color-glass-light-fill)] skeleton rounded-2xl" />
+      <div className="h-64 bg-[var(--color-glass-light-fill)] skeleton rounded-2xl" />
+    </div>
+  );
+}
 
 interface ExamsProps {
   onNavigate: (tab: string) => void;
@@ -39,28 +61,7 @@ export default function Exams({
   onSubViewChange,
 }: ExamsProps) {
   const { showToast, toastElement } = useToast();
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [_loading, setLoading] = useState(true);
-  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
-
-  useEffect(() => {
-    const fetchExams = async () => {
-      setLoading(true);
-      try {
-        const data = await examService.getExams();
-        setExams(data);
-      } catch (err) {
-        logger.error('Error fetching exams:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchExams();
-    classService
-      .getClassGroups()
-      .then(setClassGroups)
-      .catch(() => {});
-  }, []);
+  const { exams, classGroups, upsertExam } = useTeacherCollections();
 
   const [activeTab, setActiveTab] = useState<
     'all' | 'active' | 'scheduled' | 'draft' | 'completed'
@@ -79,7 +80,8 @@ export default function Exams({
   const handleStatusChange = async (examId: string, newStatus: Exam['status']) => {
     try {
       const updated = await examService.updateExam(examId, { status: newStatus });
-      setExams(exams.map((e) => (e.id === examId ? { ...e, ...updated } : e)));
+      const existing = exams.find((e) => e.id === examId);
+      if (existing) upsertExam({ ...existing, ...updated });
     } catch (_err) {
       showToast('خطا در تغییر وضعیت آزمون', 'error');
     }
@@ -88,7 +90,8 @@ export default function Exams({
   const handleUpdateExam = async (updatedExam: Exam) => {
     try {
       const updated = await examService.updateExam(updatedExam.id, updatedExam);
-      setExams(exams.map((e) => (e.id === updatedExam.id ? { ...e, ...updated } : e)));
+      const existing = exams.find((e) => e.id === updatedExam.id);
+      if (existing) upsertExam({ ...existing, ...updated });
       showToast('تنظیمات آزمون ذخیره شد.', 'success');
       setLocalSubView('list');
       if (onSubViewChange) onSubViewChange('list');
@@ -97,44 +100,11 @@ export default function Exams({
     }
   };
 
-  const _handleDeleteExam = async (examId: string) => {
-    try {
-      await examService.deleteExam(examId);
-      setExams(exams.filter((e) => e.id !== examId));
-    } catch (_err) {
-      showToast('خطا در حذف آزمون', 'error');
-    }
-  };
-
   // Filter exams by tab
   const filteredExams = exams.filter((e) => {
     if (activeTab === 'all') return true;
     return e.status === activeTab;
   });
-
-  const getStatusLabelInPersian = (status: Exam['status']) => {
-    const labels = {
-      draft: 'پیش‌نویس / غیرفعال',
-      scheduled: 'برنامه‌ریزی شده',
-      active: 'در حال برگزاری (زنده)',
-      completed: 'برگزار شده / خاتمه‌یافته',
-    };
-    return labels[status];
-  };
-
-  const getStatusBadgeStyles = (status: Exam['status']) => {
-    const styles = {
-      draft:
-        'glx-inset text-[var(--color-text-secondary)] border-[var(--color-glass-light-stroke)]',
-      scheduled:
-        'bg-[var(--color-info-soft)] text-[var(--color-info)] border-[var(--color-info)]/20',
-      active:
-        'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/20 animate-pulse',
-      completed:
-        'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/20',
-    };
-    return styles[status] || 'glx-inset text-[var(--color-text-secondary)]';
-  };
 
   const getClassNamesForExam = (classGroupIds: string[]) => {
     return classGroupIds
@@ -152,74 +122,75 @@ export default function Exams({
   // Rendering conditional subviews
   if (effectiveSubView === 'settings' && currentExam) {
     return (
-      <ExamSettings
-        exam={currentExam}
-        onSave={handleUpdateExam}
-        onBack={() => {
-          setLocalSubView('list');
-          if (onSubViewChange) onSubViewChange('list');
-        }}
-      />
+      <Suspense fallback={<SubViewLoader />}>
+        <ExamSettings
+          exam={currentExam}
+          onSave={handleUpdateExam}
+          onBack={() => {
+            setLocalSubView('list');
+            if (onSubViewChange) onSubViewChange('list');
+          }}
+        />
+      </Suspense>
     );
   }
 
   if (effectiveSubView === 'preview' && currentExam) {
     return (
-      <ExamPreview
-        key={currentExam.id}
-        exam={currentExam}
-        onBack={() => {
-          setLocalSubView('list');
-          if (onSubViewChange) onSubViewChange('list');
-        }}
-        onSave={(updatedExam) => {
-          setExams((prev) => prev.map((e) => (e.id === updatedExam.id ? updatedExam : e)));
-          showToast('تغییرات پیش‌نویس ذخیره شد.', 'success');
-        }}
-        onNavigateToSettings={(updatedExam) => {
-          setExams((prev) => prev.map((e) => (e.id === updatedExam.id ? updatedExam : e)));
-          setLocalSubView('settings');
-          if (onSubViewChange) onSubViewChange('settings', currentExam.id);
-        }}
-      />
+      <Suspense fallback={<SubViewLoader />}>
+        <ExamPreview
+          key={currentExam.id}
+          exam={currentExam}
+          onBack={() => {
+            setLocalSubView('list');
+            if (onSubViewChange) onSubViewChange('list');
+          }}
+          onSave={(updatedExam) => {
+            upsertExam(updatedExam);
+            showToast('تغییرات پیش‌نویس ذخیره شد.', 'success');
+          }}
+          onNavigateToSettings={(updatedExam) => {
+            upsertExam(updatedExam);
+            setLocalSubView('settings');
+            if (onSubViewChange) onSubViewChange('settings', currentExam.id);
+          }}
+        />
+      </Suspense>
     );
   }
 
   if (effectiveSubView === 'results' && currentExam) {
     return (
-      <ExamResults
-        exam={currentExam}
-        onBack={() => {
-          setLocalSubView('list');
-          if (onSubViewChange) onSubViewChange('list');
-        }}
-      />
+      <Suspense fallback={<SubViewLoader />}>
+        <ExamResults
+          exam={currentExam}
+          onBack={() => {
+            setLocalSubView('list');
+            if (onSubViewChange) onSubViewChange('list');
+          }}
+        />
+      </Suspense>
     );
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300" id="exams-tab-view">
+    <div className="space-y-6" id="exams-tab-view">
       {toastElement}
       {/* Upper Panel Header Section */}
-      <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx glass-edge p-6 rounded-2xl">
-        <div>
-          <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[var(--color-accent)]" />
-            <span>مدیریت آزمون‌های دوره‌ای و هماهنگ کشوری</span>
-          </h2>
-          <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
-            امکان تعریف، زمان‌بندی، فعال‌سازی با یک کلیک و ارجاع به کلاس‌ها و ثبت نمره‌برگ نهایی
-          </p>
-        </div>
-        <button
-          type="button"
-          id="btn-create-exam-trigger"
-          onClick={() => onNavigate('exams/new')}
-          className="px-4 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>طراحی آزمون نو</span>
-        </button>
+      <div className="relative glx glass-edge p-6 rounded-2xl">
+        <PageHeader
+          title="مدیریت آزمون‌های دوره‌ای و هماهنگ کشوری"
+          subtitle="امکان تعریف، زمان‌بندی، فعال‌سازی با یک کلیک و ارجاع به کلاس‌ها و ثبت نمره‌برگ نهایی"
+          actions={
+            <Button
+              id="btn-create-exam-trigger"
+              onClick={() => onNavigate('exams/new')}
+              icon={<Plus className="w-4 h-4" />}
+            >
+              طراحی آزمون نو
+            </Button>
+          }
+        />
       </div>
 
       {/* Tabs list for Status categories */}
@@ -277,21 +248,17 @@ export default function Exams({
                     ex.status === 'active'
                       ? 'from-[var(--color-warning)] to-[var(--color-danger)]'
                       : ex.status === 'completed'
-                        ? 'from-[var(--color-success)] to-teal-500'
+                        ? 'from-[var(--color-success)] to-[var(--color-success-solid)]'
                         : ex.status === 'scheduled'
                           ? 'from-[var(--color-info)] to-[var(--color-accent)]'
-                          : 'from-slate-400 to-slate-500'
+                          : 'from-[var(--color-text-secondary)] to-[var(--color-text-tertiary)]'
                   }`}
                 />
 
                 {/* Box details top */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-micro font-bold border ${getStatusBadgeStyles(ex.status)}`}
-                    >
-                      {getStatusLabelInPersian(ex.status)}
-                    </span>
+                    <StatusBadge status={ex.status} />
                     <span className="text-micro text-[var(--color-text-tertiary)] font-mono font-bold select-all glx px-2 py-0.5 rounded-md border">
                       کد ورود: {ex.examCode}
                     </span>
@@ -391,9 +358,21 @@ export default function Exams({
               </motion.div>
             ))
           ) : (
-            <div className="col-span-full py-16 text-center glx rounded-2xl text-[var(--color-text-tertiary)]">
-              هیچ آزمونی با ویژگی‌های بالا یافت نشد. می‌توانید با «طراحی آزمون نو» اولین سنجش خود را
-              راه‌اندازی کنید.
+            <div className="col-span-full">
+              <EmptyState
+                icon={<FileText className="w-6 h-6" />}
+                title="آزمونی یافت نشد"
+                description="هیچ آزمونی با ویژگی‌های بالا یافت نشد. اولین سنجش خود را راه‌اندازی کنید."
+                action={
+                  <Button
+                    size="sm"
+                    icon={<Plus className="w-4 h-4" />}
+                    onClick={() => onNavigate('exams/new')}
+                  >
+                    طراحی آزمون نو
+                  </Button>
+                }
+              />
             </div>
           )}
         </AnimatePresence>

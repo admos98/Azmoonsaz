@@ -3,19 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { TeacherProvider } from './contexts/TeacherContext';
+import type { Teacher } from './types';
 import Topbar from './components/Topbar';
 import { GlassFilters } from './components/GlassSystem';
 import Login from './pages/teacher/Login';
 import Onboarding from './pages/teacher/Onboarding';
 import ResetPassword from './pages/teacher/ResetPassword';
-import ExamPortal from './pages/student/ExamPortal';
-import SecureExamPortal from './pages/student/SecureExamPortal';
-import { Toast } from './components/UIComponents';
-import { Exam } from './types';
-import { getSupabasePublicClient } from './lib/supabasePublic';
 import { authService } from './services/api';
+import { getSupabasePublicClient } from './lib/supabasePublic';
 import { teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
 import { useEdgeLight } from './hooks/useEdgeLight';
@@ -43,10 +40,12 @@ function WorkspacePreferenceApplier() {
 }
 
 /** Drives the glass rim. Rendered null, like WorkspacePreferenceApplier — it
- *  only exists to install its delegated pointer listener. */
+ *  only exists to install its delegated pointer listener. Uses the RESOLVED
+ *  motion value, not the raw preference: a "system" user whose OS requests
+ *  reduced motion must also get a static rim. */
 function EdgeLightDriver() {
-  const { motionPreference } = useMotionPreference();
-  useEdgeLight(motionPreference !== 'reduced');
+  const { resolvedMotion } = useMotionPreference();
+  useEdgeLight(resolvedMotion !== 'reduce');
   return null;
 }
 
@@ -57,41 +56,38 @@ const NewExam = lazy(loadNewExam);
 const SettingsHub = lazy(loadSettingsHub);
 const TeacherProfile = lazy(loadTeacherProfile);
 
+// Student portal — the highest-stakes surface is code-split: teachers never
+// download it and it stays out of the entry chunk.
+const SecureExamPortal = lazy(() => import('./pages/student/SecureExamPortal'));
+
 // Dev-only material laboratory (`/dev/fixtures`). Rendered before auth so the
 // visual baseline can be captured without a backend; never linked from nav.
 const FixtureGallery = lazy(() => import('./pages/dev/FixtureGallery'));
 
-// Toast state shared via simple emitter for App-level toasts
-const toastQueue: Array<{
-  id: number;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-}> = [];
-let toastNextId = 0;
-const toastListeners: Array<() => void> = [];
-// eslint-disable-next-line react-refresh/only-export-components
-export const showAppToast = (
-  message: string,
-  type: 'success' | 'error' | 'warning' | 'info' = 'info',
-) => {
-  if (toastQueue.some((toast) => toast.message === message && toast.type === type)) return;
-  const id = ++toastNextId;
-  toastQueue.push({ id, message, type });
-  toastListeners.forEach((l) => l());
-  setTimeout(() => {
-    toastQueue.splice(
-      toastQueue.findIndex((t) => t.id === id),
-      1,
-    );
-    toastListeners.forEach((l) => l());
-  }, 4000);
-};
+/** Full-page boot state. Used for the auth handshake and as the Suspense
+ *  fallback on route-level code boundaries. */
+function BootScreen({ label }: { label: string }) {
+  return (
+    <div
+      className="grid min-h-screen place-items-center bg-[var(--color-page-bg)]"
+      role="status"
+      aria-label={label}
+    >
+      <div className="space-y-4 text-center">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-ink)]" />
+        <p className="text-label text-[var(--color-text-secondary)]">{label}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-  const [userRole, setUserRole] = useState<'teacher' | 'student'>('teacher');
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
   const [authInitializing, setAuthInitializing] = useState(true);
   const [isOnboarded, setIsOnboarded] = useState(true);
+  /** Profile fetched during boot or handed over by Login. `undefined` tells
+   *  TeacherProvider to fetch for itself (self-heal / post-onboarding). */
+  const [bootTeacher, setBootTeacher] = useState<Teacher | undefined>(undefined);
   const [currentTab, setCurrentTab] = useState<string>(() =>
     teacherTabFromPath(window.location.pathname),
   );
@@ -100,7 +96,6 @@ export default function App() {
   const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>(
     'list',
   );
-  const [toastSnapshot, setToastSnapshot] = useState<Array<(typeof toastQueue)[0]>>([]);
 
   useEffect(() => {
     let active = true;
@@ -115,8 +110,14 @@ export default function App() {
         setCurrentTab('dashboard');
       }
       if (data.session) {
+        // The ONE /api/teacher/me call of the boot path. Login hands its own
+        // profile over via onLoginSuccess; TeacherProvider receives this one
+        // as initialTeacher — no second round-trip anywhere.
         const teacher = await authService.getCurrentTeacher();
-        if (active && teacher) setIsOnboarded(teacher.isOnboarded ?? true);
+        if (active && teacher) {
+          setBootTeacher(teacher);
+          setIsOnboarded(teacher.isOnboarded ?? true);
+        }
       }
       if (active) setAuthInitializing(false);
     };
@@ -129,15 +130,6 @@ export default function App() {
     return () => {
       active = false;
       subscription.subscription.unsubscribe();
-    };
-  }, []);
-
-  const flushToasts = () => setToastSnapshot([...toastQueue]);
-  useEffect(() => {
-    toastListeners.push(flushToasts);
-    return () => {
-      const idx = toastListeners.indexOf(flushToasts);
-      if (idx > -1) toastListeners.splice(idx, 1);
     };
   }, []);
 
@@ -175,41 +167,52 @@ export default function App() {
     navigateToLocalPath(teacherPathFromTab(tab));
   };
 
-  // Check onboarding status after login
-  useEffect(() => {
-    if (!isTeacherLoggedIn) return;
-    authService.getCurrentTeacher().then((teacher) => {
-      if (teacher) setIsOnboarded(teacher.isOnboarded ?? true);
-    });
-  }, [isTeacherLoggedIn]);
+  // Check onboarding status after login — handled by Login's onLoginSuccess
+  // handoff (it already holds the profile from the sign-in response), so the
+  // previous duplicate getCurrentTeacher effect is gone.
 
-  // Handle addition of designed exam
-  const [customExams, setCustomExams] = useState<Exam[]>([]);
-
-  const handleAddNewExam = (newExam: Exam) => {
-    setCustomExams([newExam, ...customExams]);
+  // Handle addition of designed exam — the exam itself is persisted by the
+  // service; the shared cache patches itself, so no local copy is needed.
+  const handleAddNewExam = () => {
     setCurrentTab('exams');
     setExamSubView('list');
     navigateToLocalPath('/teacher/exams');
-    showAppToast('آزمون جدید با موفقیت ایجاد شد.', 'success');
   };
+
+  /** Single source of exam sub-view navigation — App.tsx had three verbatim
+   *  copies of this closure (two <Exams> mounts + results selection). */
+  const handleExamSubViewChange = useCallback(
+    (view: 'list' | 'settings' | 'preview' | 'results', id?: string) => {
+      setExamSubView(view);
+      setSelectedExamId(id);
+      if (view === 'results' && id) {
+        navigateToLocalPath(`/teacher/exams/${id}/results`);
+      } else if (view === 'list') {
+        navigateToLocalPath('/teacher/exams');
+      }
+    },
+    // navigateToLocalPath closes over currentTab-free setters only; the empty
+    // dep list keeps this handler stable for the whole session.
+    [],
+  );
 
   const handleSelectExamForResults = (examId: string) => {
     setCurrentTab('exams');
-    setSelectedExamId(examId);
-    setExamSubView('results');
-    navigateToLocalPath(`/teacher/exams/${examId}/results`);
+    handleExamSubViewChange('results', examId);
   };
 
-  // Switch Role
-  const handleSwitchUserRole = () => {
-    if (userRole === 'teacher') {
-      setUserRole('student');
-      navigateToLocalPath('/secure-exam/DEMO7');
-    } else {
-      setUserRole('teacher');
-      navigateToLocalPath('/teacher/dashboard');
-    }
+  /** Login hands over the profile it already fetched during sign-in —
+   *  no second /api/teacher/me round-trip after a fresh login. */
+  const handleLoginSuccess = (teacher: Teacher) => {
+    setBootTeacher(teacher);
+    setIsOnboarded(teacher.isOnboarded ?? true);
+    setIsTeacherLoggedIn(true);
+  };
+
+  /** Return point for the student portal (its "بازگشت" affordance). */
+  const returnToTeacherHome = () => {
+    navigateToLocalPath('/teacher/dashboard');
+    setCurrentTab('dashboard');
   };
 
   // Main layout router
@@ -223,92 +226,65 @@ export default function App() {
           />
         );
       case 'students':
-        return <TeacherProfile initialTab="students" onNavigate={navigateTeacher} />;
       case 'classes':
-        return <TeacherProfile initialTab="classes" onNavigate={navigateTeacher} />;
       case 'profile':
-        return <TeacherProfile onNavigate={navigateTeacher} />;
+        return (
+          <TeacherProfile
+            initialTab={currentTab === 'profile' ? undefined : (currentTab as 'students' | 'classes')}
+            onNavigate={navigateTeacher}
+          />
+        );
       case 'questions':
         return <SettingsHub initialTab="questions" onNavigate={navigateTeacher} />;
       case 'exams/new':
         return <NewExam onBack={() => navigateTeacher('exams')} onAddExam={handleAddNewExam} />;
       case 'exams':
+      case 'results':
+        // 'results' is the Dashboard quick-links tab: the results sub-view is
+        // forced; otherwise App's examSubView state decides.
         return (
           <Exams
             onNavigate={navigateTeacher}
             selectedExamId={selectedExamId}
-            subView={examSubView}
-            onSubViewChange={(view, id) => {
-              setExamSubView(view);
-              setSelectedExamId(id);
-              if (view === 'results' && id) {
-                navigateToLocalPath(`/teacher/exams/${id}/results`);
-              } else if (view === 'list') {
-                navigateToLocalPath('/teacher/exams');
-              }
-            }}
+            subView={currentTab === 'results' ? 'results' : examSubView}
+            onSubViewChange={handleExamSubViewChange}
           />
         );
-      case 'results': {
-        const firstExam = customExams[0];
-        return (
-          <Exams
-            onNavigate={navigateTeacher}
-            selectedExamId={selectedExamId || firstExam?.id}
-            subView="results"
-            onSubViewChange={(view, id) => {
-              setExamSubView(view);
-              setSelectedExamId(id);
-              if (view === 'results' && id) {
-                navigateToLocalPath(`/teacher/exams/${id}/results`);
-              } else if (view === 'list') {
-                navigateToLocalPath('/teacher/exams');
-              }
-            }}
-          />
-        );
-      }
       case 'settings':
         return <SettingsHub onNavigate={navigateTeacher} />;
       default:
-        return <Dashboard onNavigate={navigateTeacher} />;
+        // Unknown tabs fall back to the dashboard WITH the full prop set —
+        // the previous default silently dropped onSelectExamForResults.
+        return (
+          <Dashboard
+            onNavigate={navigateTeacher}
+            onSelectExamForResults={handleSelectExamForResults}
+          />
+        );
     }
   };
 
-  const secureExamRouteMatch = currentPath.match(/^\/secure-exam\/([^/]+)$/);
+  // Student entry routes — two URL shapes, one portal. The portal is lazy:
+  // teachers never download it, and the boundary keeps the route swap smooth.
+  const studentPortalMatch =
+    currentPath.match(/^\/secure-exam\/([^/]+)$/) ??
+    currentPath.match(/^\/exam\/([^/]+)(?:\/(start|take|submitted))?$/);
 
-  if (secureExamRouteMatch) {
+  if (studentPortalMatch) {
     return (
-      <SecureExamPortal
-        presetExamCode={secureExamRouteMatch[1]}
-        onBackToTeacher={() => {
-          navigateToLocalPath('/teacher/dashboard');
-          setCurrentTab('dashboard');
-          setUserRole('teacher');
-        }}
-      />
-    );
-  }
-
-  const examRouteMatch = currentPath.match(/^\/exam\/([^/]+)(?:\/(start|take|submitted))?$/);
-
-  if (examRouteMatch) {
-    const code = examRouteMatch[1];
-    return (
-      <SecureExamPortal
-        presetExamCode={code}
-        onBackToTeacher={() => {
-          navigateToLocalPath('/teacher/dashboard');
-          setCurrentTab('dashboard');
-          setUserRole('teacher');
-        }}
-      />
+      <Suspense fallback={<BootScreen label="در حال بارگذاری سامانه آزمون" />}>
+        <SecureExamPortal
+          presetExamCode={studentPortalMatch[1]}
+          onBackToTeacher={returnToTeacherHome}
+        />
+      </Suspense>
     );
   }
 
   // Dev-only material laboratory — bypasses auth so primitives can be
-  // inspected without a backend session.
-  if (currentPath.startsWith('/dev/')) {
+  // inspected without a backend session. Compiled out of production builds:
+  // the bypass-auth design must never ship.
+  if (import.meta.env.DEV && currentPath.startsWith('/dev/')) {
     return (
       <Suspense
         fallback={
@@ -324,37 +300,11 @@ export default function App() {
     );
   }
 
-  if (userRole === 'student') {
-    return (
-      <ExamPortal
-        onBackToTeacher={() => {
-          navigateToLocalPath('/teacher/dashboard');
-          setCurrentTab('dashboard');
-          setUserRole('teacher');
-        }}
-        presetExamCode="8AF39"
-        subRoute="login"
-        onNavigate={navigateToLocalPath}
-      />
-    );
+  if (authInitializing) {
+    return <BootScreen label="در حال آماده‌سازی حساب…" />;
   }
 
-  if (userRole === 'teacher' && authInitializing) {
-    return (
-      <div
-        className="grid min-h-screen place-items-center bg-[var(--color-page-bg)]"
-        role="status"
-        aria-label="در حال بررسی نشست کاربری"
-      >
-        <div className="space-y-4 text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-ink)]" />
-          <p className="text-label text-[var(--color-text-secondary)]">در حال آماده‌سازی حساب…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (userRole === 'teacher' && !isTeacherLoggedIn) {
+  if (!isTeacherLoggedIn) {
     if (isPasswordReset) {
       return (
         <ResetPassword
@@ -365,23 +315,24 @@ export default function App() {
         />
       );
     }
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (isTeacherLoggedIn && !isOnboarded) {
+    // Clear the pre-onboarding handoff profile: it predates the school/subject
+    // the teacher just entered, so the provider must fetch a fresh one.
     return (
-      <Login
-        onLoginSuccess={() => setIsTeacherLoggedIn(true)}
-        onSwitchToStudent={() => {
-          setUserRole('student');
-          navigateToLocalPath('/secure-exam/DEMO7');
+      <Onboarding
+        onComplete={() => {
+          setBootTeacher(undefined);
+          setIsOnboarded(true);
         }}
       />
     );
   }
 
-  if (userRole === 'teacher' && isTeacherLoggedIn && !isOnboarded) {
-    return <Onboarding onComplete={() => setIsOnboarded(true)} />;
-  }
-
   return (
-    <TeacherProvider>
+    <TeacherProvider initialTeacher={bootTeacher}>
       <WorkspacePreferenceApplier />
       <EdgeLightDriver />
       <GlassFilters />
@@ -401,9 +352,12 @@ export default function App() {
           <Topbar
             currentTab={currentTab}
             onTabChange={navigateTeacher}
-            onSwitchRole={handleSwitchUserRole}
             onLogout={() => {
-              void authService.logoutTeacher().finally(() => setIsTeacherLoggedIn(false));
+              void authService.logoutTeacher().finally(() => {
+                setIsTeacherLoggedIn(false);
+                setBootTeacher(undefined);
+                setIsOnboarded(true);
+              });
             }}
             onSelectExamForResults={handleSelectExamForResults}
           />
@@ -432,27 +386,6 @@ export default function App() {
             </Suspense>
           </div>
         </div>
-      </div>
-
-      {/* App-level Toast container */}
-      <div
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2"
-        id="app-toasts"
-      >
-        {toastSnapshot.map((t) => (
-          <Toast
-            key={t.id}
-            message={t.message}
-            type={t.type}
-            onClose={() => {
-              toastQueue.splice(
-                toastQueue.findIndex((q) => q.id === t.id),
-                1,
-              );
-              setToastSnapshot([...toastQueue]);
-            }}
-          />
-        ))}
       </div>
     </TeacherProvider>
   );

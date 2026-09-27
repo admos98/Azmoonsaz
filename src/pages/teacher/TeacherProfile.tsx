@@ -1,5 +1,14 @@
 import { useMemo, useRef, useState } from 'react';
 import {
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  PageHeader,
+  Tabs,
+  Textarea,
+} from '../../components/UIComponents';
+import {
   Camera,
   CalendarDays,
   GraduationCap,
@@ -31,6 +40,13 @@ type ScheduleItem = {
 
 const days = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'];
 const makeId = () => crypto.randomUUID();
+
+/* Shared field styling for the weekly schedule rows — native date/time and
+   select pickers stay native (no library equivalent), styled to the system. */
+const scheduleFieldClass =
+  'w-full min-w-0 h-11 px-2 border border-[var(--color-glass-light-stroke)] rounded-xl bg-[var(--color-surface)] text-caption text-[var(--color-text-primary)]';
+const scheduleLabelClass =
+  'block mx-0.5 mb-1.5 text-micro font-bold text-[var(--color-text-tertiary)]';
 
 export default function TeacherProfile({
   initialTab = 'overview',
@@ -236,7 +252,7 @@ export default function TeacherProfile({
     <div className="mx-auto max-w-7xl space-y-6">
       <ProfileHeader tab={tab} setTab={handleTabChange} />
 
-      <section className="relative profile-cover glx glass-edge overflow-hidden rounded-[28px] p-5 sm:p-7">
+      <section className="relative glx glass-edge overflow-hidden rounded-[28px] p-5 sm:p-7 bg-[linear-gradient(120deg,rgba(255,255,255,0.76),rgba(250,249,246,0.58))]">
         <div className="relative z-10 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
           <button
             type="button"
@@ -282,15 +298,14 @@ export default function TeacherProfile({
           </div>
 
           <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            <button
-              type="button"
+            <Button
               onClick={save}
               disabled={status.type === 'saving' || status.type === 'uploading'}
-              className="btn-brand disabled:cursor-wait disabled:opacity-60"
+              isLoading={status.type === 'saving'}
+              icon={<Save className="h-4 w-4" aria-hidden="true" />}
             >
-              <Save className="h-4 w-4" aria-hidden="true" />
               {status.type === 'saving' ? 'در حال ذخیره…' : 'ذخیره تغییرات'}
-            </button>
+            </Button>
             {status.message && (
               <p
                 role={status.type === 'error' ? 'alert' : 'status'}
@@ -305,68 +320,63 @@ export default function TeacherProfile({
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
-        <section className="relative glx glass-edge panel-shell space-y-5">
-          <SectionTitle
-            icon={<UserRound />}
+        <Card glassLayer="light" className="relative rounded-3xl space-y-5">
+          <PageHeader
+            level={2}
+            icon={<UserRound className="h-5 w-5" />}
             title="اطلاعات دبیر"
-            description="اطلاعاتی که در پنل و آزمون‌ها نمایش داده می‌شود."
+            subtitle="اطلاعاتی که در پنل و آزمون‌ها نمایش داده می‌شود."
           />
-          <label className="field-label">
-            نام و نام خانوادگی
-            <input
-              className="profile-input"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label className="field-label">
-            درس یا دروس تخصصی
-            <input
-              className="profile-input"
-              value={subject}
-              onChange={(event) => setSubject(event.target.value)}
-              placeholder="مثلاً ریاضی و فیزیک"
-            />
-          </label>
-          <label className="field-label">
-            درباره من
-            <textarea
-              className="profile-input min-h-24 resize-y py-3 leading-7"
-              value={bio}
-              onChange={(event) => setBio(event.target.value)}
-              placeholder="معرفی کوتاه برای نمایش در کنار آزمون‌ها"
-              maxLength={1000}
-            />
-            <span className="mt-1 block text-caption font-normal text-[var(--color-text-tertiary)]">
-              {bio.length.toLocaleString('fa-IR')} از ۱٬۰۰۰ نویسه
-            </span>
-          </label>
+          <Input
+            label="نام و نام خانوادگی"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <Input
+            label="درس یا دروس تخصصی"
+            value={subject}
+            onChange={(event) => setSubject(event.target.value)}
+            placeholder="مثلاً ریاضی و فیزیک"
+          />
+          <Textarea
+            label="درباره من"
+            rows={4}
+            value={bio}
+            onChange={(event) => setBio(event.target.value)}
+            placeholder="معرفی کوتاه برای نمایش در کنار آزمون‌ها"
+            maxLength={1000}
+            maxCount={1000}
+            className="min-h-24 leading-7"
+          />
 
           <div>
-            <p className="field-label mb-2">مدارس محل تدریس</p>
+            <p className="mb-2 block text-caption md:text-label font-bold text-[var(--color-text-secondary)]">
+              مدارس محل تدریس
+            </p>
             <div className="space-y-2">
               {schools.map((school, index) => (
                 <div key={school.id} className="flex items-center gap-2">
-                  <div className="profile-input mt-0 flex flex-1 items-center gap-2">
-                    <School className="h-4 w-4 text-[var(--color-ink)]" aria-hidden="true" />
-                    <span className="flex-1">{school.name}</span>
+                  <div className="mt-0 flex h-11 min-w-0 flex-1 items-center gap-2 rounded-[14px] border border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-panel-fill)] px-3">
+                    <School className="h-4 w-4 shrink-0 text-[var(--color-ink)]" aria-hidden="true" />
+                    <span className="flex-1 truncate">{school.name}</span>
                     {index === 0 && (
                       <span className="text-caption text-[var(--color-text-tertiary)]">اصلی</span>
                     )}
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => removeSchool(school)}
-                    className="min-h-11 rounded-xl px-3 text-caption text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
+                    className="text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
                   >
                     حذف
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
             <div className="mt-3 flex gap-2">
-              <input
-                className="profile-input mt-0 flex-1"
+              <Input
+                wrapperClassName="flex-1"
                 value={newSchool}
                 onChange={(event) => setNewSchool(event.target.value)}
                 onKeyDown={(event) => {
@@ -378,18 +388,19 @@ export default function TeacherProfile({
                 placeholder="نام مدرسه جدید"
                 aria-label="نام مدرسه جدید"
               />
-              <button type="button" className="btn-soft" onClick={addSchool}>
-                <Plus className="h-4 w-4" aria-hidden="true" /> افزودن
-              </button>
+              <Button variant="secondary" size="sm" onClick={addSchool} icon={<Plus className="h-4 w-4" aria-hidden="true" />}>
+                افزودن
+              </Button>
             </div>
           </div>
-        </section>
+        </Card>
 
-        <section className="relative glx glass-edge panel-shell">
-          <SectionTitle
-            icon={<CalendarDays />}
+        <Card glassLayer="light" className="relative rounded-3xl">
+          <PageHeader
+            level={2}
+            icon={<CalendarDays className="h-5 w-5" />}
             title="برنامه هفتگی"
-            description="کلاس‌ها، مدرسه و ساعت تدریس شما."
+            subtitle="کلاس‌ها، مدرسه و ساعت تدریس شما."
           />
           <div className="mt-5 grid grid-cols-7 gap-1" aria-label="روزهای هفته">
             {days.map((day) => (
@@ -406,10 +417,14 @@ export default function TeacherProfile({
           <div className="mt-5 space-y-3">
             {schedule.length ? (
               schedule.map((item) => (
-                <div key={item.id} className="schedule-card">
-                  <label>
-                    <span>روز</span>
+                <div
+                  key={item.id}
+                  className="relative grid grid-cols-2 items-end gap-2 rounded-2xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-light-fill)] p-3 min-[900px]:grid-cols-[0.8fr_0.8fr_0.8fr_1.3fr_1.2fr_1.2fr_auto]"
+                >
+                  <label className="min-w-0">
+                    <span className={scheduleLabelClass}>روز</span>
                     <select
+                      className={scheduleFieldClass}
                       value={item.day}
                       onChange={(event) =>
                         updateSchedule(item.id, { day: Number(event.target.value) })
@@ -422,27 +437,30 @@ export default function TeacherProfile({
                       ))}
                     </select>
                   </label>
-                  <label>
-                    <span>شروع</span>
+                  <label className="min-w-0">
+                    <span className={scheduleLabelClass}>شروع</span>
                     <input
                       type="time"
+                      className={scheduleFieldClass}
                       value={item.startTime}
                       onChange={(event) =>
                         updateSchedule(item.id, { startTime: event.target.value })
                       }
                     />
                   </label>
-                  <label>
-                    <span>پایان</span>
+                  <label className="min-w-0">
+                    <span className={scheduleLabelClass}>پایان</span>
                     <input
                       type="time"
+                      className={scheduleFieldClass}
                       value={item.endTime}
                       onChange={(event) => updateSchedule(item.id, { endTime: event.target.value })}
                     />
                   </label>
-                  <label>
-                    <span>مدرسه</span>
+                  <label className="min-w-0">
+                    <span className={scheduleLabelClass}>مدرسه</span>
                     <select
+                      className={scheduleFieldClass}
                       value={item.schoolName}
                       onChange={(event) =>
                         updateSchedule(item.id, { schoolName: event.target.value })
@@ -456,9 +474,10 @@ export default function TeacherProfile({
                       ))}
                     </select>
                   </label>
-                  <label>
-                    <span>کلاس</span>
+                  <label className="min-w-0">
+                    <span className={scheduleLabelClass}>کلاس</span>
                     <input
+                      className={scheduleFieldClass}
                       value={item.className}
                       onChange={(event) =>
                         updateSchedule(item.id, { className: event.target.value })
@@ -466,61 +485,44 @@ export default function TeacherProfile({
                       placeholder="مثلاً هفتم الف"
                     />
                   </label>
-                  <label>
-                    <span>درس</span>
+                  <label className="min-w-0">
+                    <span className={scheduleLabelClass}>درس</span>
                     <input
+                      className={scheduleFieldClass}
                       value={item.subject}
                       onChange={(event) => updateSchedule(item.id, { subject: event.target.value })}
                       placeholder="نام درس"
                     />
                   </label>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
                     onClick={() =>
                       setSchedule((current) => current.filter((row) => row.id !== item.id))
                     }
-                    className="schedule-delete"
+                    className="h-11 w-11 p-0 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] min-[900px]:justify-self-end"
                     aria-label="حذف این کلاس از برنامه"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </button>
+                    icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+                  />
                 </div>
               ))
             ) : (
-              <div className="empty-quiet">
-                <CalendarDays className="h-7 w-7" aria-hidden="true" />
-                <p>برنامه‌ای ثبت نشده است.</p>
-              </div>
+              <EmptyState
+                compact
+                icon={<CalendarDays className="h-7 w-7" />}
+                title="برنامه‌ای ثبت نشده است."
+                description="کلاس‌های هفتگی خود را اضافه کنید تا در این برنامه نمایش داده شوند."
+              />
             )}
           </div>
-          <button
-            type="button"
-            className="btn-soft mt-4 w-full justify-center"
+          <Button
+            variant="secondary"
+            className="mt-4 w-full"
             onClick={addSchedule}
+            icon={<Plus className="h-4 w-4" aria-hidden="true" />}
           >
-            <Plus className="h-4 w-4" aria-hidden="true" /> افزودن کلاس به برنامه
-          </button>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-function SectionTitle({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="section-title">
-      {icon}
-      <div>
-        <h2>{title}</h2>
-        <p>{description}</p>
+            افزودن کلاس به برنامه
+          </Button>
+        </Card>
       </div>
     </div>
   );
@@ -528,13 +530,10 @@ function SectionTitle({
 
 function ProfileHeader({ tab, setTab }: { tab: ProfileTab; setTab: (tab: ProfileTab) => void }) {
   const tabs: Array<{ id: ProfileTab; label: string; icon: React.ReactNode }> = [
-    { id: 'overview', label: 'پروفایل', icon: <UserRound /> },
-    { id: 'students', label: 'دانش‌آموزان', icon: <Users /> },
-    { id: 'classes', label: 'کلاس‌ها', icon: <GraduationCap /> },
+    { id: 'overview', label: 'پروفایل', icon: <UserRound className="h-4 w-4" /> },
+    { id: 'students', label: 'دانش‌آموزان', icon: <Users className="h-4 w-4" /> },
+    { id: 'classes', label: 'کلاس‌ها', icon: <GraduationCap className="h-4 w-4" /> },
   ];
-  const activate = (next: ProfileTab) => {
-    setTab(next);
-  };
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -543,37 +542,13 @@ function ProfileHeader({ tab, setTab }: { tab: ProfileTab; setTab: (tab: Profile
           پروفایل، دانش‌آموزان و برنامه تدریس در یک مکان
         </p>
       </div>
-      <div
-        className="segmented-control"
-        role="tablist"
-        aria-label="بخش‌های پروفایل دبیر"
-        onKeyDown={(event) => {
-          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-          event.preventDefault();
-          const index = tabs.findIndex((item) => item.id === tab);
-          const direction = event.key === 'ArrowLeft' ? 1 : -1;
-          const next = tabs[(index + direction + tabs.length) % tabs.length];
-          activate(next.id);
-          requestAnimationFrame(() =>
-            event.currentTarget.querySelector<HTMLElement>('[aria-selected="true"]')?.focus(),
-          );
-        }}
-      >
-        {tabs.map((item) => (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === item.id}
-            tabIndex={tab === item.id ? 0 : -1}
-            key={item.id}
-            onClick={() => activate(item.id)}
-            className={tab === item.id ? 'active' : ''}
-          >
-            {item.icon}
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={tabs}
+        activeTab={tab}
+        onChange={(id) => setTab(id as ProfileTab)}
+        className="w-full sm:w-auto"
+        ariaLabel="بخش‌های پروفایل دبیر"
+      />
     </div>
   );
 }

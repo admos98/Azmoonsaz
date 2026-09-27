@@ -106,12 +106,13 @@ export const teacherProfileService = {
 };
 
 export const classService = {
-  async getClassGroups(): Promise<ClassGroup[]> {
+  async getClassGroups(options?: { throwOnError?: boolean }): Promise<ClassGroup[]> {
     try {
       const response = await teacherGet<{ classes: ClassGroup[] }>('/api/teacher/classes');
       return response.classes;
     } catch (err) {
       logger.error('Class group fetch failed:', err);
+      if (options?.throwOnError) throw err;
       return [];
     }
   },
@@ -139,12 +140,13 @@ export const classService = {
 };
 
 export const studentService = {
-  async getStudents(): Promise<Student[]> {
+  async getStudents(options?: { throwOnError?: boolean }): Promise<Student[]> {
     try {
       const response = await teacherGet<{ students: Student[] }>('/api/teacher/students');
       return response.students;
     } catch (err) {
       logger.error('Student fetch failed:', err);
+      if (options?.throwOnError) throw err;
       return [];
     }
   },
@@ -234,12 +236,13 @@ export const questionService = {
 };
 
 export const examService = {
-  async getExams(): Promise<Exam[]> {
+  async getExams(options?: { throwOnError?: boolean }): Promise<Exam[]> {
     try {
       const response = await teacherGet<{ exams: Exam[] }>('/api/teacher/exams');
       return response.exams;
     } catch (err) {
       logger.error('Exam fetch failed:', err);
+      if (options?.throwOnError) throw err;
       return [];
     }
   },
@@ -341,7 +344,10 @@ export const examService = {
 };
 
 export const gradingService = {
-  async getSubmissions(examId?: string): Promise<Submission[]> {
+  async getSubmissions(
+    examId?: string,
+    options?: { throwOnError?: boolean },
+  ): Promise<Submission[]> {
     try {
       const suffix = examId ? '?examId=' + encodeURIComponent(examId) : '';
       const response = await teacherGet<{ submissions: Submission[] }>(
@@ -350,6 +356,7 @@ export const gradingService = {
       return response.submissions;
     } catch (err) {
       logger.error('Submissions fetch failed:', err);
+      if (options?.throwOnError) throw err;
       return [];
     }
   },
@@ -358,29 +365,27 @@ export const gradingService = {
     throw new Error('Auto-grade should use the secure exam portal.');
   },
 
+  /** Persists one answer grade. The caller owns the cache patch — the endpoint
+   *  answers { ok } only, so the previous full-list refetch here was pure
+   *  waste (and ran once per answer inside grading loops). */
   async updateManualGrade(
     submissionId: string,
     questionId: string,
     scoreGained: number,
     comment = '',
-  ): Promise<Submission> {
+  ): Promise<void> {
     await teacherPost('/api/teacher/grade-answer', {
       submissionId,
       questionId,
       scoreGained,
       comment,
     });
-    const submissions = await this.getSubmissions();
-    const updated = submissions.find((s) => s.id === submissionId);
-    if (!updated) throw new Error('Submission not found after grading');
-    return updated;
   },
 
-  async finalizeGrade(submissionId: string): Promise<Submission> {
+  /** Marks a submission graded server-side so it stops appearing as
+   *  "needs grading" in notifications after reload. Cache patch is the
+   *  caller's job. */
+  async finalizeGrade(submissionId: string): Promise<void> {
     await teacherPost('/api/teacher/finalize-submission', { submissionId });
-    const submissions = await this.getSubmissions();
-    const updated = submissions.find((s) => s.id === submissionId);
-    if (!updated) throw new Error('Submission not found after finalize');
-    return updated;
   },
 };

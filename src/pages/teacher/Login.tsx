@@ -9,24 +9,26 @@ import {
   EyeOff,
   Lock,
   Mail,
-  ArrowLeftRight,
   CheckCircle2,
   ArrowRight,
   KeyRound,
   Send,
 } from 'lucide-react';
 import { TheMark } from '../../components/TheMark';
+import { Input } from '../../components/UIComponents';
 import { authService } from '../../services/api';
+import type { Teacher } from '../../types';
 
 interface LoginProps {
-  onLoginSuccess: () => void;
-  onSwitchToStudent: () => void;
+  /** Receives the profile already fetched during sign-in, so the app never
+   *  re-queries /api/teacher/me after a fresh login. */
+  onLoginSuccess: (teacher: Teacher) => void;
 }
 
 type View =
   'email' | 'password' | 'signup' | 'signup-sent' | 'forgot-password' | 'forgot-password-sent';
 
-export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps) {
+export default function Login({ onLoginSuccess }: LoginProps) {
   const [view, setView] = useState<View>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,8 +51,8 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
     setError(null);
     setLoading(true);
     try {
-      await authService.loginTeacher(email, password);
-      onLoginSuccess();
+      const teacher = await authService.loginTeacher(email, password);
+      onLoginSuccess(teacher);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('تایید') || msg.includes('confirm')) {
@@ -106,9 +108,6 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
     setError(null);
   };
 
-  const inputBase =
-    'w-full text-label text-[var(--color-text-primary)] pr-10 pl-4 py-3 rounded-xl glx-inset focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:brightness-105 transition-all placeholder-[var(--color-text-tertiary)]';
-
   return (
     <div className="login-shell min-h-screen p-4 sm:p-6">
       <aside className="login-art" aria-hidden="true">
@@ -142,27 +141,17 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
             {/* View: Enter Email */}
             {view === 'email' && (
               <form onSubmit={handleEmailSubmit} className="space-y-5">
-                <div>
-                  <label
-                    htmlFor="teacher-email"
-                    className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2"
-                  >
-                    ایمیل
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                    <input
-                      id="teacher-email"
-                      type="email"
-                      dir="ltr"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@gmail.com"
-                      className={inputBase}
-                      autoFocus
-                    />
-                  </div>
-                </div>
+                <Input
+                  label="ایمیل"
+                  id="teacher-email"
+                  type="email"
+                  dir="ltr"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@gmail.com"
+                  icon={<Mail className="w-4 h-4" />}
+                  autoFocus
+                />
 
                 {error && (
                   <p
@@ -204,35 +193,27 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
                   </button>
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="teacher-password"
-                    className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2"
-                  >
-                    رمز عبور
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                    <input
-                      id="teacher-password"
-                      type={showPassword ? 'text' : 'password'}
-                      dir="ltr"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className={inputBase}
-                      autoFocus
-                    />
+                <Input
+                  label="رمز عبور"
+                  id="teacher-password"
+                  type={showPassword ? 'text' : 'password'}
+                  dir="ltr"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  icon={<Lock className="w-4 h-4" />}
+                  trailing={
                     <button
                       type="button"
                       aria-label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                      className="p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  </div>
-                </div>
+                  }
+                  autoFocus
+                />
 
                 {error && (
                   <p
@@ -311,35 +292,27 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
                   </button>
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="signup-password"
-                    className="block text-caption font-bold text-[var(--color-text-secondary)] mb-2"
-                  >
-                    رمز عبور
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                    <input
-                      id="signup-password"
-                      type={showPassword ? 'text' : 'password'}
-                      dir="ltr"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="حداقل ۶ کاراکتر"
-                      className={inputBase}
-                      autoFocus
-                    />
+                <Input
+                  label="رمز عبور"
+                  id="signup-password"
+                  type={showPassword ? 'text' : 'password'}
+                  dir="ltr"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="حداقل ۶ کاراکتر"
+                  icon={<Lock className="w-4 h-4" />}
+                  trailing={
                     <button
                       type="button"
                       aria-label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                      className="p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  </div>
-                </div>
+                  }
+                  autoFocus
+                />
 
                 {error && (
                   <p
@@ -484,18 +457,6 @@ export default function Login({ onLoginSuccess, onSwitchToStudent }: LoginProps)
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Student switch */}
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={onSwitchToStudent}
-              className="inline-flex items-center gap-2 text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
-            >
-              <ArrowLeftRight className="w-3.5 h-3.5" />
-              ورود دانش‌آموز
-            </button>
           </div>
         </div>
       </main>

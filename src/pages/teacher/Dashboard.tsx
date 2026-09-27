@@ -12,16 +12,16 @@ import {
   Plus,
   Clock,
   ChevronLeft,
+  CalendarDays,
   Upload,
   Eye,
   BookOpen,
 } from 'lucide-react';
 
-import { Button, Card, StatusBadge, EmptyState, Table } from '../../components/UIComponents';
+import { Badge, Button, Card, StatusBadge, EmptyState, Table, StatCard } from '../../components/UIComponents';
 import { TheMark } from '../../components/TheMark';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
-import { useTeacher } from '../../contexts/TeacherContext';
-import { useDashboardData } from '../../hooks/useDashboardData';
+import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext';
 import { useToast } from '../../hooks/useToast';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
 
@@ -39,8 +39,8 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     submissions: localSubmissions,
     classGroups,
     questions: localQuestions,
-    addImportedStudents,
-  } = useDashboardData();
+    addStudents,
+  } = useTeacherCollections();
 
   // Shared, real CSV/XLSX import workflow. The trigger is retained so the
   // wizard grows from and collapses back into the button that opened it.
@@ -75,12 +75,12 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-350" id="teacher-dashboard-full">
+    <div className="space-y-6" id="teacher-dashboard-full">
       {toastElement}
 
       {/* 1. Welcome Card Hero — liquid glass with The Mark watermark */}
       <div
-        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx glass-edge glx-refract"
+        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx glass-edge"
         id="dashboard-hero-banner"
       >
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
@@ -102,12 +102,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           {/* Buttons: bottom-left, with blurred Mark logo centered above */}
           <div className="dashboard-hero-controls">
             <div className="dashboard-hero-mark">
-              <TheMark
-                variant="row"
-                size={80}
-                animated={false}
-                className="blur-[4px] brightness-200 invert"
-              />
+              {/* Per-theme filter/opacity lives in .dashboard-hero-mark (CSS) —
+                  the mark must not carry its own dark-slab legacy filters. */}
+              <TheMark variant="row" size={80} animated={false} />
             </div>
             <div className="dashboard-hero-actions">
               <button
@@ -142,120 +139,60 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           id="stats-grid-layouts"
         >
           {/* Card 1: Students */}
-          <Card className="flex flex-col justify-between" id="stat-card-total-students">
-            <div className="flex items-center justify-between">
-              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-                تعداد دانش‌آموزان
-              </span>
-              <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-                <Users className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-                {formatPersianNumber(totalStudents)}{' '}
-                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                  نفر
-                </span>
-              </span>
-            </div>
-          </Card>
+          <StatCard
+            id="stat-card-total-students"
+            label="تعداد دانش‌آموزان"
+            value={formatPersianNumber(totalStudents)}
+            unit="نفر"
+            icon={<Users className="w-4 h-4" />}
+            tone="accent"
+          />
 
           {/* Card 2: Total Questions */}
-          <Card className="flex flex-col justify-between" id="stat-card-total-questions">
-            <div className="flex items-center justify-between">
-              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-                تعداد کل سوالات
-              </span>
-              <div className="p-2.5 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)]">
-                <BookOpen className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-                {formatPersianNumber(localQuestions.length)}{' '}
-                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                  سوال
-                </span>
-              </span>
-              <span className="text-micro text-[var(--color-text-tertiary)] mt-1.5 block">
-                منطبق با کتب درسی جدید
-              </span>
-            </div>
-          </Card>
+          <StatCard
+            id="stat-card-total-questions"
+            label="تعداد کل سوالات"
+            value={formatPersianNumber(localQuestions.length)}
+            unit="سوال"
+            footnote="منطبق با کتب درسی جدید"
+            icon={<BookOpen className="w-4 h-4" />}
+            tone="success"
+          />
 
           {/* Card 3: Active Exams */}
-          <Card className="flex flex-col justify-between" id="stat-card-active-exams">
-            <div className="flex items-center justify-between">
-              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-                آزمون‌های فعال در کلاس
-              </span>
-              <div className="p-2.5 rounded-xl bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
-                <Clock className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-                {formatPersianNumber(activeExams)}{' '}
-                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                  آزمون
-                </span>
-              </span>
-              <span
-                className={`text-micro font-bold mt-1.5 block ${activeExams > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-tertiary)]'}`}
-              >
-                {activeExams > 0
-                  ? 'هم‌اکنون درگاه پاسخ فعال است'
-                  : 'هیچ آزمونی در حال برگزاری نیست'}
-              </span>
-            </div>
-          </Card>
+          <StatCard
+            id="stat-card-active-exams"
+            label="آزمون‌های فعال در کلاس"
+            value={formatPersianNumber(activeExams)}
+            unit="آزمون"
+            footnote={activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمونی در حال برگزاری نیست'}
+            footnoteTone={activeExams > 0 ? 'warning' : 'neutral'}
+            icon={<Clock className="w-4 h-4" />}
+            tone="warning"
+          />
 
           {/* Card 4: Submissions Pending Grading */}
-          <Card className="flex flex-col justify-between" id="stat-card-pending-reviews">
-            <div className="flex items-center justify-between">
-              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-                نیازمند تصحیح تشریحی
-              </span>
-              <div className="p-2.5 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
-                <CheckSquare className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-                {formatPersianNumber(pendingGradings)}{' '}
-                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                  برگه
-                </span>
-              </span>
-              <span className="text-micro text-[var(--color-danger)] font-bold mt-1.5 block">
-                پاسخ‌های تشریحی در انتظار نمره
-              </span>
-            </div>
-          </Card>
+          <StatCard
+            id="stat-card-pending-reviews"
+            label="نیازمند تصحیح تشریحی"
+            value={formatPersianNumber(pendingGradings)}
+            unit="برگه"
+            footnote="پاسخ‌های تشریحی در انتظار نمره"
+            footnoteTone="danger"
+            icon={<CheckSquare className="w-4 h-4" />}
+            tone="danger"
+          />
 
           {/* Card 5: Scheduled Exams */}
-          <Card className="flex flex-col justify-between" id="stat-card-scheduled-exams">
-            <div className="flex items-center justify-between">
-              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">
-                آزمون‌های زمان‌بندی‌شده
-              </span>
-              <div className="p-2.5 rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-                <CalendarIcon className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="mt-4">
-              <span className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight leading-tight block">
-                {formatPersianNumber(scheduledExams)}{' '}
-                <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
-                  مورد
-                </span>
-              </span>
-              <span className="text-micro text-[var(--color-text-tertiary)] mt-1.5 block">
-                برنامه‌ریزی آغاز در روزهای آتی
-              </span>
-            </div>
-          </Card>
+          <StatCard
+            id="stat-card-scheduled-exams"
+            label="آزمون‌های زمان‌بندی‌شده"
+            value={formatPersianNumber(scheduledExams)}
+            unit="مورد"
+            footnote="برنامه‌ریزی آغاز در روزهای آتی"
+            icon={<CalendarDays className="w-4 h-4" />}
+            tone="accent"
+          />
         </div>
 
         {/* 3. Quick Actions Row */}
@@ -379,15 +316,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                           <h4 className="text-caption font-bold text-[var(--color-text-primary)]">
                             {ex.title}
                           </h4>
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-micro font-bold ${
-                              ex.settings.mode === 'official'
-                                ? 'bg-[var(--color-warning-soft)]/10 text-[var(--color-warning)] border border-[var(--color-warning)]/20'
-                                : 'glx-inset text-[var(--color-text-secondary)]'
-                            }`}
-                          >
+                          <Badge variant={ex.settings.mode === 'official' ? 'warning' : 'slate'}>
                             {ex.settings.mode === 'official' ? 'رسمی' : 'تمرینی'}
-                          </span>
+                          </Badge>
                         </div>
                         <div className="flex items-center gap-3 text-micro text-[var(--color-text-tertiary)]">
                           <span>پایه: {ex.grade}</span>
@@ -627,32 +558,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         triggerRef={excelTriggerRef}
         classGroups={classGroups}
         existingStudents={currentStudents}
-        onImported={addImportedStudents}
+        onImported={addStudents}
       />
     </div>
   );
 }
 
-// Custom simple calendar icon representing for Scheduled exams stat card
-function CalendarIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="1em"
-      height="1em"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-      <line x1="16" x2="16" y1="2" y2="6" />
-      <line x1="8" x2="8" y1="2" y2="6" />
-      <line x1="3" x2="21" y1="10" y2="10" />
-      <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" />
-    </svg>
-  );
-}

@@ -21,9 +21,13 @@ import {
   Rows3,
   List,
   RotateCcw,
+  Sparkles,
+  Feather,
+  Square,
 } from 'lucide-react';
-import { Card, Badge, Button } from '../../components/UIComponents';
+import { Card, Badge, Button, PageHeader, Toggle, ConfirmDialog } from '../../components/UIComponents';
 import PreferenceSelector from '../../components/PreferenceSelector';
+import { useGlassTierPreference, type GlassTier } from '../../components/GlassTierApplier';
 import { useTheme, type ThemePreference } from '../../contexts/ThemeContext';
 import { useMotionPreference, type MotionPreference } from '../../contexts/MotionContext';
 import { isSecureBackendMode, getRuntimeModeLabel } from '../../config/runtimeMode';
@@ -40,6 +44,7 @@ export default function Settings() {
   const supabaseConfigured = publicEnv.isSupabaseConfigured;
   const { preference, setPreference } = useTheme();
   const { motionPreference, setMotionPreference } = useMotionPreference();
+  const [confirmReset, setConfirmReset] = useState(false);
   const [density, setDensity] = usePersistentPreference<'comfortable' | 'compact'>(
     'workspace:density',
     'comfortable',
@@ -93,6 +98,40 @@ export default function Settings() {
       icon: List,
     },
   ];
+  // Raw boot-probe key (see GlassTierApplier) — NOT usePersistentPreference,
+  // whose prefixed/JSON-encoded key the pre-paint probe can never see.
+  const [glassTier, setGlassTier] = useGlassTierPreference();
+  const glassOptions: Array<{
+    value: GlassTier;
+    label: string;
+    description: string;
+    icon: typeof Sparkles;
+  }> = [
+    {
+      value: 'auto' as const,
+      label: 'خودکار',
+      description: 'بررسی توان دستگاه، همانند سیستم‌عامل',
+      icon: Monitor,
+    },
+    {
+      value: 'full' as const,
+      label: 'کامل',
+      description: 'همه لایه‌های شیشه‌ای فعال',
+      icon: Sparkles,
+    },
+    {
+      value: 'lite' as const,
+      label: 'سبک',
+      description: 'بدون مات‌کردن پس‌زمینه؛ برای دستگاه‌های قدیمی‌تر',
+      icon: Feather,
+    },
+    {
+      value: 'off' as const,
+      label: 'خاموش',
+      description: 'سطوح توپر؛ حداکثر کارایی باتری',
+      icon: Square,
+    },
+  ];
 
   return (
     <motion.div
@@ -102,21 +141,11 @@ export default function Settings() {
       dir="rtl"
     >
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-[var(--color-accent-soft)] rounded-xl text-[var(--color-accent)]">
-            <SettingsIcon className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-heading-3 font-black text-[var(--color-text-primary)]">
-              تنظیمات سامانه
-            </h2>
-            <p className="text-caption text-[var(--color-text-tertiary)] font-medium mt-0.5">
-              وضعیت اجرا، امنیت و اطلاعات سامانه
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={<SettingsIcon className="w-5 h-5" />}
+        title="تنظیمات سامانه"
+        subtitle="وضعیت اجرا، امنیت و اطلاعات سامانه"
+      />
 
       <Card>
         <div className="mb-5">
@@ -145,6 +174,23 @@ export default function Settings() {
           value={motionPreference}
           options={motionOptions}
           onChange={setMotionPreference}
+        />
+      </Card>
+
+      <Card>
+        <div className="mb-5">
+          <h3 className="text-label font-bold text-[var(--color-text-primary)]">
+            کیفیت شیشه‌ای (Liquid Glass)
+          </h3>
+          <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
+            حالت خودکار مانند سیستم‌عامل توان دستگاه را می‌سنجد؛ انتخاب دستی همیشه در اولویت است.
+          </p>
+        </div>
+        <PreferenceSelector<GlassTier>
+          label="انتخاب کیفیت شیشه‌ای"
+          value={glassTier}
+          options={glassOptions}
+          onChange={setGlassTier}
         />
       </Card>
 
@@ -182,14 +228,10 @@ export default function Settings() {
           </div>
           <Button
             variant="ghost"
-            onClick={() => {
-              if (!window.confirm('تنظیمات فضای کاری این مرورگر بازنشانی شود؟')) return;
-              resetWorkspacePreferences();
-              setResetMessage('تنظیمات فضای کاری بازنشانی شد.');
-            }}
+            onClick={() => setConfirmReset(true)}
             className="shrink-0"
+            icon={<RotateCcw className="h-4 w-4" />}
           >
-            <RotateCcw className="h-4 w-4" />
             بازنشانی
           </Button>
         </div>
@@ -204,34 +246,20 @@ export default function Settings() {
           </p>
         </div>
         <div className="space-y-3">
-          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-xl bg-[var(--color-glass-light-fill)] p-3">
-            <span>
-              <strong className="block text-caption">آزمون‌های فعال و رویدادهای فوری</strong>
-              <span className="text-micro text-[var(--color-text-tertiary)]">
-                پیشنهادشده برای امنیت و نظارت آزمون
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={examNotifications}
-              onChange={(event) => setExamNotifications(event.target.checked)}
-              className="h-5 w-5 accent-[var(--color-accent)]"
-            />
-          </label>
-          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-xl bg-[var(--color-glass-light-fill)] p-3">
-            <span>
-              <strong className="block text-caption">پاسخ‌برگ‌ها و فعالیت دانش‌آموز</strong>
-              <span className="text-micro text-[var(--color-text-tertiary)]">
-                ارسال پاسخ‌برگ و فعالیت در آزمون
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={submissionNotifications}
-              onChange={(event) => setSubmissionNotifications(event.target.checked)}
-              className="h-5 w-5 accent-[var(--color-accent)]"
-            />
-          </label>
+          <Toggle
+            checked={examNotifications}
+            onChange={setExamNotifications}
+            label="آزمون‌های فعال و رویدادهای فوری"
+            description="پیشنهادشده برای امنیت و نظارت آزمون"
+            className="min-h-11 w-full flex-row-reverse items-center justify-between rounded-xl bg-[var(--color-glass-light-fill)] p-3"
+          />
+          <Toggle
+            checked={submissionNotifications}
+            onChange={setSubmissionNotifications}
+            label="پاسخ‌برگ‌ها و فعالیت دانش‌آموز"
+            description="ارسال پاسخ‌برگ و فعالیت در آزمون"
+            className="min-h-11 w-full flex-row-reverse items-center justify-between rounded-xl bg-[var(--color-glass-light-fill)] p-3"
+          />
         </div>
       </Card>
 
@@ -325,6 +353,21 @@ export default function Settings() {
           </div>
         </div>
       </Card>
+
+      <ConfirmDialog
+        isOpen={confirmReset}
+        title="بازنشانی فضای کاری"
+        message="فیلترها، نوع نمایش و تراکم ذخیره‌شده در این مرورگر پاک می‌شوند؛ ظاهر و میزان حرکت تغییر نمی‌کنند. بازنشانی انجام شود؟"
+        confirmText="بازنشانی"
+        cancelText="انصراف"
+        variant="danger"
+        onConfirm={() => {
+          setConfirmReset(false);
+          resetWorkspacePreferences();
+          setResetMessage('تنظیمات فضای کاری بازنشانی شد.');
+        }}
+        onCancel={() => setConfirmReset(false)}
+      />
     </motion.div>
   );
 }

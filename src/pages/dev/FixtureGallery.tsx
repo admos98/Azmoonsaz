@@ -92,11 +92,11 @@ function TestBackdrop({ label }: { label: string }) {
 }
 
 const MATERIALS: Array<{ name: string; job: string; cls: string }> = [
-  { name: 'glx', job: 'quiet content surface — cards, panels, topbar', cls: 'glx' },
-  { name: 'glx-strong', job: 'modal / hero — the primary floating material', cls: 'glx-strong' },
+  { name: 'glx', job: 'quiet content surface — cards, panels, topbar', cls: 'glx glass-edge' },
+  { name: 'glx-strong', job: 'modal / hero — the primary floating material', cls: 'glx-strong glass-edge' },
   { name: 'glx-dark', job: 'brand field — ink surface with gold warmth', cls: 'glx-dark' },
   { name: 'glx-inset', job: 'concave — inputs, wells, nested controls', cls: 'glx-inset' },
-  { name: 'glx-clear', job: 'barely-there — over already-quiet content', cls: 'glx-clear' },
+  { name: 'glx-clear', job: 'barely-there — over already-quiet content', cls: 'glx-clear glass-edge' },
 ];
 
 const ELEVATIONS = [
@@ -213,11 +213,16 @@ export default function FixtureGallery() {
           title="۱. دستور پخت مواد"
           hint="Each recipe over a busy backdrop — judge contrast, edge sharpness and specular strength here."
         >
-          <div className="space-y-4">
-            <TestBackdrop label="Busy backdrop — recipes sit on this" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Recipes sit ON the busy backdrop (not beside it) — glass judged
+              in the conditions it actually ships in. The strip below the
+              pinned recipes stays as a raw reference patch. */}
+          <div className="relative overflow-hidden rounded-3xl">
+            <div className="absolute inset-0 [&>div]:h-full">
+              <TestBackdrop label="Busy backdrop — recipes sit on this" />
+            </div>
+            <div className="relative grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
               {MATERIALS.map((m) => (
-                <div key={m.name} className={`${m.cls} rounded-3xl p-5`}>
+                <div key={m.name} className={`relative ${m.cls} rounded-3xl p-5`}>
                   <p className="text-label font-black text-[var(--color-gold)]">{m.name}</p>
                   <p className="text-caption text-[var(--color-text-tertiary)]">{m.job}</p>
                   <p className="mt-3 text-body text-[var(--color-text-primary)]">
@@ -226,6 +231,9 @@ export default function FixtureGallery() {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="mt-4 space-y-4">
+            <TestBackdrop label="Busy backdrop — raw reference patch" />
           </div>
         </Section>
 
@@ -260,7 +268,6 @@ export default function FixtureGallery() {
                   'danger',
                   'success',
                   'gold',
-                  'indigo',
                 ] as const
               ).map((v) => (
                 <Button key={v} variant={v}>

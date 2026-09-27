@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Users,
-  Search,
   PlusCircle,
   Filter,
   Trash2,
@@ -25,61 +24,55 @@ import {
   UserPlus,
 } from 'lucide-react';
 
-import { logger } from '../../lib/logger';
-import { Student, Submission, ClassGroup, Exam } from '../../types';
-import { studentService, classService, gradingService, examService } from '../../services/api';
-import { ConfirmDialog, Dropdown, Input } from '../../components/UIComponents';
-import { useOriginFromTrigger } from '../../hooks/useOriginFromTrigger';
+import { Student, Submission } from '../../types';
+import { studentService } from '../../services/api';
+import {
+  Button,
+  ConfirmDialog,
+  Dropdown,
+  EmptyState,
+  Input,
+  Modal,
+  PageHeader,
+  SearchInput,
+} from '../../components/UIComponents';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { useTeacherCollections } from '../../contexts/TeacherContext';
 import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
 import { normalizePersianText, toPersianDigits } from '../../utils/persian';
 
 export default function Students() {
   const { showToast, toastElement } = useToast();
-  // State management
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Collections ride the shared cache — no private fetches here anymore.
+  const {
+    students: rawStudents,
+    classGroups,
+    submissions,
+    exams: allExams,
+    status,
+    upsertStudent,
+    addStudents,
+    removeStudent,
+  } = useTeacherCollections();
+
+  // Display-list enrichment, stable per cache cycle: the backend doesn't
+  // send a status for every student yet, so a deterministic demo status is
+  // derived by index — identical to the previous per-fetch behavior.
+  const students = useMemo<Student[]>(
+    () =>
+      rawStudents.map((s, idx) => ({
+        ...s,
+        status:
+          s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active'),
+      })),
+    [rawStudents],
+  );
+  const loading = status.students === 'loading';
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [allExams, setAllExams] = useState<Exam[]>([]);
-
-  useEffect(() => {
-    const fetchStudents = async () => {
-      setLoading(true);
-      try {
-        const data = await studentService.getStudents();
-        setStudents(
-          data.map((s, idx) => ({
-            ...s,
-            status:
-              s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active'),
-          })),
-        );
-      } catch (err) {
-        logger.error('Error fetching students:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStudents();
-    classService
-      .getClassGroups()
-      .then(setClassGroups)
-      .catch(() => {});
-    gradingService
-      .getSubmissions()
-      .then(setSubmissions)
-      .catch(() => {});
-    examService
-      .getExams()
-      .then(setAllExams)
-      .catch(() => {});
-  }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = usePersistentPreference<'name' | 'grade'>(
@@ -157,28 +150,11 @@ export default function Students() {
   const [activeLogStudent, setActiveLogStudent] = useState<Student | null>(null);
 
   // Panel origins — each overlay grows out of / collapses back into the button
-  // that opened it instead of popping from its own centre.
+  // that opened it. The library Modal owns the panel/halo refs and origin
+  // measurement internally; call sites only capture the trigger element.
   const addEditTriggerRef = useRef<HTMLElement | null>(null);
   const wizardTriggerRef = useRef<HTMLElement | null>(null);
   const logsTriggerRef = useRef<HTMLElement | null>(null);
-  const addEditPanelRef = useRef<HTMLDivElement>(null);
-  const logsPanelRef = useRef<HTMLDivElement>(null);
-  // Area-blur halo siblings: bigger negative-inset boxes riding the same scale.
-  // The hook measures and returns their origins alongside each panel's.
-  const addEditHaloRef = useRef<HTMLDivElement>(null);
-  const logsHaloRef = useRef<HTMLDivElement>(null);
-  const [addEditOrigin, addEditHaloOrigin] = useOriginFromTrigger(
-    addEditTriggerRef,
-    addEditPanelRef,
-    showAddEditModal,
-    addEditHaloRef,
-  );
-  const [logsOrigin, logsHaloOrigin] = useOriginFromTrigger(
-    logsTriggerRef,
-    logsPanelRef,
-    showExamLogsModal,
-    logsHaloRef,
-  );
 
   // Browsers focus a button on click, so the active element is the opener —
   // lets every call site report its trigger without threading a ref through
@@ -325,7 +301,7 @@ export default function Students() {
           ...created,
           status: formStatus,
         };
-        setStudents([newStudent, ...students]);
+        upsertStudent(newStudent);
       } else {
         // Edit mode
         if (!selectedStudentId) return;
@@ -338,18 +314,13 @@ export default function Students() {
           email: formEmail || undefined,
         });
 
-        setStudents(
-          students.map((s) => {
-            if (s.id === selectedStudentId) {
-              return {
-                ...s,
-                ...updated,
-                status: formStatus,
-              };
-            }
-            return s;
-          }),
-        );
+        const existing = students.find((s) => s.id === selectedStudentId);
+        if (!existing) return;
+        upsertStudent({
+          ...existing,
+          ...updated,
+          status: formStatus,
+        });
       }
       const savedAt = new Date();
       setLastSavedAt(savedAt);
@@ -376,7 +347,7 @@ export default function Students() {
     if (!studentToDelete) return;
     try {
       await studentService.deleteStudent(studentToDelete.id);
-      setStudents(students.filter((s) => s.id !== studentToDelete.id));
+      removeStudent(studentToDelete.id);
       showToast('دانش‌آموز حذف شد.', 'success');
     } catch (err: unknown) {
       showToast(`خطا در حذف: ${err instanceof Error ? err.message : String(err)}`, 'error');
@@ -433,7 +404,7 @@ export default function Students() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300" id="students-tab-view">
+    <div className="space-y-6" id="students-tab-view">
       {toastElement}
       <SaveStatusIndicator state={saveState} savedAt={lastSavedAt} />
 
@@ -460,42 +431,35 @@ export default function Students() {
         className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx glass-edge p-6 rounded-2xl"
         id="students-control-board"
       >
-        <div>
-          <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)] flex items-center gap-2">
-            <Users className="w-5 h-5 text-[var(--color-accent)]" />
-            <span>مدیریت دانش‌آموزان و درگاه ورودی</span>
-          </h2>
-          <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
-            افزودن، ویرایش و ورود گروهی اطلاعات دانش‌آموزان
-          </p>
-        </div>
+        <PageHeader
+          title="مدیریت دانش‌آموزان و درگاه ورودی"
+          subtitle="افزودن، ویرایش و ورود گروهی اطلاعات دانش‌آموزان"
+          actions={
+            <>
+              {/* Add Manual student */}
+              <Button
+                id="btn-trigger-add-student"
+                onClick={openAddModal}
+                icon={<PlusCircle className="w-4 h-4" />}
+              >
+                افزودن دستی دانش‌آموز
+              </Button>
 
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {/* Add Manual student */}
-          <button
-            type="button"
-            id="btn-trigger-add-student"
-            onClick={openAddModal}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] hover:scale-[1.01] active:scale-99 text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>افزودن دستی دانش‌آموز</span>
-          </button>
-
-          {/* Import Student Wizard Button */}
-          <button
-            type="button"
-            id="btn-excel-wizard"
-            onClick={() => {
-              wizardTriggerRef.current = captureActiveTrigger();
-              setShowImportWizard(true);
-            }}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 hover:scale-[1.01] active:scale-99 text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>ورود از Excel یا CSV</span>
-          </button>
-        </div>
+              {/* Import Student Wizard Button */}
+              <Button
+                id="btn-excel-wizard"
+                variant="success"
+                icon={<FileSpreadsheet className="w-4 h-4" />}
+                onClick={() => {
+                  wizardTriggerRef.current = captureActiveTrigger();
+                  setShowImportWizard(true);
+                }}
+              >
+                ورود از Excel یا CSV
+              </Button>
+            </>
+          }
+        />
       </div>
 
       {/* Multi-Filter Panel: Search, Grade, Class Group, and Status! */}
@@ -504,14 +468,11 @@ export default function Students() {
         id="multi-filter-wrapper"
       >
         {/* Real-time search by name/nationalId */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-          <input
-            type="text"
+        <div className="flex-1 max-w-md">
+          <SearchInput
             placeholder="جستجوی دانش‌آموز با نام و کد ملی..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full glx border text-label text-[var(--color-text-primary)] pr-9.5 pl-4 py-2.5 rounded-xl focus:outline-hidden focus:border-[var(--color-accent)]/40 focus:bg-[var(--color-accent-soft)]/30 transition-all text-right"
           />
         </div>
 
@@ -601,56 +562,60 @@ export default function Students() {
           <label htmlFor="student-sort" className="font-bold">
             مرتب‌سازی
           </label>
-          <select
+          <Dropdown
             id="student-sort"
+            compact
             value={sortOrder}
-            onChange={(event) => {
-              setSortOrder(event.target.value as 'name' | 'grade');
+            onChange={(v) => {
+              setSortOrder(v as 'name' | 'grade');
               setCurrentPage(1);
             }}
-            className="glx-inset rounded-xl border px-3 py-2"
-          >
-            <option value="name">نام</option>
-            <option value="grade">پایه</option>
-          </select>
+            options={[
+              { value: 'name', label: 'نام' },
+              { value: 'grade', label: 'پایه' },
+            ]}
+            className="w-24"
+          />
           <label htmlFor="student-page-size" className="font-bold">
             در هر صفحه
           </label>
-          <select
+          <Dropdown
             id="student-page-size"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
+            compact
+            value={String(pageSize)}
+            onChange={(v) => {
+              setPageSize(Number(v));
               setCurrentPage(1);
             }}
-            className="glx-inset rounded-xl border px-3 py-2"
-          >
-            <option value={10}>۱۰</option>
-            <option value={20}>۲۰</option>
-            <option value={50}>۵۰</option>
-          </select>
+            options={[
+              { value: '10', label: '۱۰' },
+              { value: '20', label: '۲۰' },
+              { value: '50', label: '۵۰' },
+            ]}
+            className="w-20"
+          />
         </div>
         {totalPages > 1 && (
           <div className="flex items-center gap-2 text-caption">
-            <button
-              type="button"
-              className="btn-soft"
+            <Button
+              variant="secondary"
+              size="sm"
               disabled={safePage === 1}
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
             >
               قبلی
-            </button>
+            </Button>
             <span aria-live="polite">
               صفحه {toPersianDigits(safePage)} از {toPersianDigits(totalPages)}
             </span>
-            <button
-              type="button"
-              className="btn-soft"
+            <Button
+              variant="secondary"
+              size="sm"
               disabled={safePage === totalPages}
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
             >
               بعدی
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -805,14 +770,13 @@ export default function Students() {
                   })
                 ) : (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="p-12 text-center text-[var(--color-text-tertiary)] select-none"
-                    >
-                      <div className="w-12 h-12 rounded-full border border-dashed border-[var(--color-glass-light-stroke)] mx-auto flex items-center justify-center text-[var(--color-text-primary)] mb-3">
-                        <Users className="w-6 h-6" />
-                      </div>
-                      <span>هیچ دانش‌آموزی همسان با فیلترهای بالا یافت نگردید.</span>
+                    <td colSpan={7} className="p-4 md:p-6">
+                      <EmptyState
+                        compact
+                        icon={<Users className="w-6 h-6" />}
+                        title="دانش‌آموزی یافت نشد"
+                        description="هیچ دانش‌آموزی همسان با فیلترهای بالا یافت نگردید."
+                      />
                     </td>
                   </tr>
                 )}
@@ -918,272 +882,167 @@ export default function Students() {
                 );
               })
             ) : (
-              <div className="py-12 text-center text-[var(--color-text-tertiary)] font-medium glx rounded-2xl border border-dashed">
-                هیچ موردی منطبق با فیلترها و مقادیر بالا یافت نشد.
-              </div>
+              <EmptyState
+                compact
+                title="موردی یافت نشد"
+                description="هیچ موردی منطبق با فیلترها و مقادیر بالا یافت نشد."
+              />
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Manual Add / Edit Modal Dialouge Room */}
-      <AnimatePresence>
-        {showAddEditModal && (
-          <div
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 text-right"
-            id="add-edit-modal-backdrop"
-          >
-            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
-                freezes its frame, which lingers past unmount. */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: 'easeOut' }}
-              className="absolute inset-0 scrim"
+      {/* Manual Add / Edit Modal — library chrome: scrim, veil, halo, focus trap */}
+      <Modal
+        isOpen={showAddEditModal}
+        onClose={closeStudentEditor}
+        title={
+          modalMode === 'add'
+            ? 'ایجاد پرونده تحصیلی دانش‌آموز نو'
+            : 'ویرایش شناسنامه تحصیلی دانش‌آموز'
+        }
+        icon={<UserPlus className="w-5 h-5" />}
+        maxWidth="sm"
+        triggerRef={addEditTriggerRef}
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={closeStudentEditor}>
+              انصراف
+            </Button>
+            <Button type="submit" form="student-editor-form" size="sm" disabled={!formName}>
+              {modalMode === 'add' ? 'ثبت دانش‌آموز' : 'ذخیره تغییرات'}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="student-editor-form"
+          onSubmit={handleSaveStudentSubmit}
+          className="space-y-4 text-label"
+        >
+          {/* Family name */}
+          <Input
+            label="نام و نام خانوادگی:"
+            type="text"
+            required
+            placeholder="مثال: بردیا مهدوی"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+          />
+
+          {/* National ID + Interactive Live Validation logic */}
+          <Input
+            label="کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):"
+            type="text"
+            required
+            maxLength={10}
+            placeholder="مثال: 0012487654"
+            value={formNationalId}
+            onChange={(e) => setFormNationalId(e.target.value.replace(/\D/g, ''))}
+            className="font-mono tracking-widest"
+          />
+
+          {/* Live validation feedback display! */}
+          {formNationalId && (
+            <div
+              className={`p-2.5 rounded-lg border flex items-start gap-1.5 transition-all text-micro leading-relaxed ${
+                validateIranianNationalId(formNationalId).isValid
+                  ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/10/60 text-[var(--color-success)]'
+                  : 'bg-[var(--color-danger-soft)]/40 border-[var(--color-danger)]/10/60 text-[var(--color-danger)]/80'
+              }`}
+            >
+              {validateIranianNationalId(formNationalId).isValid ? (
+                <CheckCircle className="w-3.5 h-3.5 text-[var(--color-success)] shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)] shrink-0 mt-0.5" />
+              )}
+              <span>{validateIranianNationalId(formNationalId).message}</span>
+            </div>
+          )}
+
+          {/* Grade and Class Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <Dropdown
+              label="پایه تحصیلی:"
+              value={formGrade}
+              onChange={setFormGrade}
+              options={[
+                { value: 'هفتم', label: 'پایه هفتم' },
+                { value: 'هشتم', label: 'پایه هشتم' },
+                { value: 'نهم', label: 'پایه نهم' },
+              ]}
             />
-            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
-                un-blur never lingers behind the closing panel. */}
-            <motion.div
-              aria-hidden="true"
-              initial={false}
-              exit={{
-                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-                transition: { duration: 0.12 },
-              }}
-              className="absolute inset-0 pointer-events-none veil-blur"
+
+            <Dropdown
+              label="کلاس اختصاصی:"
+              value={formClassGroupId}
+              onChange={setFormClassGroupId}
+              options={[
+                { value: '', label: 'بدون کلاس', disabled: true },
+                ...classGroups.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+              placeholder="انتخاب کلاس"
             />
-            <div className="relative w-full max-w-md @container">
-              {/* Halo rides the panel's grow/shrink (same origin, no opacity) */}
-              <motion.div
-                aria-hidden="true"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{
-                  scale: 0,
-                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                  backgroundColor: 'rgba(26, 28, 34, 0)',
-                  transition: {
-                    scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                    backdropFilter: { duration: 0.14 },
-                    backgroundColor: { duration: 0.14 },
-                  },
-                }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                ref={addEditHaloRef}
-                style={addEditHaloOrigin}
-                className="pointer-events-none absolute area-blur"
-              />
-              <motion.div
-                ref={addEditPanelRef}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{
-                  opacity: 0,
-                  scale: 0,
-                  transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                }}
-                style={addEditOrigin ?? { transformOrigin: 'center bottom' }}
-                transition={{
-                  opacity: { duration: 0.16 },
-                  scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-                }}
-                className="relative glx-strong glx-sheen rounded-3xl w-full overflow-hidden"
-                id="add-edit-student-box"
-              >
-                {/* Modal Header */}
-                <div className="px-6 py-5 glx border-b flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={closeStudentEditor}
-                    className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] font-bold text-heading-3 cursor-pointer"
-                  >
-                    &times;
-                  </button>
-                  <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
-                    <UserPlus className="w-5 h-5 text-[var(--color-accent)]" />
-                    <span>
-                      {modalMode === 'add'
-                        ? 'ایجاد پرونده تحصیلی دانش‌آموز نو'
-                        : 'ویرایش شناسنامه تحصیلی دانش‌آموز'}
-                    </span>
-                  </h3>
-                </div>
+          </div>
 
-                {/* Form body */}
-                <form onSubmit={handleSaveStudentSubmit} className="p-6 space-y-4 text-label">
-                  {/* Family name */}
-                  <Input
-                    label="نام و نام خانوادگی:"
-                    type="text"
-                    required
-                    placeholder="مثال: بردیا مهدوی"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    className="text-label"
-                  />
-
-                  {/* National ID + Interactive Live Validation logic */}
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-[var(--color-text-secondary)] block">
-                      کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={10}
-                      placeholder="مثال: 0012487654"
-                      value={formNationalId}
-                      onChange={(e) => setFormNationalId(e.target.value.replace(/\D/g, ''))}
-                      className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-label font-mono tracking-widest text-[var(--color-text-primary)] text-right"
-                    />
-
-                    {/* Live validation feedback display! */}
-                    {formNationalId && (
-                      <div
-                        className={`p-2.5 rounded-lg border flex items-start gap-1.5 transition-all text-micro leading-relaxed ${
-                          validateIranianNationalId(formNationalId).isValid
-                            ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/10/60 text-[var(--color-success)]'
-                            : 'bg-[var(--color-danger-soft)]/40 border-[var(--color-danger)]/10/60 text-[var(--color-danger)]/80'
-                        }`}
-                      >
-                        {validateIranianNationalId(formNationalId).isValid ? (
-                          <CheckCircle className="w-3.5 h-3.5 text-[var(--color-success)] shrink-0 mt-0.5" />
-                        ) : (
-                          <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)] shrink-0 mt-0.5" />
-                        )}
-                        <span>{validateIranianNationalId(formNationalId).message}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Grade and Class Row */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="font-semibold text-[var(--color-text-secondary)] block">
-                        پایه تحصیلی:
-                      </label>
-                      <Dropdown
-                        value={formGrade}
-                        onChange={setFormGrade}
-                        options={[
-                          { value: 'هفتم', label: 'پایه هفتم' },
-                          { value: 'هشتم', label: 'پایه هشتم' },
-                          { value: 'نهم', label: 'پایه نهم' },
-                        ]}
-                        className="text-label"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="font-semibold text-[var(--color-text-secondary)] block">
-                        کلاس اختصاصی:
-                      </label>
-                      <Dropdown
-                        value={formClassGroupId}
-                        onChange={setFormClassGroupId}
-                        options={[
-                          { value: '', label: 'بدون کلاس', disabled: true },
-                          ...classGroups.map((c) => ({ value: c.id, label: c.name })),
-                        ]}
-                        placeholder="انتخاب کلاس"
-                        className="text-label"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Status Selector */}
-                  <div className="space-y-1.5">
-                    <label className="font-semibold text-[var(--color-text-secondary)] block">
-                      وضعیت دانش‌آموز:
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { val: 'active', label: 'فعال' },
-                        { val: 'suspended', label: 'غیرفعال / مسدود' },
-                        { val: 'examining', label: 'در حال آزمون' },
-                      ].map((s) => (
-                        <button
-                          key={s.val}
-                          type="button"
-                          onClick={() =>
-                            setFormStatus(s.val as 'active' | 'suspended' | 'examining')
-                          }
-                          className={`py-2 text-micro rounded-xl border font-bold transition-all cursor-pointer ${
-                            formStatus === s.val
-                              ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)] shadow-sm'
-                              : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
-                          }`}
-                        >
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Phone and Email Optional */}
-                  <div className="grid grid-cols-2 gap-4 border-t border-[var(--color-glass-light-stroke)] pt-4.5">
-                    <div className="space-y-1.5">
-                      <label className="font-semibold text-[var(--color-text-secondary)] block">
-                        همراه ولی (اختیاری):
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="مثال: 09123456789"
-                        value={formPhone}
-                        onChange={(e) => setFormPhone(e.target.value)}
-                        className="w-full glx border px-3.5 py-2.5 rounded-xl focus:bg-[var(--color-accent-soft)]/30 focus:border-[var(--color-accent)]/40 text-label font-mono"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="font-semibold text-[var(--color-text-secondary)] block">
-                        پست الکترونیک (ایمیل):
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="stud@school.ir"
-                        value={formEmail}
-                        onChange={(e) => setFormEmail(e.target.value)}
-                        className="w-full glx border px-3 py-2.5 rounded-xl font-mono text-left"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Error messages if form is incomplete */}
-                  {!formName && (
-                    <p className="text-micro text-[var(--color-danger)] text-center font-bold">
-                      برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.
-                    </p>
-                  )}
-
-                  {/* Submit triggers */}
-                  <div className="flex gap-3 pt-4.5 border-t border-[var(--color-glass-light-stroke)] justify-end">
-                    <button
-                      type="button"
-                      onClick={closeStudentEditor}
-                      className="px-4 py-2 glx-inset hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl font-semibold cursor-pointer transition-all"
-                    >
-                      انصراف
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!formName}
-                      className={`px-5 py-2 rounded-xl font-bold text-[var(--color-text-on-solid)] shadow-xs transition-all cursor-pointer ${
-                        formName
-                          ? 'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] active:scale-95'
-                          : 'bg-[var(--color-accent-soft)]/40 cursor-not-allowed'
-                      }`}
-                    >
-                      {modalMode === 'add' ? 'ثبت دانش‌آموز' : 'ذخیره تغییرات'}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
+          {/* Status Selector */}
+          <div className="space-y-1.5">
+            <span className="font-semibold text-[var(--color-text-secondary)] block">
+              وضعیت دانش‌آموز:
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { val: 'active', label: 'فعال' },
+                { val: 'suspended', label: 'غیرفعال / مسدود' },
+                { val: 'examining', label: 'در حال آزمون' },
+              ].map((s) => (
+                <button
+                  key={s.val}
+                  type="button"
+                  onClick={() =>
+                    setFormStatus(s.val as 'active' | 'suspended' | 'examining')
+                  }
+                  className={`py-2 text-micro rounded-xl border font-bold transition-all cursor-pointer ${
+                    formStatus === s.val
+                      ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)] shadow-sm'
+                      : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
-        )}
-      </AnimatePresence>
+
+          {/* Phone and Email Optional */}
+          <div className="grid grid-cols-2 gap-4 border-t border-[var(--color-glass-light-stroke)] pt-4.5">
+            <Input
+              label="همراه ولی (اختیاری):"
+              type="text"
+              placeholder="مثال: 09123456789"
+              value={formPhone}
+              onChange={(e) => setFormPhone(e.target.value)}
+              className="font-mono"
+            />
+
+            <Input
+              label="پست الکترونیک (ایمیل):"
+              type="email"
+              placeholder="stud@school.ir"
+              value={formEmail}
+              onChange={(e) => setFormEmail(e.target.value)}
+              className="font-mono text-left"
+            />
+          </div>
+
+          {/* Error messages if form is incomplete */}
+          {!formName && (
+            <p className="text-micro text-[var(--color-danger)] text-center font-bold">
+              برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.
+            </p>
+          )}
+        </form>
+      </Modal>
 
       <StudentImportWizard
         open={showImportWizard}
@@ -1191,170 +1050,95 @@ export default function Students() {
         triggerRef={wizardTriggerRef}
         classGroups={classGroups}
         existingStudents={students}
-        onImported={(imported) => setStudents((current) => [...imported, ...current])}
+        onImported={addStudents}
       />
 
-      <AnimatePresence>
-        {showExamLogsModal && activeLogStudent && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 text-right"
-            id="exam-logs-modal-backdrop"
-          >
-            {/* Scrim — opacity only: a backdrop-filter under an opacity animation
-                freezes its frame, which lingers past unmount. */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16, ease: 'easeOut' }}
-              className="absolute inset-0 scrim"
-            />
-            {/* Veil blur — full strength on frame 1; ramped off fast on exit so the
-                un-blur never lingers behind the closing panel. */}
-            <motion.div
-              aria-hidden="true"
-              initial={false}
-              exit={{
-                backdropFilter: 'blur(0px) saturate(1) brightness(1) contrast(1)',
-                transition: { duration: 0.12 },
-              }}
-              className="absolute inset-0 pointer-events-none veil-blur"
-            />
-            <div className="relative w-full max-w-lg @container">
-              {/* Halo rides the panel's grow/shrink (same origin, no opacity) */}
-              <motion.div
-                aria-hidden="true"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{
-                  scale: 0,
-                  backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                  backgroundColor: 'rgba(26, 28, 34, 0)',
-                  transition: {
-                    scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                    backdropFilter: { duration: 0.14 },
-                    backgroundColor: { duration: 0.14 },
-                  },
-                }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                ref={logsHaloRef}
-                style={logsHaloOrigin}
-                className="pointer-events-none absolute area-blur"
-              />
-              <motion.div
-                ref={logsPanelRef}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{
-                  opacity: 0,
-                  scale: 0,
-                  transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                }}
-                style={logsOrigin ?? { transformOrigin: 'center bottom' }}
-                transition={{
-                  opacity: { duration: 0.16 },
-                  scale: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
-                }}
-                className="relative glx-strong rounded-3xl w-full overflow-hidden"
-                id="exam-logs-box"
-              >
-                {/* Header */}
-                <div className="px-6 py-5 bg-[var(--color-accent-soft)]/70 border-b border-[var(--color-accent-soft)] flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setShowExamLogsModal(false)}
-                    className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] font-extrabold text-caption glx px-2.5 py-1.5 rounded-xl cursor-pointer"
-                  >
-                    بستن سوابق
-                  </button>
-                  <h3 className="text-caption font-black text-[var(--color-accent)] flex items-center gap-1.5">
-                    <FileText className="w-5 h-5 text-[var(--color-accent)]" />
-                    <span>پرونده سنجش‌ها تحصیلی و مشارکت «{activeLogStudent.name}»</span>
-                  </h3>
-                </div>
+      {activeLogStudent && (
+        <Modal
+          isOpen={showExamLogsModal}
+          onClose={() => setShowExamLogsModal(false)}
+          title={`پرونده سنجش‌ها تحصیلی و مشارکت «${activeLogStudent.name}»`}
+          icon={<FileText className="w-5 h-5" />}
+          maxWidth="md"
+          triggerRef={logsTriggerRef}
+        >
+          <div className="space-y-5">
+            <div className="flex justify-between items-center glx p-4.5 rounded-2xl border">
+              <div>
+                <p className="font-bold text-[var(--color-text-primary)] text-caption">
+                  {activeLogStudent.name}
+                </p>
+                <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
+                  پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}
+                </p>
+              </div>
+              <div className="text-left font-mono text-micro">
+                <p className="text-[var(--color-text-tertiary)]">کد ملی ورود:</p>
+                <p className="font-bold text-[var(--color-text-secondary)]">
+                  {toPersianDigits(activeLogStudent.nationalId)}
+                </p>
+              </div>
+            </div>
 
-                {/* Logs Body info */}
-                <div className="p-6 space-y-5">
-                  <div className="flex justify-between items-center glx p-4.5 rounded-2xl border">
-                    <div>
-                      <p className="font-bold text-[var(--color-text-primary)] text-caption">
-                        {activeLogStudent.name}
-                      </p>
-                      <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
-                        پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}
-                      </p>
-                    </div>
-                    <div className="text-left font-mono text-micro">
-                      <p className="text-[var(--color-text-tertiary)]">کد ملی ورود:</p>
-                      <p className="font-bold text-[var(--color-text-secondary)]">
-                        {toPersianDigits(activeLogStudent.nationalId)}
-                      </p>
-                    </div>
-                  </div>
+            <div className="space-y-3">
+              <span className="text-micro font-bold text-[var(--color-text-primary)] block">
+                امتحانات ثبت شده در دیتابیس کلاس‌ها:
+              </span>
 
-                  <div className="space-y-3">
-                    <span className="text-micro font-bold text-[var(--color-text-primary)] block">
-                      امتحانات ثبت شده در دیتابیس کلاس‌ها:
-                    </span>
+              {activeLogSubmissions.length > 0 ? (
+                <div className="space-y-2.5 max-h-64 overflow-y-auto">
+                  {activeLogSubmissions.map((sub, index) => {
+                    const examItem = allExams.find((e) => e.id === sub.examId);
+                    return (
+                      <div
+                        key={sub.id || index}
+                        className="p-3.5 glx border rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
+                      >
+                        <div>
+                          <h5 className="font-bold text-[var(--color-text-secondary)] text-micro">
+                            {examItem?.title || sub.examCode}
+                          </h5>
+                          <span className="text-micro text-[var(--color-text-tertiary)] mt-1 block">
+                            کد یکتای برگ پاسخ: {sub.id}
+                          </span>
+                        </div>
 
-                    {activeLogSubmissions.length > 0 ? (
-                      <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                        {activeLogSubmissions.map((sub, index) => {
-                          const examItem = allExams.find((e) => e.id === sub.examId);
-                          return (
-                            <div
-                              key={sub.id || index}
-                              className="p-3.5 glx border rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
-                            >
-                              <div>
-                                <h5 className="font-bold text-[var(--color-text-secondary)] text-micro">
-                                  {examItem?.title || sub.examCode}
-                                </h5>
-                                <span className="text-micro text-[var(--color-text-tertiary)] mt-1 block">
-                                  کد یکتای برگ پاسخ: {sub.id}
-                                </span>
-                              </div>
-
-                              <div className="text-left">
-                                <span
-                                  className={`px-2 py-0.5 rounded-md text-micro font-bold block mb-1 text-center ${
-                                    sub.status === 'graded'
-                                      ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
-                                      : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10 animate-pulse'
-                                  }`}
-                                >
-                                  {sub.status === 'graded'
-                                    ? 'تصحیح نهایی شده'
-                                    : 'در حال سنجش یا نیازمند تصحیح'}
-                                </span>
-                                <span className="text-micro font-bold text-[var(--color-text-primary)]">
-                                  نمره:{' '}
-                                  <strong className="text-caption font-black text-[var(--color-accent)]">
-                                    {toPersianDigits(sub.score)}
-                                  </strong>{' '}
-                                  از {toPersianDigits(sub.maxScore)}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        <div className="text-left">
+                          <span
+                            className={`px-2 py-0.5 rounded-md text-micro font-bold block mb-1 text-center ${
+                              sub.status === 'graded'
+                                ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
+                                : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10 animate-pulse'
+                            }`}
+                          >
+                            {sub.status === 'graded'
+                              ? 'تصحیح نهایی شده'
+                              : 'در حال سنجش یا نیازمند تصحیح'}
+                          </span>
+                          <span className="text-micro font-bold text-[var(--color-text-primary)]">
+                            نمره:{' '}
+                            <strong className="text-caption font-black text-[var(--color-accent)]">
+                              {toPersianDigits(sub.score)}
+                            </strong>{' '}
+                            از {toPersianDigits(sub.maxScore)}
+                          </span>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="p-8 text-center glx rounded-2xl border border-dashed select-none">
-                        <Info className="w-8 h-8 text-[var(--color-text-tertiary)] mx-auto mb-2" />
-                        <p className="text-micro text-[var(--color-text-tertiary)]">
-                          هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج
-                          ثبت نگردیده است.
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
-              </motion.div>
+              ) : (
+                <EmptyState
+                  compact
+                  icon={<Info className="w-6 h-6" />}
+                  title="سابقه‌ای ثبت نشده"
+                  description="هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت نگردیده است."
+                />
+              )}
             </div>
           </div>
-        )}
-      </AnimatePresence>
+        </Modal>
+      )}
 
       {/* Delete Student Confirmation */}
       <ConfirmDialog

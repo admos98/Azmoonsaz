@@ -20,6 +20,7 @@ import {
   clearQueueForToken,
   getQueuedAnswers,
 } from '../../services/offlineAnswerQueue';
+import { ConfirmDialog } from '../../components/UIComponents';
 
 type Phase = 'login' | 'ready' | 'take' | 'submitted';
 
@@ -103,6 +104,7 @@ export default function SecureExamPortal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [confirmStage, setConfirmStage] = useState<'sync-queued' | 'final-submit' | null>(null);
   const [savedAt, setSavedAt] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [queuedCount, setQueuedCount] = useState(0);
@@ -198,28 +200,24 @@ export default function SecureExamPortal({
     }
   };
 
-  const handleSubmit = async () => {
-    if (queuedCount > 0) {
-      const confirmSync = window.confirm(
-        `شما ${toPersianDigits(queuedCount)} پاسخ همگام‌نشدۀ آفلاین دارید. آیا ابتدا تلاش شود پاسخ‌ها به سرور ارسال گردند؟`,
-      );
-      if (confirmSync) {
-        await handleSyncQueued();
-        if (getQueuedAnswers().filter((q) => q.token === token).length > 0) {
-          alert('خطا: ابتدا از اتصال اینترنت خود اطمینان حاصل کنید تا پاسخ‌های آفلاین همگام شوند.');
-          return;
-        }
-      } else {
-        return;
-      }
-    }
+  // Irreversible actions go through the designed ConfirmDialog, never browser chrome
+  // (audit §5.4 / §7.2-1: the student submit is the highest-stakes surface).
+  const handleSubmit = () => {
+    setConfirmStage(queuedCount > 0 ? 'sync-queued' : 'final-submit');
+  };
 
-    if (
-      !window.confirm(
-        'آیا از ارسال نهایی آزمون مطمئن هستید؟ پس از ارسال امکان تغییر پاسخ‌ها وجود ندارد.',
-      )
-    )
+  const handleConfirmSync = async () => {
+    setConfirmStage(null);
+    await handleSyncQueued();
+    if (getQueuedAnswers().filter((q) => q.token === token).length > 0) {
+      setError('خطا: ابتدا از اتصال اینترنت خود اطمینان حاصل کنید تا پاسخ‌های آفلاین همگام شوند.');
       return;
+    }
+    setConfirmStage('final-submit');
+  };
+
+  const runFinalSubmit = async () => {
+    setConfirmStage(null);
     setError('');
     setLoading(true);
     try {
@@ -358,7 +356,10 @@ export default function SecureExamPortal({
             <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-10 shadow-xs">
               <div>
                 <h2 className="font-black text-[var(--color-text-primary)]">{exam.title}</h2>
-                <p className="text-caption text-[var(--color-text-tertiary)] mt-1">
+                <p
+                  className="text-caption text-[var(--color-text-tertiary)] mt-1"
+                  aria-live="polite"
+                >
                   پاسخ‌داده‌شده: {toPersianDigits(answeredCount)} از{' '}
                   {toPersianDigits(questions.length)}
                 </p>
@@ -448,6 +449,7 @@ export default function SecureExamPortal({
                         type="button"
                         key={option.id}
                         onClick={() => handleSaveAnswer(question.id, option.id)}
+                        aria-pressed={selected}
                         className={
                           (selected
                             ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)] text-[var(--color-accent)] shadow-xs font-black '
@@ -478,7 +480,7 @@ export default function SecureExamPortal({
         )}
 
         {phase === 'submitted' && (
-          <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-8 max-w-xl mx-auto text-center space-y-4 animate-in zoom-in-95 duration-200">
+          <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-8 max-w-xl mx-auto text-center space-y-4">
             <CheckCircle2 className="w-16 h-16 text-[var(--color-success)] mx-auto" />
             <h2 className="font-black text-[var(--color-text-primary)] text-heading-3">
               پاسخ شما با موفقیت در سامانه ثبت نهایی شد.
@@ -490,6 +492,27 @@ export default function SecureExamPortal({
           </div>
         )}
       </main>
+
+      {/* Designed confirmation for irreversible exam actions */}
+      <ConfirmDialog
+        isOpen={confirmStage === 'sync-queued'}
+        title="همگام‌سازی پاسخ‌های آفلاین"
+        message={`شما ${toPersianDigits(queuedCount)} پاسخ همگام‌نشدهٔ آفلاین دارید. ابتدا تلاش شود پاسخ‌ها به سرور ارسال شوند؟`}
+        confirmText="همگام‌سازی و ادامه"
+        cancelText="انصراف"
+        onConfirm={handleConfirmSync}
+        onCancel={() => setConfirmStage(null)}
+      />
+      <ConfirmDialog
+        isOpen={confirmStage === 'final-submit'}
+        title="ارسال نهایی آزمون"
+        message="آیا از ارسال نهایی آزمون مطمئن هستید؟ پس از ارسال امکان تغییر پاسخ‌ها وجود ندارد."
+        confirmText="ارسال نهایی"
+        cancelText="انصراف"
+        variant="danger"
+        onConfirm={runFinalSubmit}
+        onCancel={() => setConfirmStage(null)}
+      />
     </div>
   );
 }

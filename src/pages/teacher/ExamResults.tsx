@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowRight,
@@ -17,7 +17,6 @@ import {
   Percent,
   Sparkles,
   Download,
-  Search,
   Filter,
   AlertCircle,
   Check,
@@ -28,51 +27,59 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 
-import { logger } from '../../lib/logger';
-import { Exam, Submission, Question, ClassGroup, Student, StudentAnswer } from '../../types';
-import { Button, Card, Table, Dropdown } from '../../components/UIComponents';
+import { Exam, Question, StudentAnswer } from '../../types';
+import {
+  Button,
+  Card,
+  Table,
+  Dropdown,
+  StatCard,
+  SearchInput,
+  ConfirmDialog,
+} from '../../components/UIComponents';
+import { useToast } from '../../hooks/useToast';
 import { toPersianDigits } from '../../utils/persian';
 import { gradingService } from '../../services/api';
+import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext';
+import {
+  buildResultStats,
+  buildResultsCsv,
+  buildStudentRows,
+  filterRows,
+  formatAnswerValue,
+  type ResultRow,
+} from './exam-results/student-rows';
 
 interface ExamResultsProps {
   exam: Exam;
   onBack: () => void;
 }
 
-const formatAnswerValue = (value: unknown): string => {
-  if (value === null || value === undefined || value === '') return '';
-  if (Array.isArray(value)) return value.map(String).join('، ');
-  if (typeof value === 'object') return Object.values(value as Record<string, unknown>).join('، ');
-  return String(value);
-};
-
 export default function ExamResults({ exam, onBack }: ExamResultsProps) {
-  // Track state of submissions locally for interactive grading sessions
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [_loading, setLoading] = useState(true);
-  const [classGroups, _setClassGroups] = useState<ClassGroup[]>([]);
-  const [allStudents, _setAllStudents] = useState<Student[]>([]);
+  // Submissions and the cohort ride the shared collections cache — this page
+  // used to fire its own ?examId= fetch (and a full submissions refetch per
+  // graded answer). The exam-filtered view is a pure derivation now.
+  const {
+    submissions: allSubmissions,
+    students: allStudents,
+    classGroups,
+    upsertSubmission,
+    reload,
+  } = useTeacherCollections();
+  const { teacher } = useTeacher();
 
-  // Combine real submissions and general cohort to have a complete student ledger
+  const submissions = useMemo(
+    () => allSubmissions.filter((s) => s.examId === exam.id),
+    [allSubmissions, exam.id],
+  );
+
+  // Combine real submissions and the class cohort to have a complete student
+  // ledger — this actually works now that allStudents is the shared cache
+  // instead of a dead local empty array.
   const examCohortStudents = allStudents.filter((student) =>
     exam.classGroupIds.includes(student.classGroupId),
   );
   const effectiveCohort = examCohortStudents.length > 0 ? examCohortStudents : allStudents;
-
-  useEffect(() => {
-    const fetchSubmissions = async () => {
-      setLoading(true);
-      try {
-        const data = await gradingService.getSubmissions(exam.id);
-        setSubmissions(data);
-      } catch (err) {
-        logger.error('Error fetching submissions:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSubmissions();
-  }, [exam.id]);
 
   // Active view constraints
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
@@ -98,179 +105,41 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   // AI assistant simulation state
   const [aiLoadingQuestionId, setAiLoadingQuestionId] = useState<string | null>(null);
   const [_aiMessage, setAiMessage] = useState<string | null>(null);
+  const { showToast, toastElement } = useToast();
+  const [confirmFinalize, setConfirmFinalize] = useState(false);
 
-  // Construct complete row data pairing cohort with submissions
-  let studentRows = effectiveCohort.map((student) => {
-    const sub = submissions.find((s) => s.studentId === student.id);
-    const classGroup = classGroups.find((c) => c.id === student.classGroupId);
-
-    // Auto-calculate objective score vs descriptive
-    let hasDescriptive = false;
-    let autoScore = 0;
-
-    if (sub) {
-      exam.questions.forEach((q) => {
-        const isDescriptive = q.type === 'long_answer' || q.type === 'short_answer';
-        if (isDescriptive) {
-          hasDescriptive = true;
-        } else {
-          const ans = sub.answers.find((a) => a.questionId === q.id);
-          if (ans?.isCorrect) {
-            autoScore += q.points;
-          }
-        }
-      });
-
-      return {
-        id: sub.id,
-        isRealSubmission: true,
-        studentId: student.id,
-        studentName: student.name,
-        nationalId: student.nationalId,
-        maskedNationalId:
-          student.maskedNationalId ||
-          `${student.nationalId.slice(0, 3)}***${student.nationalId.slice(7)}`,
-        classGroupId: student.classGroupId,
-        className: classGroup ? classGroup.name : 'کلاس عمومی',
-        status: sub.status as 'ongoing' | 'submitted' | 'graded' | 'absent',
-        startedAt: sub.startedAt,
-        submittedAt: sub.submittedAt,
-        score: sub.score,
-        autoScore: autoScore,
-        maxScore: sub.maxScore || exam.questions.reduce((sum, q) => sum + q.points, 0),
-        hasDescriptive,
-        rawSubmission: sub,
-      };
-    } else {
-      // Virtual absent student
-      const examMaxScore = exam.questions.reduce((sum, q) => sum + q.points, 0);
-      return {
-        id: `virtual-${student.id}`,
-        isRealSubmission: false,
-        studentId: student.id,
-        studentName: student.name,
-        nationalId: student.nationalId,
-        maskedNationalId:
-          student.maskedNationalId ||
-          `${student.nationalId.slice(0, 3)}***${student.nationalId.slice(7)}`,
-        classGroupId: student.classGroupId,
-        className: classGroup ? classGroup.name : 'کلاس عمومی',
-        status: 'absent' as const,
-        startedAt: null,
-        submittedAt: null,
-        score: 0,
-        autoScore: 0,
-        maxScore: examMaxScore,
-        hasDescriptive: exam.questions.some(
-          (q) => q.type === 'long_answer' || q.type === 'short_answer',
-        ),
-        rawSubmission: null,
-      };
-    }
-  });
-
-  const realOnlyRows = submissions
-    .filter((sub) => !studentRows.some((row) => row.rawSubmission?.id === sub.id))
-    .map((sub) => ({
-      id: sub.id,
-      isRealSubmission: true,
-      studentId: sub.studentId,
-      studentName: sub.studentName,
-      nationalId: sub.nationalId || '',
-      maskedNationalId: (sub as unknown as { maskedNationalId?: string }).maskedNationalId || '***',
-      classGroupId: 'backend',
-      className: 'ثبت‌شده در بک‌اند',
-      status: sub.status as 'ongoing' | 'submitted' | 'graded' | 'absent',
-      startedAt: sub.startedAt,
-      submittedAt: sub.submittedAt,
-      score: sub.score,
-      autoScore: sub.score,
-      maxScore: sub.maxScore || exam.questions.reduce((sum, q) => sum + q.points, 0),
-      hasDescriptive: exam.questions.some(
-        (q) => q.type === 'long_answer' || q.type === 'short_answer',
-      ),
-      rawSubmission: sub,
-    }));
-
-  studentRows = [...realOnlyRows, ...studentRows];
+  // Construct complete row data pairing cohort with submissions, then derive
+  // overview stats and the filtered view — all logic lives in the pure
+  // ./exam-results/student-rows module.
+  const studentRows = buildStudentRows({ exam, submissions, students: effectiveCohort, classGroups });
   const activeSubmission = selectedSubmissionId
     ? studentRows.find((row) => row.id === selectedSubmissionId) || null
     : null;
 
-  // Calculate OVERVIEW stats analytics
-  const totalCohortsCount = studentRows.length;
-  const participantSubmissions = studentRows.filter((r) => r.status !== 'absent');
-  const participantsCount = participantSubmissions.length;
-  const absentCount = totalCohortsCount - participantsCount;
-
-  const evaluatedSubmissions = studentRows.filter((r) => r.status === 'graded');
-  const activeSubmitted = studentRows.filter((r) => r.status === 'submitted');
-
-  // Calculate avg & high scores amongst submitted / graded
-  const scoringGradedSheets = studentRows.filter(
-    (r) => r.status === 'submitted' || r.status === 'graded',
-  );
-  const avgScore =
-    scoringGradedSheets.length > 0
-      ? (
-          scoringGradedSheets.reduce((sum, s) => sum + s.score, 0) / scoringGradedSheets.length
-        ).toFixed(1)
-      : '۰';
-  const highestScore =
-    scoringGradedSheets.length > 0 ? Math.max(...scoringGradedSheets.map((s) => s.score)) : 0;
-
-  // Count descriptive questions requiring attention
-  const hasDescriptiveQuestions = exam.questions.some(
-    (q) => q.type === 'long_answer' || q.type === 'short_answer',
-  );
-  const needsCorrectionCount = activeSubmitted.length;
-  const completedCorrectionCount = evaluatedSubmissions.length;
+  const {
+    totalCohortsCount,
+    participantsCount,
+    absentCount,
+    avgScore,
+    highestScore,
+    needsCorrectionCount,
+    completedCorrectionCount,
+    hasDescriptiveQuestions,
+  } = buildResultStats(studentRows, exam);
 
   // Apply filters
-  const filteredRows = studentRows.filter((row) => {
-    // 1. Search name
-    if (searchQuery.trim() !== '') {
-      if (!row.studentName.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-    }
-    // 2. Class Group Filter
-    if (classFilter !== 'all') {
-      if (row.classGroupId !== classFilter) {
-        return false;
-      }
-    }
-    // 3. Participation Status Filter
-    if (participationFilter !== 'all') {
-      if (
-        participationFilter === 'submitted' &&
-        row.status !== 'submitted' &&
-        row.status !== 'graded'
-      )
-        return false;
-      if (participationFilter === 'absent' && row.status !== 'absent') return false;
-      if (participationFilter === 'ongoing' && row.status !== 'ongoing') return false;
-    }
-    // 4. Correction Status Filter
-    if (correctionFilter !== 'all') {
-      if (correctionFilter === 'graded' && row.status !== 'graded') return false;
-      if (correctionFilter === 'needs_grading' && row.status !== 'submitted') return false;
-    }
-    // 5. Score Range Filter
-    if (scoreRangeFilter !== 'all') {
-      if (row.status === 'absent' || row.status === 'ongoing') return false;
-      const pct = row.maxScore > 0 ? (row.score / row.maxScore) * 100 : 0;
-      if (scoreRangeFilter === 'high' && pct < 80) return false;
-      if (scoreRangeFilter === 'mid' && (pct < 50 || pct >= 80)) return false;
-      if (scoreRangeFilter === 'low' && pct >= 50) return false;
-    }
-    return true;
+  const filteredRows = filterRows(studentRows, {
+    searchQuery,
+    classFilter,
+    participationFilter,
+    correctionFilter,
+    scoreRangeFilter,
   });
 
   // Start evaluating a single submission
-  const startGrading = (row: (typeof studentRows)[number]) => {
+  const startGrading = (row: ResultRow) => {
     if (row.status === 'absent') {
-      alert('این دانش‌آموز غایب بوده و پاسخ‌برگی ارسال نکرده است.');
+      showToast('این دانش‌آموز غایب بوده و پاسخ‌برگی ارسال نکرده است.', 'warning');
       return;
     }
 
@@ -373,8 +242,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
       [questionId]: true,
     }));
 
-    alert(
+    showToast(
       `نمره ثبت شد: نمره ${toPersianDigits(finalPoints)} از ${toPersianDigits(q.points)} برای این سؤال اعمال گردید.`,
+      'success',
     );
   };
 
@@ -438,18 +308,19 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     return unGraded;
   };
 
-  // Submit complete submission grading sheet
-  const handleFinalizeGrading = async () => {
+  // Submit complete submission grading sheet — gated by the designed
+  // ConfirmDialog when descriptive questions are left ungraded.
+  const handleFinalizeGrading = () => {
     if (!activeSubmission) return;
-
-    // Ensure they know if questions are ungraded
-    const ungradedCount = getUngradedDescriptiveQuestionsCount();
-    if (ungradedCount > 0) {
-      const confirmFinal = window.confirm(
-        `هشدار تصحیح ناقص:\nتعداد ${toPersianDigits(ungradedCount)} سوال تشریحی هنوز نمره‌دهی نهایی نشده‌اند. آیا مایل هستید بدون تصحیح کاملِ ورقه اقدام به ثبت کارنامه کنید؟`,
-      );
-      if (!confirmFinal) return;
+    if (getUngradedDescriptiveQuestionsCount() > 0) {
+      setConfirmFinalize(true);
+      return;
     }
+    void runFinalizeGrading();
+  };
+
+  const runFinalizeGrading = async () => {
+    if (!activeSubmission) return;
 
     // Assemble final student answers array
     const finalizedAnswers = activeSubmission.rawSubmission.answers.map((ans: StudentAnswer) => {
@@ -474,7 +345,6 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     );
 
     try {
-      // Simulate calling update for each to persist
       for (const ans of finalizedAnswers) {
         await gradingService.updateManualGrade(
           activeSubmission.id,
@@ -484,86 +354,47 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
         );
       }
 
-      // Update local state state fully
-      const updatedSubmissions = submissions.map((sub) => {
-        if (sub.id === activeSubmission.id) {
-          return {
-            ...sub,
-            answers: finalizedAnswers,
-            score: Number(finalTotalScore.toFixed(2)),
-            status: 'graded' as const,
-            gradedBy: 'استاد حمیدرضا علیزاده',
-            gradedAt: new Date().toISOString(),
-          };
-        }
-        return sub;
-      });
+      // Mark graded server-side too — without this the submission kept
+      // reappearing under "needs grading" in notifications after a reload.
+      await gradingService.finalizeGrade(activeSubmission.id);
 
-      setSubmissions(updatedSubmissions);
-      alert(
+      // Patch the shared cache with the finalized sheet — spreading the raw
+      // submission, not the derived row (the row carries ledger-only fields).
+      upsertSubmission({
+        ...activeSubmission.rawSubmission,
+        answers: finalizedAnswers,
+        score: Number(finalTotalScore.toFixed(2)),
+        status: 'graded' as const,
+        gradedBy: teacher?.name || '',
+        gradedAt: new Date().toISOString(),
+      });
+      showToast(
         `تصحیح پایانی کارنامه «${activeSubmission.studentName}» با موفقیت تکمیل شد و نتایج به سیستم آموزشی ابلاغ گردید.`,
+        'success',
       );
       setSelectedSubmissionId(null);
     } catch (_err) {
-      alert('خطا در نهایی سازی و ثبت کارنامه');
+      showToast('خطا در نهایی سازی و ثبت کارنامه', 'error');
     }
   };
 
-  // Excel CSV Export feature (with Persian BOM support)
+  // Excel CSV Export (logic in ./exam-results/student-rows)
   const handleExportCSV = () => {
-    let csvData = '\uFEFF'; // UTF-8 byte order mark to display Persian characters flawlessly in MS Excel
-
-    // Headers
-    csvData +=
-      'نام دانش‌آموز,کد ملی دانش‌آموز,گروه کلاسی,وضعیت شرکت در آزمون,ساعت شروع,ساعت ارسال پاسخ‌برگ,نمره آزمون تستی (خودکار),بارم نمره نهایی\n';
-
-    studentRows.forEach((row) => {
-      const startStr = row.startedAt
-        ? new Date(row.startedAt).toLocaleTimeString('fa-IR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : 'غایب';
-      const submitStr = row.submittedAt
-        ? new Date(row.submittedAt).toLocaleTimeString('fa-IR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : 'غایب';
-
-      const pStatus =
-        row.status === 'graded'
-          ? 'تصحیح شده'
-          : row.status === 'submitted'
-            ? 'ارسال شده (در انتظار تصحیح)'
-            : row.status === 'ongoing'
-              ? 'در حال آزمون'
-              : 'غایب / بدون پاسخ‌برگ';
-
-      csvData += `"${row.studentName}","${row.nationalId}","${row.className}","${pStatus}","${startStr}","${submitStr}",${row.autoScore},${row.score}\n`;
-    });
-
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `کارنامه_برخط_آزمون_${exam.title.replace(/\s+/g, '_')}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    buildResultsCsv(exam.title, studentRows);
   };
 
   const handleExportExcelMock = () => {
     // Elegant system feedback indicating Excel export setup
-    alert(
+    showToast(
       'خروجی Excel با فرمت XLSX به کمک ماژول پیشرفته ExcelJS آماده دانلود گردید. انتقال با موفقیت انجام شد.',
+      'success',
     );
     handleExportCSV();
   };
 
   return (
     <div
-      className="space-y-6 text-right animate-in fade-in duration-300"
+      className="space-y-6 text-right"
       id="exam-grading-dashboard"
     >
       <AnimatePresence mode="wait">
@@ -609,183 +440,122 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
               {/* Advanced Export actions */}
               <div className="flex items-center gap-2 self-stretch md:self-auto">
-                <button
-                  type="button"
+                <Button
                   onClick={handleExportCSV}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-[var(--color-glass-light-fill)] hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] py-2.5 px-4 rounded-xl text-caption font-bold transition-all cursor-pointer"
+                  variant="secondary"
+                  className="flex-1 md:flex-initial"
+                  icon={<Download className="w-4 h-4 text-[var(--color-text-tertiary)]" />}
                   id="btn-export-csv"
                 >
-                  <Download className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  <span>خروجی CSV</span>
-                </button>
-                <button
-                  type="button"
+                  خروجی CSV
+                </Button>
+                <Button
                   onClick={handleExportExcelMock}
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] py-2.5 px-4 rounded-xl text-caption font-bold transition-all cursor-pointer shadow-sm shadow-[var(--color-success)]/10"
+                  variant="success"
+                  className="flex-1 md:flex-initial"
+                  icon={<FileSpreadsheet className="w-4 h-4" />}
                   id="btn-export-excel"
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  <span>خروجی Excel</span>
-                </button>
+                  خروجی Excel
+                </Button>
               </div>
             </div>
 
             {/* Comprehensive Analytics Metrics Dashboard grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
               {/* Card 1: Total Allocated classes */}
-              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                    کل کارنامه تخصصی
-                  </span>
-                  <div className="p-1.5 glx rounded-lg text-[var(--color-text-tertiary)]">
-                    <Users className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-2 text-right">
-                  <h4 className="text-heading-2 font-black text-[var(--color-text-primary)]">
-                    {toPersianDigits(totalCohortsCount)}{' '}
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                      نفر
-                    </span>
-                  </h4>
-                  <p className="text-micro text-[var(--color-text-tertiary)] font-semibold mt-1">
-                    منتسب از کلاس‌های اختصاصی
-                  </p>
-                </div>
-              </div>
+              <StatCard
+                label="کل کارنامه تخصصی"
+                value={toPersianDigits(totalCohortsCount)}
+                unit="نفر"
+                footnote="منتسب از کلاس‌های اختصاصی"
+                icon={<Users className="w-4 h-4" />}
+                tone="neutral"
+                glassLayer="light"
+                valueSize="md"
+              />
 
               {/* Card 2: Participated */}
-              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                    تعداد شرکت‌کنندگان
-                  </span>
-                  <div className="p-1.5 bg-[var(--color-success-soft)] rounded-lg text-[var(--color-success)]">
-                    <UserCheck className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-2 text-right">
-                  <h4 className="text-heading-2 font-black text-[var(--color-success)]">
-                    {toPersianDigits(participantsCount)}{' '}
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                      نفر
-                    </span>
-                  </h4>
-                  <p className="text-micro text-[var(--color-success)] font-semibold mt-1">
-                    حضور یافته در سیستم امتحان
-                  </p>
-                </div>
-              </div>
+              <StatCard
+                label="تعداد شرکت‌کنندگان"
+                value={toPersianDigits(participantsCount)}
+                unit="نفر"
+                footnote="حضور یافته در سیستم امتحان"
+                footnoteTone="success"
+                valueClassName="text-[var(--color-success)]"
+                icon={<UserCheck className="w-4 h-4" />}
+                tone="success"
+                glassLayer="light"
+                valueSize="md"
+              />
 
               {/* Card 3: Absents */}
-              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                    غائبین ارزیابی
-                  </span>
-                  <div className="p-1.5 bg-[var(--color-danger-soft)] rounded-lg text-[var(--color-danger)]">
-                    <UserX className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-2 text-right">
-                  <h4 className="text-heading-2 font-black text-[var(--color-danger)]">
-                    {toPersianDigits(absentCount)}{' '}
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                      نفر
-                    </span>
-                  </h4>
-                  <p className="text-micro text-[var(--color-danger)] font-semibold mt-1">
-                    بدون شروع کدرهگیری
-                  </p>
-                </div>
-              </div>
+              <StatCard
+                label="غائبین ارزیابی"
+                value={toPersianDigits(absentCount)}
+                unit="نفر"
+                footnote="بدون شروع کدرهگیری"
+                footnoteTone="danger"
+                valueClassName="text-[var(--color-danger)]"
+                icon={<UserX className="w-4 h-4" />}
+                tone="danger"
+                glassLayer="light"
+                valueSize="md"
+              />
 
               {/* Card 4: Average score */}
-              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                    میانگین کلی نمرات
-                  </span>
-                  <div className="p-1.5 bg-[var(--color-accent-soft)] rounded-lg text-[var(--color-accent)]">
-                    <Percent className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-2 text-right">
-                  <h4 className="text-heading-2 font-black text-[var(--color-accent)]">
-                    {toPersianDigits(avgScore)}
-                  </h4>
-                  <p className="text-micro text-[var(--color-accent)] font-semibold mt-1">
-                    معدل کتبی کلاس داوطلبان
-                  </p>
-                </div>
-              </div>
+              <StatCard
+                label="میانگین کلی نمرات"
+                value={toPersianDigits(avgScore)}
+                footnote="معدل کتبی کلاس داوطلبان"
+                footnoteTone="accent"
+                valueClassName="text-[var(--color-accent)]"
+                icon={<Percent className="w-4 h-4" />}
+                tone="accent"
+                glassLayer="light"
+                valueSize="md"
+              />
 
               {/* Card 5: Highest score */}
-              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                    بالاترین نمره کلاس
-                  </span>
-                  <div className="p-1.5 bg-[var(--color-warning-soft)] rounded-lg text-[var(--color-warning-soft)]/500">
-                    <Award className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-2 text-right">
-                  <h4 className="text-heading-2 font-black text-[var(--color-warning)]">
-                    {toPersianDigits(highestScore)}
-                  </h4>
-                  <p className="text-micro text-[var(--color-warning-soft)]/500 font-semibold mt-1">
-                    بهترین رتبه ثبت نهایی شده
-                  </p>
-                </div>
-              </div>
+              <StatCard
+                label="بالاترین نمره کلاس"
+                value={toPersianDigits(highestScore)}
+                footnote="بهترین رتبه ثبت نهایی شده"
+                footnoteTone="warning"
+                valueClassName="text-[var(--color-warning)]"
+                icon={<Award className="w-4 h-4" />}
+                tone="warning"
+                glassLayer="light"
+                valueSize="md"
+              />
 
               {/* Card 6: Needs correction */}
-              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                    نیازمند تصحیح تشریحی
-                  </span>
-                  <div className="p-1.5 bg-[var(--color-warning-soft)] rounded-lg text-[var(--color-warning)]">
-                    <AlertCircle className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-2 text-right">
-                  <h4 className="text-heading-2 font-black text-[var(--color-warning)]">
-                    {toPersianDigits(needsCorrectionCount)}{' '}
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                      برگه
-                    </span>
-                  </h4>
-                  <p className="text-micro text-[var(--color-warning)] font-semibold mt-1">
-                    در برگیرنده پاسخ‌های توصیفی
-                  </p>
-                </div>
-              </div>
+              <StatCard
+                label="نیازمند تصحیح تشریحی"
+                value={toPersianDigits(needsCorrectionCount)}
+                unit="برگه"
+                footnote="در برگیرنده پاسخ‌های توصیفی"
+                footnoteTone="warning"
+                valueClassName="text-[var(--color-warning)]"
+                icon={<AlertCircle className="w-4 h-4" />}
+                tone="warning"
+                glassLayer="light"
+                valueSize="md"
+              />
 
               {/* Card 7: Completed corrections */}
-              <div className="relative glx glass-edge border rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                    تصحیح‌های تکمیل‌شده
-                  </span>
-                  <div className="p-1.5 bg-[var(--color-success-soft)] rounded-lg text-[var(--color-success)]">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="mt-2 text-right">
-                  <h4 className="text-heading-2 font-black text-[var(--color-success)]">
-                    {toPersianDigits(completedCorrectionCount)}{' '}
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
-                      کارنامه
-                    </span>
-                  </h4>
-                  <p className="text-micro text-[var(--color-success)] font-semibold mt-1">
-                    ثبت قطعی در کارتابل دبیران
-                  </p>
-                </div>
-              </div>
+              <StatCard
+                label="تصحیح‌های تکمیل‌شده"
+                value={toPersianDigits(completedCorrectionCount)}
+                unit="کارنامه"
+                footnote="ثبت قطعی در کارتابل دبیران"
+                footnoteTone="success"
+                valueClassName="text-[var(--color-success)]"
+                icon={<CheckCircle2 className="w-4 h-4" />}
+                tone="success"
+                glassLayer="light"
+                valueSize="md"
+              />
             </div>
 
             {/* Smart Reactive Filters Panel */}
@@ -815,19 +585,19 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* Search query Input */}
                 <div className="space-y-1.5">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                  <label
+                    htmlFor="results-search-input"
+                    className="text-micro text-[var(--color-text-tertiary)] font-bold block"
+                  >
                     جستجوی داوطلب بر اساس نام
                   </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="نام دانش‌آموز را بنویسید..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pr-9 pl-3 py-2 border rounded-xl glx text-caption text-[var(--color-text-secondary)] outline-hidden focus:border-[var(--color-accent)] transition-colors"
-                    />
-                    <Search className="absolute right-3 top-2.5 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                  </div>
+                  <SearchInput
+                    id="results-search-input"
+                    placeholder="نام دانش‌آموز را بنویسید..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="text-caption"
+                  />
                 </div>
 
                 {/* Class Group Select */}
@@ -935,6 +705,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                 data={filteredRows}
                 emptyTitle="هیچ داوطلبی یافت نشد"
                 emptyDesc="هیچ داوطلبی مطابق فیلترهای کنونی در پایگاه داده پیدا نشد."
+                onRetry={() => void reload('submissions')}
                 renderRow={(row) => {
                   const hasSubmitted = row.status === 'submitted';
                   const isGraded = row.status === 'graded';
@@ -1035,7 +806,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                           id={`btn-open-review-panel-${row.id}`}
                           onClick={() => startGrading(row)}
                           disabled={isAbsent || isOngoing}
-                          variant={isGraded ? 'indigo' : 'danger'}
+                          variant={isGraded ? 'primary' : 'danger'}
                           size="sm"
                         >
                           {isGraded ? 'بازبینی پاسخ‌ها' : 'تصحیح و بررسی ورقه'}
@@ -1106,7 +877,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                         <Button
                           onClick={() => startGrading(row)}
                           disabled={isAbsent || isOngoing}
-                          variant={isGraded ? 'indigo' : 'danger'}
+                          variant={isGraded ? 'primary' : 'danger'}
                           size="sm"
                           className="w-full"
                         >
@@ -1715,6 +1486,21 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {toastElement}
+      <ConfirmDialog
+        isOpen={confirmFinalize}
+        title="ثبت کارنامه با تصحیح ناقص"
+        message={`تعداد ${toPersianDigits(getUngradedDescriptiveQuestionsCount())} سوال تشریحی هنوز نمره‌دهی نهایی نشده‌اند. آیا مایل هستید بدون تصحیح کاملِ ورقه اقدام به ثبت کارنامه کنید؟`}
+        confirmText="ثبت نهایی کارنامه"
+        cancelText="بازگشت به تصحیح"
+        variant="danger"
+        onConfirm={() => {
+          setConfirmFinalize(false);
+          void runFinalizeGrading();
+        }}
+        onCancel={() => setConfirmFinalize(false)}
+      />
     </div>
   );
 }
