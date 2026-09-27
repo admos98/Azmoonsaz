@@ -39,6 +39,16 @@ function token(name: string, scope = ':root'): string | null {
   return out;
 }
 
+/** Component source, line-comments stripped so doc mentions of retired
+ *  classes don't trip the absence gates. */
+function component(path: string): string {
+  return readFileSync(join(root, path), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .map((l) => l.replace(/^\s*\/\/.*$/, ''))
+    .join('\n');
+}
+
 describe('glass material contract (pixel-audit gates)', () => {
   it('light: panel body blur destroys backdrop shapes (>= 18px, was 6px)', () => {
     const v = token('--glass-p-blur');
@@ -107,17 +117,54 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/\.glass-edge::before\s*\{[^}]*mix-blend-mode:\s*plus-lighter/s);
   });
 
-  it('rim is a crisp specular curve — bright top, transparent sides, never blurred', () => {
-    // light: specular spike + steep falloff around the perimeter (the "curve")
+  it('rim shows the REFRACTED BACKGROUND — no painted perimeter line at all', () => {
+    // the only resting paint is the top specular curve; the fixed per-edge
+    // tint ring (the "static line with static colour") is gone
     expect(token('--glass-edge-base')).toBe('0.9');
-    expect(token('--glass-edge-mid-f')).toBe('0.32');
-    expect(token('--glass-edge-bot-f')).toBe('0.17');
-    // the top-centre light curve that wraps around the corners
+    expect(token('--glass-edge-base', ':root[data-theme=\'dark\']')).toBe('0.3');
+    // the top-centre light curve that wraps around the corners stays
     expect(css).toMatch(/140% 90% at 50% 0%/);
+    // no fixed tint tokens, no resting linear rim, anywhere
+    expect(css).not.toMatch(/--glass-edge-tint-/);
+    expect(css).not.toMatch(/glass-edge-mid-f|glass-edge-bot-f/);
+    const before = css.match(/\.glass-edge::before\s*\{[^}]*\}/s)![0];
+    expect(before).not.toMatch(/linear-gradient\(\s*to bottom/);
     // a blurred line reads as a gray hairline, not light — the rim never blurs
     expect(css).not.toMatch(/filter:\s*blur\(0\.5px\)/);
-    // dark keeps its soft sheen (higher side/bottom factors)
-    expect(token('--glass-edge-mid-f', ':root[data-theme=\'dark\']')).toBe('0.5');
+  });
+
+  it('the rim band stays a hairline and stays CLEAR on sides/bottom', () => {
+    const max = token('--glass-edge-max');
+    expect(parseFloat(max!)).toBeLessThanOrEqual(1.8);
+    const darkMax = token('--glass-edge-max', ':root[data-theme=\'dark\']');
+    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(1.8);
+    // uniform band mask (no directional feather) — sides show the lens output
+    expect(css).toMatch(
+      /\.glass-edge::before\s*\{[^}]*mask:\s*linear-gradient\(#000 0 0\) content-box,\s*linear-gradient\(#000 0 0\)/s,
+    );
+  });
+
+  it('panel fill feathers out at the rim so the edge shows bent background', () => {
+    const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
+    expect(after).toMatch(/z-index:\s*-1/); // above filtered backdrop, below content
+    expect(after).toMatch(/mask-composite:\s*intersect/); // 2D feather
+    expect(after).not.toMatch(/backdrop-filter/); // paint only — one filter per panel
+    expect(token('--glass-fill-fade')).not.toBeNull();
+    // the element body is clear so the feather actually reveals the page
+    expect(css).toMatch(/\.glass-edge\s*\{\s*background:\s*transparent;/);
+    // glx-strong keeps its +6% modal fill through derived alphas
+    expect(css).toMatch(/--glass-p-fa1:\s*calc\(var\(--glass-p-a1\) \+ 0\.06\)/);
+  });
+
+  it('no static hairline: the panel border is transparent in both themes', () => {
+    expect(token('--glass-p-ba')).toBe('0');
+    expect(token('--glass-p-ba', ':root[data-theme=\'dark\']')).toBe('0');
+    // off tier restores a visible border for solid panels
+    expect(token('--glass-p-ba', ':root[data-glass=\'off\']')).toBe('0.35');
+    // and disables the feather (a solid fill must not have a soft fringe)
+    expect(css).toMatch(
+      /:root\[data-glass='off'\] \.glass-edge::after\s*\{[^}]*mask-image:\s*none/s,
+    );
   });
 
   it('inner bloom — light spills inside under the top rim (paint-only)', () => {
@@ -127,21 +174,37 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/inset 0 1px 0 rgb\(255 255 255 \/ var\(--glass-bloom-line-a\)\)/);
   });
 
-  it('the lens pull is strong enough to read (scale=20 → max ±10px)', () => {
-    expect(html).toMatch(/scale="20"/);
+  it('the lens pull is strong enough to read (scale=28 → max ±14px)', () => {
+    expect(html).toMatch(/scale="28"/);
   });
 
-  it('page background carries defined shapes for the glass to reveal and bend', () => {
+  it('ONE background: the topo page plate — the depth-field stage is gone', () => {
     const app = readFileSync(join(root, 'src/App.tsx'), 'utf8');
-    expect(app).toMatch(/id="app-bg-stage"/);
-    // at least 5 low-alpha defined features (rings / discs / bands)
-    const shapes = app.match(/rounded-full border-\[\d+px\]|rounded-full bg-\[var\(--color-(?:accent-solid|gold)\)\]\/\d+ blur-\[\d+px\]/g) ?? [];
-    expect(shapes.length).toBeGreaterThanOrEqual(5);
+    expect(app).not.toMatch(/app-bg-stage/);
+    // the plate the user asked for is the only background
+    expect(css).toMatch(/--page-plate:\s*url\('~\/backgrounds\/bg-d-(light|dark)\.svg'\)|--page-plate:\s*url\('\/backgrounds\/bg-d-(light|dark)\.svg'\)/);
+    expect(css).toMatch(/#app-teacher-shell::before/);
   });
 
-  it('rim carries chromatic dispersion (tinted edges, not neutral white)', () => {
-    expect(css).toMatch(/--glass-edge-tint-top:\s*205 236 255/);
-    expect(css).toMatch(/--glass-edge-tint-bot:\s*168 244 234/);
+  it('menus and notif center cast NOTHING: halo + veil layers are gone', () => {
+    const topbar = component('src/components/Topbar.tsx');
+    expect(topbar).not.toMatch(/area-blur|bgfx/);
+    const ui = component('src/components/UIComponents.tsx');
+    expect(ui).not.toMatch(/area-blur/);
+    // and the utilities are dead in CSS too
+    expect(css).not.toMatch(/@utility area-blur/);
+    expect(css).not.toMatch(/@utility bgfx/);
+    // click-away catchers remain, fully transparent
+    expect(topbar).toMatch(/fixed inset-0 z-\[55\]" onClick/);
+  });
+
+  it('floating panels carry no fixed-colour border ring (CommandPalette panel)', () => {
+    const palette = readFileSync(join(root, 'src/components/CommandPalette.tsx'), 'utf8');
+    // the PANEL silhouette itself: no border class (internal row dividers are
+    // fine — they are separators, not the glass edge)
+    expect(palette).toMatch(
+      /className="relative glx-strong glass-edge w-full max-w-xl overflow-hidden rounded-3xl"/,
+    );
   });
 
   it('the nested lens band is GONE (it bent the panel itself and doubled every filter)', () => {
@@ -171,7 +234,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     const matches = html.match(/808080/g);
     expect(matches!.length).toBeGreaterThanOrEqual(2);
     // oversized region so rim pixels can sample beyond the box
-    expect(html).toMatch(/x="-6%"[\s\S]*?width="112%"/);
+    expect(html).toMatch(/x="-10%"[\s\S]*?width="120%"/);
     // exactly one definition — a duplicate id silently shadows the first
     expect(html.match(/id="lg-lens"/g)!.length).toBe(1);
   });

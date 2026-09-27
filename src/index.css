@@ -175,15 +175,9 @@
      background look bluer the moment a panel opened. */
   --glass-scrim-color: 56 60 68;
 
-  /* Area halo — size = ratio × panel width (container-query units) */
-  --glass-h-ratio: 0.17;
-  --glass-h-blur: 5px;
-  --glass-h-sat: 1.1;
-  --glass-h-fill: 0.22;
-  --glass-h-tint: 26 28 34;
-  --glass-h-fo: 1.15;
-  --glass-h-bias: 0.7;
-  --glass-h-rext: 0px;
+  /* Area halo — RETIRED. The halo was a painted dark blob (rgb(26 28 34 / 0.22)
+     + blur) behind every floating panel — a shadow by another name. iOS panels
+     cast nothing; separation comes from blur + refracted rim. */
 
   /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill */
   --glass-p-a1: 0.17;
@@ -194,10 +188,16 @@
   --glass-p-sat: 1.45;
   --glass-p-radius: 28px;
   --glass-p-bw: 1px;
-  /* Hairline under the rim. The rim IS the visible edge; the hairline only
-     keeps the silhouette honest over same-tone fills, so it stays faint. */
-  --glass-p-ba: 0.1;
+  /* Hairline under the rim — RETIRED (alpha 0). A fixed-colour border is the
+     "static line with static colour" the pixel audit measured (rim↔bg corr ~0
+     on ours vs +0.6 on iOS). The rim is now the refracted background itself;
+     the border width stays for layout and forced-colors, colour is gone. */
+  --glass-p-ba: 0;
   --glass-p-bc: 26 28 34;
+  /* Fill feather — how far the panel's tint fades out before the edge, so the
+     rim zone shows the raw bent+blurred background (the "short merge line":
+     crisp glass edge → a few px → blur). */
+  --glass-fill-fade: clamp(5px, 1vmin, 10px);
 
   /* ── Edge light — the lit rim of a glass panel ──────────────────────────
      Replaces the old fixed 2px top band (--glass-shn-t). The rim is now drawn
@@ -222,17 +222,14 @@
      a soft gray hairline, not as light). The top-curve radial in
      .glass-edge::before concentrates the light at the top-centre so the rim
      reads as a lit curve, not a uniform stroke. */
-  --glass-edge-base: 0.9; /* specular spike at the top rim */
-  --glass-edge-mid-f: 0.32; /* sides fall to a whisper — the rim stays see-through */
-  --glass-edge-bot-f: 0.17; /* bottom barely lit */
+  --glass-edge-base: 0.9; /* specular spike at the top rim — the ONLY resting paint */
   --glass-edge-hot: 0.55; /* extra strength at the edge nearest the pointer */
   --glass-edge-spread: 38%; /* pointer falloff, % of the panel's inline size */
   --glass-edge-color: 255 255 255;
-  /* Dispersion — the rim is never neutral white (measured off iOS 26: top rim
-     (157,225,255), bottom rim (131,245,245)). Tint per edge zone. */
-  --glass-edge-tint-top: 205 236 255;
-  --glass-edge-tint-mid: 255 255 255;
-  --glass-edge-tint-bot: 168 244 234;
+  /* The fixed dispersion tints (--glass-edge-tint-*) are RETIRED: a painted
+     tint per edge zone IS a static colour line. Rim colour now comes from the
+     refracted background (it tracks the backdrop like iOS), with only the
+     top-centre specular curve and the pointer flare painted on top. */
   /* The old lens band (--glass-lens-*) is gone. Its `backdrop-filter` ran on a
      ring INSIDE the panel, so its backdrop included the panel's own fill and
      text — it bent the panel instead of the page, tinted corners differently
@@ -271,13 +268,6 @@
   --color-on-dark-subtle: rgba(255, 255, 255, 0.035);
   --color-on-dark-hover: rgba(255, 255, 255, 0.1);
   --color-on-dark-hover-strong: rgba(255, 255, 255, 0.15);
-
-  /* Derived halo geometry — falloff stops + ratio inset */
-  --glass-h-f: calc(
-    var(--glass-h-ratio) / (1 + 2 * var(--glass-h-ratio)) * 100% * var(--glass-h-fo)
-  );
-  --glass-h-b1: calc(var(--glass-h-f) * var(--glass-h-bias));
-  --glass-h-inset: calc(-1 * var(--glass-h-ratio) * 100 * 1cqw);
 }
 
 /* Resolved dark appearance. Components consume the same semantic tokens in both
@@ -342,12 +332,10 @@
 
   --glass-scrim-a: 0.35;
   --glass-scrim-color: 0 0 0;
-  --glass-h-fill: 0.2;
-  --glass-h-tint: 0 0 0;
   --glass-p-a1: 0.62;
   --glass-p-a2: 0.48;
   --glass-p-tint: 52 49 66;
-  --glass-p-ba: 0.16;
+  --glass-p-ba: 0;
   --glass-p-bc: 255 255 255;
   --glass-sh-a: 0.28;
   --glass-sh-color: 0 0 0;
@@ -365,15 +353,10 @@
   --glass-edge-base: 0.3;
   --glass-edge-hot: 0.34;
   --glass-edge-spread: 60%;
-  /* dark keeps the soft material: sides and bottom hold more of the base so
-     the highlight reads as a slow sheen rather than a crisp curve */
-  --glass-edge-mid-f: 0.5;
-  --glass-edge-bot-f: 0.28;
+  /* dark keeps the soft material: the top specular is dimmer and the pointer
+     flare spreads wider — a slow sheen instead of a crisp curve */
   --glass-bloom-line-a: 0.08;
   --glass-bloom-a: 0.12;
-  --glass-edge-tint-top: 205 232 255;
-  --glass-edge-tint-mid: 255 255 255;
-  --glass-edge-tint-bot: 168 240 234;
   /* Dark panels float on a near-black page: with zero elevation they merge
      into it. A whisper of shadow restores the float; the light-theme value
      above stays a hard 0. */
@@ -556,12 +539,12 @@ select::-webkit-calendar-picker-indicator {
     var(--glass-edge-t),
     var(--glass-edge-max)
   );
-  /* Resting rim, lit from above: top, mid (the sides), bottom. The falloff
-     factors are per-theme tokens — light carves a hard specular curve, dark
-     keeps its slow sheen. */
+  /* Resting rim: NO painted perimeter any more. iOS's rim is the background's
+     own light bent at the edge — a painted tint per edge zone reads as a
+     "static line with static colour" (measured: rim↔bg corr ~0 vs +0.6 on
+     iOS). Only the top specular (a fixed sun-like light iOS also has) and
+     the pointer flare remain; the rim's colour comes from the lens below. */
   --eg-top: var(--glass-edge-base);
-  --eg-mid: calc(var(--glass-edge-base) * var(--glass-edge-mid-f));
-  --eg-bot: calc(var(--glass-edge-base) * var(--glass-edge-bot-f));
   /* Pointer flare. Zero whenever the pointer is away. */
   --eg-flare: calc(var(--eg-boost, 0) * var(--glass-edge-hot));
 }
@@ -598,34 +581,90 @@ select::-webkit-calendar-picker-indicator {
         140% 90% at 50% 0%,
         rgb(255 255 255 / calc(var(--eg-top) * 0.55)) 0%,
         rgb(255 255 255 / 0) 55%
-      ),
-    /* resting rim — light from above, with chromatic dispersion: cyan at the
-       top edge, green-cyan at the bottom (iOS 26 measured values). */
-      linear-gradient(
-        to bottom,
-        rgb(var(--glass-edge-tint-top) / var(--eg-top)) 0%,
-        rgb(var(--glass-edge-tint-mid) / var(--eg-mid)) 52%,
-        rgb(var(--glass-edge-tint-bot) / var(--eg-bot)) 100%
       );
-  /* Mask the ring to the band AND feather the band's INNER edge: the outer
-     silhouette stays crisp (the border-box edge is a hard limit, not feathered
-     — that's where the bend reads as the glass meeting air), while the inner
-     edge falls off over the band so no fixed line ever appears. iOS: no stroke. */
-  -webkit-mask:
-    linear-gradient(to bottom, rgb(0 0 0/0), #000 calc(var(--eg-t) * 0.85))
-      content-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(to bottom, rgb(0 0 0/0), #000 calc(var(--eg-t) * 0.85))
-      content-box,
-    linear-gradient(#000 0 0);
+  /* Mask the ring to the thin band. Uniform on all four sides: sides and
+     bottom stay CLEAR so the refracted background is the rim there — the
+     paint above exists only at the top curve and near the pointer. */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+}
+
+/* The fill rides ::after so it can be FEATHERED OUT at the rim: the panel's
+   tint fades to zero over --glass-fill-fade, leaving the outer band showing
+   the raw bent+blurred background — the rim IS the refracted page (iOS 26),
+   and the eye reads crisp-glass-edge → short merge → blur. z-index -1 keeps
+   it above the panel's own filtered backdrop but below content; isolation
+   on .glass-edge contains it. PAINT ONLY — no filter here (discipline). */
+.glass-edge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  --glass-ff: var(--glass-fill-fade);
+  /* fill alphas — derived so glx-strong's +6% modal boost flows through and
+     the lite/off tier alpha swaps apply untouched */
+  background:
+    /* glx-sheen hover light, folded in as the first layer (var-driven) */
+    radial-gradient(
+      circle at 90% 0%,
+      rgb(255 255 255 / calc(0.1 * var(--glass-sheen-a, 0))) 0%,
+      rgb(255 255 255 / 0) 50%
+    ),
+    linear-gradient(
+      var(--glass-p-angle),
+      rgb(var(--glass-p-tint) / var(--glass-p-fa1, var(--glass-p-a1))),
+      rgb(var(--glass-p-tint) / var(--glass-p-fa2, var(--glass-p-a2)))
+    );
+  -webkit-mask-image:
+    linear-gradient(to right, rgb(0 0 0 / 0) 0, #000 var(--glass-ff),
+      #000 calc(100% - var(--glass-ff)), rgb(0 0 0 / 0) 100%),
+    linear-gradient(to bottom, rgb(0 0 0 / 0) 0, #000 var(--glass-ff),
+      #000 calc(100% - var(--glass-ff)), rgb(0 0 0 / 0) 100%);
+  mask-image:
+    linear-gradient(to right, rgb(0 0 0 / 0) 0, #000 var(--glass-ff),
+      #000 calc(100% - var(--glass-ff)), rgb(0 0 0 / 0) 100%),
+    linear-gradient(to bottom, rgb(0 0 0 / 0) 0, #000 var(--glass-ff),
+      #000 calc(100% - var(--glass-ff)), rgb(0 0 0 / 0) 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+/* With the fill moved to ::after, the element body must be clear so the
+   feathered band actually shows the background. (Non-glass-edge .glx uses
+   keep their on-element fill — this override is scoped to the pair.) */
+.glass-edge {
+  background: transparent;
+}
+
+/* glx-sheen — hover light, now a registered custom property so the fold-in
+   layer above still fades smoothly (opacity on a filtered panel is what
+   caused ghost frames; a property transition paints fresh every frame). */
+@property --glass-sheen-a {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+.glx-sheen {
+  --glass-sheen-a: 0;
+  transition: --glass-sheen-a 0.3s ease;
+}
+.glx-sheen:hover {
+  --glass-sheen-a: 1;
+}
+:root[data-motion='reduce'] .glx-sheen {
+  transition: none;
 }
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
    Grounded over warm paper bg. The lit rim is `.glass-edge`, not a fixed band. */
 @utility glx {
+  /* fill alphas for the ::after body (glx-strong derives +0.06/+0.05) */
+  --glass-p-fa1: var(--glass-p-a1);
+  --glass-p-fa2: var(--glass-p-a2);
   background: linear-gradient(
     var(--glass-p-angle),
     rgb(var(--glass-p-tint) / var(--glass-p-a1)),
@@ -656,6 +695,8 @@ select::-webkit-calendar-picker-indicator {
      material at two weights, differing only in shadow and blur.
      Modals sit over the most content → +6% fill over the card recipe
      (iOS: opacity scales with content density underneath). */
+  --glass-p-fa1: calc(var(--glass-p-a1) + 0.06);
+  --glass-p-fa2: calc(var(--glass-p-a2) + 0.05);
   background: linear-gradient(
     var(--glass-p-angle),
     rgb(var(--glass-p-tint) / calc(var(--glass-p-a1) + 0.06)),
@@ -715,8 +756,7 @@ select::-webkit-calendar-picker-indicator {
   border-left: 1px solid var(--color-glass-ink-stroke);
   box-shadow:
     inset 0 1px 0 var(--color-glass-ink-sheen),
-    inset 0 -1px 4px var(--color-glass-ink-bottom),
-    0 4px 24px var(--color-glass-shadow);
+    inset 0 -1px 4px var(--color-glass-ink-bottom);
   backdrop-filter: blur(14px) saturate(1.35);
 }
 
@@ -764,29 +804,28 @@ select::-webkit-calendar-picker-indicator {
   --glass-p-a1: 0.58;
   --glass-p-a2: 0.44;
 }
-:root[data-glass='lite'] :is(.glx, .glx-strong, .glx-dark, .bgfx, .veil-blur, .chrome-blur) {
+:root[data-glass='lite'] :is(.glx, .glx-strong, .glx-dark, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
-}
-/* The halo is a decorative blur blob — meaningless without blur, so it goes.
-   Veil/scrim layers stay (neutralized above): their color dimming is what
-   keeps modals legible and must survive every tier. */
-:root[data-glass='lite'] .area-blur {
-  display: none;
 }
 
 :root[data-glass='off'] {
   --glass-p-a1: 0.97;
   --glass-p-a2: 0.97;
   --ui-inset-fill: rgba(250, 248, 245, 1);
+  /* solid panels need their silhouette back */
+  --glass-p-ba: 0.35;
+  /* ...and no feathered edge on a SOLID fill */
 }
 :root[data-glass='off'][data-theme='dark'] {
   --ui-inset-fill: rgba(33, 31, 41, 1);
+  --glass-p-ba: 0.4;
 }
-:root[data-glass='off'] :is(.glx, .glx-strong, .glx-dark, .bgfx, .veil-blur, .chrome-blur) {
+:root[data-glass='off'] :is(.glx, .glx-strong, .glx-dark, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
-:root[data-glass='off'] .area-blur {
-  display: none;
+:root[data-glass='off'] .glass-edge::after {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 /* forced-colors also strips backdrop-filter; give surfaces a solid border so
    silhouette survives the browser's palette override. */
@@ -796,64 +835,9 @@ select::-webkit-calendar-picker-indicator {
   }
 }
 
-/* Area blur — ratio-sized halo behind popup panels (liquid glass).
-   The parent wrapper MUST be a size container (`@container` class), so 1cqw
-   resolves to the panel's width. Do not put it under an opacity < 1 ancestor.
-   Inherited fixed inset/rounded classes on the halo must NOT be present —
-   this utility owns inset and border-radius. */
-@utility area-blur {
-  inset: var(--glass-h-inset);
-  border-radius: calc(
-    var(--glass-p-radius) + var(--glass-h-ratio) * 100 * 1cqw + var(--glass-h-rext)
-  );
-  pointer-events: none;
-  background: rgb(var(--glass-h-tint) / var(--glass-h-fill));
-  backdrop-filter: blur(var(--glass-h-blur)) saturate(var(--glass-h-sat));
-  /* Feathered falloff: linear ease 0 → solid across the rim band (no mid
-     plateau = no visible edge line once the blur is alive) */
-  -webkit-mask-image:
-    linear-gradient(
-      to right,
-      rgb(0 0 0/0) 0%,
-      #000 var(--glass-h-f),
-      #000 calc(100% - var(--glass-h-f)),
-      rgb(0 0 0/0) 100%
-    ),
-    linear-gradient(
-      to bottom,
-      rgb(0 0 0/0) 0%,
-      #000 var(--glass-h-f),
-      #000 calc(100% - var(--glass-h-f)),
-      rgb(0 0 0/0) 100%
-    );
-  mask-image:
-    linear-gradient(
-      to right,
-      rgb(0 0 0/0) 0%,
-      #000 var(--glass-h-f),
-      #000 calc(100% - var(--glass-h-f)),
-      rgb(0 0 0/0) 100%
-    ),
-    linear-gradient(
-      to bottom,
-      rgb(0 0 0/0) 0%,
-      #000 var(--glass-h-f),
-      #000 calc(100% - var(--glass-h-f)),
-      rgb(0 0 0/0) 100%
-    );
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
-}
-
-/* Background veil — the Control-Center layer behind popups. Just the dim; the
-   GLASS panel above the veil carries the blur. A whole-page backdrop-filter
-   behind a menu/notif was doing the panel's work at a huge cost (every pixel
-   of the viewport, one frame per depth pass) and was one of the things that
-   made this feel "massage cream" behind the glass instead of content. Open the
-   menu and the page is dimmed, not blurred — that is the iOS 26 reading. */
-@utility bgfx {
-  background: rgb(var(--glass-scrim-color) / var(--glass-scrim-a));
-}
+/* Background veil — RETIRED for menus/notifs (the user reads the dim as a
+   painted shadow behind the panel — correctly). Modals keep the separate
+   .scrim/.veil-blur pair below. */
 
 /* Veil, split into two layers. NEVER animate opacity on an element that has a
    backdrop-filter: the filtered layer freezes on its last frame and that frozen
@@ -882,33 +866,7 @@ select::-webkit-calendar-picker-indicator {
   --glass-p-a2: 0;
 }
 
-/* ─── Sheen overlay ─── */
-.glx-sheen {
-  position: relative;
-  isolation: isolate;
-}
-/* Sheen overlay — the wet slide of light. Uses ::after, not ::before, because
-   `.glass-edge` owns ::before for the lit rim and the two classes are used
-   together (Topbar notifications, Students panel): one element can only have one
-   ::before. */
-.glx-sheen::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    circle at 90% 0%,
-    rgba(255, 255, 255, 0.1) 0%,
-    transparent 50%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  z-index: 1;
-}
-.glx-sheen:hover::after {
-  opacity: 1;
-}
+/* ─── Sheen overlay — folded into .glass-edge::after (see above) ─── */
 
 /* ─── The Mark gold pop ─── */
 .goldpop {
@@ -1043,9 +1001,6 @@ select::-webkit-calendar-picker-indicator {
 :root[data-motion='reduce'] .skeleton {
   animation: none;
 }
-:root[data-motion='reduce'] .glx-sheen:hover::after {
-  opacity: 0;
-}
 :root[data-motion='reduce'] *,
 :root[data-motion='reduce'] *::before,
 :root[data-motion='reduce'] *::after {
@@ -1058,9 +1013,6 @@ select::-webkit-calendar-picker-indicator {
   .goldpop,
   .skeleton {
     animation: none;
-  }
-  .glx-sheen:hover::after {
-    opacity: 0;
   }
   *,
   *::before,
@@ -1279,9 +1231,7 @@ select::-webkit-calendar-picker-indicator {
   }
 
   .scrim,
-  .veil-blur,
-  .area-blur,
-  .glx-sheen::after {
+  .veil-blur {
     display: none !important;
   }
 }

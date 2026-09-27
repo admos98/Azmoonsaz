@@ -674,15 +674,9 @@ export const Modal = ({
   const isSide = variant === 'side';
 
   const panelRef = useRef<HTMLDivElement>(null);
-  // Area-blur halo: bigger negative-inset box, same viewport origin point —
-  // the hook measures and returns its origin alongside the panel's.
-  const haloRef = useRef<HTMLDivElement>(null);
-  const [originStyle, haloOriginStyle] = useOriginFromTrigger(
-    triggerRef,
-    panelRef,
-    isOpen,
-    haloRef,
-  );
+  // The old area-blur halo is gone (painted shadow — removed). The hook's
+  // companion slot stays unthreaded: it null-guards a missing ref.
+  const [originStyle] = useOriginFromTrigger(triggerRef, panelRef, isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -758,29 +752,6 @@ export const Modal = ({
                 : `relative w-full ${widthStyles[maxWidth]} z-10 @container max-sm:max-w-none`
             }
           >
-            {/* Halo rides the panel's grow/shrink with the same origin and curves, so
-                no detached glow patch floats where the panel will land. NO opacity on
-                it — opacity on a backdrop-filter layer freezes its frame. Exit ramps
-                blur + fill off while it collapses; nothing hard-cuts at unmount. */}
-            <motion.div
-              aria-hidden="true"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{
-                scale: 0,
-                backdropFilter: 'blur(0px) saturate(1) brightness(1)',
-                backgroundColor: 'rgba(26, 28, 34, 0)',
-                transition: {
-                  scale: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-                  backdropFilter: { duration: 0.14 },
-                  backgroundColor: { duration: 0.14 },
-                },
-              }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              ref={haloRef}
-              style={haloOriginStyle}
-              className="pointer-events-none absolute area-blur"
-            />
             {/* Grows out of the trigger button and collapses ALL the way back into it —
                 scale endpoints at 0.x made panels vanish mid-travel. Opacity resolves
                 faster than scale so the small panel is visible from the first frames. */}

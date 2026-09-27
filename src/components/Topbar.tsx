@@ -521,27 +521,13 @@ export default function Topbar({
       {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */}
       {(showHamburgerMenu || menuClosing) && (
         <>
-          {/* Backdrop — blocks interaction; blur is localized to the menu field below */}
-          <div className="fixed inset-0 z-[55] bgfx" onClick={closeMenu} />
+          {/* Click-away catcher — fully transparent. NO dim, NO halo: iOS menus
+              cast nothing on the page; separation comes from the panel's own
+              blur + refracted rim. The div stays only to close on outside click. */}
+          <div className="fixed inset-0 z-[55]" onClick={closeMenu} />
 
           {/* All panels container (display:contents — must not occupy a flex slot in the header) */}
           <div ref={hamburgerDropdownRef} className="contents">
-            {/* Area-blur field — one continuous glass blur behind the whole menu stack.
-                Static @container wrapper sized tight to the panels; the halo inside
-                insets itself by panelWidth × 0.17 via 1cqw (owns inset + radius). */}
-            <div
-              aria-hidden="true"
-              className="fixed z-[59] pointer-events-none @container"
-              style={{
-                right: `${hamburgerRight}px`,
-                top: `${hamburgerTop}px`,
-                width: `${panelWidth}px`,
-                height: `${panelHeights.reduce((sum, h) => sum + h, 0) + panelGap * 3}px`,
-              }}
-            >
-              {/* Static halo — panels animate around it; opacity/transform here would kill the blur */}
-              <div aria-hidden="true" className="absolute area-blur" />
-            </div>
 
             {/* Panel 1: App info + date */}
             <div
@@ -726,12 +712,9 @@ export default function Topbar({
       {/* Notifications Dropdown — animates from bell origin */}
       {(showNotifications || notifClosing) && (
         <>
-          {/* Background veil — the same Control-Center layer the menu uses (blur + scrim
-              behind the panel). Without it only the halo ring blurs, so the notif reads flat. */}
-          <div className="fixed inset-0 z-[55] bgfx" onClick={closeNotifications} />
+          {/* Click-away catcher — transparent (no dim, no halo; same rule as the menu). */}
+          <div className="fixed inset-0 z-[55]" onClick={closeNotifications} />
           <div className="fixed z-[60] @container" style={notificationStyle}>
-            {/* Static halo — the panel animates, the halo stays at opacity 1 so its blur survives */}
-            <div aria-hidden="true" className="absolute area-blur" />
             <div
               ref={notifRef}
               className="relative w-full glx-strong glass-edge rounded-2xl overflow-hidden glx-sheen"
