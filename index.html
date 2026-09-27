@@ -91,10 +91,11 @@
        panel's own content stays untouched.
 
        The map is EDGE-WEIGHTED: 50% grey (zero displacement) across the
-       interior, ramping to black/white only in the outer ~4% — the centre is
+       interior, ramping to black/white only in the outer ~5–9% — the centre is
        pure blur, the bend is confined to the rim and scales with the panel.
        Two gradients (x → R, y → G) screen-blended into one RG map.
-       feDisplacementMap scale=11 user units → max ±5.5px pull at the edge.
+       feDisplacementMap scale=20 user units → max ±10px pull at the edge
+       (iOS-26 refs bend visible content by roughly this much at 1x).
        The filter region is oversized (−6%…106%) so rim pixels can sample
        beyond the box without clipping.
        Keep this element in the DOM (display:none would kill the filter).
@@ -112,7 +113,7 @@
             preserveAspectRatio="none"
             result="map"
           />
-          <feDisplacementMap in="SourceGraphic" in2="map" scale="11" xChannelSelector="R" yChannelSelector="G" />
+          <feDisplacementMap in="SourceGraphic" in2="map" scale="20" xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </defs>
     </svg>

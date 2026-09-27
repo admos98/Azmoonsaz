@@ -107,6 +107,38 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/\.glass-edge::before\s*\{[^}]*mix-blend-mode:\s*plus-lighter/s);
   });
 
+  it('rim is a crisp specular curve — bright top, transparent sides, never blurred', () => {
+    // light: specular spike + steep falloff around the perimeter (the "curve")
+    expect(token('--glass-edge-base')).toBe('0.9');
+    expect(token('--glass-edge-mid-f')).toBe('0.32');
+    expect(token('--glass-edge-bot-f')).toBe('0.17');
+    // the top-centre light curve that wraps around the corners
+    expect(css).toMatch(/140% 90% at 50% 0%/);
+    // a blurred line reads as a gray hairline, not light — the rim never blurs
+    expect(css).not.toMatch(/filter:\s*blur\(0\.5px\)/);
+    // dark keeps its soft sheen (higher side/bottom factors)
+    expect(token('--glass-edge-mid-f', ':root[data-theme=\'dark\']')).toBe('0.5');
+  });
+
+  it('inner bloom — light spills inside under the top rim (paint-only)', () => {
+    expect(token('--glass-bloom-line-a')).toBe('0.34');
+    expect(token('--glass-bloom-a')).toBe('0.5');
+    expect(token('--glass-bloom-a', ':root[data-theme=\'dark\']')).toBe('0.12');
+    expect(css).toMatch(/inset 0 1px 0 rgb\(255 255 255 \/ var\(--glass-bloom-line-a\)\)/);
+  });
+
+  it('the lens pull is strong enough to read (scale=20 → max ±10px)', () => {
+    expect(html).toMatch(/scale="20"/);
+  });
+
+  it('page background carries defined shapes for the glass to reveal and bend', () => {
+    const app = readFileSync(join(root, 'src/App.tsx'), 'utf8');
+    expect(app).toMatch(/id="app-bg-stage"/);
+    // at least 5 low-alpha defined features (rings / discs / bands)
+    const shapes = app.match(/rounded-full border-\[\d+px\]|rounded-full bg-\[var\(--color-(?:accent-solid|gold)\)\]\/\d+ blur-\[\d+px\]/g) ?? [];
+    expect(shapes.length).toBeGreaterThanOrEqual(5);
+  });
+
   it('rim carries chromatic dispersion (tinted edges, not neutral white)', () => {
     expect(css).toMatch(/--glass-edge-tint-top:\s*205 236 255/);
     expect(css).toMatch(/--glass-edge-tint-bot:\s*168 244 234/);

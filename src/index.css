@@ -211,7 +211,15 @@
   --glass-edge-t: 1.4%; /* rim thickness, % of the panel's inline size */
   --glass-edge-min: 0.9px;
   --glass-edge-max: 1.6px;
-  --glass-edge-base: 0.42; /* resting rim strength */
+  /* Specular rim — iOS 26's rim is a THIN CRISP TRANSPARENT line that catches
+     light like a curved surface: brightest at the top, whispering around the
+     sides, nearly gone at the bottom. Never blurred (a blurred line reads as
+     a soft gray hairline, not as light). The top-curve radial in
+     .glass-edge::before concentrates the light at the top-centre so the rim
+     reads as a lit curve, not a uniform stroke. */
+  --glass-edge-base: 0.9; /* specular spike at the top rim */
+  --glass-edge-mid-f: 0.32; /* sides fall to a whisper — the rim stays see-through */
+  --glass-edge-bot-f: 0.17; /* bottom barely lit */
   --glass-edge-hot: 0.55; /* extra strength at the edge nearest the pointer */
   --glass-edge-spread: 38%; /* pointer falloff, % of the panel's inline size */
   --glass-edge-color: 255 255 255;
@@ -231,6 +239,12 @@
      busy glass without hiding the backdrop. */
   --glass-text-ambient: 255 255 255;
   --glass-text-ambient-a: 0.5;
+
+  /* Inner bloom — iOS rims spill light just inside the panel: a hairline of
+     light under the top rim that melts downward. Paint-only (inset shadows,
+     no filter). Dark dims both values so panels keep their soft sheen. */
+  --glass-bloom-line-a: 0.34;
+  --glass-bloom-a: 0.5;
 
   /* Drop shadow (lifted). iOS 26 liquid glass carries NO resting drop shadow
      — separation comes from the rim light, the fill step and, on overlays,
@@ -345,6 +359,12 @@
   --glass-edge-base: 0.3;
   --glass-edge-hot: 0.34;
   --glass-edge-spread: 60%;
+  /* dark keeps the soft material: sides and bottom hold more of the base so
+     the highlight reads as a slow sheen rather than a crisp curve */
+  --glass-edge-mid-f: 0.5;
+  --glass-edge-bot-f: 0.28;
+  --glass-bloom-line-a: 0.08;
+  --glass-bloom-a: 0.12;
   --glass-edge-tint-top: 205 232 255;
   --glass-edge-tint-mid: 255 255 255;
   --glass-edge-tint-bot: 168 240 234;
@@ -500,10 +520,12 @@ select::-webkit-calendar-picker-indicator {
     var(--glass-edge-t),
     var(--glass-edge-max)
   );
-  /* Resting rim, lit from above: top, mid (the sides), bottom. */
+  /* Resting rim, lit from above: top, mid (the sides), bottom. The falloff
+     factors are per-theme tokens — light carves a hard specular curve, dark
+     keeps its slow sheen. */
   --eg-top: var(--glass-edge-base);
-  --eg-mid: calc(var(--glass-edge-base) * 0.5);
-  --eg-bot: calc(var(--glass-edge-base) * 0.28);
+  --eg-mid: calc(var(--glass-edge-base) * var(--glass-edge-mid-f));
+  --eg-bot: calc(var(--glass-edge-base) * var(--glass-edge-bot-f));
   /* Pointer flare. Zero whenever the pointer is away. */
   --eg-flare: calc(var(--eg-boost, 0) * var(--glass-edge-hot));
 }
@@ -533,6 +555,14 @@ select::-webkit-calendar-picker-indicator {
         rgb(var(--glass-edge-color) / calc(var(--eg-flare) * 0.45)) 34%,
         rgb(var(--glass-edge-color) / 0) 68%
       ),
+    /* top specular curve — light concentrated at the top-centre of the rim,
+       wrapping around the corners. This is what makes the rim read as light
+       arriving on a CURVED surface (iOS 26) instead of a uniform stroke. */
+      radial-gradient(
+        140% 90% at 50% 0%,
+        rgb(255 255 255 / calc(var(--eg-top) * 0.55)) 0%,
+        rgb(255 255 255 / 0) 55%
+      ),
     /* resting rim — light from above, with chromatic dispersion: cyan at the
        top edge, green-cyan at the bottom (iOS 26 measured values). */
       linear-gradient(
@@ -549,10 +579,10 @@ select::-webkit-calendar-picker-indicator {
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  /* Half a pixel of blur melts the line's inner edge into the fill — the rim
-     reads as light arriving on the glass, not as a stroke that stops. The
-     layer is tiny and static, so this costs nothing next to the panel blur. */
-  filter: blur(0.5px);
+  /* The line stays CRISP — iOS's rim is a thin transparent line of light, not
+     a soft gray hairline. The previous blur(0.5px) made it read as a stroke
+     melting into paint; the specular curve layer above does the melting
+     naturally by falling off around the perimeter. */
 }
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
@@ -566,7 +596,10 @@ select::-webkit-calendar-picker-indicator {
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
     var(--glass-sh-x) var(--glass-sh-y) var(--glass-sh-blur) var(--glass-sh-spread)
-      rgb(var(--glass-sh-color) / var(--glass-sh-a));
+      rgb(var(--glass-sh-color) / var(--glass-sh-a)),
+    /* inner bloom — light spills inside under the top rim (iOS 26) */
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a));
   /* Text micro-shadow: a 1px ambient that lifts label contrast over busy
      glass. Imperceptible on calm backdrops, decisive over dense content. */
   text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
@@ -591,7 +624,9 @@ select::-webkit-calendar-picker-indicator {
   );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
-    0 26px 70px -24px rgb(var(--glass-sh-color) / var(--glass-sh-strong-a));
+    0 26px 70px -24px rgb(var(--glass-sh-color) / var(--glass-sh-strong-a)),
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 16px 38px -24px rgb(255 255 255 / var(--glass-bloom-a));
   text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
   /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own
      blur stays at --glass-p-blur (0) — the double blur comes from the layers. */

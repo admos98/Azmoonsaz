@@ -340,6 +340,20 @@ export default function App() {
           <div className="absolute inset-0 bg-[var(--color-surface-secondary)]" />
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[42rem] h-[42rem] bg-[var(--color-accent-solid)]/2 rounded-full blur-[140px]" />
           <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-[var(--color-gold)]/4 rounded-full blur-[120px]" />
+          {/* Defined features — the glass needs structure behind it. iOS panels
+              float over app icons: blurred icon shapes + the lens bend on those
+              shapes are what make the material read. Mega-blurred colour blobs
+              alone give the blur nothing to reveal, so panels read as flat
+              tinted ceramic. Alphas 20–30%: strong enough to survive the panel
+              blur + wash as visible blobs (measured: 6–14% vanish). All paint,
+              no filters of their own beyond static blurs on non-glass layers. */}
+          <div className="absolute top-[10%] left-[6%] h-72 w-72 rounded-full border-[12px] border-[var(--color-accent-solid)]/22 blur-[13px]" />
+          <div className="absolute top-[46%] left-[40%] h-44 w-44 rounded-full bg-[var(--color-gold)]/30 blur-[8px]" />
+          <div className="absolute top-[6%] right-[10%] h-32 w-32 rounded-full bg-[var(--color-accent-solid)]/26 blur-[6px]" />
+          <div className="absolute top-[34%] right-[28%] h-80 w-80 rounded-full border-[7px] border-[var(--color-gold)]/24 blur-[14px]" />
+          <div className="absolute top-[72%] left-[4%] h-24 w-[30rem] -rotate-12 rounded-full bg-[var(--color-accent-solid)]/22 blur-[13px]" />
+          <div className="absolute top-[18%] right-[2%] h-48 w-48 rounded-full border-[9px] border-[var(--color-accent-solid)]/20 blur-[11px]" />
+          <div className="absolute top-[60%] right-[6%] h-20 w-56 rotate-6 rounded-full bg-[var(--color-gold)]/24 blur-[9px]" />
         </div>
 
         {/* Main Container — layer 10 (floats above bg stage) */}
