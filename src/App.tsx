@@ -16,7 +16,6 @@ import { teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
 import { useEdgeLight } from './hooks/useEdgeLight';
 import { useMotionPreference } from './contexts/MotionContext';
-import CommandPalette from './components/CommandPalette';
 import { requestAppNavigation } from './hooks/useUnsavedChanges';
 import {
   loadDashboard,
@@ -334,10 +333,16 @@ export default function App() {
     <TeacherProvider initialTeacher={bootTeacher}>
       <WorkspacePreferenceApplier />
       <EdgeLightDriver />
-      <div className="min-h-screen bg-[var(--color-page-bg)] flex" dir="rtl" id="app-teacher-shell">
-        {/* Background depth layer — stage surface that main panel floats above */}
+      {/* id="app-teacher-shell" is the anchor for the page-plate ::before
+          (fixed, z-0). The shell itself must stay transparent so the plate
+          reads; leaving the bg-[--color-page-bg] utility here would re-paint
+          the base over it. */}
+      <div className="min-h-screen flex" dir="rtl" id="app-teacher-shell">
+        {/* Background depth layer — decorative shapes ONLY. No fill div: the
+          page plate under the shell paints the base, and an opaque fill here
+          would hide it. */}
         <div className="fixed inset-0 z-0 pointer-events-none" id="app-bg-stage">
-          <div className="absolute inset-0 bg-[var(--color-surface-secondary)]" />
+          {/* No opaque fill here — the page plate under the shell is the surface. */}
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[42rem] h-[42rem] bg-[var(--color-accent-solid)]/2 rounded-full blur-[140px]" />
           <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-[var(--color-gold)]/4 rounded-full blur-[120px]" />
           {/* Defined features — the glass needs structure behind it. iOS panels
@@ -373,7 +378,6 @@ export default function App() {
             }}
             onSelectExamForResults={handleSelectExamForResults}
           />
-          <CommandPalette onNavigate={navigateTeacher} />
 
           {/* Dynamic Page Router — floats above bg stage */}
           <div className="p-4 lg:p-8 flex-1 bg-transparent" id="router-view-box">

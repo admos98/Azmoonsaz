@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import CommandPalette from '../../components/CommandPalette';
 
@@ -23,10 +24,23 @@ vi.mock('../../contexts/TeacherContext', () => ({
   }),
 }));
 
+// The palette is controlled by the Topbar now — this harness stands in for it.
+function Harness({ onNavigate }: { onNavigate: (destination: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <CommandPalette
+      onNavigate={onNavigate}
+      open={open}
+      setOpen={setOpen}
+      initialQuery=""
+    />
+  );
+}
+
 describe('CommandPalette', () => {
   it('supports discoverable non-modifier navigation sequences outside editors', () => {
     const navigate = vi.fn();
-    render(<CommandPalette onNavigate={navigate} />);
+    render(<Harness onNavigate={navigate} />);
     fireEvent.keyDown(window, { key: 'g' });
     fireEvent.keyDown(window, { key: 'n' });
     expect(navigate).toHaveBeenCalledWith('new-exam');
@@ -34,7 +48,7 @@ describe('CommandPalette', () => {
 
   it('opens by shortcut, normalizes Persian search, and navigates by keyboard', () => {
     const navigate = vi.fn();
-    render(<CommandPalette onNavigate={navigate} />);
+    render(<Harness onNavigate={navigate} />);
 
     fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
     const search = screen.getByRole('textbox', { name: 'جستجوی فرمان‌ها' });
@@ -47,16 +61,16 @@ describe('CommandPalette', () => {
   });
 
   it('searches live exam, student, and class entities', async () => {
-    render(<CommandPalette onNavigate={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'باز کردن جستجو و فرمان‌ها' }));
+    render(<Harness onNavigate={vi.fn()} />);
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
     expect(await screen.findByRole('option', { name: /آزمون زیست/ })).toBeInTheDocument();
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'علی رضایی' } });
     expect(screen.getByRole('option', { name: /علی رضایی/ })).toBeInTheDocument();
   });
 
   it('offers recovery when no command matches', async () => {
-    render(<CommandPalette onNavigate={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'باز کردن جستجو و فرمان‌ها' }));
+    render(<Harness onNavigate={vi.fn()} />);
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
     await screen.findByRole('option', { name: /آزمون زیست/ });
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'ناموجود' } });
     expect(screen.getByText('نتیجه‌ای پیدا نشد')).toBeInTheDocument();

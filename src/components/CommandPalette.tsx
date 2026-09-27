@@ -77,13 +77,24 @@ const commands: Command[] = [
   },
 ];
 
+/**
+ * Controlled by the Topbar: `open`/`setOpen`/`initialQuery` live up-tree so
+ * the topbar search icon is the trigger (the old bottom-left floating button
+ * was hidden on phones and orphaned on desktop). Query itself is local state —
+ * the parent only seeds it on open.
+ */
 export default function CommandPalette({
   onNavigate,
+  open,
+  setOpen,
+  initialQuery,
 }: {
   onNavigate: (destination: string) => void;
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  initialQuery: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [activeIndex, setActiveIndex] = useState(0);
   const { exams, students, classGroups, status } = useTeacherCollections();
   const [recentCommandIds, setRecentCommandIds] = usePersistentPreference<string[]>(
@@ -93,7 +104,6 @@ export default function CommandPalette({
       Array.isArray(value) && value.every((item) => typeof item === 'string'),
   );
   const inputRef = useRef<HTMLInputElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const shortcutPrefixRef = useRef(false);
   const shortcutTimerRef = useRef<number | null>(null);
 
@@ -186,13 +196,9 @@ export default function CommandPalette({
       }
       if ((event.metaKey || event.ctrlKey) && key === 'k') {
         event.preventDefault();
-        setOpen((current) => {
-          if (!current) {
-            setQuery('');
-            setActiveIndex(0);
-          }
-          return !current;
-        });
+        setOpen(!open);
+        setQuery('');
+        setActiveIndex(0);
       }
       if (event.key === 'Escape') setOpen(false);
     };
@@ -201,11 +207,21 @@ export default function CommandPalette({
       window.removeEventListener('keydown', handleShortcut);
       if (shortcutTimerRef.current) window.clearTimeout(shortcutTimerRef.current);
     };
-  }, [entityCommands.length, onNavigate]);
+  }, [onNavigate, open, setOpen]);
+
+  // Reset query/index when the panel opens — derived from the open transition,
+  // done during render (not in an effect) per React docs.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setQuery(initialQuery);
+      setActiveIndex(0);
+    }
+  }
 
   useEffect(() => {
     if (open) requestAnimationFrame(() => inputRef.current?.focus());
-    else triggerRef.current?.focus();
   }, [open]);
 
   const run = (command: Command) => {
@@ -218,27 +234,6 @@ export default function CommandPalette({
 
   return (
     <>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => {
-          setQuery('');
-          setActiveIndex(0);
-          setOpen(true);
-        }}
-        className="command-palette-trigger fixed bottom-4 left-4 z-40 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]/90 chrome-blur px-3 text-caption font-bold text-[var(--color-text-secondary)] shadow-lg hover:text-[var(--color-text-primary)]"
-        aria-label="باز کردن جستجو و فرمان‌ها"
-      >
-        <Search className="h-4 w-4" />
-        <span className="hidden sm:inline">جستجو</span>
-        <kbd
-          dir="ltr"
-          className="rounded-md bg-[var(--color-surface-secondary)] px-1.5 py-0.5 text-micro"
-        >
-          Ctrl K
-        </kbd>
-      </button>
-
       {open && (
         <div
           className="fixed inset-0 z-[100] flex items-start justify-center scrim veil-blur p-4 pt-[12vh]"
@@ -251,7 +246,7 @@ export default function CommandPalette({
             role="dialog"
             aria-modal="true"
             aria-label="جستجو و فرمان‌ها"
-            className="relative glx-strong glass-edge w-full max-w-xl overflow-hidden rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-2xl"
+            className="relative glx-strong glass-edge w-full max-w-xl overflow-hidden rounded-3xl border border-[var(--color-glass-light-stroke)]"
             onKeyDown={(event) => {
               if (event.key === 'ArrowDown') {
                 event.preventDefault();

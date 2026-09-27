@@ -21,8 +21,8 @@ from the Mark. The surfaces stay calm; the identity lives in type and accents.
 
 | Theme | Page surface | Why it reads as The Mark |
 |---|---|---|
-| Light | `#FAF8F5` | The cream/gold hue (≈41°) lifted to near-white — paper from the Mark's own family, not a cool grey. Reads white; the warmth is the identity. |
-| Dark | `#18161D` | Ink's hue pulled to 13% chroma / 10% lightness — violet-black, blue no longer dominant. Reads near-black; the violet cast is the identity. |
+| Light | `#F2EFE8` | The cream/gold hue (≈41°) deepened from near-white — paper from the Mark's own family, painted as a generated topo-map plate (`/backgrounds/bg-d-light.svg`) so the glass surfaces have real content to bend. |
+| Dark | `#131220` | Ink's hue pulled to a violet-black plate (`/backgrounds/bg-d-dark.svg`) — same contours in reverse, so a dark glass panel bends the same world, not a different one. |
 
 Ink `#221E4A` and Cream `#F7F1E4` are **demoted from page background to brand
 colour** — they carry headings, solid fills and The Mark itself. This is how

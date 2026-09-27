@@ -210,10 +210,10 @@ export default function Settings() {
                 'repeating-linear-gradient(115deg, rgb(99 102 241 / 0.65) 0 26px, rgb(245 179 1 / 0.55) 26px 52px, rgb(4 120 87 / 0.6) 52px 78px)',
             }}
           >
-            <p className="p-2 text-caption font-bold text-white/90">
+            <p className="p-2 text-caption font-bold text-[var(--color-text-on-solid)]">
               پس‌زمینه پرجزئیات — این متن باید زیر پنل مات شود
             </p>
-            <p className="px-2 text-micro text-white/80">
+            <p className="px-2 text-micro text-[var(--color-text-on-solid)] opacity-80">
               لبه‌های پنل، پس‌زمینه را مثل عدسی خم می‌کنند
             </p>
           </div>

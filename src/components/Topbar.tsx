@@ -9,6 +9,7 @@ import { useTeacher, useTeacherCollections } from '../contexts/TeacherContext';
 import { formatPersianDate, formatPersianNumber } from '../services/persianHelpers';
 import { TheMark } from './TheMark';
 import { usePersistentPreference } from '../hooks/usePersistentPreference';
+import CommandPalette from './CommandPalette';
 
 interface TopbarProps {
   currentTab: string;
@@ -127,7 +128,7 @@ export default function Topbar({
   const [hamburgerHover, setHamburgerHover] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [avatarExpanded, setAvatarExpanded] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const loadingNotifs = status.submissions === 'loading';
   const [submissionNotifications] = usePersistentPreference('notifications:submissions', true);
   const [examNotifications] = usePersistentPreference('notifications:active-exams', true);
@@ -147,7 +148,7 @@ export default function Topbar({
   const notifRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const hamburgerDropdownRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLButtonElement>(null);
 
   // Notifications are pure derivations of the shared collections cache —
   // no private fetch, no setState-in-effect. Freshness: one submissions
@@ -393,8 +394,11 @@ export default function Topbar({
           </button>
         </div>
 
-        {/* Avatar pill — pic absolutely pinned (never moves), only pill width animates */}
-        <div className="relative flex items-center">
+        {/* Avatar pill — hidden on the phone. There is no hover to animate the
+            width, and a 200px pill on a 375px screen crowds the title; the
+            collapsed 40px pill is too small for the avatar to read. Desktop
+            (lg+) gets the full panel-material pill. */}
+        <div className="relative hidden lg:flex items-center">
           {/* The lens bend lives on this pill's own backdrop-filter; during the
               300ms width transition Chromium resamples it per frame — a 200×40
               element, a third of a second, imperceptible cost. */}
@@ -483,38 +487,36 @@ export default function Topbar({
           <TheMarkHamburger size={32} isHovered={hamburgerHover} isOpen={showHamburgerMenu} />
         </button>
 
-        {/* Search — smooth pill expand from icon */}
-        <div
+        {/* Search — a pill that opens the CommandPalette. Collapsed: a 44px
+            icon. Hover/expand reveals a "جستجو" label; clicking anywhere on
+            the pill opens the palette, which is the actual search field (the
+            old in-pill input typed into a void). Same `glx-strong` +
+            `glass-edge` material as the menu / notif panels, no kbd hint. */}
+        <button
+          type="button"
           ref={searchRef}
-          className={`relative h-11 flex items-center overflow-hidden glx-strong glass-edge rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            showSearch ? 'w-[200px] glx-inset' : 'w-11 glx-inset'
+          className={`relative h-11 flex items-center gap-2 overflow-hidden glx-strong glass-edge rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer ${
+            showSearch ? 'w-[220px] px-4 justify-start' : 'w-11 justify-center p-0'
           }`}
+          onClick={() => setCommandPaletteOpen(true)}
           onMouseEnter={() => !showHamburgerMenu && setShowSearch(true)}
           onMouseLeave={() => !showHamburgerMenu && setShowSearch(false)}
+          aria-label="جستجو — باز کردن پالت فرمان‌ها"
+          aria-expanded={showSearch}
         >
-          <button
-            type="button"
-            id="search-toggle-btn"
-            onClick={() => setShowSearch(!showSearch)}
-            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-full hover:bg-[var(--color-glass-light-stroke)]/20 transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-full"
-            aria-label="جستجو"
-            aria-expanded={showSearch}
-            style={{ marginRight: showSearch ? '-1px' : '0' }}
-          >
-            <Search className="w-4.5 h-4.5" />
-          </button>
+          <Search className="w-4.5 h-4.5 shrink-0" />
           {showSearch && (
-            <input
-              type="text"
-              id="global-search-input"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="جستجو..."
-              className="outline-none bg-transparent text-caption md:text-label w-full text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] pr-2"
-            />
+            <span className="text-caption md:text-label whitespace-nowrap">جستجو…</span>
           )}
-        </div>
+        </button>
       </div>
+
+      <CommandPalette
+        onNavigate={onTabChange}
+        open={commandPaletteOpen}
+        setOpen={setCommandPaletteOpen}
+        initialQuery=""
+      />
 
       {/* Hamburger Dropdown — 4 separate glass panels dropping in sequence */}
       {(showHamburgerMenu || menuClosing) && (
