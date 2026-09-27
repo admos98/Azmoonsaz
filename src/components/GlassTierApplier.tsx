@@ -59,7 +59,13 @@ export default function GlassTierApplier() {
   const [tier] = useGlassTierPreference();
 
   useEffect(() => {
-    if (tier !== 'auto') {
+    if (tier === 'auto') {
+      // 'auto' means the boot probe owns the attribute. Without this delete,
+      // an explicit lite/off could never be un-chosen: the attribute survived
+      // and every later reload re-applied it (the probe only writes when no
+      // override key exists — and the override key WAS the lite/off choice).
+      delete document.documentElement.dataset.glass;
+    } else {
       document.documentElement.dataset.glass = tier;
     }
   }, [tier]);

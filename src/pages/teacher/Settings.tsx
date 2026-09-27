@@ -192,6 +192,37 @@ export default function Settings() {
           options={glassOptions}
           onChange={setGlassTier}
         />
+        {/* Live material preview. The tier switch must be visible the moment it
+            is clicked: over the flat page background, stripping blur changes
+            almost nothing (blur of a flat colour is the same colour) — which is
+            why the selector used to feel dead. The stage puts a saturated,
+            high-contrast backdrop under a REAL .glx panel, so blur (lite/off
+            strip it), the lens bend (full only) and the rim light can all be
+            judged at a glance, in the current theme. */}
+        <div
+          className="relative mt-4 h-28 overflow-hidden rounded-2xl border border-[var(--color-glass-light-stroke)]"
+          aria-hidden="true"
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'repeating-linear-gradient(115deg, rgb(99 102 241 / 0.65) 0 26px, rgb(245 179 1 / 0.55) 26px 52px, rgb(4 120 87 / 0.6) 52px 78px)',
+            }}
+          >
+            <p className="p-2 text-caption font-bold text-white/90">
+              پس‌زمینه پرجزئیات — این متن باید زیر پنل مات شود
+            </p>
+            <p className="px-2 text-micro text-white/80">
+              لبه‌های پنل، پس‌زمینه را مثل عدسی خم می‌کنند
+            </p>
+          </div>
+          <div className="glx glass-edge absolute start-6 top-1/2 h-16 w-44 -translate-y-1/2 rounded-xl">
+            <p className="grid h-full place-items-center text-caption font-bold text-[var(--color-text-primary)]">
+              پنل شیشه‌ای زنده
+            </p>
+          </div>
+        </div>
       </Card>
 
       <Card>

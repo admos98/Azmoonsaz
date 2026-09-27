@@ -189,7 +189,9 @@
   --glass-p-sat: 1.45;
   --glass-p-radius: 28px;
   --glass-p-bw: 1px;
-  --glass-p-ba: 0.22;
+  /* Hairline under the rim. The rim IS the visible edge; the hairline only
+     keeps the silhouette honest over same-tone fills, so it stays faint. */
+  --glass-p-ba: 0.1;
   --glass-p-bc: 26 28 34;
 
   /* ── Edge light — the lit rim of a glass panel ──────────────────────────
@@ -206,10 +208,10 @@
      Light is a hard material: near-white rim, short falloff, visible lift.
      Dark is a soft material: dimmer, dimmer still, and much longer falloff, so
      in dark mode the highlight reads as a slow sheen rather than an outline. */
-  --glass-edge-t: 4.2%; /* rim thickness, % of the panel's inline size */
-  --glass-edge-min: 1.5px;
-  --glass-edge-max: 3.6px;
-  --glass-edge-base: 0.5; /* resting rim strength */
+  --glass-edge-t: 1.4%; /* rim thickness, % of the panel's inline size */
+  --glass-edge-min: 0.9px;
+  --glass-edge-max: 1.6px;
+  --glass-edge-base: 0.42; /* resting rim strength */
   --glass-edge-hot: 0.55; /* extra strength at the edge nearest the pointer */
   --glass-edge-spread: 38%; /* pointer falloff, % of the panel's inline size */
   --glass-edge-color: 255 255 255;
@@ -218,25 +220,30 @@
   --glass-edge-tint-top: 205 236 255;
   --glass-edge-tint-mid: 255 255 255;
   --glass-edge-tint-bot: 168 244 234;
-  /* Lens band — the bent edge. A wider ring just inside the rim that
-     re-filters the backdrop with a SHARPER blur + brightness lift, so the
-     edge reads as thick refractive glass over a calm centre. */
-  --glass-lens-t: 12px;
-  --glass-lens-blur: 2.5px;
-  --glass-lens-sat: 1.6;
-  --glass-lens-bright: 1.07;
+  /* The old lens band (--glass-lens-*) is gone. Its `backdrop-filter` ran on a
+     ring INSIDE the panel, so its backdrop included the panel's own fill and
+     text — it bent the panel instead of the page, tinted corners differently
+     from the centre (measured Δ up to 200 where iOS keeps the whole panel one
+     filter output), and stacked a second full backdrop-filter under every
+     panel's own. Edge lensing now comes from painted light on the rim ring
+     only; each panel keeps exactly ONE backdrop-filter. */
   /* Text micro-shadow — imperceptible ambient that keeps labels readable over
      busy glass without hiding the backdrop. */
   --glass-text-ambient: 255 255 255;
   --glass-text-ambient-a: 0.5;
 
-  /* Drop shadow (lifted) */
+  /* Drop shadow (lifted). iOS 26 liquid glass carries NO resting drop shadow
+     — separation comes from the rim light, the fill step and, on overlays,
+     the veil. Zeroed in light mode on purpose; dark keeps a whisper so
+     near-black panels still read against the near-black page. */
   --glass-sh-x: 0px;
   --glass-sh-y: 12px;
   --glass-sh-blur: 38px;
   --glass-sh-spread: -16px;
-  --glass-sh-a: 0.12;
+  --glass-sh-a: 0;
   --glass-sh-color: 26 28 34;
+  /* Overlay elevation (menus/modals) — consumed only by glx-strong; light 0. */
+  --glass-sh-strong-a: 0;
 
   /* Row hover tint (menu / dropdown / list) */
   --glass-row-hover: 0.2;
@@ -332,19 +339,20 @@
      light: a dimmer resting rim, half the lift, nearly double the falloff, and
      a thinner band. The result is a highlight that arrives slowly and leaves
      slowly, instead of the crisp outline light mode gets. */
-  --glass-edge-t: 3.1%;
-  --glass-edge-min: 1.5px;
-  --glass-edge-max: 3px;
-  --glass-edge-base: 0.34;
+  --glass-edge-t: 1.2%;
+  --glass-edge-min: 0.9px;
+  --glass-edge-max: 1.4px;
+  --glass-edge-base: 0.3;
   --glass-edge-hot: 0.34;
   --glass-edge-spread: 60%;
   --glass-edge-tint-top: 205 232 255;
   --glass-edge-tint-mid: 255 255 255;
   --glass-edge-tint-bot: 168 240 234;
-  --glass-lens-t: 10px;
-  --glass-lens-blur: 2px;
-  --glass-lens-sat: 1.5;
-  --glass-lens-bright: 1.1;
+  /* Dark panels float on a near-black page: with zero elevation they merge
+     into it. A whisper of shadow restores the float; the light-theme value
+     above stays a hard 0. */
+  --glass-sh-a: 0.16;
+  --glass-sh-strong-a: 0.2;
 }
 
 /* Compatibility layer for older utility-coded surfaces while they are migrated
@@ -541,55 +549,10 @@ select::-webkit-calendar-picker-indicator {
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-}
-
-/* ─── Lens band — the bent edge ────────────────────────────────────────────
-   A wider ring just inside the rim that re-filters the ALREADY-composited
-   panel with a sharper, brighter, more saturated chain. The blur
-   discontinuity between band and body is what reads as refraction; the
-   brightness lift is the edge lensing iOS shows (+10..15 L in the last 12px).
-
-   Chromium additionally displaces the backdrop with #lg-lens (feDisplacementMap
-   + stretched gradient map, defined in index.html) — true geometric bending of
-   the rim zone. Safari/Firefox keep the band without the bend (the @supports
-   guard is load-bearing: url() in backdrop-filter invalidates the WHOLE
-   declaration where unsupported, so it must never ride the base rule).
-
-   :not(.glx-sheen) — sheen owns ::after on the same elements (Topbar). */
-.glass-edge:not(.glx-sheen)::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: var(--glass-lens-t);
-  pointer-events: none;
-  z-index: 1;
-  backdrop-filter: blur(var(--glass-lens-blur)) saturate(var(--glass-lens-sat))
-    brightness(var(--glass-lens-bright));
-  /* Chromatic fringe inside the band — faint cyan at top, green at bottom,
-     layered OVER the filtered backdrop so the rim zone carries the dispersion
-     even where the backdrop is featureless. */
-  background: linear-gradient(
-    to bottom,
-    rgb(120 190 255 / 0.09) 0%,
-    rgb(120 190 255 / 0) 22%,
-    rgb(90 230 210 / 0) 78%,
-    rgb(90 230 210 / 0.09) 100%
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-@supports (backdrop-filter: url('#x')) {
-  .glass-edge:not(.glx-sheen)::after {
-    backdrop-filter: url('#lg-lens') blur(var(--glass-lens-blur))
-      saturate(var(--glass-lens-sat)) brightness(var(--glass-lens-bright));
-  }
+  /* Half a pixel of blur melts the line's inner edge into the fill — the rim
+     reads as light arriving on the glass, not as a stroke that stops. The
+     layer is tiny and static, so this costs nothing next to the panel blur. */
+  filter: blur(0.5px);
 }
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
@@ -628,99 +591,47 @@ select::-webkit-calendar-picker-indicator {
   );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   box-shadow:
-    0 26px 70px -24px rgb(var(--glass-sh-color) / 0.34);
+    0 26px 70px -24px rgb(var(--glass-sh-color) / var(--glass-sh-strong-a));
   text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
   /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own
      blur stays at --glass-p-blur (0) — the double blur comes from the layers. */
   backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
 }
 
-/* ─── Refraction — the bent edge, whitelist-only ───────────────────────────
-   The rim (`.glass-edge`) makes an edge READ as lit. This makes the backdrop
-   actually MOVE at the edge, which is the other half of liquid glass.
+/* ─── The lens bend — refraction on the panel itself ──────────────────────
+   iOS 26: the background BEHIND a glass panel bends near its edges; the
+   panel's centre is pure blur. Two rules make that happen here:
 
-   The @supports split is load-bearing, not defensive styling.
-   `backdrop-filter: url(#…)` is Chromium-only, and Safari does not degrade
-   gracefully: it treats the whole declaration as invalid and drops it, so a
-   surface whose ONLY backdrop-filter is url() renders with no glass at all.
-   The base rule therefore always carries blur(), and url() is layered on top
-   only where it is understood. Safari keeps frosted glass; Chromium gains the
-   bend. Neither looks broken.
+   1. The displacement rides the PANEL's own backdrop-filter, never a nested
+      ring. `backdrop-filter: url(#lg-lens)` on the panel displaces the page
+      behind it (SourceGraphic = the backdrop). A ring inside the panel would
+      instead receive the panel's own fill and text as its backdrop — that was
+      the build-3 regression: the panel bent ITSELF, its own glyphs warped at
+      the rim, and the ring's sharper blur/saturation tinted the corners away
+      from the centre (measured Δ200; iOS keeps one filter output).
 
-   WHITELIST: refraction is allowed ONLY on static chrome — surfaces that do
-   not animate their size and do not sit under body text. Today that list is
-   EMPTY (every former member animated or hid its own backdrop). Reintroducing
-   `glx-refract` in markup requires adding the file to REFRACT_ALLOWLIST in
-   tools/check-glass-discipline.mjs — a deliberate, reviewed act. */
-@utility glx-refract {
-  /* Always present, in every engine. This is the floor, not the effect. */
-  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
+   2. The #lg-lens map (index.html) is EDGE-WEIGHTED — 50% grey, i.e. zero
+      displacement, across the interior, ramping only in the outer ~4% — so
+      blur() and saturate() stay uniform edge-to-edge (centre colour ≡ corner
+      colour) and the geometric bend is confined to the rim.
 
-  /* The bend, layered on only where url() is understood. This @supports must
-     be NESTED INSIDE the @utility. Written as a sibling plain
-     `.glx-refract { }` rule it is silently deleted by the build: Tailwind v4
-     strips any plain selector whose name collides with a registered @utility,
-     so the refraction would never have shipped. Found by reading dist CSS,
-     not by the source or by any error. */
-  @supports (backdrop-filter: url("#x")) {
+   ONE backdrop-filter per panel, no filter ever animates. Chromium runs the
+   chain; Safari/Firefox fail the @supports probe and keep the plain
+   blur+saturate base declared in the utilities above. lite/off tiers strip
+   the whole property further down (unlayered tier rules always win). */
+@supports (backdrop-filter: url('#x')) {
+  :root:not([data-glass='lite']):not([data-glass='off']) .glx {
+    backdrop-filter: url('#lg-lens') blur(var(--glass-bg-blur))
+      saturate(var(--glass-bg-sat));
+  }
+  :root:not([data-glass='lite']):not([data-glass='off']) .glx-strong {
     backdrop-filter: url('#lg-lens') blur(var(--glass-p-blur))
       saturate(var(--glass-p-sat));
   }
-}
-
-/* ─── data-lens — refraction armed on a SETTLED panel ─────────────────────
-   `glx-refract` is a static class, so it would bend the backdrop for the whole
-   life of a panel — including the 0.32s it is scaling from the button. A
-   displacement map resampled under a transform is wrong on every frame of that
-   animation, and the user is looking straight at it.
-
-   So the bend is applied through a data attribute instead, and Topbar sets it
-   only once the open animation has finished. The transition below is on a
-   `::before`-free element — this is the panel's OWN backdrop-filter, not a
-   filtered pseudo-element — and it is a discrete-ish opacity ramp on a filter
-   swap, which the compositor can hand off without re-blurring every frame.
-
-   Tiers: `lite` and `off` strip it, because refraction is the single most
-   expensive thing in the material and those tiers exist for weak GPUs. */
-[data-lens] {
-  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
-  animation: lensIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes lensIn {
-  from {
-    backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
-  }
-  to {
-    backdrop-filter: url('#lg-lens') blur(var(--glass-p-blur))
-      saturate(var(--glass-p-sat));
+  :root:not([data-glass='lite']):not([data-glass='off']) .glx-dark {
+    backdrop-filter: url('#lg-lens') blur(14px) saturate(1.35);
   }
 }
-
-/* The bend is Chromium-only. Where url() is not understood the keyframe would
-   animate to an invalid value and simply never apply — which is the correct
-   degradation, but only in the browsers that DROP the declaration. In a
-   browser that keeps the base rule and ignores the url() token the panel would
-   still fade its base blur, which reads as a flicker. So the whole mechanism
-   is gated: no @supports, no attribute, no fade. */
-@supports not (backdrop-filter: url("#x")) {
-  [data-lens] {
-    backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
-    animation: none;
-  }
-}
-
-:root[data-glass='lite'] [data-lens],
-:root[data-glass='off'] [data-lens] {
-  animation: none;
-  backdrop-filter: none;
-}
-/* The block above must be a PLAIN class, not another @utility. Tailwind v4
-   treats utilities as tree-shakeable and drops any selector written for a
-   utility name that is not present in the scanned source — the base
-   `.glx-refract` rule survived (it is used in markup) but the identical
-   selector nested in @supports did not, so the refraction would never have
-   applied. The build output is the only place this was visible. */
 
 /* Ink glass — sidebar (dark field with warm gold tint) */
 @utility glx-dark {
@@ -778,10 +689,7 @@ select::-webkit-calendar-picker-indicator {
   --glass-p-a1: 0.58;
   --glass-p-a2: 0.44;
 }
-:root[data-glass='lite'] :is(.glx, .glx-strong, .glx-refract, .glx-dark, .bgfx, .veil-blur, .chrome-blur) {
-  backdrop-filter: none;
-}
-:root[data-glass='lite'] .glass-edge::after {
+:root[data-glass='lite'] :is(.glx, .glx-strong, .glx-dark, .bgfx, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
 /* The halo is a decorative blur blob — meaningless without blur, so it goes.
@@ -799,10 +707,7 @@ select::-webkit-calendar-picker-indicator {
 :root[data-glass='off'][data-theme='dark'] {
   --ui-inset-fill: rgba(33, 31, 41, 1);
 }
-:root[data-glass='off'] :is(.glx, .glx-strong, .glx-refract, .glx-dark, .bgfx, .veil-blur, .chrome-blur) {
-  backdrop-filter: none;
-}
-:root[data-glass='off'] .glass-edge::after {
+:root[data-glass='off'] :is(.glx, .glx-strong, .glx-dark, .bgfx, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
 :root[data-glass='off'] .area-blur {

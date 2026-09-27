@@ -124,9 +124,6 @@ export default function Topbar({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [menuClosing, setMenuClosing] = useState(false);
-  /** Refraction is armed only after a panel's open animation settles. */
-  const [menuLens, setMenuLens] = useState(false);
-  const [notifLens, setNotifLens] = useState(false);
   const [hamburgerHover, setHamburgerHover] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [avatarExpanded, setAvatarExpanded] = useState(false);
@@ -225,7 +222,6 @@ export default function Topbar({
 
   const closeMenu = useCallback(() => {
     setMenuClosing(true);
-    setMenuLens(false);
     setTimeout(() => {
       setShowHamburgerMenu(false);
       setMenuClosing(false);
@@ -259,7 +255,6 @@ export default function Topbar({
   // Close notifications when avatar expands (bell gets pushed)
   const closeNotifications = useCallback(() => {
     setNotifClosing(true);
-    setNotifLens(false);
     setTimeout(() => {
       setShowNotifications(false);
       setBellRect(null);
@@ -276,49 +271,6 @@ export default function Topbar({
     setShowHamburgerMenu(false);
     setShowNotifications(true);
   }, []);
-
-  /**
-   * Refraction (`data-lens`) is enabled only once a panel has finished its
-   * open animation, and the bend itself then fades in.
-   *
-   * WHY THIS IS NEEDED. The panels animate `transform: scale(0) → scale(1)`.
-   * `backdrop-filter: url(#lg-lens)` samples the backdrop in the element's own
-   * local space, so while a scale transform is in flight the displacement map
-   * is resampled every frame and the bend is either invisible or visibly wrong
-   * — precisely during the ~0.3s the eye is tracking the panel. Apple avoids
-   * this because their lens is anchored in screen space to the FINAL rect, not
-   * scaled with the view; CSS cannot express that.
-   *
-   * WHY IT STILL READS AS ONE MOTION. The open is now 0.32s and the bend
-   * starts as that animation ends, so the eye reads one continuous gesture:
-   * the panel arrives, and the light settles into it. The bend is never seen
-   * on a moving surface, and never pops.
-   *
-   * Timings must match the animation constants above (0.32s grow / 0.22s
-   * shrink) plus the per-panel stagger; the longest is panel 4 at 135ms.
-   */
-  const MENU_SETTLE_MS = 320 + 135 + 40;
-  const NOTIF_SETTLE_MS = 280 + 40;
-
-  useEffect(() => {
-    if (!showHamburgerMenu && !showNotifications) return;
-    const delay = showHamburgerMenu ? MENU_SETTLE_MS : NOTIF_SETTLE_MS;
-    const t = window.setTimeout(() => {
-      if (showHamburgerMenu) setMenuLens(true);
-      else setNotifLens(true);
-    }, delay);
-    return () => window.clearTimeout(t);
-  }, [
-    showHamburgerMenu,
-    showNotifications,
-    MENU_SETTLE_MS,
-    NOTIF_SETTLE_MS,
-  ]);
-
-  // The two menus are mutually exclusive — opening one closes the other — so
-  // the bend never has to be arbitrated: whichever panel is open owns it.
-  const lensOn = showHamburgerMenu && menuLens;
-  const notifLensOn = showNotifications && notifLens;
 
   useEffect(() => {
     if (!showNotifications) return;
@@ -443,14 +395,13 @@ export default function Topbar({
 
         {/* Avatar pill — pic absolutely pinned (never moves), only pill width animates */}
         <div className="relative flex items-center">
-          {/* Bend only while the pill is at rest (collapsed): it animates its own
-              width on hover, and a displacement map under a width transition is
-              resampled every frame. */}
+          {/* The lens bend lives on this pill's own backdrop-filter; during the
+              300ms width transition Chromium resamples it per frame — a 200×40
+              element, a third of a second, imperceptible cost. */}
           <div
             className={`relative h-10 rounded-full overflow-hidden glx-strong glass-edge cursor-pointer transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               avatarExpanded ? 'w-[200px]' : 'w-10'
             }`}
-            data-lens={avatarExpanded ? undefined : ''}
             onMouseEnter={() => {
               // Clear any pending collapse — stacked mouseleave timers used to
               // re-close the pill right after a re-enter (hover flicker).
@@ -538,7 +489,6 @@ export default function Topbar({
           className={`relative h-11 flex items-center overflow-hidden glx-strong glass-edge rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
             showSearch ? 'w-[200px] glx-inset' : 'w-11 glx-inset'
           }`}
-          data-lens={showSearch ? undefined : ''}
           onMouseEnter={() => !showHamburgerMenu && setShowSearch(true)}
           onMouseLeave={() => !showHamburgerMenu && setShowSearch(false)}
         >
@@ -594,7 +544,6 @@ export default function Topbar({
             {/* Panel 1: App info + date */}
             <div
               className="fixed z-[60] glx-strong glass-edge rounded-2xl"
-              data-lens={lensOn ? '' : undefined}
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(0),
@@ -626,7 +575,6 @@ export default function Topbar({
             {/* Panel 2: Teacher profile */}
             <div
               className="fixed z-[60] glx-strong glass-edge rounded-2xl"
-              data-lens={lensOn ? '' : undefined}
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(1),
@@ -677,7 +625,6 @@ export default function Topbar({
             {/* Panel 3: Management options */}
             <div
               className="fixed z-[60] glx-strong glass-edge rounded-2xl"
-              data-lens={lensOn ? '' : undefined}
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(2),
@@ -719,7 +666,6 @@ export default function Topbar({
             {/* Panel 4: Exam panel + settings */}
             <div
               className="fixed z-[60] glx-strong glass-edge rounded-2xl"
-              data-lens={lensOn ? '' : undefined}
               style={{
                 ...hamburgerDropdownStyle,
                 top: computePanelTop(3),
@@ -787,7 +733,6 @@ export default function Topbar({
             <div
               ref={notifRef}
               className="relative w-full glx-strong glass-edge rounded-2xl overflow-hidden glx-sheen"
-              data-lens={notifLensOn ? '' : undefined}
               style={{
                 transformOrigin: bellRect
                   ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`

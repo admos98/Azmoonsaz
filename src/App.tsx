@@ -7,7 +7,6 @@ import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { TeacherProvider } from './contexts/TeacherContext';
 import type { Teacher } from './types';
 import Topbar from './components/Topbar';
-import { GlassFilters } from './components/GlassSystem';
 import Login from './pages/teacher/Login';
 import Onboarding from './pages/teacher/Onboarding';
 import ResetPassword from './pages/teacher/ResetPassword';
@@ -335,7 +334,6 @@ export default function App() {
     <TeacherProvider initialTeacher={bootTeacher}>
       <WorkspacePreferenceApplier />
       <EdgeLightDriver />
-      <GlassFilters />
       <div className="min-h-screen bg-[var(--color-page-bg)] flex" dir="rtl" id="app-teacher-shell">
         {/* Background depth layer — stage surface that main panel floats above */}
         <div className="fixed inset-0 z-0 pointer-events-none" id="app-bg-stage">

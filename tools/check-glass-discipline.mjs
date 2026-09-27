@@ -4,23 +4,34 @@
  * The 2026-09-27 audit found the liquid glass optically beautiful but
  * physically unbudgeted: ~27-30 simultaneous backdrop-filter surfaces on an
  * idle Dashboard, ~120-160 on the ExamResults grading view, refraction
- * applied where it was invisible or animated. The rules below encode the
- * surface-discipline contract so it cannot silently erode:
+ * applied where it was invisible or animated. The build-3 follow-up then
+ * shipped a NESTED refraction ring (`.glass-edge::after` with its own
+ * backdrop-filter): every panel ran TWO filters, corners tinted away from
+ * centres (Δ200), and the panel's own glyphs bent. Scroll fps halved.
  *
- *   1. REFRACTION WHITELIST. `glx-refract` may appear only in files listed in
- *      REFRACT_ALLOWLIST. Today: none (every former member animated its size
- *      or bent invisible pixels). Reintroduce deliberately, one file, one
- *      review.
+ * The rules below encode the surface-discipline contract so it cannot erode:
  *
- *   2. NO INLINE BACKDROP-FILTER IN TSX. Every blur belongs to a named
+ *   1. ONE BEND, ON THE PANEL. The lens bend (`url('#lg-lens')`) may ride
+ *      ONLY the panel's own backdrop-filter in index.css (.glx, .glx-strong,
+ *      .glx-dark, gated to the `full` tier). It must never appear in TSX, and
+ *      no nested pseudo-element may carry a second backdrop-filter.
+ *
+ *   2. NO SETTLE/ARM MACHINERY. `data-lens` / `glx-refract` / `lensIn` are
+ *      retired — the bend is static, uniform, and never animates. Their
+ *      reappearance is a violation.
+ *
+ *   3. NO INLINE BACKDROP-FILTER IN TSX. Every blur belongs to a named
  *      utility in index.css so the tier system (data-glass) can cheapen the
  *      material in one place. Exception: Tailwind's own `backdrop-blur-*`
  *      utilities are also refused — same reason. (Decorative `blur-[..]`
  *      on non-glass elements is `filter`, not `backdrop-filter` — allowed.)
  *
- *   3. glx-inset STAYS BLUR-FREE. It is the control/inner material. If it
+ *   4. glx-inset STAYS BLUR-FREE. It is the control/inner material. If it
  *      ever carries backdrop-filter again, ExamResults returns to ~160
  *      filtered surfaces. Enforced against index.css itself.
+ *
+ *   5. EXACTLY ONE #lg-lens. A duplicate SVG id silently shadows the first
+ *      definition for every url() reference in the document.
  *
  * Exit 1 with file:line evidence. Wired into `npm run gate`.
  */
@@ -31,32 +42,13 @@ import { fileURLToPath } from 'node:url';
 const root = join(fileURLToPath(new URL('../', import.meta.url)), '.');
 const sourceRoot = join(root, 'src');
 
-// Rule 1 — files where `glx-refract` is allowed. Keep this list SHORT and
-// reviewed. An empty list is a healthy list.
-//
-// 2026-09-27 — the Topbar entry is deliberate. The user asked for the light
-// bend on the menu, the notifications panel and the topbar buttons. Those
-// surfaces animate `transform: scale(0)→1` (menu panels) or their own width
-// (search / profile pills), and a `backdrop-filter: url()` displacement map is
-// resampled in the element's local space — so it is wrong on every frame of
-// an in-flight transform. They therefore do NOT use `glx-refract`. They use
-// `data-lens`, which Topbar sets only once the panel has settled, so the bend
-// is never seen on a moving surface. See the `data-lens` rules in index.css.
-//
-// `glx-refract` itself remains unused: a static bend on a static surface is
-// still the most expensive thing in the material, and nothing currently needs
-// it badly enough to pay for.
-const REFRACT_ALLOWLIST = new Set([
-  // 'src/components/Topbar.tsx',  ← example shape; uncomment with a PR note
-]);
+// Rule 1 — `url('#lg-lens')` and every retired alias may appear ONLY in
+// index.css. Any TSX occurrence is a violation: the bend is defined once and
+// applied by CSS, tier-aware, from a single place. Material-contract tests
+// are exempt — they assert the ABSENCE of these strings in CSS/HTML.
+const MATERIAL_TEST = /\.test\.(ts|tsx)$/;
 
-// Rule 1b — `data-lens` is the SETTLED-state refraction mechanism. It is only
-// legitimate on a surface that is static once armed, so it is allowed in a
-// small reviewed set of files (same argument as REFRACT_ALLOWLIST, different
-// mechanism: Topbar gates the attribute on animation completion).
-const LENS_ALLOWLIST = new Set(['src/components/Topbar.tsx']);
-
-// Rule 2 — allowlist for inline backdrop-filter in TSX (should stay empty).
+// Rule 3 — allowlist for inline backdrop-filter in TSX (should stay empty).
 const INLINE_BF_ALLOWLIST = new Set([]);
 
 const violations = [];
@@ -81,11 +73,8 @@ for (const path of files) {
     const isComment =
       line.startsWith('*') || line.startsWith('/*') || line.startsWith('//');
     if (isComment) return;
-    if (line.includes('glx-refract') && !REFRACT_ALLOWLIST.has(rel)) {
-      violations.push(`[refract-whitelist] ${rel}:${i + 1} uses glx-refract; add to REFRACT_ALLOWLIST with a review note or remove it.`);
-    }
-    if (line.includes('data-lens') && !LENS_ALLOWLIST.has(rel)) {
-      violations.push(`[lens-whitelist] ${rel}:${i + 1} uses data-lens; add to LENS_ALLOWLIST with a review note or remove it.`);
+    if (!MATERIAL_TEST.test(rel) && /(lg-lens|glx-refract|data-lens|lensIn)/.test(line)) {
+      violations.push(`[bend-whitelist] ${rel}:${i + 1} — the lens bend is owned by index.css (panel-own backdrop-filter, full tier). '${line.slice(0, 60)}' references it from TSX.`);
     }
     if (/(?:style=\{[^}]*|className="[^"]*)backdrop-filter|backdrop-blur-/.test(rawLine) && !INLINE_BF_ALLOWLIST.has(rel)) {
       violations.push(`[inline-backdrop-filter] ${rel}:${i + 1} — blur must live in a named utility in index.css (tier system must control it).`);
@@ -93,11 +82,26 @@ for (const path of files) {
   });
 }
 
-// Rule 3 — glx-inset must never carry backdrop-filter.
+// Rule 4 — glx-inset must never carry backdrop-filter.
 const css = readFileSync(join(root, 'src/index.css'), 'utf8');
 const insetBlock = css.match(/@utility glx-inset \{([\s\S]*?)\n\}/);
 if (insetBlock && insetBlock[1].includes('backdrop-filter')) {
   violations.push('[inset-blur] src/index.css — @utility glx-inset gained a backdrop-filter. It is the control material; blur there multiplies across every input, badge and row. Move the surface to .glx instead.');
+}
+
+// Rule 5 — no nested pseudo-element may carry a second backdrop-filter: the
+// build-3 ring regression (two filters per panel, corners ≠ centre, panel
+// bending itself) shipped exactly this way.
+const ringRule = css.match(/\.glass-edge[^{]*::after\s*\{[^}]*\}/);
+if (ringRule && ringRule[0].includes('backdrop-filter')) {
+  violations.push('[nested-ring-filter] src/index.css — .glass-edge::after carries a backdrop-filter. One filter per panel, on the panel itself. Painted light on the ring is fine; filtering is not.');
+}
+
+// Rule 6 — exactly one #lg-lens definition in index.html.
+const html = readFileSync(join(root, 'index.html'), 'utf8');
+const lensDefs = html.match(/id="lg-lens"/g) || [];
+if (lensDefs.length !== 1) {
+  violations.push(`[lens-filter-unique] index.html — expected exactly one id="lg-lens", found ${lensDefs.length}. A duplicate id shadows the first for every url() reference.`);
 }
 
 if (violations.length) {
@@ -105,4 +109,4 @@ if (violations.length) {
   console.error(violations.map((v) => `  - ${v}`).join('\n'));
   process.exit(1);
 }
-console.log('Glass discipline check passed: refraction whitelist respected, settled-lens whitelist respected, no inline backdrop-filter, inset material blur-free.');
+console.log('Glass discipline check passed: bend owned by index.css panel chains, no settle machinery, no inline backdrop-filter, inset material blur-free, single #lg-lens.');

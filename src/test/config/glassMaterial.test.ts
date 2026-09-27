@@ -58,10 +58,24 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(v!)).toBeGreaterThanOrEqual(1.4);
   });
 
-  it('light: resting shadow stays subtle (a <= 0.14, was 0.20)', () => {
+  it('light: resting shadow is GONE — iOS liquid glass carries none (a == 0)', () => {
     const v = token('--glass-sh-a', ':root');
     expect(v).not.toBeNull();
-    expect(parseFloat(v!)).toBeLessThanOrEqual(0.14);
+    expect(parseFloat(v!)).toBe(0);
+  });
+
+  it('light: overlay elevation is zero too; dark keeps only a whisper', () => {
+    const light = token('--glass-sh-strong-a', ':root');
+    expect(parseFloat(light!)).toBe(0);
+    const dark = token('--glass-sh-strong-a', ":root[data-theme='dark']");
+    expect(parseFloat(dark!)).toBeLessThanOrEqual(0.25);
+  });
+
+  it('rim is a hairline (max 1.8px) — the 3.6px build-3 rim read as a border', () => {
+    const max = token('--glass-edge-max');
+    expect(parseFloat(max!)).toBeLessThanOrEqual(1.8);
+    const darkMax = token('--glass-edge-max', ":root[data-theme='dark']");
+    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(1.8);
   });
 
   it('dark: panels lift off the navy floor (p-tint luminance >= 48, was ~35)', () => {
@@ -98,23 +112,36 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/--glass-edge-tint-bot:\s*168 244 234/);
   });
 
-  it('lens band exists with its own sharper blur chain', () => {
-    expect(css).toMatch(/\.glass-edge:not\(\.glx-sheen\)::after\s*\{[^}]*backdrop-filter/s);
-    const t = token('--glass-lens-t');
-    expect(t).not.toBeNull();
-    expect(parseFloat(t!)).toBeGreaterThanOrEqual(8);
-    expect(parseFloat(t!)).toBeLessThanOrEqual(14);
+  it('the nested lens band is GONE (it bent the panel itself and doubled every filter)', () => {
+    expect(css).not.toMatch(/\.glass-edge[^{]*::after\s*\{[^}]*backdrop-filter/s);
+    expect(token('--glass-lens-t')).toBeNull();
   });
 
-  it('lens band is stripped in lite/off tiers (surface discipline)', () => {
-    expect(css).toMatch(/:root\[data-glass='lite'\] \.glass-edge::after\s*\{\s*backdrop-filter:\s*none;/);
-    expect(css).toMatch(/:root\[data-glass='off'\] \.glass-edge::after\s*\{\s*backdrop-filter:\s*none;/);
+  it('no [data-lens] / lensIn machinery — no backdrop-filter may ever animate', () => {
+    expect(css).not.toMatch(/\[data-lens\]/);
+    expect(css).not.toMatch(/@keyframes lensIn/);
   });
 
-  it('refraction filter #lg-lens is actually defined (feDisplacementMap)', () => {
+  it('the bend rides the panel chains (url(#lg-lens) FIRST, then uniform blur)', () => {
+    expect(css).toMatch(
+      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\) \.glx\s*\{[^}]*backdrop-filter:\s*url\('#lg-lens'\)\s+blur\(var\(--glass-bg-blur\)\)/,
+    );
+    expect(css).toMatch(
+      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\) \.glx-strong\s*\{[^}]*backdrop-filter:\s*url\('#lg-lens'\)\s+blur\(var\(--glass-p-blur\)\)/,
+    );
+  });
+
+  it('refraction filter #lg-lens is defined ONCE, edge-weighted, with overscan region', () => {
     expect(html).toMatch(/id="lg-lens"/);
     expect(html).toMatch(/feDisplacementMap/);
     expect(html).toMatch(/feImage/);
+    // grey plateau = edge-weighted map (linear maps displace the whole panel)
+    const matches = html.match(/808080/g);
+    expect(matches!.length).toBeGreaterThanOrEqual(2);
+    // oversized region so rim pixels can sample beyond the box
+    expect(html).toMatch(/x="-6%"[\s\S]*?width="112%"/);
+    // exactly one definition — a duplicate id silently shadows the first
+    expect(html.match(/id="lg-lens"/g)!.length).toBe(1);
   });
 
   it('glx surfaces carry the text micro-shadow ambient', () => {
