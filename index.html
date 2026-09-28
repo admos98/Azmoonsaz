@@ -136,14 +136,20 @@
        scale 34 → max ±17px pull at the edge (iOS-26 refs bend visible content
        by roughly this much at 1x; the rim must visibly TWIST the background,
        not nudge it).
-       The filter region is oversized (−20%…120%) so rim pixels can sample
-       beyond the box without clipping at the stronger pull.
+       The filter region is CLIPPED TO THE ELEMENT BOX (x/y/width/height all
+       0/0/100%). It used to be -20%…120% so rim pixels could sample beyond
+       the box at the stronger pull, but that made the displacement map a
+       square 40% larger than the panel while the element clipped itself to a
+       rounded rect — so the bend and blur were computed on square geometry and
+       read as a straight-edged blur sitting inside a curved panel. Box-clipped
+       is the correct geometry; the pull is absorbed by the map's own 0.05
+       edge ramp instead of by free space around the element.
        Keep this element in the DOM (display:none would kill the filter).
        There must be EXACTLY ONE #lg-lens in the document — a duplicate id
        silently shadows this one (first-in-tree wins for url() references). -->
     <svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0" >
       <defs>
-        <filter id="lg-lens" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <filter id="lg-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
           <feImage
             href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3Cdefs%3E%3ClinearGradient%20id='x'%20x1='0'%20y1='0'%20x2='1'%20y2='0'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.05'%20stop-color='%23800000'/%3E%3Cstop%20offset='0.93'%20stop-color='%23800000'/%3E%3Cstop%20offset='1'%20stop-color='%23f00'/%3E%3C/linearGradient%3E%3ClinearGradient%20id='y'%20x1='0'%20y1='0'%20x2='0'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.05'%20stop-color='%23008000'/%3E%3Cstop%20offset='0.93'%20stop-color='%23008000'/%3E%3Cstop%20offset='1'%20stop-color='%230f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='160'%20height='160'%20fill='url(%23x)'/%3E%3Crect%20width='160'%20height='160'%20fill='url(%23y)'%20style='mix-blend-mode:screen'/%3E%3C/svg%3E"
             x="0"

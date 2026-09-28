@@ -216,6 +216,12 @@
      rim zone shows the raw bent+blurred background (the "short merge line":
      crisp glass edge → a few px → blur). User spec: ~1px sharp + 5–7px fade. */
   --glass-fill-fade: clamp(7px, 1vmin, 10px);
+  /* How much of the fill survives AT the border, 0-1. The fill feathers out
+     toward the rim so the refracted background can show, but at a hard 0 the
+     outermost 7-10px were fully erased on all four sides — light panels read
+     as transparent with a ring floating on them. 0.5 keeps the edge part of
+     the material while still merging into the refraction. */
+  --glass-fill-edge: 0.5;
 
   /* ── Edge light — the lit rim of a glass panel ──────────────────────────
      Replaces the old fixed 2px top band (--glass-shn-t). The rim is now drawn
@@ -387,7 +393,7 @@
   /* Frost tooth — HALF the old 0.16: white noise on near-black glass
      multiplied into visible sandpaper (measured std 13.4 on a flat panel vs
      1.8 on a light card). 0.055 keeps the tooth, kills the felt. */
-  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.055 0.055 0.055 0 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.03 0.03 0.03 0 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
   --glass-glint-a: 0.04;
   --glass-row-hover: 0.12;
   --glass-text-ambient: 0 0 0;
@@ -726,15 +732,19 @@ select::-webkit-calendar-picker-indicator {
       rgb(var(--glass-p-tint) / var(--glass-p-fa2, var(--glass-p-a2)))
     );
   -webkit-mask-image:
-    linear-gradient(to right, rgb(0 0 0 / 0) 0, #000 var(--glass-ff),
-      #000 calc(100% - var(--glass-ff)), rgb(0 0 0 / 0) 100%),
-    linear-gradient(to bottom, rgb(0 0 0 / 0) 0, #000 var(--glass-ff),
-      #000 calc(100% - var(--glass-ff)), rgb(0 0 0 / 0) 100%);
+    linear-gradient(to right, rgb(0 0 0 / var(--glass-fill-edge)) 0,
+      #000 var(--glass-ff), #000 calc(100% - var(--glass-ff)),
+      rgb(0 0 0 / var(--glass-fill-edge)) 100%),
+    linear-gradient(to bottom, rgb(0 0 0 / var(--glass-fill-edge)) 0,
+      #000 var(--glass-ff), #000 calc(100% - var(--glass-ff)),
+      rgb(0 0 0 / var(--glass-fill-edge)) 100%);
   mask-image:
-    linear-gradient(to right, rgb(0 0 0 / 0) 0, #000 var(--glass-ff),
-      #000 calc(100% - var(--glass-ff)), rgb(0 0 0 / 0) 100%),
-    linear-gradient(to bottom, rgb(0 0 0 / 0) 0, #000 var(--glass-ff),
-      #000 calc(100% - var(--glass-ff)), rgb(0 0 0 / 0) 100%);
+    linear-gradient(to right, rgb(0 0 0 / var(--glass-fill-edge)) 0,
+      #000 var(--glass-ff), #000 calc(100% - var(--glass-ff)),
+      rgb(0 0 0 / var(--glass-fill-edge)) 100%),
+    linear-gradient(to bottom, rgb(0 0 0 / var(--glass-fill-edge)) 0,
+      #000 var(--glass-ff), #000 calc(100% - var(--glass-ff)),
+      rgb(0 0 0 / var(--glass-fill-edge)) 100%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }

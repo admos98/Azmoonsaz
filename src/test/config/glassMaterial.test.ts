@@ -332,7 +332,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(html).toMatch(/prefers-reduced-transparency/); // lite is a CHOICE now
   });
 
-  it('refraction filter #lg-lens is defined ONCE, edge-weighted, with overscan region', () => {
+  it('refraction filter #lg-lens is defined ONCE, edge-weighted, box-clipped', () => {
     expect(html).toMatch(/id="lg-lens"/);
     expect(html).toMatch(/feDisplacementMap/);
     expect(html).toMatch(/feImage/);
@@ -343,10 +343,31 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(html).toMatch(/%23800000/);
     expect(html).toMatch(/%23008000/);
     expect(html).not.toMatch(/%23808080/);
-    // oversized region so rim pixels can sample beyond the box
-    expect(html).toMatch(/x="-20%"[\s\S]*?width="140%"/);
+    // Filter region must MATCH the element box. The old -20%/140% region made
+    // the map a square 40% larger than the panel, so the displacement was
+    // sampled on square geometry while the element clipped it to a rounded
+    // rect — the result was a straight-edged blur sitting inside a curved
+    // panel. Box-clipped geometry is what keeps the bend and the blur on the
+    // same curve as the rim.
+    expect(html).toMatch(/<filter id="lg-lens" x="0" y="0" width="100%" height="100%"/);
+    expect(html).not.toMatch(/<filter id="lg-lens" x="-/);
+    expect(html).not.toMatch(/<filter id="lg-lens"[^>]*width="1[24]0%"/);
     // exactly one definition — a duplicate id silently shadows the first
     expect(html.match(/id="lg-lens"/g)!.length).toBe(1);
+  });
+
+  it('the fill survives at the border — the feather floors, it does not erase', () => {
+    // The ::after mask used to bottom out at rgb(0 0 0 / 0), fully erasing the
+    // outermost 7-10px of fill on all four sides. Light panels then read as
+    // transparent with a ring floating on them. The outermost stop floors at
+    // --glass-fill-edge so the edge stays part of the material.
+    const after = css.match(/\.glass-edge::after\s*\{[\s\S]*?\n\}/s)![0];
+    const mask = after.match(/-webkit-mask-image:[\s\S]*?;/s)![0];
+    expect(mask).toMatch(/rgb\(0 0 0 \/ var\(--glass-fill-edge\)\)/);
+    // and the floor is a real value in both themes, not zero
+    const edge = token('--glass-fill-edge');
+    expect(edge).not.toBeNull();
+    expect(parseFloat(edge!)).toBeGreaterThan(0);
   });
 
   it('glx surfaces carry the text micro-shadow ambient', () => {
