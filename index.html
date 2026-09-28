@@ -113,22 +113,39 @@
        panel's own content stays untouched.
 
        The map is EDGE-WEIGHTED: 50% grey (zero displacement) across the
-       interior, ramping to black/white only in the outer ~4–6% — the centre is
-       pure blur, the bend is confined to the rim and scales with the panel.
-       Two gradients (x → R, y → G) screen-blended into one RG map.
-       feDisplacementMap scale=28 user units → max ±14px pull at the edge
-       (iOS-26 refs bend visible content by roughly this much at 1x; the rim
-       must visibly TWIST the background, not nudge it).
-       The filter region is oversized (−10%…110%) so rim pixels can sample
+       interior, ramping only in the outer ~5–7% — the centre is pure blur,
+       the bend is confined to the rim and scales with the panel.
+       CHANNEL DISCIPLINE (the bug that hid the bend for three builds): the
+       x-gradient carries ONLY the red channel (#000 → #800000 → #f00, green
+       stays 0) and the y-gradient ONLY the green (#000 → #008000 → #0f0).
+       Screen-blending two GRAYSCALE gradients (the old map) was self-defeating:
+       at the left edge the x-map is black, so screen(0, 0.5-grey) = 0.5 — the
+       y-plateau WASHED the x-extreme back to zero displacement. The lens only
+       ever bent the right and bottom edges. With per-channel rects, screen is
+       a per-channel identity: left edge R=0 (pull left), top edge G=0 (pull
+       up), right/bottom the mirrors — all four edges twist, corners bend
+       diagonally like a real lens, and the interior stays exactly identity.
+
+       CHROMATIC DISPERSION — the rim is a prism, not a mirror: each channel is
+       isolated (feColorMatrix) and displaced at its OWN strength
+       (R 38 / G 34 / B 30 user units), then recombined. Where the background
+       bends, red leads and blue trails by a few px — the warm/cool fringe at
+       the edge of real glass. Interior pixels are untouched: the map is 50%
+       grey there, and all three scales collapse to the same identity.
+
+       scale 34 → max ±17px pull at the edge (iOS-26 refs bend visible content
+       by roughly this much at 1x; the rim must visibly TWIST the background,
+       not nudge it).
+       The filter region is oversized (−20%…120%) so rim pixels can sample
        beyond the box without clipping at the stronger pull.
        Keep this element in the DOM (display:none would kill the filter).
        There must be EXACTLY ONE #lg-lens in the document — a duplicate id
        silently shadows this one (first-in-tree wins for url() references). -->
     <svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0" >
       <defs>
-        <filter id="lg-lens" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+        <filter id="lg-lens" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
           <feImage
-            href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3Cdefs%3E%3ClinearGradient%20id='x'%20x1='0'%20y1='0'%20x2='1'%20y2='0'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.04'%20stop-color='%23808080'/%3E%3Cstop%20offset='0.94'%20stop-color='%23808080'/%3E%3Cstop%20offset='1'%20stop-color='%23f00'/%3E%3C/linearGradient%3E%3ClinearGradient%20id='y'%20x1='0'%20y1='0'%20x2='0'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.04'%20stop-color='%23808080'/%3E%3Cstop%20offset='0.94'%20stop-color='%23808080'/%3E%3Cstop%20offset='1'%20stop-color='%230f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='160'%20height='160'%20fill='url(%23x)'/%3E%3Crect%20width='160'%20height='160'%20fill='url(%23y)'%20style='mix-blend-mode:screen'/%3E%3C/svg%3E"
+            href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3Cdefs%3E%3ClinearGradient%20id='x'%20x1='0'%20y1='0'%20x2='1'%20y2='0'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.05'%20stop-color='%23800000'/%3E%3Cstop%20offset='0.93'%20stop-color='%23800000'/%3E%3Cstop%20offset='1'%20stop-color='%23f00'/%3E%3C/linearGradient%3E%3ClinearGradient%20id='y'%20x1='0'%20y1='0'%20x2='0'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.05'%20stop-color='%23008000'/%3E%3Cstop%20offset='0.93'%20stop-color='%23008000'/%3E%3Cstop%20offset='1'%20stop-color='%230f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='160'%20height='160'%20fill='url(%23x)'/%3E%3Crect%20width='160'%20height='160'%20fill='url(%23y)'%20style='mix-blend-mode:screen'/%3E%3C/svg%3E"
             x="0"
             y="0"
             width="100%"
@@ -136,7 +153,14 @@
             preserveAspectRatio="none"
             result="map"
           />
-          <feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G" />
+          <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="chR"/>
+          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="chG"/>
+          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="chB"/>
+          <feDisplacementMap in="chR" in2="map" scale="38" xChannelSelector="R" yChannelSelector="G" result="dR"/>
+          <feDisplacementMap in="chG" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G" result="dG"/>
+          <feDisplacementMap in="chB" in2="map" scale="30" xChannelSelector="R" yChannelSelector="G" result="dB"/>
+          <feComposite in="dR" in2="dG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="dRG"/>
+          <feComposite in="dRG" in2="dB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
         </filter>
       </defs>
     </svg>

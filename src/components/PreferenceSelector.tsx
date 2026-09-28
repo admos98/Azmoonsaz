@@ -63,10 +63,8 @@ export default function PreferenceSelector<T extends string>({
                 selectAt(options.length - 1, event.currentTarget);
               }
             }}
-            className={`min-h-16 rounded-2xl border p-3 text-right transition-colors ${
-              selected
-                ? 'border-[var(--color-gold)] bg-[var(--color-gold-soft)]'
-                : 'border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-light-fill)] hover:bg-[var(--color-surface-secondary)]'
+            className={`min-h-16 rounded-2xl p-3 text-right ${
+              selected ? 'pref-row-selected' : 'pref-row'
             }`}
           >
             <span className="flex items-center gap-3">

@@ -50,18 +50,23 @@ function component(path: string): string {
 }
 
 describe('glass material contract (pixel-audit gates)', () => {
-  it('light: panel body blur destroys backdrop shapes (>= 18px, was 6px)', () => {
+  it('light: panel body blur is iOS-tight (10-14px, was 18 = smear; user: "way more than iOS")', () => {
     const v = token('--glass-p-blur');
     expect(v).not.toBeNull();
-    expect(parseFloat(v!)).toBeGreaterThanOrEqual(18);
+    const b = parseFloat(v!);
+    expect(b).toBeGreaterThanOrEqual(10);
+    expect(b).toBeLessThanOrEqual(14);
+    const bg = parseFloat(token('--glass-bg-blur')!);
+    expect(bg).toBeGreaterThanOrEqual(9);
+    expect(bg).toBeLessThanOrEqual(11);
   });
 
-  it('light: fill is a trim with real presence (0.20 <= a1 <= 0.26, was 0.17 = invisible)', () => {
+  it('light: fill is a trim with real presence (0.18 <= a1 <= 0.24)', () => {
     const v = token('--glass-p-a1');
     expect(v).not.toBeNull();
     const a = parseFloat(v!);
-    expect(a).toBeGreaterThanOrEqual(0.2);
-    expect(a).toBeLessThanOrEqual(0.26);
+    expect(a).toBeGreaterThanOrEqual(0.18);
+    expect(a).toBeLessThanOrEqual(0.24);
   });
 
   it('light: panels are DIMMED, not lightened — the floor sits below the page', () => {
@@ -80,10 +85,10 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(after).toMatch(/var\(--glass-glint-a\)/);
   });
 
-  it('light: saturation gain makes blurred color fields richer (>= 1.4)', () => {
+  it('light: saturation gain makes blurred color fields richer (>= 1.6)', () => {
     const v = token('--glass-p-sat');
     expect(v).not.toBeNull();
-    expect(parseFloat(v!)).toBeGreaterThanOrEqual(1.4);
+    expect(parseFloat(v!)).toBeGreaterThanOrEqual(1.6);
   });
 
   it('light: resting shadow is GONE — iOS liquid glass carries none (a == 0)', () => {
@@ -99,29 +104,48 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(dark!)).toBeLessThanOrEqual(0.25);
   });
 
-  it('rim crisp ring stays hairline-thin (max 2.5px) — the 3.6px build-3 rim read as a border', () => {
+  it('rim crisp ring stays hairline-thin (max 1.6px) — 2.2px+ read as a border in the user photos', () => {
     const max = token('--glass-edge-max');
-    expect(parseFloat(max!)).toBeLessThanOrEqual(2.5);
+    expect(parseFloat(max!)).toBeLessThanOrEqual(1.6);
     const darkMax = token('--glass-edge-max', ":root[data-theme='dark']");
-    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(2.5);
+    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(1.6);
   });
 
   it('rim luminance ramp: crisp ring + soft fade that melts into the panel', () => {
     // the soft fade rides the unmasked element shadow (masked layers would
     // clip it exactly where it must show)
     expect(css).toMatch(
-      /inset 0 0 1[24]px -5px rgb\(var\(--glass-edge-color\) \/ var\(--glass-edge-fade\)\)/,
+      /inset 0 0 1[46]px -6px rgb\(var\(--glass-edge-color\) \/ var\(--glass-edge-fade\)\)/,
     );
     const fade = token('--glass-edge-fade');
     expect(parseFloat(fade!)).toBeGreaterThan(0);
   });
 
-  it('dark: panels lift off the navy floor (p-tint luminance >= 48, was ~35)', () => {
+  it('dark: glass DIMS the backdrop like smoked glass (p-tint luminance <= 30) — the old 52-49-66 @ 0.56 was the gray putty the user photographed', () => {
     const v = token('--glass-p-tint', ":root[data-theme='dark']");
     expect(v).not.toBeNull();
     const [r, g, b] = v!.split(/\s+/).map(Number);
     const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    expect(lum).toBeGreaterThanOrEqual(48);
+    expect(lum).toBeLessThanOrEqual(30);
+    // and the fill is translucent enough for the saturated backdrop to show
+    const a1 = parseFloat(token('--glass-p-a1', ":root[data-theme='dark']")!);
+    expect(a1).toBeGreaterThanOrEqual(0.34);
+    expect(a1).toBeLessThanOrEqual(0.44);
+  });
+
+  it('dark: grain stays a tooth, not felt (alpha <= 0.08; 0.16 white noise on dark = sandpaper)', () => {
+    const darkTile = token('--glass-grain', ":root[data-theme='dark']")!;
+    // feColorMatrix alpha row: "... 1 <alpha> <alpha> <alpha> 0 0"
+    const m = /1\s+(0\.\d+)\s+0\.\d+\s+0\.\d+\s+0\s+0/.exec(darkTile);
+    expect(m).not.toBeNull();
+    expect(parseFloat(m![1])).toBeLessThanOrEqual(0.08);
+  });
+
+  it('dark: inset wells are translucent white rows, not opaque purple bricks', () => {
+    const v = token('--ui-inset-fill', ":root[data-theme='dark']");
+    expect(v).not.toBeNull();
+    const a = parseFloat(v!.replace(/^rgba\([^,]+,[^,]+,[^,]+,/, ''));
+    expect(a).toBeLessThanOrEqual(0.1);
   });
 
   it('dark: floor carries the brand navy hue (page bg blue channel >= 32)', () => {
@@ -129,32 +153,35 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(v).not.toBeNull();
     const hex = v!.replace('#', '');
     const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
     const b = parseInt(hex.slice(4, 6), 16);
     expect(b).toBeGreaterThanOrEqual(32); // #171622 → b=34; the old neutral #18161d had b=29
     expect(b).toBeGreaterThan(r); // blue-leaning = navy ink family
   });
 
-  it('dark: fill alpha compensates the luminous tint (a1 >= 0.5, was 0.62 = milk when stacked)', () => {
+  it('dark: fill alpha keeps the glass translucent (a1 0.34-0.44, was 0.56-0.62 = milk)', () => {
+    // covered by the smoked-glass gate above; kept as a named pin so a
+    // revert of one does not silently unpin the other
     const v = token('--glass-p-a1', ":root[data-theme='dark']");
-    expect(v).not.toBeNull();
-    expect(parseFloat(v!)).toBeGreaterThanOrEqual(0.5);
-    expect(parseFloat(v!)).toBeLessThanOrEqual(0.58);
+    expect(parseFloat(v!)).toBeLessThanOrEqual(0.44);
   });
 
   it('rim is additive light (plus-lighter) so the specular never flattens', () => {
     expect(css).toMatch(/\.glass-edge::before\s*\{[^}]*mix-blend-mode:\s*plus-lighter/s);
   });
 
-  it('rim shows the REFRACTED BACKGROUND + TWO opposite corner lights, not one sun', () => {
+  it('rim shows the REFRACTED BACKGROUND + TWO corner catches, not one sun and not wide arcs', () => {
     // the fixed per-edge tint ring (the "static line with static colour") is gone
-    expect(token('--glass-edge-base')).toBe('0.55');
-    expect(token('--glass-edge-base', ':root[data-theme=\'dark\']')).toBe('0.34');
+    expect(token('--glass-edge-base')).toBe('0.42');
+    expect(token('--glass-edge-base', ':root[data-theme=\'dark\']')).toBe('0.24');
     // the single top-centre searchlight is retired
     expect(css).not.toMatch(/140% 90% at 50% 0%/);
-    // two small opposite-corner sources replace it (start-top dominant for RTL)
-    expect(css).toMatch(/58% 68% at 92% 0%/);
-    expect(css).toMatch(/52% 62% at 8% 100%/);
+    // two TIGHT corner catches on the ring (fat 58%x68% ellipses = thick line)
+    expect(css).toMatch(/26% 34% at 92% 0%/);
+    expect(css).toMatch(/22% 30% at 8% 100%/);
+    // + the WIDE soft half of each light glows INSIDE the fill (::after)
+    const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
+    expect(after).toMatch(/var\(--glass-corner-a\)/);
+    expect(after).toMatch(/var\(--glass-corner-b\)/);
     // corner light colour is a token (warm in light, cool in dark), not static white
     expect(token('--glass-edge-corner')).toBe('255 248 231');
     expect(token('--glass-edge-corner', ':root[data-theme=\'dark\']')).toBe('236 242 255');
@@ -202,14 +229,27 @@ describe('glass material contract (pixel-audit gates)', () => {
   });
 
   it('inner bloom — light spills inside under the top rim (paint-only)', () => {
-    expect(token('--glass-bloom-line-a')).toBe('0.34');
-    expect(token('--glass-bloom-a')).toBe('0.5');
-    expect(token('--glass-bloom-a', ':root[data-theme=\'dark\']')).toBe('0.12');
+    expect(token('--glass-bloom-line-a')).toBe('0.24');
+    expect(token('--glass-bloom-a')).toBe('0.38');
+    expect(token('--glass-bloom-a', ':root[data-theme=\'dark\']')).toBe('0.09');
+    // dark keeps its own dim hairline (it used to inherit the 0.24 light value)
+    expect(token('--glass-bloom-line-a', ':root[data-theme=\'dark\']')).toBe('0.1');
     expect(css).toMatch(/inset 0 1px 0 rgb\(255 255 255 \/ var\(--glass-bloom-line-a\)\)/);
   });
 
-  it('the lens pull is strong enough to read (scale=28 → max ±14px)', () => {
-    expect(html).toMatch(/scale="28"/);
+  it('the lens pull is strong enough to read (scale=34 → max ±17px)', () => {
+    expect(html).toMatch(/scale="34"/);
+  });
+
+  it('the rim DISPERSSES: three per-channel displacements recombine into a chromatic fringe', () => {
+    expect(html).toMatch(/feColorMatrix/);
+    expect((html.match(/feDisplacementMap/g) || []).length).toBe(3);
+    expect(html).toMatch(/operator="arithmetic"/);
+    // red leads, blue trails at the bend
+    const scales = [...html.matchAll(/feDisplacementMap[^>]*scale="(\d+)"/g)].map((m) => +m[1]);
+    expect(scales.length).toBe(3);
+    expect(scales[0]).toBeGreaterThan(scales[1]);
+    expect(scales[1]).toBeGreaterThan(scales[2]);
   });
 
   it('ONE background: the topo page plate — the depth-field stage is gone', () => {
@@ -296,11 +336,15 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(html).toMatch(/id="lg-lens"/);
     expect(html).toMatch(/feDisplacementMap/);
     expect(html).toMatch(/feImage/);
-    // grey plateau = edge-weighted map (linear maps displace the whole panel)
-    const matches = html.match(/808080/g);
-    expect(matches!.length).toBeGreaterThanOrEqual(2);
+    // CHANNEL DISCIPLINE: x-gradient carries only R (#800000 plateau), y only G
+    // (#008000). The old GRAYSCALE plateaus (#808080) screen-washed the left and
+    // top edges back to 0.5 = zero displacement — the bend only ever ran on
+    // right/bottom. Greyscale plateaus are BANNED in the map.
+    expect(html).toMatch(/%23800000/);
+    expect(html).toMatch(/%23008000/);
+    expect(html).not.toMatch(/%23808080/);
     // oversized region so rim pixels can sample beyond the box
-    expect(html).toMatch(/x="-10%"[\s\S]*?width="120%"/);
+    expect(html).toMatch(/x="-20%"[\s\S]*?width="140%"/);
     // exactly one definition — a duplicate id silently shadows the first
     expect(html.match(/id="lg-lens"/g)!.length).toBe(1);
   });
@@ -309,6 +353,19 @@ describe('glass material contract (pixel-audit gates)', () => {
     // NOTE: 'text-[s]hadow' is written split so the typography linter does not
     // mistake this CSS assertion for an undeclared typography utility.
     expect(css).toMatch(/text-[s]hadow:\s*0 1px 2px rgb\(var\(--glass-text-ambient\)/);
+  });
+
+  it('option rows on glass use the grouped-list material, not glass-on-glass fills', () => {
+    // tokens exist per theme
+    expect(token('--pref-row-bg')).not.toBeNull();
+    expect(token('--pref-row-sel-bg', ":root[data-theme='dark']")).not.toBeNull();
+    // utilities exist
+    expect(css).toMatch(/@utility pref-row\s*\{/);
+    expect(css).toMatch(/@utility pref-row-selected\s*\{/);
+    // the selector consumes them
+    const pref = readFileSync(join(root, 'src/components/PreferenceSelector.tsx'), 'utf8');
+    expect(pref).toMatch(/selected \? 'pref-row-selected' : 'pref-row'/);
+    expect(pref).not.toMatch(/gold-soft/);
   });
 
   it('dark login token pin exists (white-on-white regression fix)', () => {
