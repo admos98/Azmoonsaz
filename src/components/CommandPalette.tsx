@@ -274,12 +274,12 @@ export default function CommandPalette({
                 }}
                 placeholder="آزمون، دانش‌آموز، کلاس یا تنظیمات…"
                 aria-label="جستجوی فرمان‌ها"
-                className="h-14 flex-1 bg-transparent text-label text-[var(--color-text-primary)] outline-none"
+                className="no-focus-ring h-14 flex-1 bg-transparent text-label text-[var(--color-text-primary)]"
               />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2"
+                className="rounded-lg p-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)] transition-colors"
                 aria-label="بستن"
               >
                 <X className="h-4 w-4" />
@@ -289,11 +289,12 @@ export default function CommandPalette({
               {filtered.length ? (
                 filtered.map((command, index) => {
                   const Icon = command.icon;
+                  const isActive = index === activeIndex;
                   return (
                     <button
                       type="button"
                       role="option"
-                      aria-selected={index === activeIndex}
+                      aria-selected={isActive}
                       key={command.id}
                       onMouseEnter={() => {
                         setActiveIndex(index);
@@ -301,14 +302,16 @@ export default function CommandPalette({
                       }}
                       onFocus={() => preloadTeacherPage(command.id)}
                       onClick={() => run(command)}
-                      className={`flex w-full items-center gap-3 rounded-2xl p-3 text-right ${index === activeIndex ? 'bg-[var(--color-accent-soft)] text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'}`}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right transition-colors ${isActive ? 'bg-[var(--color-accent-soft)]/70 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-glass-light-stroke)]/50'}`}
                     >
-                      <span className="rounded-xl bg-[var(--color-surface-secondary)] p-2">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${isActive ? 'border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]/60 text-[var(--color-accent)]' : 'border-transparent text-[var(--color-text-tertiary)]'}`}
+                      >
                         <Icon className="h-4 w-4" />
                       </span>
-                      <span>
+                      <span className="min-w-0">
                         <strong className="block text-label">{command.label}</strong>
-                        <span className="text-caption text-[var(--color-text-tertiary)]">
+                        <span className="block truncate text-caption text-[var(--color-text-tertiary)]">
                           {command.description}
                         </span>
                       </span>

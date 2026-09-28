@@ -367,7 +367,7 @@ export default function Topbar({
                 openNotifications();
               }
             }}
-            className="relative z-[60] grid h-10 w-10 place-items-center rounded-full glx-inset text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+            className="relative z-[60] grid h-10 w-10 place-items-center rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)] transition-colors cursor-pointer"
             aria-label="اعلان‌ها"
             aria-expanded={showNotifications}
             aria-haspopup="true"
@@ -470,7 +470,7 @@ export default function Topbar({
           }}
           onMouseEnter={() => setHamburgerHover(true)}
           onMouseLeave={() => setHamburgerHover(false)}
-          className="relative z-[70] p-2 rounded-xl hover:bg-[var(--color-surface-secondary)] transition-all duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
+          className="relative z-[70] p-2 rounded-xl hover:bg-[var(--color-glass-light-stroke)] transition-colors duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
           aria-label="منوی اصلی"
           aria-expanded={showHamburgerMenu}
           aria-haspopup="true"

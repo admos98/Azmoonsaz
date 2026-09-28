@@ -775,8 +775,13 @@ export const Modal = ({
               style={originStyle}
               className={
                 isSide
-                  ? `relative glx-strong glass-edge flex h-full w-full flex-col ${sideWidth}`
-                  : 'relative glx-strong glass-edge flex max-h-[min(90vh,90dvh)] w-full flex-col rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0'
+                  ? `relative glx-strong glass-edge flex h-full w-full flex-col overflow-hidden ${sideWidth}`
+                  : /* overflow-hidden: the glx-inset footer is a nearly-opaque child;
+                       without the clip its square corners painted OVER the panel's
+                       rounded bottom corners (the "sharp corners on the down side"
+                       in the user's photos of the manual-add modal). Dropdowns are
+                       portalled to body, so nothing legitimate is clipped. */
+                    'relative glx-strong glass-edge flex max-h-[min(90vh,90dvh)] w-full flex-col overflow-hidden rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0'
               }
               role="dialog"
               tabIndex={-1}

@@ -61,16 +61,16 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(bg).toBeLessThanOrEqual(9);
   });
 
-  it('light: fill is a trim with real presence (0.24 <= a1 <= 0.30)', () => {
-    // Raised from 0.18-0.24: the user asked for brighter light panels after
-    // the dark-theme fix landed. The fill is still a trim, not a coat — an
-    // upper bound is kept so it cannot drift back to the 0.40-0.56 range
-    // that read as gray putty.
+  it('light: fill is a trim with real presence (0.28 <= a1 <= 0.34)', () => {
+    // Raised from 0.26: panels below ~0.28 vanished against the pale page
+    // (user: "some panels are completely transparent with no visibility").
+    // The fill is still a trim, not a coat — an upper bound is kept so it
+    // cannot drift back to the 0.40-0.56 range that read as gray putty.
     const v = token('--glass-p-a1');
     expect(v).not.toBeNull();
     const a = parseFloat(v!);
-    expect(a).toBeGreaterThanOrEqual(0.24);
-    expect(a).toBeLessThanOrEqual(0.3);
+    expect(a).toBeGreaterThanOrEqual(0.28);
+    expect(a).toBeLessThanOrEqual(0.34);
   });
 
   it('light: panels are DIMMED, not lightened — the floor sits below the page', () => {
@@ -80,19 +80,23 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(darkA1!)).toBe(0); // dark is already the dark floor
   });
 
-  it('frosted grain + resting glint exist (the anti-plastic layers)', () => {
-    expect(css).toMatch(/--glass-grain:\s*url\("data:image\/svg\+xml/);
-    expect(css).toMatch(/--glass-glint-a/);
-    // both ride the feathered fill layer
+  it('grain is RETIRED — Apple glass is perfectly smooth (user: "i hate the grain … apple never uses grain")', () => {
+    expect(css).not.toMatch(/--glass-grain/);
+    // both used to ride the feathered fill layer; the glint stays alone
     const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
-    expect(after).toMatch(/var\(--glass-grain\)/);
+    expect(after).not.toMatch(/var\(--glass-grain\)/);
     expect(after).toMatch(/var\(--glass-glint-a\)/);
   });
 
-  it('light: saturation gain makes blurred color fields richer (>= 1.6)', () => {
-    const v = token('--glass-p-sat');
-    expect(v).not.toBeNull();
-    expect(parseFloat(v!)).toBeGreaterThanOrEqual(1.6);
+  it('light: saturation stays iOS-subtle (1.4–1.6; 1.7 read as candy next to the page)', () => {
+    const p = token('--glass-p-sat');
+    expect(p).not.toBeNull();
+    expect(parseFloat(p!)).toBeGreaterThanOrEqual(1.4);
+    expect(parseFloat(p!)).toBeLessThanOrEqual(1.6);
+    const bg = token('--glass-bg-sat');
+    expect(bg).not.toBeNull();
+    expect(parseFloat(bg!)).toBeGreaterThanOrEqual(1.4);
+    expect(parseFloat(bg!)).toBeLessThanOrEqual(1.6);
   });
 
   it('light: resting shadow is GONE — iOS liquid glass carries none (a == 0)', () => {
@@ -137,19 +141,14 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(a1).toBeLessThanOrEqual(0.44);
   });
 
-  it('dark: grain stays a tooth, not felt (alpha <= 0.08; 0.16 white noise on dark = sandpaper)', () => {
-    const darkTile = token('--glass-grain', ":root[data-theme='dark']")!;
-    // feColorMatrix alpha row: "... 1 <alpha> <alpha> <alpha> 0 0"
-    const m = /1\s+(0\.\d+)\s+0\.\d+\s+0\.\d+\s+0\s+0/.exec(darkTile);
-    expect(m).not.toBeNull();
-    expect(parseFloat(m![1])).toBeLessThanOrEqual(0.08);
-  });
-
-  it('dark: inset wells are translucent white rows, not opaque purple bricks', () => {
+  it('dark: inset wells are translucent material, not opaque slabs (0.94 was a brick)', () => {
     const v = token('--ui-inset-fill', ":root[data-theme='dark']");
     expect(v).not.toBeNull();
     const a = parseFloat(v!.replace(/^rgba\([^,]+,[^,]+,[^,]+,/, ''));
-    expect(a).toBeLessThanOrEqual(0.1);
+    // ~0.62: the well stays clearly visible (pops from the panel) while the
+    // material below still reads. The old 0.94 painted over the page.
+    expect(a).toBeGreaterThanOrEqual(0.4);
+    expect(a).toBeLessThanOrEqual(0.7);
   });
 
   it('dark: floor carries the brand navy hue (page bg blue channel >= 32)', () => {
@@ -218,7 +217,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     // the element body is clear so the feather actually reveals the page
     expect(css).toMatch(/\.glass-edge\s*\{\s*background:\s*transparent;/);
     // glx-strong keeps its +6% modal fill through derived alphas
-    expect(css).toMatch(/--glass-p-fa1:\s*calc\(var\(--glass-p-a1\) \+ 0\.06\)/);
+    expect(css).toMatch(/--glass-p-fa1:\s*calc\(var\(--glass-p-a1\) \+ 0\.24\)/);
   });
 
   it('no static hairline: the panel border is transparent in both themes', () => {
@@ -241,19 +240,30 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/inset 0 1px 0 rgb\(255 255 255 \/ var\(--glass-bloom-line-a\)\)/);
   });
 
-  it('the lens pull is strong enough to read (scale=34 → max ±17px)', () => {
-    expect(html).toMatch(/scale="34"/);
+  it('the lens pull is strong enough to read (scale=26 → max ±13px)', () => {
+    expect(html).toMatch(/scale="26"/);
   });
 
-  it('the rim DISPERSSES: three per-channel displacements recombine into a chromatic fringe', () => {
-    expect(html).toMatch(/feColorMatrix/);
-    expect((html.match(/feDisplacementMap/g) || []).length).toBe(3);
-    expect(html).toMatch(/operator="arithmetic"/);
-    // red leads, blue trails at the bend
-    const scales = [...html.matchAll(/feDisplacementMap[^>]*scale="(\d+)"/g)].map((m) => +m[1]);
-    expect(scales.length).toBe(3);
-    expect(scales[0]).toBeGreaterThan(scales[1]);
-    expect(scales[1]).toBeGreaterThan(scales[2]);
+  it('the lens is ONE clean displacement — the chromatic 3-chain is retired', () => {
+    // The R/G/B-isolated chain (feColorMatrix ×3 → feDisplacementMap ×3 →
+    // feComposite arithmetic ×2) concentrated the page's saturated lines at
+    // the rim into thick neon brackets and smeared the backdrop off its
+    // source ("blur size is larger and different than the background").
+    // A single edge-weighted displacement bends cleanly.
+    expect((html.match(/<feDisplacementMap/g) || []).length).toBe(1);
+    expect(html).not.toMatch(/feColorMatrix/);
+    expect(html).not.toMatch(/operator="arithmetic"/);
+    // two 1-channel ramps + feBlend screen build the map; all four edges bend
+    expect((html.match(/<feImage/g) || []).length).toBe(2);
+    expect(html).toMatch(/feBlend in="mapX" in2="mapY" mode="screen"/);
+    // RAMP WIDTH — 12%: content merely NEAR the edge reflects on the rim
+    // (user spec), while the 12..88% plateau keeps the centre identity.
+    expect(html).toMatch(/offset='0\.12'/);
+    expect(html).toMatch(/offset='0\.88'/);
+    // channel discipline: x-ramp is red-only, y-ramp is green-only
+    expect(html).toMatch(/%23800000/);
+    expect(html).toMatch(/%23008000/);
+    expect(html).not.toMatch(/%23808080/);
   });
 
   it('ONE background: the topo page plate — the depth-field stage is gone', () => {

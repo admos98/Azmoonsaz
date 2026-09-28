@@ -252,7 +252,7 @@ export default function TeacherProfile({
     <div className="mx-auto max-w-7xl space-y-6">
       <ProfileHeader tab={tab} setTab={handleTabChange} />
 
-      <section className="relative glx glass-edge overflow-hidden rounded-[28px] p-5 sm:p-7 bg-[linear-gradient(120deg,rgba(255,255,255,0.38),rgba(250,249,246,0.58))]">
+      <section className="relative glx glass-edge overflow-hidden rounded-3xl p-5 sm:p-7">
         <div className="relative z-10 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
           <button
             type="button"
@@ -356,7 +356,7 @@ export default function TeacherProfile({
             <div className="space-y-2">
               {schools.map((school, index) => (
                 <div key={school.id} className="flex items-center gap-2">
-                  <div className="mt-0 flex h-11 min-w-0 flex-1 items-center gap-2 rounded-[14px] border border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-panel-fill)] px-3">
+                  <div className="mt-0 flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-panel-fill)] px-3">
                     <School className="h-4 w-4 shrink-0 text-[var(--color-ink)]" aria-hidden="true" />
                     <span className="flex-1 truncate">{school.name}</span>
                     {index === 0 && (

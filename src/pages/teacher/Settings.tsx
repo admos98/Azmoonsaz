@@ -212,8 +212,7 @@ export default function Settings() {
                 radial-gradient(90px 70px at 18% 22%, rgb(99 102 241 / 0.85), transparent 70%),
                 radial-gradient(110px 80px at 72% 8%, rgb(245 179 1 / 0.85), transparent 70%),
                 radial-gradient(100px 90px at 42% 78%, rgb(4 120 87 / 0.8), transparent 70%),
-                radial-gradient(90px 70px at 92% 68%, rgb(190 24 93 / 0.7), transparent 70%),
-                repeating-linear-gradient(115deg, rgb(255 255 255 / 0.16) 0 10px, rgb(0 0 0 / 0.08) 10px 20px)`,
+                radial-gradient(90px 70px at 92% 68%, rgb(190 24 93 / 0.7), transparent 70%)`,
             }}
           >
             <p className="p-2 text-caption font-bold text-[var(--color-text-on-solid)] [text-shadow:0_1px_3px_rgb(0_0_0/0.55)]">

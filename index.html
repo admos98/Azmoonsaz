@@ -105,68 +105,61 @@
        html[data-lens='on'] in index.css):
        backdrop-filter: blur() saturate() url('#lg-lens').
        ORDER MATTERS: the bend runs LAST, over the already-blurred backdrop.
-       The previous chain bent first and blurred second, so the 18px blur
-       erased the displacement (measured edge/interior structure 1.8x —
-       invisible; reordered: 31x — the rim visibly magnifies the blur).
-       Riding the panel element (never a nested ring) means SourceGraphic IS
-       the page behind the panel — the background bends at the rim while the
-       panel's own content stays untouched.
 
-       The map is EDGE-WEIGHTED: 50% grey (zero displacement) across the
-       interior, ramping only in the outer ~5–7% — the centre is pure blur,
-       the bend is confined to the rim and scales with the panel.
-       CHANNEL DISCIPLINE (the bug that hid the bend for three builds): the
-       x-gradient carries ONLY the red channel (#000 → #800000 → #f00, green
-       stays 0) and the y-gradient ONLY the green (#000 → #008000 → #0f0).
-       Screen-blending two GRAYSCALE gradients (the old map) was self-defeating:
-       at the left edge the x-map is black, so screen(0, 0.5-grey) = 0.5 — the
-       y-plateau WASHED the x-extreme back to zero displacement. The lens only
-       ever bent the right and bottom edges. With per-channel rects, screen is
-       a per-channel identity: left edge R=0 (pull left), top edge G=0 (pull
-       up), right/bottom the mirrors — all four edges twist, corners bend
-       diagonally like a real lens, and the interior stays exactly identity.
+       ARCHITECTURE (rebuilt after the chromatic-lens regression): the filter is
+       ONE edge-weighted feDisplacementMap. The previous build isolated R/G/B
+       into three displaced layers and re-summed them with feComposite
+       arithmetic; in Chromium the summed layers concentrated the page's own
+       saturated lines at the rim into thick neon brackets (the "thick lines"
+       in the user's photos) and the out-of-bounds rim sampling smeared the
+       backdrop, so the blurred image no longer matched the background. A
+       single map with the SAME geometry is clean: the interior is 50% grey
+       (identity — centre colour ≡ centre colour), and only the outer band
+       displaces.
 
-       CHROMATIC DISPERSION — the rim is a prism, not a mirror: each channel is
-       isolated (feColorMatrix) and displaced at its OWN strength
-       (R 38 / G 34 / B 30 user units), then recombined. Where the background
-       bends, red leads and blue trails by a few px — the warm/cool fringe at
-       the edge of real glass. Interior pixels are untouched: the map is 50%
-       grey there, and all three scales collapse to the same identity.
+       THE MAP — two 1-channel ramps blended with feBlend screen:
+         x-image: R channel only — 0 at the start edge, 50% grey plateau, 255
+                  at the end edge (left→right pull).
+         y-image: G channel only — the same ramp top→bottom.
+       Screen of red-only and green-only = (R ramp, G ramp, 0): each axis is
+       driven by exactly its own channel, so all four edges twist and corners
+       bend diagonally like a real lens.
 
-       scale 34 → max ±17px pull at the edge (iOS-26 refs bend visible content
-       by roughly this much at 1x; the rim must visibly TWIST the background,
-       not nudge it).
+       RAMP WIDTH — 12%: content merely NEAR the edge (not touching it) is
+       pulled into the rim (user spec: "all items close to edges … should be
+       reflected on the rim"). The plateau holds from 12%..88%, so the centre
+       stays a pure, precise blur that matches the background one-to-one.
+
+       scale 26 → max ±13px pull at the extreme edge: the rim visibly twists
+       the background without smearing the panel's read.
+
        The filter region is CLIPPED TO THE ELEMENT BOX (x/y/width/height all
-       0/0/100%). It used to be -20%…120% so rim pixels could sample beyond
-       the box at the stronger pull, but that made the displacement map a
-       square 40% larger than the panel while the element clipped itself to a
-       rounded rect — so the bend and blur were computed on square geometry and
-       read as a straight-edged blur sitting inside a curved panel. Box-clipped
-       is the correct geometry; the pull is absorbed by the map's own 0.05
-       edge ramp instead of by free space around the element.
-       Keep this element in the DOM (display:none would kill the filter).
-       There must be EXACTLY ONE #lg-lens in the document — a duplicate id
-       silently shadows this one (first-in-tree wins for url() references). -->
+       0/0/100%) so the map is sampled on the same rounded-rect geometry the
+       panel clips to. Keep this element in the DOM (display:none would kill
+       the filter). There must be EXACTLY ONE #lg-lens in the document. -->
     <svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0" >
       <defs>
         <filter id="lg-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
           <feImage
-            href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3Cdefs%3E%3ClinearGradient%20id='x'%20x1='0'%20y1='0'%20x2='1'%20y2='0'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.05'%20stop-color='%23800000'/%3E%3Cstop%20offset='0.93'%20stop-color='%23800000'/%3E%3Cstop%20offset='1'%20stop-color='%23f00'/%3E%3C/linearGradient%3E%3ClinearGradient%20id='y'%20x1='0'%20y1='0'%20x2='0'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.05'%20stop-color='%23008000'/%3E%3Cstop%20offset='0.93'%20stop-color='%23008000'/%3E%3Cstop%20offset='1'%20stop-color='%230f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='160'%20height='160'%20fill='url(%23x)'/%3E%3Crect%20width='160'%20height='160'%20fill='url(%23y)'%20style='mix-blend-mode:screen'/%3E%3C/svg%3E"
+            href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3ClinearGradient%20id='x'%20x1='0'%20y1='0'%20x2='1'%20y2='0'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.12'%20stop-color='%23800000'/%3E%3Cstop%20offset='0.88'%20stop-color='%23800000'/%3E%3Cstop%20offset='1'%20stop-color='%23f00'/%3E%3C/linearGradient%3E%3Crect%20width='160'%20height='160'%20fill='url(%23x)'/%3E%3C/svg%3E"
             x="0"
             y="0"
             width="100%"
             height="100%"
             preserveAspectRatio="none"
-            result="map"
+            result="mapX"
           />
-          <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="chR"/>
-          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="chG"/>
-          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="chB"/>
-          <feDisplacementMap in="chR" in2="map" scale="38" xChannelSelector="R" yChannelSelector="G" result="dR"/>
-          <feDisplacementMap in="chG" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G" result="dG"/>
-          <feDisplacementMap in="chB" in2="map" scale="30" xChannelSelector="R" yChannelSelector="G" result="dB"/>
-          <feComposite in="dR" in2="dG" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="dRG"/>
-          <feComposite in="dRG" in2="dB" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+          <feImage
+            href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3ClinearGradient%20id='y'%20x1='0'%20y1='0'%20x2='0'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.12'%20stop-color='%23008000'/%3E%3Cstop%20offset='0.88'%20stop-color='%23008000'/%3E%3Cstop%20offset='1'%20stop-color='%230f0'/%3E%3C/linearGradient%3E%3Crect%20width='160'%20height='160'%20fill='url(%23y)'/%3E%3C/svg%3E"
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="none"
+            result="mapY"
+          />
+          <feBlend in="mapX" in2="mapY" mode="screen" result="map"/>
+          <feDisplacementMap in="SourceGraphic" in2="map" scale="26" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
       </defs>
     </svg>

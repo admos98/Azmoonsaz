@@ -83,8 +83,8 @@
   --color-glass-light-stroke: rgba(26, 26, 46, 0.1);
   --color-glass-light-sheen: rgba(255, 255, 255, 0.22);
   --color-glass-light-bottom: rgba(0, 0, 0, 0.06);
-  --color-glass-panel-fill: rgba(255, 255, 255, 0.78);
-  --color-inset-fill: rgba(250, 248, 245, 0.82);
+  --color-glass-panel-fill: rgba(255, 255, 255, 0.6);
+  --color-inset-fill: rgba(250, 248, 245, 0.58);
   --color-inset-side-sheen: rgba(255, 255, 255, 0.035);
   --color-inset-side-shade: rgba(255, 255, 255, 0.019);
 
@@ -160,7 +160,11 @@
   color-scheme: light;
   /* Runtime-only variables live outside @theme so Tailwind cannot inline the
      light value into utilities that must change without a rebuild. */
-  --ui-inset-fill: rgba(250, 248, 245, 0.9);
+  /* Inset wells (inputs, tiles-on-glass). 0.9 was white putty — the user
+     called light-theme panels "very white filled, no glass or transparency
+     at all". 0.58 keeps the well clearly visible (it pops from the panel)
+     while the material below still reads. */
+  --ui-inset-fill: rgba(250, 248, 245, 0.58);
 
   /* Full-screen veil (Control-Center style backdrop behind popups) */
   /* Full-screen veil blur. Separate token from --glass-bg-blur on purpose:
@@ -168,7 +172,9 @@
      and the screen one is what should stay subtle. */
   --glass-bg-blur: 8px;
   --glass-veil-blur: 6px;
-  --glass-bg-sat: 1.55;
+  /* iOS materials read at ~1.4–1.5× saturation: richer colour, still the
+     SAME hues as the raw backdrop. 1.7 read as candy next to the page. */
+  --glass-bg-sat: 1.5;
   --glass-scrim-a: 0.15;
   /* Neutral, not blue. The veil covers the WHOLE screen behind a panel, so any
      blue here multiplies across the entire page — this is what made the
@@ -183,12 +189,16 @@
      Trimmed from 0.22/0.12: the fill must tint, never coat — at 0.22 the dark
      theme's equivalent read as gray putty. 0.20/0.10 + the dim layer below
      keeps the panel ON the page while the backdrop shows through it. */
-  --glass-p-a1: 0.26;
-  --glass-p-a2: 0.14;
+  /* Light fill presence. Below ~0.28 the panel vanished against the pale
+     page (user: "some panels are completely transparent with no
+     visibility"); 0.30/0.16 keeps a real material step ON the page while
+     the blurred backdrop still reads through. */
+  --glass-p-a1: 0.3;
+  --glass-p-a2: 0.16;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 10px;
-  --glass-p-sat: 1.7;
+  --glass-p-sat: 1.5;
   --glass-p-radius: 28px;
   --glass-p-bw: 1px;
   /* Hairline under the rim — RETIRED (alpha 0). A fixed-colour border is the
@@ -204,11 +214,9 @@
   --glass-dim-tint: 31 29 41;
   --glass-dim-a1: 0.1;
   --glass-dim-a2: 0.05;
-  /* Frosted grain — fractal noise baked white at very low alpha. Breaks the
-     gradient banding that read as "diagonal smears" and gives the fill the
-     high-frequency tooth real frosted glass has. Alpha lives IN the data URI
-     (dark theme swaps in a stronger tile). */
-  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.07 0.07 0.07 0 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Frosted grain — RETIRED per user spec: Apple never uses grain. The fill
+     is now perfectly smooth — sharpness, hierarchy and depth come from the
+     blur, the rim light and the fill step, not from noise. */
   /* Static glint — one wide diagonal reflection, like a pane catching the
      room. NOT animated, NOT a hover effect: resting glass shows one. */
   --glass-glint-a: 0.06;
@@ -256,8 +264,8 @@
      (::before — where light hits the edge) and a wide soft GLOW inside the
      fill (::after — light entering the material). Both ride the same token. */
   --glass-edge-corner: 255 248 231;
-  --glass-corner-a: 0.1; /* dominant corner interior glow */
-  --glass-corner-b: 0.05; /* echo corner interior glow */
+  --glass-corner-a: 0.07; /* dominant corner interior glow */
+  --glass-corner-b: 0.035; /* echo corner interior glow */
   /* Soft fade — the rim glow that melts into the panel over ~5–7px */
   --glass-edge-fade: 0.2;
   /* The fixed dispersion tints (--glass-edge-tint-*) are RETIRED: a painted
@@ -318,7 +326,8 @@
    themes, so system and explicit preferences stay visually consistent. */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --ui-inset-fill: rgba(255, 255, 255, 0.065);
+  --ui-inset-fill: rgba(64, 60, 78, 0.62);
+  /* dark inset wells: 0.94 was an opaque slab ("filled with what?"). */
   --color-page-bg: #131220;
   --color-paper-warm: #131220;
   --page-plate: url('/backgrounds/bg-d-dark.svg');
@@ -331,8 +340,8 @@
   --color-glass-light-stroke: rgba(255, 255, 255, 0.12);
   --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
   --color-glass-light-bottom: rgba(0, 0, 0, 0.35);
-  --color-glass-panel-fill: rgba(50, 47, 64, 0.8);
-  --color-inset-fill: rgba(40, 37, 52, 0.94);
+  --color-glass-panel-fill: rgba(58, 54, 74, 0.66);
+  --color-inset-fill: rgba(64, 60, 78, 0.62);
   --color-inset-side-sheen: rgba(255, 255, 255, 0.045);
   --color-inset-side-shade: rgba(0, 0, 0, 0.16);
   --color-glass-shadow: rgba(0, 0, 0, 0.42);
@@ -384,16 +393,14 @@
   --glass-p-a1: 0.4;
   --glass-p-a2: 0.32;
   --glass-p-tint: 16 15 28;
+  /* dark keeps no grain — see the retired token note in :root */
   --glass-p-ba: 0;
   --glass-p-bc: 255 255 255;
   /* Dark has no dimming base — the page is already the dark floor. */
   --glass-dim-tint: 0 0 0;
   --glass-dim-a1: 0;
   --glass-dim-a2: 0;
-  /* Frost tooth — HALF the old 0.16: white noise on near-black glass
-     multiplied into visible sandpaper (measured std 13.4 on a flat panel vs
-     1.8 on a light card). 0.055 keeps the tooth, kills the felt. */
-  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.015 0.015 0.015 0 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Frost tooth RETIRED — smooth dark glass, like iOS dark materials. */
   --glass-glint-a: 0.04;
   --glass-row-hover: 0.12;
   --glass-text-ambient: 0 0 0;
@@ -411,8 +418,8 @@
   --glass-edge-spread: 60%;
   /* dark corner lights run cool — warm points on near-black read orange */
   --glass-edge-corner: 236 242 255;
-  --glass-corner-a: 0.07;
-  --glass-corner-b: 0.035;
+  --glass-corner-a: 0.055;
+  --glass-corner-b: 0.028;
   --glass-edge-fade: 0.12;
   /* dark keeps the soft material: the top specular is dimmer and the pointer
      flare spreads wider — a slow sheen instead of a crisp curve */
@@ -689,9 +696,6 @@ select::-webkit-calendar-picker-indicator {
   /* fill alphas — derived so glx-strong's +6% modal boost flows through and
      the lite/off tier alpha swaps apply untouched */
   background:
-    /* frosted grain — the anti-plastic layer. High-frequency tooth that
-       breaks gradient banding and catches the eye like real frosted glass. */
-    var(--glass-grain),
     /* one resting glint — a pane reflecting the room */
     linear-gradient(
       112deg,
@@ -813,14 +817,17 @@ select::-webkit-calendar-picker-indicator {
   /* Same body as `glx` — one fill gradient, and the lit rim comes from
      `.glass-edge`. Kept identical so a dropdown and a modal read as one
      material at two weights, differing only in shadow and blur.
-     Modals sit over the most content → +6% fill over the card recipe
-     (iOS: opacity scales with content density underneath). */
-  --glass-p-fa1: calc(var(--glass-p-a1) + 0.06);
-  --glass-p-fa2: calc(var(--glass-p-a2) + 0.05);
+     Floating panels sit over the BUSIEST content (user: "some panels are
+     completely transparent … need to pop out"): +24%/+17% fill over the
+     card recipe — iOS menu material sits near 80% opacity, so a menu must
+     read as a solid object even over large dark type, while the saturated
+     backdrop still glows through and the rim keeps the bend. */
+  --glass-p-fa1: calc(var(--glass-p-a1) + 0.24);
+  --glass-p-fa2: calc(var(--glass-p-a2) + 0.17);
   background: linear-gradient(
     var(--glass-p-angle),
-    rgb(var(--glass-p-tint) / calc(var(--glass-p-a1) + 0.06)),
-    rgb(var(--glass-p-tint) / calc(var(--glass-p-a2) + 0.05))
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a1) + 0.24)),
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a2) + 0.17))
   );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   /* No drop shadow (iOS: separation comes from rim + fill + the depth field
@@ -875,7 +882,7 @@ select::-webkit-calendar-picker-indicator {
     url('#lg-lens');
 }
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-dark {
-  backdrop-filter: blur(12px) saturate(1.5) url('#lg-lens');
+  backdrop-filter: blur(10px) saturate(1.4) url('#lg-lens');
 }
 
 /* ─── De-nest — glass inside glass is not glass ───────────────────────────
@@ -928,7 +935,7 @@ select::-webkit-calendar-picker-indicator {
   box-shadow:
     inset 0 1px 0 var(--color-glass-ink-sheen),
     inset 0 -1px 4px var(--color-glass-ink-bottom);
-  backdrop-filter: blur(12px) saturate(1.5);
+  backdrop-filter: blur(10px) saturate(1.4);
 }
 
 /* Inset/concave glass — inputs, wells, inner rows.
@@ -1437,7 +1444,21 @@ select::-webkit-calendar-picker-indicator {
   }
 }
 
-/* Shared interaction-state baseline. Component variants may strengthen these signals. */
+/* Shared interaction-state baseline. Component variants may strengthen these signals.
+
+   Programmatic focus lands on view containers and dialogs (tabIndex='-1') so
+   screen readers announce them. Those containers must never paint the
+   Chromium default ring — the blue rectangle that kept photographing itself
+   around panels. Real controls keep the gold focus-visible ring below. */
+[tabindex='-1']:focus,
+[tabindex='-1']:focus-visible {
+  outline: none;
+}
+/* Opt-out for text fields whose container already carries a focus cue —
+   the command palette's field would otherwise ring the whole header row. */
+.no-focus-ring:focus-visible {
+  outline: none;
+}
 :where(
   button,
   a[href],

@@ -49,7 +49,12 @@ function walk(dir, out = []) {
 
 const offenders = new Map();
 for (const file of walk(join(root, 'src'))) {
-  const lines = readFileSync(file, 'utf8').split('\n');
+  // Comments are stripped at FILE level: doc comments like "reads as
+  // text-secondary" span lines, so per-line stripping never sees their end.
+  const content = readFileSync(file, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/.*$/gm, ' ');
+  const lines = content.split('\n');
   lines.forEach((raw, i) => {
     // Drop arbitrary values before scanning, otherwise the regex re-matches
     // inside `text-[var(--color-text-secondary)]` and reports a false token.
