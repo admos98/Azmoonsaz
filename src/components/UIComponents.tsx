@@ -115,7 +115,11 @@ export const Card = ({
        real glass doesn't refract inside itself. */
     none: '',
   }[glassLayer];
-  const edgeClass = glassClass ? 'glass-edge' : '';
+  const edgeClass =
+    glassLayer === 'light' || glassLayer === 'strong' ? 'glass-edge' : '';
+  /* 'inset' and 'none' sit INSIDE other panels — they get no rim ring.
+     A rim on every nested row is what made panels read as double-framed
+     plastic; iOS nests rows as quiet fills under the host panel's rim. */
 
   if (hoverable) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1122,7 +1126,7 @@ const statToneChips: Record<NonNullable<StatCardProps['tone']>, string> = {
   warning: 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]',
   danger: 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]',
   info: 'bg-[var(--color-info-soft)] text-[var(--color-info)]',
-  neutral: 'glx text-[var(--color-text-tertiary)]',
+  neutral: 'glx-inset text-[var(--color-text-secondary)]',
 };
 
 const statToneText: Record<NonNullable<StatCardProps['footnoteTone']>, string> = {
@@ -1131,7 +1135,9 @@ const statToneText: Record<NonNullable<StatCardProps['footnoteTone']>, string> =
   warning: 'text-[var(--color-warning)]',
   danger: 'text-[var(--color-danger)]',
   info: 'text-[var(--color-info)]',
-  neutral: 'text-[var(--color-text-tertiary)]',
+  /* neutral footnotes read as text-secondary, not tertiary — tertiary on the
+     inset fill measured ~1.9:1 in the pics audit ("invisible values"). */
+  neutral: 'text-[var(--color-text-secondary)]',
 };
 
 export const StatCard = ({
@@ -1162,7 +1168,7 @@ export const StatCard = ({
         >
           {value}
           {unit && (
-            <span className="text-caption font-normal text-[var(--color-text-tertiary)]">
+            <span className="text-caption font-normal text-[var(--color-text-secondary)]">
               {' '}
               {unit}
             </span>

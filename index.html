@@ -68,14 +68,31 @@
           try {
             if (matchMedia('(forced-colors: active)').matches) tier = 'off';
             else if (matchMedia('(prefers-reduced-transparency: reduce)').matches) tier = 'lite';
-            else {
-              const cores = navigator.hardwareConcurrency ?? 4;
-              const memory = navigator.deviceMemory ?? 8; // GB; Chromium only
-              if (memory <= 2) tier = 'off';
-              else if (cores < 4 || memory <= 4) tier = 'lite';
-            }
+            else if ((navigator.deviceMemory ?? 8) <= 2) tier = 'off';
+            // NOTE: the old hardware-sniffing downgrade (CPU core count and
+            // device-memory heuristics → lite) is RETIRED.
+            // navigator.deviceMemory reports 4 on many 16 GB machines (it is
+            // capped and rounded), which silently stripped blur on perfectly
+            // capable hardware — the app shipped as blurless tinted plastic
+            // with no way to see why. Blur stays on unless the device really
+            // cannot afford it or the user asks for less.
           } catch {}
           document.documentElement.dataset.glass = tier;
+        }
+
+        // Lens gate — SVG reference filters inside backdrop-filter only render
+        // on Chromium >= 138. Older engines pass the SYNTAX probe
+        // (CSS.supports('backdrop-filter', "url('#x')") === true) but silently
+        // drop the whole declaration at paint time — including the blur that
+        // was chained after it. Gating on version means the lens is purely
+        // additive: every browser keeps blur() + saturate(), Chromium 138+
+        // additionally bends the rim.
+        try {
+          const m = navigator.userAgent.match(/Chrom(?:e|ium)\/(\d+)/);
+          const major = m ? parseInt(m[1], 10) : 0;
+          document.documentElement.dataset.lens = major >= 138 ? 'on' : 'off';
+        } catch {
+          document.documentElement.dataset.lens = 'off';
         }
       })();
     </script>
@@ -84,8 +101,13 @@
   <body>
     <div id="root"></div>
     <!-- Liquid-glass refraction — the lens bend. Consumed by the panel's OWN
-       backdrop-filter (.glx / .glx-strong / .glx-dark via @supports in
-       index.css): backdrop-filter: url('#lg-lens') blur() saturate().
+       backdrop-filter (.glx / .glx-strong / .glx-dark, gated on
+       html[data-lens='on'] in index.css):
+       backdrop-filter: blur() saturate() url('#lg-lens').
+       ORDER MATTERS: the bend runs LAST, over the already-blurred backdrop.
+       The previous chain bent first and blurred second, so the 18px blur
+       erased the displacement (measured edge/interior structure 1.8x —
+       invisible; reordered: 31x — the rim visibly magnifies the blur).
        Riding the panel element (never a nested ring) means SourceGraphic IS
        the page behind the panel — the background bends at the rim while the
        panel's own content stays untouched.

@@ -326,21 +326,12 @@ export default function Topbar({
     width: '280px',
   };
 
-  // Panel offset — each panel drops below the previous one
+  // Panels now FLOW inside one fixed container (flex column) — the old
+  // estimated-heights stacking (panelHeights + computePanelTop) drifted from
+  // real content, leaving dead space and overlaps (pics audit #10).
   const panelGap = 12; // px between panels
-  // Estimated panel heights for stacking (actual content may vary slightly)
-  const panelHeights = [95, 85, 125, 221];
-  const computePanelTop = (index: number) => {
-    let offset = 0;
-    for (let i = 0; i < index; i++) {
-      offset += panelHeights[i] + panelGap;
-    }
-    return `${hamburgerTop + offset}px`;
-  };
   // Transform origin relative to each panel: hamburger button center.
-  // Both panel and button share the same right edge, so the button center is
-  // panelWidth - hamburgerRect.width/2 from the panel's left edge.
-  // The button is above the first panel by hamburgerRect.height/2 + 12 (gap).
+  // The button is above the container by hamburgerRect.height/2 + 12 (gap).
   const panelWidth = 280;
   const computeHamburgerTransformOrigin = (index: number) => {
     if (!hamburgerRect) return 'center top';
@@ -376,7 +367,7 @@ export default function Topbar({
                 openNotifications();
               }
             }}
-            className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)]/20 rounded-xl relative z-[60] transition-all cursor-pointer"
+            className="relative z-[60] grid h-10 w-10 place-items-center rounded-full glx-inset text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
             aria-label="اعلان‌ها"
             aria-expanded={showNotifications}
             aria-haspopup="true"
@@ -526,15 +517,18 @@ export default function Topbar({
               blur + refracted rim. The div stays only to close on outside click. */}
           <div className="fixed inset-0 z-[55]" onClick={closeMenu} />
 
-          {/* All panels container (display:contents — must not occupy a flex slot in the header) */}
-          <div ref={hamburgerDropdownRef} className="contents">
+          {/* All panels container — one fixed anchor; panels FLOW inside it
+              (flex column, real heights). No estimated stacking, no drift. */}
+          <div
+            ref={hamburgerDropdownRef}
+            className="fixed z-[60] flex flex-col gap-3"
+            style={hamburgerDropdownStyle}
+          >
 
             {/* Panel 1: App info + date */}
             <div
-              className="fixed z-[60] glx-strong glass-edge rounded-2xl"
+              className="glx-strong glass-edge rounded-2xl overflow-hidden"
               style={{
-                ...hamburgerDropdownStyle,
-                top: computePanelTop(0),
                 transformOrigin: computeHamburgerTransformOrigin(0),
                 animation: menuClosing
                   ? 'shrinkToHamburger 0.22s cubic-bezier(0.4, 0, 0.2, 1) 0ms both'
@@ -562,10 +556,8 @@ export default function Topbar({
 
             {/* Panel 2: Teacher profile */}
             <div
-              className="fixed z-[60] glx-strong glass-edge rounded-2xl"
+              className="glx-strong glass-edge rounded-2xl overflow-hidden"
               style={{
-                ...hamburgerDropdownStyle,
-                top: computePanelTop(1),
                 transformOrigin: computeHamburgerTransformOrigin(1),
                 animation: menuClosing
                   ? 'shrinkToHamburger 0.22s cubic-bezier(0.4, 0, 0.2, 1) 0ms both'
@@ -612,10 +604,8 @@ export default function Topbar({
 
             {/* Panel 3: Management options */}
             <div
-              className="fixed z-[60] glx-strong glass-edge rounded-2xl"
+              className="glx-strong glass-edge rounded-2xl overflow-hidden"
               style={{
-                ...hamburgerDropdownStyle,
-                top: computePanelTop(2),
                 transformOrigin: computeHamburgerTransformOrigin(2),
                 animation: menuClosing
                   ? 'shrinkToHamburger 0.22s cubic-bezier(0.4, 0, 0.2, 1) 0ms both'
@@ -653,10 +643,8 @@ export default function Topbar({
 
             {/* Panel 4: Exam panel + settings */}
             <div
-              className="fixed z-[60] glx-strong glass-edge rounded-2xl"
+              className="glx-strong glass-edge rounded-2xl overflow-hidden"
               style={{
-                ...hamburgerDropdownStyle,
-                top: computePanelTop(3),
                 transformOrigin: computeHamburgerTransformOrigin(3),
                 animation: menuClosing
                   ? 'shrinkToHamburger 0.22s cubic-bezier(0.4, 0, 0.2, 1) 0ms both'

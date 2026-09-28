@@ -179,9 +179,12 @@
      + blur) behind every floating panel — a shadow by another name. iOS panels
      cast nothing; separation comes from blur + refracted rim. */
 
-  /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill */
-  --glass-p-a1: 0.17;
-  --glass-p-a2: 0.08;
+  /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill.
+     Raised from 0.17/0.08: over a cream page the old fill was invisible, so
+     panels read as flat smears and dropdown text bled through. 0.22/0.12 +
+     the dim layer below = the panel sits ON the page instead of IN it. */
+  --glass-p-a1: 0.22;
+  --glass-p-a2: 0.12;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 18px;
@@ -194,10 +197,25 @@
      the border width stays for layout and forced-colors, colour is gone. */
   --glass-p-ba: 0;
   --glass-p-bc: 26 28 34;
+  /* Dimming base — the panel's floor sits a step BELOW the page so the glass
+     reads as an object lying on top of it (user spec: "dim the panel a little
+     so it appears on top, not flat"). Nearly invisible token; the lift it
+     creates is what the rim light then catches. Dark zeroes it (already dark). */
+  --glass-dim-tint: 31 29 41;
+  --glass-dim-a1: 0.05;
+  --glass-dim-a2: 0.025;
+  /* Frosted grain — fractal noise baked white at very low alpha. Breaks the
+     gradient banding that read as "diagonal smears" and gives the fill the
+     high-frequency tooth real frosted glass has. Alpha lives IN the data URI
+     (dark theme swaps in a stronger tile). */
+  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.09 0.09 0.09 0 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Static glint — one wide diagonal reflection, like a pane catching the
+     room. NOT animated, NOT a hover effect: resting glass shows one. */
+  --glass-glint-a: 0.05;
   /* Fill feather — how far the panel's tint fades out before the edge, so the
      rim zone shows the raw bent+blurred background (the "short merge line":
-     crisp glass edge → a few px → blur). */
-  --glass-fill-fade: clamp(5px, 1vmin, 10px);
+     crisp glass edge → a few px → blur). User spec: ~2px sharp + 5–7px fade. */
+  --glass-fill-fade: clamp(6px, 0.9vmin, 9px);
 
   /* ── Edge light — the lit rim of a glass panel ──────────────────────────
      Replaces the old fixed 2px top band (--glass-shn-t). The rim is now drawn
@@ -213,19 +231,24 @@
      Light is a hard material: near-white rim, short falloff, visible lift.
      Dark is a soft material: dimmer, dimmer still, and much longer falloff, so
      in dark mode the highlight reads as a slow sheen rather than an outline. */
-  --glass-edge-t: 0.8%; /* rim thickness, % of the panel's inline size */
-  --glass-edge-min: 0.7px;
-  --glass-edge-max: 1.2px;
-  /* Specular rim — iOS 26's rim is a THIN CRISP TRANSPARENT line that catches
-     light like a curved surface: brightest at the top, whispering around the
-     sides, nearly gone at the bottom. Never blurred (a blurred line reads as
-     a soft gray hairline, not as light). The top-curve radial in
-     .glass-edge::before concentrates the light at the top-centre so the rim
-     reads as a lit curve, not a uniform stroke. */
-  --glass-edge-base: 0.9; /* specular spike at the top rim — the ONLY resting paint */
+  --glass-edge-t: 0.32%; /* crisp ring thickness, % of the panel's inline size */
+  --glass-edge-min: 1.2px;
+  --glass-edge-max: 2.2px;
+  /* Specular rim — per the user's spec: the first ~2px are the SHARP part,
+     carrying the brightest light; the glow then falls across the next 5–7px
+     (the box-shadow fade in .glx) until it meets the panel's own brightness.
+     The old single top-centre light (140% 90% at 50% 0%) is retired: one huge
+     static sun read as asearchlight. Light now arrives from TWO smaller
+     sources on OPPOSITE corners (start-top dominant for RTL), and the colour
+     is warm, not pure white — glass tints what it catches. */
+  --glass-edge-base: 0.55; /* crisp-ring light at the dominant corner */
   --glass-edge-hot: 0.55; /* extra strength at the edge nearest the pointer */
   --glass-edge-spread: 38%; /* pointer falloff, % of the panel's inline size */
   --glass-edge-color: 255 255 255;
+  /* Corner lights — warm white (glass over a warm page picks up warmth) */
+  --glass-edge-corner: 255 248 231;
+  /* Soft fade — the rim glow that melts into the panel over ~5–7px */
+  --glass-edge-fade: 0.26;
   /* The fixed dispersion tints (--glass-edge-tint-*) are RETIRED: a painted
      tint per edge zone IS a static colour line. Rim colour now comes from the
      refracted background (it tracks the backdrop like iOS), with only the
@@ -274,7 +297,7 @@
    themes, so system and explicit preferences stay visually consistent. */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --ui-inset-fill: rgba(40, 37, 52, 0.97);
+  --ui-inset-fill: rgba(45, 42, 62, 0.88);
   --color-page-bg: #131220;
   --color-paper-warm: #131220;
   --page-plate: url('/backgrounds/bg-d-dark.svg');
@@ -332,11 +355,23 @@
 
   --glass-scrim-a: 0.35;
   --glass-scrim-color: 0 0 0;
-  --glass-p-a1: 0.62;
-  --glass-p-a2: 0.48;
+  /* Dark fill — lowered from 0.62/0.48: two stacked fills used to composite
+     to ~0.86 opaque milk-gray (the "very washed out" nested panels). The
+     de-nest rule in this file now flattens inner surfaces, so the parent fill
+     can afford to stay glassy. */
+  --glass-p-a1: 0.56;
+  --glass-p-a2: 0.44;
   --glass-p-tint: 52 49 66;
   --glass-p-ba: 0;
   --glass-p-bc: 255 255 255;
+  /* Dark has no dimming base — the page is already the dark floor. */
+  --glass-dim-tint: 0 0 0;
+  --glass-dim-a1: 0;
+  --glass-dim-a2: 0;
+  /* Stronger frost in the dark — the grain is what keeps near-black glass
+     from reading as a solid painted slab. */
+  --glass-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.16 0.16 0.16 0 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --glass-glint-a: 0.035;
   --glass-sh-a: 0.28;
   --glass-sh-color: 0 0 0;
   --glass-row-hover: 0.12;
@@ -347,12 +382,15 @@
      light: a dimmer resting rim, half the lift, nearly double the falloff, and
      a thinner band. The result is a highlight that arrives slowly and leaves
      slowly, instead of the crisp outline light mode gets. */
-  --glass-edge-t: 1.2%;
-  --glass-edge-min: 0.9px;
-  --glass-edge-max: 1.4px;
-  --glass-edge-base: 0.3;
+  --glass-edge-t: 0.4%;
+  --glass-edge-min: 1.4px;
+  --glass-edge-max: 2.4px;
+  --glass-edge-base: 0.34;
   --glass-edge-hot: 0.34;
   --glass-edge-spread: 60%;
+  /* dark corner lights run cool — warm points on near-black read orange */
+  --glass-edge-corner: 236 242 255;
+  --glass-edge-fade: 0.12;
   /* dark keeps the soft material: the top specular is dimmer and the pointer
      flare spreads wider — a slow sheen instead of a crisp curve */
   --glass-bloom-line-a: 0.08;
@@ -542,15 +580,17 @@ select::-webkit-calendar-picker-indicator {
   /* Resting rim: NO painted perimeter any more. iOS's rim is the background's
      own light bent at the edge — a painted tint per edge zone reads as a
      "static line with static colour" (measured: rim↔bg corr ~0 vs +0.6 on
-     iOS). Only the top specular (a fixed sun-like light iOS also has) and
-     the pointer flare remain; the rim's colour comes from the lens below. */
+     iOS). What IS painted: two small corner lights (per user spec — the old
+     single top-centre sun was too large and too static) plus the pointer
+     flare; the rim's colour comes from the lens below. */
   --eg-top: var(--glass-edge-base);
   /* Pointer flare. Zero whenever the pointer is away. */
   --eg-flare: calc(var(--eg-boost, 0) * var(--glass-edge-hot));
 }
 
-/* The ring: a gradient masked to the padding box, so it follows the
-   border-radius exactly instead of being clipped square. */
+/* The crisp ring: a gradient masked to the padding box, so it follows the
+   border-radius exactly instead of being clipped square. ~2px band — the
+   SHARP first pixels of the user's rim spec. */
 .glass-edge::before {
   content: '';
   position: absolute;
@@ -574,17 +614,24 @@ select::-webkit-calendar-picker-indicator {
         rgb(var(--glass-edge-color) / calc(var(--eg-flare) * 0.45)) 34%,
         rgb(var(--glass-edge-color) / 0) 68%
       ),
-    /* top specular curve — light concentrated at the top-centre of the rim,
-       wrapping around the corners. This is what makes the rim read as light
-       arriving on a CURVED surface (iOS 26) instead of a uniform stroke. */
+    /* TWO opposite corner lights — small sources, not one static sun.
+       Dominant at the top-start corner (RTL: top-right), echo at the
+       bottom-end. Warm tint: glass tints the light it catches. */
       radial-gradient(
-        140% 90% at 50% 0%,
-        rgb(255 255 255 / calc(var(--eg-top) * 0.55)) 0%,
-        rgb(255 255 255 / 0) 55%
+        58% 68% at 92% 0%,
+        rgb(var(--glass-edge-corner) / var(--glass-edge-base)) 0%,
+        rgb(var(--glass-edge-corner) / calc(var(--glass-edge-base) * 0.34)) 36%,
+        rgb(var(--glass-edge-corner) / 0) 70%
+      ),
+      radial-gradient(
+        52% 62% at 8% 100%,
+        rgb(var(--glass-edge-corner) / calc(var(--glass-edge-base) * 0.68)) 0%,
+        rgb(var(--glass-edge-corner) / calc(var(--glass-edge-base) * 0.22)) 38%,
+        rgb(var(--glass-edge-corner) / 0) 72%
       );
   /* Mask the ring to the thin band. Uniform on all four sides: sides and
      bottom stay CLEAR so the refracted background is the rim there — the
-     paint above exists only at the top curve and near the pointer. */
+     paint above exists only at the two corners and near the pointer. */
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -608,7 +655,23 @@ select::-webkit-calendar-picker-indicator {
   /* fill alphas — derived so glx-strong's +6% modal boost flows through and
      the lite/off tier alpha swaps apply untouched */
   background:
-    /* glx-sheen hover light, folded in as the first layer (var-driven) */
+    /* frosted grain — the anti-plastic layer. High-frequency tooth that
+       breaks gradient banding and catches the eye like real frosted glass. */
+    var(--glass-grain),
+    /* one resting glint — a pane reflecting the room */
+    linear-gradient(
+      112deg,
+      rgb(255 255 255 / 0) 42%,
+      rgb(255 255 255 / var(--glass-glint-a)) 50%,
+      rgb(255 255 255 / 0) 58%
+    ),
+    /* dimming base — the floor sits below the page (light theme) */
+    linear-gradient(
+      var(--glass-p-angle),
+      rgb(var(--glass-dim-tint) / var(--glass-dim-a1)),
+      rgb(var(--glass-dim-tint) / var(--glass-dim-a2))
+    ),
+    /* glx-sheen hover light, folded in as the next layer (var-driven) */
     radial-gradient(
       circle at 90% 0%,
       rgb(255 255 255 / calc(0.1 * var(--glass-sheen-a, 0))) 0%,
@@ -672,12 +735,16 @@ select::-webkit-calendar-picker-indicator {
   );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   /* iOS 26 rule: a glass panel carries NO drop shadow — separation comes from
-     the rim light, the fill step, and the depth field behind it. The only
-     shadow left is the inner bloom (paint pretending to be light spill). */
+     the rim light, the fill step, and the depth field behind it. The shadow
+     list is all INNER light: the bloom under the top rim, plus the rim's soft
+     fade — the user-spec luminance ramp that melts the crisp ring into the
+     panel's own brightness over ~5–7px. */
   box-shadow:
     /* inner bloom — light spills inside under the top rim (iOS 26) */
     inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
-    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a));
+    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
+    /* rim fade — bright at the crisp ring, gone by ~8px inward */
+    inset 0 0 12px -5px rgb(var(--glass-edge-color) / var(--glass-edge-fade));
   /* Text micro-shadow: a 1px ambient that lifts label contrast over busy
      glass. Imperceptible on calm backdrops, decisive over dense content. */
   text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
@@ -704,10 +771,11 @@ select::-webkit-calendar-picker-indicator {
   );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   /* No drop shadow (iOS: separation comes from rim + fill + the depth field
-     behind the panel). Bloom only. */
+     behind the panel). Bloom + the rim's soft fade only. */
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
-    inset 0 16px 38px -24px rgb(255 255 255 / var(--glass-bloom-a));
+    inset 0 16px 38px -24px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 0 14px -5px rgb(var(--glass-edge-color) / var(--glass-edge-fade));
   text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
   /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own
      blur stays at --glass-p-blur (0) — the double blur comes from the layers. */
@@ -731,22 +799,72 @@ select::-webkit-calendar-picker-indicator {
       blur() and saturate() stay uniform edge-to-edge (centre colour ≡ corner
       colour) and the geometric bend is confined to the rim.
 
-   ONE backdrop-filter per panel, no filter ever animates. Chromium runs the
-   chain; Safari/Firefox fail the @supports probe and keep the plain
+   ONE backdrop-filter per panel, no filter ever animates. The chain is gated
+   on html[data-lens='on'] (boot probe: Chromium >= 138 — the only engines
+   that render SVG refs inside backdrop-filter; older engines pass the syntax
+   probe then drop the whole declaration at paint, which is how blur used to
+   die on otherwise-capable machines). Everyone else keeps the plain
    blur+saturate base declared in the utilities above. lite/off tiers strip
    the whole property further down (unlayered tier rules always win). */
-@supports (backdrop-filter: url('#x')) {
-  :root:not([data-glass='lite']):not([data-glass='off']) .glx {
-    backdrop-filter: url('#lg-lens') blur(var(--glass-bg-blur))
-      saturate(var(--glass-bg-sat));
-  }
-  :root:not([data-glass='lite']):not([data-glass='off']) .glx-strong {
-    backdrop-filter: url('#lg-lens') blur(var(--glass-p-blur))
-      saturate(var(--glass-p-sat));
-  }
-  :root:not([data-glass='lite']):not([data-glass='off']) .glx-dark {
-    backdrop-filter: url('#lg-lens') blur(14px) saturate(1.35);
-  }
+
+/* The bend runs LAST: blur() and saturate() first, then the edge-weighted
+   displacement over the already-soft backdrop. The old order (lens first,
+   blur second) let the 18px blur smear the bend away — measured edge/interior
+   structure 1.8x (invisible) vs 31x reordered. The map is 50% grey across the
+   interior, so the displacement is identity in the middle: centre colour ≡
+   corner colour except at the rim. */
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx {
+  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
+    url('#lg-lens');
+}
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-strong {
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
+    url('#lg-lens');
+}
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-dark {
+  backdrop-filter: blur(14px) saturate(1.35) url('#lg-lens');
+}
+
+/* ─── De-nest — glass inside glass is not glass ───────────────────────────
+   A parent with backdrop-filter is a BACKDROP ROOT: a nested glass child can
+   only sample the parent's own flat fill, so its filter does nothing but
+   burn GPU — and the two translucent fills stack (dark: 0.62 + 0.62 ≈ 0.86
+   opaque milk). iOS never nests glass in glass; inner rows are flat subtle
+   fills with no rim. This rule flattens EVERY glass descendant of a glass
+   surface in one stroke (all 269+ surfaces, no markup changes).
+   Same-specificity prefix as the lens rules — this block sits AFTER them, so
+   on a tie the de-nest wins. */
+:root:not([data-glass='lite']):not([data-glass='off'])
+  :is(.glx, .glx-strong, .glx-dark)
+  :is(.glx, .glx-strong, .glx-dark) {
+  backdrop-filter: none;
+  /* flat, quiet fill — a row resting on glass, not glass on glass */
+  --glass-p-fa1: 0.05;
+  --glass-p-fa2: 0.02;
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / 0.06),
+    rgb(var(--glass-p-tint) / 0.02)
+  );
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(var(--glass-bloom-line-a) * 0.5));
+  text-shadow: none;
+}
+/* nested rims die too: a row on glass gets no ring, no feather */
+:root:not([data-glass='lite']):not([data-glass='off'])
+  :is(.glx, .glx-strong, .glx-dark)
+  :is(.glx, .glx-strong, .glx-dark).glass-edge::before {
+  content: none;
+}
+:root:not([data-glass='lite']):not([data-glass='off'])
+  :is(.glx, .glx-strong, .glx-dark)
+  :is(.glx, .glx-strong, .glx-dark).glass-edge::after {
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / 0.05),
+    rgb(var(--glass-p-tint) / 0.015)
+  );
+  -webkit-mask: none;
+  mask: none;
 }
 
 /* Ink glass — sidebar (dark field with warm gold tint) */

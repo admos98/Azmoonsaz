@@ -56,10 +56,28 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(v!)).toBeGreaterThanOrEqual(18);
   });
 
-  it('light: fill is a thin trim, not a veil (a1 <= 0.18, was 0.30)', () => {
+  it('light: fill is a trim with real presence (0.20 <= a1 <= 0.26, was 0.17 = invisible)', () => {
     const v = token('--glass-p-a1');
     expect(v).not.toBeNull();
-    expect(parseFloat(v!)).toBeLessThanOrEqual(0.18);
+    const a = parseFloat(v!);
+    expect(a).toBeGreaterThanOrEqual(0.2);
+    expect(a).toBeLessThanOrEqual(0.26);
+  });
+
+  it('light: panels are DIMMED, not lightened — the floor sits below the page', () => {
+    const a1 = token('--glass-dim-a1');
+    expect(parseFloat(a1!)).toBeGreaterThan(0); // light mode dims
+    const darkA1 = token('--glass-dim-a1', ":root[data-theme='dark']");
+    expect(parseFloat(darkA1!)).toBe(0); // dark is already the dark floor
+  });
+
+  it('frosted grain + resting glint exist (the anti-plastic layers)', () => {
+    expect(css).toMatch(/--glass-grain:\s*url\("data:image\/svg\+xml/);
+    expect(css).toMatch(/--glass-glint-a/);
+    // both ride the feathered fill layer
+    const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
+    expect(after).toMatch(/var\(--glass-grain\)/);
+    expect(after).toMatch(/var\(--glass-glint-a\)/);
   });
 
   it('light: saturation gain makes blurred color fields richer (>= 1.4)', () => {
@@ -81,11 +99,21 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(dark!)).toBeLessThanOrEqual(0.25);
   });
 
-  it('rim is a hairline (max 1.8px) — the 3.6px build-3 rim read as a border', () => {
+  it('rim crisp ring stays hairline-thin (max 2.5px) — the 3.6px build-3 rim read as a border', () => {
     const max = token('--glass-edge-max');
-    expect(parseFloat(max!)).toBeLessThanOrEqual(1.8);
+    expect(parseFloat(max!)).toBeLessThanOrEqual(2.5);
     const darkMax = token('--glass-edge-max', ":root[data-theme='dark']");
-    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(1.8);
+    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(2.5);
+  });
+
+  it('rim luminance ramp: crisp ring + soft fade that melts into the panel', () => {
+    // the soft fade rides the unmasked element shadow (masked layers would
+    // clip it exactly where it must show)
+    expect(css).toMatch(
+      /inset 0 0 1[24]px -5px rgb\(var\(--glass-edge-color\) \/ var\(--glass-edge-fade\)\)/,
+    );
+    const fade = token('--glass-edge-fade');
+    expect(parseFloat(fade!)).toBeGreaterThan(0);
   });
 
   it('dark: panels lift off the navy floor (p-tint luminance >= 48, was ~35)', () => {
@@ -107,23 +135,29 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(b).toBeGreaterThan(r); // blue-leaning = navy ink family
   });
 
-  it('dark: fill alpha compensates the luminous tint (a1 >= 0.55)', () => {
+  it('dark: fill alpha compensates the luminous tint (a1 >= 0.5, was 0.62 = milk when stacked)', () => {
     const v = token('--glass-p-a1', ":root[data-theme='dark']");
     expect(v).not.toBeNull();
-    expect(parseFloat(v!)).toBeGreaterThanOrEqual(0.55);
+    expect(parseFloat(v!)).toBeGreaterThanOrEqual(0.5);
+    expect(parseFloat(v!)).toBeLessThanOrEqual(0.58);
   });
 
   it('rim is additive light (plus-lighter) so the specular never flattens', () => {
     expect(css).toMatch(/\.glass-edge::before\s*\{[^}]*mix-blend-mode:\s*plus-lighter/s);
   });
 
-  it('rim shows the REFRACTED BACKGROUND — no painted perimeter line at all', () => {
-    // the only resting paint is the top specular curve; the fixed per-edge
-    // tint ring (the "static line with static colour") is gone
-    expect(token('--glass-edge-base')).toBe('0.9');
-    expect(token('--glass-edge-base', ':root[data-theme=\'dark\']')).toBe('0.3');
-    // the top-centre light curve that wraps around the corners stays
-    expect(css).toMatch(/140% 90% at 50% 0%/);
+  it('rim shows the REFRACTED BACKGROUND + TWO opposite corner lights, not one sun', () => {
+    // the fixed per-edge tint ring (the "static line with static colour") is gone
+    expect(token('--glass-edge-base')).toBe('0.55');
+    expect(token('--glass-edge-base', ':root[data-theme=\'dark\']')).toBe('0.34');
+    // the single top-centre searchlight is retired
+    expect(css).not.toMatch(/140% 90% at 50% 0%/);
+    // two small opposite-corner sources replace it (start-top dominant for RTL)
+    expect(css).toMatch(/58% 68% at 92% 0%/);
+    expect(css).toMatch(/52% 62% at 8% 100%/);
+    // corner light colour is a token (warm in light, cool in dark), not static white
+    expect(token('--glass-edge-corner')).toBe('255 248 231');
+    expect(token('--glass-edge-corner', ':root[data-theme=\'dark\']')).toBe('236 242 255');
     // no fixed tint tokens, no resting linear rim, anywhere
     expect(css).not.toMatch(/--glass-edge-tint-/);
     expect(css).not.toMatch(/glass-edge-mid-f|glass-edge-bot-f/);
@@ -133,11 +167,11 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).not.toMatch(/filter:\s*blur\(0\.5px\)/);
   });
 
-  it('the rim band stays a hairline and stays CLEAR on sides/bottom', () => {
+  it('the rim band stays crisp and stays CLEAR on sides/bottom', () => {
     const max = token('--glass-edge-max');
-    expect(parseFloat(max!)).toBeLessThanOrEqual(1.8);
+    expect(parseFloat(max!)).toBeLessThanOrEqual(2.5);
     const darkMax = token('--glass-edge-max', ':root[data-theme=\'dark\']');
-    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(1.8);
+    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(2.5);
     // uniform band mask (no directional feather) — sides show the lens output
     expect(css).toMatch(
       /\.glass-edge::before\s*\{[^}]*mask:\s*linear-gradient\(#000 0 0\) content-box,\s*linear-gradient\(#000 0 0\)/s,
@@ -212,18 +246,50 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--glass-lens-t')).toBeNull();
   });
 
-  it('no [data-lens] / lensIn machinery — no backdrop-filter may ever animate', () => {
-    expect(css).not.toMatch(/\[data-lens\]/);
+  it('no lensIn animation machinery — no backdrop-filter may ever animate', () => {
+    // html[data-lens] IS allowed: it is the boot-time Chromium>=138 gate, set
+    // once before first paint and never toggled at runtime. What is banned is
+    // the old animated lens machinery (keyframes / runtime toggling).
     expect(css).not.toMatch(/@keyframes lensIn/);
+    expect(css).not.toMatch(/data-lens\]['^ ]*[a-z-]+:\s*[^;]*(transition|animation)/);
   });
 
-  it('the bend rides the panel chains (url(#lg-lens) FIRST, then uniform blur)', () => {
+  it('the bend rides the panel chains, BLUR FIRST and lens LAST, gated on Chromium >= 138', () => {
     expect(css).toMatch(
-      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\) \.glx\s*\{[^}]*backdrop-filter:\s*url\('#lg-lens'\)\s+blur\(var\(--glass-bg-blur\)\)/,
+      /:root\[data-lens='on'\]:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\) \.glx\s*\{[^}]*backdrop-filter:\s*blur\(var\(--glass-bg-blur\)\)\s+saturate\(var\(--glass-bg-sat\)\)\s+url\('#lg-lens'\)/,
     );
     expect(css).toMatch(
-      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\) \.glx-strong\s*\{[^}]*backdrop-filter:\s*url\('#lg-lens'\)\s+blur\(var\(--glass-p-blur\)\)/,
+      /:root\[data-lens='on'\]:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\) \.glx-strong\s*\{[^}]*backdrop-filter:\s*blur\(var\(--glass-p-blur\)\)\s+saturate\(var\(--glass-p-sat\)\)\s+url\('#lg-lens'\)/,
     );
+    // the lens is purely ADDITIVE: the base utilities keep plain blur so a
+    // paint-time url() failure can never strip blur again
+    expect(css).toMatch(/@utility glx \{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-bg-blur\)\) saturate\(var\(--glass-bg-sat\)\);/);
+    // the boot probe sets the gate
+    expect(html).toMatch(/dataset\.lens = major >= 138 \? 'on' : 'off'/);
+    // the false-positive @supports syntax probe is GONE
+    expect(css).not.toMatch(/@supports \(backdrop-filter:\s*url/);
+  });
+
+  it('glass never nests: every glass descendant of a glass surface is flattened', () => {
+    // backdrop root scoping made nested filters useless and stacked fills
+    // into a wash — the de-nest rule strips filter + rim + feather in one hit
+    expect(css).toMatch(
+      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+:is\(\.glx, \.glx-strong, \.glx-dark\)\s+:is\(\.glx, \.glx-strong, \.glx-dark\)\s*\{[^}]*backdrop-filter:\s*none/s,
+    );
+    expect(css).toMatch(
+      /:is\(\.glx, \.glx-strong, \.glx-dark\)\s+:is\(\.glx, \.glx-strong, \.glx-dark\)\.glass-edge::before\s*\{[^}]*content:\s*none/s,
+    );
+    // and inset rows no longer ask for a rim in markup
+    const ui = component('src/components/UIComponents.tsx');
+    expect(ui).toMatch(/glassLayer === 'light' \|\| glassLayer === 'strong' \? 'glass-edge' : ''/);
+  });
+
+  it('the tier probe never downgrades capable machines to blurless lite', () => {
+    // navigator.deviceMemory reports 4 on many 16 GB machines — the old
+    // cores<4 / memory<=4 downgrade shipped blurless plastic to real users
+    expect(html).not.toMatch(/cores\s*<\s*4/);
+    expect(html).not.toMatch(/memory\s*<=\s*4/);
+    expect(html).toMatch(/prefers-reduced-transparency/); // lite is a CHOICE now
   });
 
   it('refraction filter #lg-lens is defined ONCE, edge-weighted, with overscan region', () => {

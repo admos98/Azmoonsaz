@@ -21,7 +21,15 @@ export default function PreferenceSelector<T extends string>({
   onChange,
 }: PreferenceSelectorProps<T>) {
   return (
-    <div role="radiogroup" aria-label={label} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      /* 4 options tile 2×2 — the old fixed 3-col grid wrapped the 4th chip
+         below an empty hole (the "خاموش" orphan in the pics audit). */
+      className={`grid grid-cols-1 gap-3 ${
+        options.length >= 4 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'
+      }`}
+    >
       {options.map((option, index) => {
         const Icon = option.icon;
         const selected = value === option.value;
