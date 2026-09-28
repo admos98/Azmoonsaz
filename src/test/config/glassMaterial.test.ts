@@ -50,23 +50,27 @@ function component(path: string): string {
 }
 
 describe('glass material contract (pixel-audit gates)', () => {
-  it('light: panel body blur is iOS-tight (10-14px, was 18 = smear; user: "way more than iOS")', () => {
+  it('light: panel body blur is iOS-tight (8-12px; user asked for a little less blur)', () => {
     const v = token('--glass-p-blur');
     expect(v).not.toBeNull();
     const b = parseFloat(v!);
-    expect(b).toBeGreaterThanOrEqual(10);
-    expect(b).toBeLessThanOrEqual(14);
+    expect(b).toBeGreaterThanOrEqual(8);
+    expect(b).toBeLessThanOrEqual(12);
     const bg = parseFloat(token('--glass-bg-blur')!);
-    expect(bg).toBeGreaterThanOrEqual(9);
-    expect(bg).toBeLessThanOrEqual(11);
+    expect(bg).toBeGreaterThanOrEqual(7);
+    expect(bg).toBeLessThanOrEqual(9);
   });
 
-  it('light: fill is a trim with real presence (0.18 <= a1 <= 0.24)', () => {
+  it('light: fill is a trim with real presence (0.24 <= a1 <= 0.30)', () => {
+    // Raised from 0.18-0.24: the user asked for brighter light panels after
+    // the dark-theme fix landed. The fill is still a trim, not a coat — an
+    // upper bound is kept so it cannot drift back to the 0.40-0.56 range
+    // that read as gray putty.
     const v = token('--glass-p-a1');
     expect(v).not.toBeNull();
     const a = parseFloat(v!);
-    expect(a).toBeGreaterThanOrEqual(0.18);
-    expect(a).toBeLessThanOrEqual(0.24);
+    expect(a).toBeGreaterThanOrEqual(0.24);
+    expect(a).toBeLessThanOrEqual(0.3);
   });
 
   it('light: panels are DIMMED, not lightened — the floor sits below the page', () => {

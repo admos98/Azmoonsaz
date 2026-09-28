@@ -252,7 +252,7 @@ export default function TeacherProfile({
     <div className="mx-auto max-w-7xl space-y-6">
       <ProfileHeader tab={tab} setTab={handleTabChange} />
 
-      <section className="relative glx glass-edge overflow-hidden rounded-[28px] p-5 sm:p-7 bg-[linear-gradient(120deg,rgba(255,255,255,0.76),rgba(250,249,246,0.58))]">
+      <section className="relative glx glass-edge overflow-hidden rounded-[28px] p-5 sm:p-7 bg-[linear-gradient(120deg,rgba(255,255,255,0.38),rgba(250,249,246,0.58))]">
         <div className="relative z-10 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
           <button
             type="button"
