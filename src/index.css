@@ -189,15 +189,15 @@
      Trimmed from 0.22/0.12: the fill must tint, never coat — at 0.22 the dark
      theme's equivalent read as gray putty. 0.20/0.10 + the dim layer below
      keeps the panel ON the page while the backdrop shows through it. */
-  /* Panel fill — CLEAR glass, faint frost only (iOS 26 reference: panels are
-     ~85-90% transparent; the colour you see IS the blurred backdrop, and
-     "weight" comes from the edge lens + blur, not from coating the pane).
-     The 0.50/0.34 body over-corrected into paint. 0.14/0.09 is the frost. */
-  --glass-p-a1: 0.14;
-  --glass-p-a2: 0.09;
+  /* Panel fill — CLEAR glass, faint frost. iOS 26 panels show ~85-90% of the
+     backdrop; the "weight" comes from the edge lens + blur, not the coat.
+     0.14/0.09 read as transparent-with-a-floating-ring once the plate got real
+     structure; 0.20/0.13 keeps a defined pane while the field reads through. */
+  --glass-p-a1: 0.2;
+  --glass-p-a2: 0.13;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
-  --glass-p-blur: 10px;
+  --glass-p-blur: 16px;
   --glass-p-sat: 1.5;
   --glass-p-radius: 28px;
   --glass-p-bw: 1px;
@@ -264,10 +264,15 @@
      (::before — where light hits the edge) and a wide soft GLOW inside the
      fill (::after — light entering the material). Both ride the same token. */
   --glass-edge-corner: 255 248 231;
-  --glass-corner-a: 0.07; /* dominant corner interior glow */
-  --glass-corner-b: 0.035; /* echo corner interior glow */
+  --glass-corner-a: 0.09; /* dominant corner interior glow (single light source) */
   /* Soft fade — the rim glow that melts into the panel over ~5–7px */
   --glass-edge-fade: 0.2;
+  /* The rim's dark half — the total-internal-reflection hairline along the
+     shadowed side (Apple light-glass shows a faint INK line at the bottom, not
+     a white echo). Composited in ::before below the white band; tokenised so
+     dark theme can dim it to near-zero (the dark page supplies the contrast). */
+  --glass-edge-ink: 26 28 34;
+  --glass-edge-ink-a: 0.18;
   /* The fixed dispersion tints (--glass-edge-tint-*) are RETIRED: a painted
      tint per edge zone IS a static colour line. Rim colour now comes from the
      refracted background (it tracks the backdrop like iOS), with only the
@@ -419,7 +424,9 @@
   /* dark corner lights run cool — warm points on near-black read orange */
   --glass-edge-corner: 236 242 255;
   --glass-corner-a: 0.055;
-  --glass-corner-b: 0.028;
+  /* dark edge: the ink line is near-invisible on a dark page — dim it */
+  --glass-edge-ink: 0 0 0;
+  --glass-edge-ink-a: 0.06;
   --glass-edge-fade: 0.12;
   /* dark keeps the soft material: the top specular is dimmer and the pointer
      flare spreads wider — a slow sheen instead of a crisp curve */
@@ -665,11 +672,14 @@ select::-webkit-calendar-picker-indicator {
         rgb(var(--glass-edge-corner) / calc(var(--glass-edge-base) * 0.3)) 45%,
         rgb(var(--glass-edge-corner) / 0) 70%
       ),
+    /* ink hairline, bottom-end (Apple light-glass shows a dark total-internal-
+       reflection line on the shadowed side — with plus-lighter this adds
+       *darkness*, which is exactly the contrast the white band needs) */
       radial-gradient(
-        22% 30% at 8% 100%,
-        rgb(var(--glass-edge-corner) / calc(var(--glass-edge-base) * 0.62)) 0%,
-        rgb(var(--glass-edge-corner) / calc(var(--glass-edge-base) * 0.18)) 48%,
-        rgb(var(--glass-edge-corner) / 0) 72%
+        24% 32% at 8% 100%,
+        rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 0%,
+        rgb(var(--glass-edge-ink) / calc(var(--glass-edge-ink-a) * 0.4)) 50%,
+        rgb(var(--glass-edge-ink) / 0) 74%
       );
   /* Mask the ring to the thin band. Uniform on all four sides: sides and
      bottom stay CLEAR so the refracted background is the rim there — the
@@ -704,20 +714,13 @@ select::-webkit-calendar-picker-indicator {
       rgb(255 255 255 / var(--glass-glint-a)) 50%,
       rgb(255 255 255 / 0) 58%
     ),
-    /* the WIDE half of the two corner lights — soft glows INSIDE the glass
-       (light entering the material), so the corners carry depth without the
-       rim ring having to paint fat bright arcs. Dominant top-start (RTL:
-       top-right), echo bottom-end. */
+    /* the WIDE interior glow of the single dominant corner light (top-start,
+       RTL: top-right) — light entering the material, no echo source */
     radial-gradient(
       50% 60% at 88% 0%,
       rgb(var(--glass-edge-corner) / var(--glass-corner-a)) 0%,
       rgb(var(--glass-edge-corner) / calc(var(--glass-corner-a) * 0.32)) 42%,
       rgb(var(--glass-edge-corner) / 0) 72%
-    ),
-    radial-gradient(
-      44% 52% at 12% 100%,
-      rgb(var(--glass-edge-corner) / var(--glass-corner-b)) 0%,
-      rgb(var(--glass-edge-corner) / 0) 70%
     ),
     /* dimming base — the floor sits below the page (light theme) */
     linear-gradient(
@@ -759,6 +762,23 @@ select::-webkit-calendar-picker-indicator {
    keep their on-element fill — this override is scoped to the pair.) */
 .glass-edge {
   background: transparent;
+}
+
+/* Apple's continuous-curvature corner (n=4 superellipse). The arc-to-edge
+   tangent break in plain border-radius is the "generic" tell; squircle holds
+   curvature into the straight edge. The double-curve artifact that killed
+   this earlier traced to the right-only broken displacement map, not the
+   mask — with the fixed symmetric map it stays clean. */
+@supports (corner-shape: squircle) {
+  .glass-edge,
+  .glass-edge::after,
+  .glass-edge::before,
+  .glass-edge-glow,
+  .glx,
+  .glx-strong,
+  .glx-dark {
+    corner-shape: squircle;
+  }
 }
 
 /* glx-sheen — hover light, now a registered custom property so the fold-in
