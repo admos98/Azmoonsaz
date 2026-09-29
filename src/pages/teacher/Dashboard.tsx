@@ -80,7 +80,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
       {/* 1. Welcome Card Hero — liquid glass with The Mark watermark */}
       <div
-        className="relative overflow-hidden p-6 md:p-8 rounded-2xl glx glass-edge"
+        className="relative overflow-hidden p-6 md:p-10 rounded-3xl glx-strong glass-edge"
         id="dashboard-hero-banner"
       >
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
@@ -88,10 +88,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
         <div className="dashboard-hero-content relative z-10">
           <div className="dashboard-hero-copy text-right">
-            <span className="bg-[var(--color-glass-light-fill)] text-[var(--color-text-secondary)] text-micro font-bold px-3 py-1 rounded-full border border-[var(--color-glass-light-stroke)]">
+            <span className="text-[var(--color-text-secondary)] text-micro font-bold tracking-wide px-0 py-1 block w-fit opacity-80">
               {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
-            <h2 className="text-heading-2 md:text-heading-1 font-black mt-3 leading-snug text-[var(--color-text-primary)]">
+            <h2 className="text-heading-2 md:text-display font-black mt-3 leading-tight text-[var(--color-text-primary)]">
               سلام، استاد {teacher?.name || 'گرمی'} عزیز
             </h2>
             <p className="text-caption md:text-label mt-2 max-w-2xl leading-relaxed text-[var(--color-text-secondary)]">
@@ -211,7 +211,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               }}
               className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
             >
-              <div className="p-2.5 bg-[var(--color-surface)] border border-[var(--color-glass-light-stroke)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
+              <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
                 <Upload className="w-5 h-5" />
               </div>
               <span className="text-caption font-bold text-[var(--color-text-primary)]">
@@ -225,7 +225,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               onClick={() => onNavigate('questions')}
               className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
             >
-              <div className="p-2.5 bg-[var(--color-surface)] border border-[var(--color-glass-light-stroke)] text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
+              <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
                 <Plus className="w-5 h-5" />
               </div>
               <span className="text-caption font-bold text-[var(--color-text-primary)]">
@@ -239,7 +239,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               onClick={() => onNavigate('exams/new')}
               className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
             >
-              <div className="p-2.5 bg-[var(--color-surface)] border border-[var(--color-glass-light-stroke)] text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
+              <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
                 <FileText className="w-5 h-5" />
               </div>
               <span className="text-caption font-bold text-[var(--color-text-primary)]">
@@ -253,7 +253,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               onClick={() => onNavigate('results')}
               className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
             >
-              <div className="p-2.5 bg-[var(--color-surface)] border border-[var(--color-glass-light-stroke)] text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
+              <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
                 <Eye className="w-5 h-5" />
               </div>
               <span className="text-caption font-bold text-[var(--color-text-primary)]">
@@ -267,7 +267,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               onClick={() => onNavigate('results')}
               className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer"
             >
-              <div className="p-2.5 bg-[var(--color-surface)] border border-[var(--color-danger)]/25 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
+              <div className="p-2.5 glx-inset glx-inset-clear bg-[var(--color-danger)]/15 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
                 <CheckSquare className="w-5 h-5" />
               </div>
               <span className="text-caption font-bold text-[var(--color-danger)]">

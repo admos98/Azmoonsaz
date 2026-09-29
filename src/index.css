@@ -982,6 +982,16 @@ select::-webkit-calendar-picker-indicator {
   background: var(--ui-inset-fill) !important;
 }
 
+/* Inset wells on glass can opt into showing the glass fill through by asking
+   for a CLEAR fill: the shadow/sheen chrome stays (it is material), only the
+   fill goes translucent. Use for small controls inside a glass tile so the
+   tile reads as one material. Danger/semantic tints still add their own bg
+   on top via !bg-[token]/N, which beats !important only because the utility
+   has no !important here — see below. */
+.glx-inset.glx-inset-clear {
+  background: transparent !important;
+}
+
 /* ─── Option rows on glass (settings selectors) ──────────────────────────
    A row resting ON a glass panel is not glass itself (iOS grouped list):
    quiet translucent fill + hairline, gold wash when selected. The old styles
