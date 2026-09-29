@@ -305,20 +305,24 @@ export default function Topbar({
   if (bellRect) {
     const dropdownWidth = 320;
     const gap = 12;
-    // Match the hamburger menu's coordinate model exactly: it anchors with
-    // scrollX/scrollY, this one only had scrollX — so once the page was
-    // scrolled the dropdown rendered scrollY px too high.
-    const top = bellRect.bottom + gap + window.scrollY;
-    notificationStyle.left = `${bellRect.left + window.scrollX}px`;
+    // getBoundingClientRect() is VIEWPORT-relative and `position: fixed`
+    // resolves against the viewport (the header is plain `sticky` — no
+    // transform/filter ancestor re-anchors fixed), so the coordinates are used
+    // AS-IS. The old `+ window.scrollY/scrollX` double-counted the scroll: the
+    // sticky header keeps the button at viewport top, so scrolled down S px the
+    // panel rendered S px too low — "the menu opens down or on center instead
+    // of top" (user report). The earlier 'match the hamburger' scroll
+    // compensation above was written for a since-removed transformed ancestor.
+    const top = bellRect.bottom + gap;
+    notificationStyle.left = `${bellRect.left}px`;
     notificationStyle.top = `${top}px`;
     notificationStyle.width = `${dropdownWidth}px`;
   }
 
-  // Hamburger dropdown position (fixed, anchored to hamburger button)
-  const hamburgerTop = hamburgerRect ? hamburgerRect.bottom + 12 + window.scrollY : 0;
-  const hamburgerRight = hamburgerRect
-    ? window.innerWidth - hamburgerRect.right + window.scrollX
-    : 0;
+  // Hamburger dropdown position (fixed, anchored to hamburger button) —
+  // viewport coordinates, no scroll compensation (see notification note).
+  const hamburgerTop = hamburgerRect ? hamburgerRect.bottom + 12 : 0;
+  const hamburgerRight = hamburgerRect ? window.innerWidth - hamburgerRect.right : 0;
   const hamburgerDropdownStyle: React.CSSProperties = {
     position: 'fixed',
     right: `${hamburgerRight}px`,
