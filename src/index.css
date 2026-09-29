@@ -245,9 +245,14 @@
      Light is a hard material: near-white rim, short falloff, visible lift.
      Dark is a soft material: dimmer, dimmer still, and much longer falloff, so
      in dark mode the highlight reads as a slow sheen rather than an outline. */
-  --glass-edge-t: 0.2%; /* crisp ring thickness, % of the panel's inline size */
+  /* Crisp ring thickness — RELATIVE to the panel's inline size, so a chip
+     rim and a hero rim are visibly different weights instead of both landing
+     in the same 1-1.4px clamp: ~160px chip -> 1px (min), ~380px popover ->
+     1.1px, ~660px card -> 1.85px, full-bleed hero/topbar -> 2px (max). The
+     cap stays hairline: on a 1300px panel 2px is 0.15% of the width. */
+  --glass-edge-t: 0.28%;
   --glass-edge-min: 1px;
-  --glass-edge-max: 1.4px;
+  --glass-edge-max: 2px;
   /* Specular rim — per the user's spec: the first ~2px are the SHARP part,
      carrying the brightest light; the glow then falls across the next 5–7px
      (the box-shadow fade in .glx) until it meets the panel's own brightness.
@@ -415,9 +420,11 @@
      light: a dimmer resting rim, half the lift, nearly double the falloff, and
      a thinner band. The result is a highlight that arrives slowly and leaves
      slowly, instead of the crisp outline light mode gets. */
-  --glass-edge-t: 0.24%;
+  /* dark keeps the same relative ladder (slightly bolder % to compensate for
+     the dimmer rim alpha): chip -> 1px, card -> ~2px, hero -> 2px */
+  --glass-edge-t: 0.3%;
   --glass-edge-min: 1px;
-  --glass-edge-max: 1.5px;
+  --glass-edge-max: 2px;
   --glass-edge-base: 0.24;
   --glass-edge-hot: 0.3;
   --glass-edge-spread: 60%;

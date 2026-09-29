@@ -119,11 +119,17 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(token('--glass-sh-a', ":root[data-theme='dark']")!)).toBe(0);
   });
 
-  it('rim crisp ring stays hairline-thin (max 1.6px) — 2.2px+ read as a border in the user photos', () => {
+  it('rim crisp ring scales with panel size but stays hairline (max 2px; 2.2px+ read as a border)', () => {
+    // --glass-edge-t is a % of the panel's inline size: chip ~1px, card ~1.9px,
+    // hero/topbar clamps to the 2px cap — visible weight ladder, still hairline
+    // relative to the surface (2px on a 1300px panel = 0.15% of its width).
     const max = token('--glass-edge-max');
-    expect(parseFloat(max!)).toBeLessThanOrEqual(1.6);
+    expect(parseFloat(max!)).toBeLessThanOrEqual(2);
     const darkMax = token('--glass-edge-max', ":root[data-theme='dark']");
-    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(1.6);
+    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(2);
+    // both themes carry a relative thickness, not a fixed px
+    expect(parseFloat(token('--glass-edge-t')!)).toBeGreaterThan(0.2);
+    expect(parseFloat(token('--glass-edge-t', ":root[data-theme='dark']")!)).toBeGreaterThan(0.2);
   });
 
   it('rim luminance ramp: crisp ring + soft fade that melts into the panel', () => {
@@ -252,8 +258,9 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/inset 0 1px 0 rgb\(255 255 255 \/ var\(--glass-bloom-line-a\)\)/);
   });
 
-  it('the lens pull is strong enough to read (scale=34 → max ±17px, Apple band 8-14px at the rim)', () => {
-    expect(html).toMatch(/scale="34"/);
+  it('lens displacement matches Apple exactly (scale=28 → max ±14px = their measured ceiling)', () => {
+    expect(html).toMatch(/scale="28"/);
+    expect(html).not.toMatch(/scale="34"/); // ±17px overshot Apple's 8-14px band
   });
 
   it('the lens is ONE clean displacement off a GENERATED 4-fold symmetric PNG map', () => {
@@ -269,7 +276,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect((html.match(/<feImage/g) || []).length).toBe(1);
     expect(html).toMatch(/href="\/lens-map\.png"/);
     // scale lives on the displacement node; the map file holds the geometry
-    expect(html).toMatch(/scale="34"/);
+    expect(html).toMatch(/scale="28"/);
   });
 
   it('ONE background: the topo page plate — the depth-field stage is gone', () => {

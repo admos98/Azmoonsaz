@@ -30,15 +30,16 @@
        symmetric by construction — left/right/bottom/top all pull, corners pull
        diagonally. Replaces the previous two in-SVG data-URI gradients merged
        inside the filter, which rendered right-edge-only on Chromium >138.
-       scale 34 → max ±17px pull at the extreme rim, in Apple's measured band
-       (8–14px); the rim-zone width is the outer 18% of the panel. Filter
+       scale 28 → max ±14px pull at the extreme rim = Apple's measured ceiling
+       (their band is 8–14px; user spec: match it exactly). Rim-zone width is
+       the outer 18% of the panel. Filter
        region is clipped to the ELEMENT BOX so the map is sampled on the same
        rounded geometry the panel clips to. EXACTLY ONE #lg-lens per page. -->
     <svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0" >
       <defs>
         <filter id="lg-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
           <feImage href="/lens-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/>
-          <feDisplacementMap in="SourceGraphic" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G"/>
+          <feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
       </defs>
     </svg>
