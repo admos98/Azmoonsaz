@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lens probe v2 — azmoon</title>
+<style>
+  html,body{margin:0;font-family:system-ui,sans-serif}
+  body{
+    background: repeating-linear-gradient(90deg, #111 0 6px, #fff 6px 12px);
+    min-height:100vh; padding:40px;
+  }
+  .row{display:flex; gap:24px; flex-wrap:wrap}
+  .cell{display:flex; flex-direction:column; gap:6px; font:600 12px system-ui}
+  .panel{width:300px;height:200px;border-radius:22px;border:1px solid rgba(0,0,0,.35);background:rgba(255,255,255,.10)}
+  .v2{ backdrop-filter: blur(2px) saturate(1.4) url('#probe-lens'); }
+  .noLens{ backdrop-filter: blur(2px) saturate(1.4); }
+  .appMap{ backdrop-filter: blur(2px) saturate(1.4) url('#lg-lens'); }
+  #report{white-space:pre;font:12px/1.5 ui-monospace,monospace;background:#fff;color:#111;padding:10px;border-radius:8px;max-width:900px;margin-top:16px}
+</style>
+</head>
+<body>
+<h1>lens probe v2</h1>
+<p>VERTICAL black/white stripes — a real lens MUST kink them at the rim. v2 = corrected map, scale 64, blur 2px. app map = your current filter.<br>
+If v2 kinks and "app map" does not, the app map/scale is the bug. If NEITHER kinks, Chrome 153 isn't rendering url() here despite the computed value.</p>
+<div class="row">
+  <div class="cell"><div class="panel noLens"></div><span>no lens (blur only)</span></div>
+  <div class="cell"><div class="panel v2"></div><span>v2 corrected map, scale 64</span></div>
+  <div class="cell"><div class="panel appMap"></div><span>current app map, scale 26</span></div>
+</div>
+<div id="report">checking</div>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0">
+  <defs>
+    <!-- corrected map: BOTH channels neutral-128 interior, hard 30% ramps, alpha 1 -->
+    <filter id="probe-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='200'%20height='200'%3E%3ClinearGradient%20id='x'%20x1='0'%20y1='0'%20x2='1'%20y2='0'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.3'%20stop-color='%23808080'/%3E%3Cstop%20offset='0.7'%20stop-color='%23808080'/%3E%3Cstop%20offset='1'%20stop-color='%23fff'/%3E%3C/linearGradient%3E%3Crect%20width='200'%20height='200'%20fill='url(%23x)'/%3E%3C/svg%3E" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="mx"/>
+      <feImage href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='200'%20height='200'%3E%3ClinearGradient%20id='y'%20x1='0'%20y1='0'%20x2='0'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.3'%20stop-color='%23808080'/%3E%3Cstop%20offset='0.7'%20stop-color='%23808080'/%3E%3Cstop%20offset='1'%20stop-color='%23fff'/%3E%3C/linearGradient%3E%3Crect%20width='200'%20height='200'%20fill='url(%23y)'/%3E%3C/svg%3E" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="my"/>
+      <feColorMatrix in="mx" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0 1" result="mxR"/>
+      <feColorMatrix in="my" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 0 1" result="myG"/>
+      <feComposite in="mxR" in2="myG" operator="arithmetic" k1="0" k2="1" k3="1" k4="-0.5" result="map"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="64" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- the app's exact filter, unchanged -->
+    <filter id="lg-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3ClinearGradient%20id='x'%20x1='0'%20y1='0'%20x2='1'%20y2='0'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.12'%20stop-color='%23800000'/%3E%3Cstop%20offset='0.88'%20stop-color='%23800000'/%3E%3Cstop%20offset='1'%20stop-color='%23f00'/%3E%3C/linearGradient%3E%3Crect%20width='160'%20height='160'%20fill='url(%23x)'/%3E%3C/svg%3E" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="mapX"/>
+      <feImage href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3ClinearGradient%20id='y'%20x1='0'%20y1='0'%20x2='0'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%23000'/%3E%3Cstop%20offset='0.12'%20stop-color='%23008000'/%3E%3Cstop%20offset='0.88'%20stop-color='%23008000'/%3E%3Cstop%20offset='1'%20stop-color='%230f0'/%3E%3C/linearGradient%3E%3Crect%20width='160'%20height='160'%20fill='url(%23y)'/%3E%3C/svg%3E" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="mapY"/>
+      <feBlend in="mapX" in2="mapY" mode="screen" result="map"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="26" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
+<script>
+const b = document.createElement('div');
+b.className='panel v2'; b.style.cssText='position:fixed;left:-9999px;top:0';
+document.body.appendChild(b);
+const cs = getComputedStyle(b);
+const bf = cs.backdropFilter || cs.webkitBackdropFilter || '(none)';
+document.getElementById('report').textContent =
+'Chrome major: ' + (navigator.userAgent.match(/Chrom(?:e|ium)\/(\d+)/)||[])[1] +
+'\nsyntax supports: ' + CSS.supports('backdrop-filter', "url('#probe-lens')") +
+'\ncomputed v2 backdrop-filter: ' + bf +
+'\nurl present in computed value: ' + /url\(/.test(bf);
+</script>
+</body>
+</html>
