@@ -195,6 +195,13 @@
      structure; 0.20/0.13 keeps a defined pane while the field reads through. */
   --glass-p-a1: 0.2;
   --glass-p-a2: 0.13;
+  /* Strong-tier fill boost (glx-strong over glx): iOS menu material sits near
+     80% opacity, so floating panels read as solid objects over busy content.
+     Tokenised so dark can take a smaller boost — the dark backdrop is already
+     dim, and 0.4+0.24 = 0.64 alpha of a near-black tint read as "nearly
+     black, static" on the hero (user report). */
+  --glass-p-boost1: 0.24;
+  --glass-p-boost2: 0.17;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 16px;
@@ -400,9 +407,16 @@
      52-49-66 tint at 0.56 over a 0.16-alpha white grain composited into the
      gray felt the user photographed ("filled with what?"). Near-black navy
      tint at 0.40 lets the topo lines through, saturated, as colored light. */
-  --glass-p-a1: 0.4;
-  --glass-p-a2: 0.32;
+  /* 0.40 -> 0.36: the iOS-dark band is +25..+70 luminance over the floor;
+     at 0.40 (+ the old +0.24 strong boost) panels measured as a static
+     near-black slab. The lighter fill lets the plate's structure through. */
+  --glass-p-a1: 0.36;
+  --glass-p-a2: 0.28;
   --glass-p-tint: 16 15 28;
+  /* dark strong boost: menus still hold (0.36+0.18 = 0.54) but the hero and
+     modals stop reading as paint */
+  --glass-p-boost1: 0.18;
+  --glass-p-boost2: 0.12;
   /* dark keeps no grain — see the retired token note in :root */
   --glass-p-ba: 0;
   --glass-p-bc: 255 255 255;
@@ -436,9 +450,12 @@
   --glass-edge-ink-a: 0.06;
   --glass-edge-fade: 0.12;
   /* dark keeps the soft material: the top specular is dimmer and the pointer
-     flare spreads wider — a slow sheen instead of a crisp curve */
-  --glass-bloom-line-a: 0.1;
-  --glass-bloom-a: 0.09;
+     flare spreads wider — a slow sheen instead of a crisp curve. The 0.10
+     hairline painted a static full-width white STRIPE across the top of every
+     dark panel (hero/menus/notif — user report): 0.05 keeps the barely-there
+     top lift without the line; the wide bloom drops with it. */
+  --glass-bloom-line-a: 0.05;
+  --glass-bloom-a: 0.05;
   /* iOS 26 rule: glass carries NO resting drop shadow, dark included. A dark
      panel over a dark page separates via the rim, the fill step and the deeper
      plate behind it — a shadow on glass is the moulded-plastic cue. The deep
@@ -850,12 +867,12 @@ select::-webkit-calendar-picker-indicator {
      card recipe — iOS menu material sits near 80% opacity, so a menu must
      read as a solid object even over large dark type, while the saturated
      backdrop still glows through and the rim keeps the bend. */
-  --glass-p-fa1: calc(var(--glass-p-a1) + 0.24);
-  --glass-p-fa2: calc(var(--glass-p-a2) + 0.17);
+  --glass-p-fa1: calc(var(--glass-p-a1) + var(--glass-p-boost1));
+  --glass-p-fa2: calc(var(--glass-p-a2) + var(--glass-p-boost2));
   background: linear-gradient(
     var(--glass-p-angle),
-    rgb(var(--glass-p-tint) / calc(var(--glass-p-a1) + 0.24)),
-    rgb(var(--glass-p-tint) / calc(var(--glass-p-a2) + 0.17))
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a1) + var(--glass-p-boost1))),
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a2) + var(--glass-p-boost2)))
   );
   border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
   /* No drop shadow (iOS: separation comes from rim + fill + the depth field

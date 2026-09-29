@@ -237,8 +237,12 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--glass-fill-fade')).not.toBeNull();
     // the element body is clear so the feather actually reveals the page
     expect(css).toMatch(/\.glass-edge\s*\{\s*background:\s*transparent;/);
-    // glx-strong keeps its +6% modal fill through derived alphas
-    expect(css).toMatch(/--glass-p-fa1:\s*calc\(var\(--glass-p-a1\) \+ 0\.24\)/);
+    // glx-strong keeps its modal fill boost through derived alphas — and the
+    // boost is a TOKEN so dark can take less (0.64 total read as a static
+    // near-black slab on the dark hero; 0.36+0.18 = 0.54 lets the plate glow)
+    expect(css).toMatch(/--glass-p-fa1:\s*calc\(var\(--glass-p-a1\) \+ var\(--glass-p-boost1\)\)/);
+    expect(token('--glass-p-boost1')).toBe('0.24');
+    expect(token('--glass-p-boost1', ":root[data-theme='dark']")).toBe('0.18');
   });
 
   it('no static hairline: the panel border is transparent in both themes', () => {
@@ -255,9 +259,11 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('inner bloom — light spills inside under the top rim (paint-only)', () => {
     expect(token('--glass-bloom-line-a')).toBe('0.24');
     expect(token('--glass-bloom-a')).toBe('0.38');
-    expect(token('--glass-bloom-a', ':root[data-theme=\'dark\']')).toBe('0.09');
-    // dark keeps its own dim hairline (it used to inherit the 0.24 light value)
-    expect(token('--glass-bloom-line-a', ':root[data-theme=\'dark\']')).toBe('0.1');
+    expect(token('--glass-bloom-a', ':root[data-theme=\'dark\']')).toBe('0.05');
+    // dark keeps its own dim hairline (it used to inherit the 0.24 light value;
+    // at 0.10 it painted a static full-width WHITE STRIPE across every dark
+    // panel — hero/menus/notif — so it halved to 0.05)
+    expect(token('--glass-bloom-line-a', ':root[data-theme=\'dark\']')).toBe('0.05');
     expect(css).toMatch(/inset 0 1px 0 rgb\(255 255 255 \/ var\(--glass-bloom-line-a\)\)/);
   });
 
