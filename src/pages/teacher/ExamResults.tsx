@@ -1231,6 +1231,10 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               </span>
                             </p>
 
+                            {/* Horizontal scroll instead of page overflow: the
+                                rubric's fixed w-24/w-32 columns exceed a 360px
+                                viewport (phone QA sweep). */}
+                            <div className="overflow-x-auto">
                             <table
                               className="w-full text-micro text-right"
                               id={`rubric-tab-${q.id}`}
@@ -1311,7 +1315,8 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                 })}
                               </tbody>
                             </table>
-                          </div>
+                                                        </div>
+                                                      </div>
 
                           {/* Feedback text row */}
                           <div className="space-y-1.5" id="teacher-comment-box">

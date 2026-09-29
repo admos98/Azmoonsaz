@@ -1465,13 +1465,19 @@ select::-webkit-calendar-picker-indicator {
   .dashboard-hero-copy {
     max-width: 100%;
   }
+  /* phone: controls FLOW under the copy (stack: copy -> mark -> buttons).
+     The desktop composition anchors them absolutely to the panel bottom — at
+     <=900 the full-width copy leaves only ~140px below itself while mark +
+     buttons need ~200px, so the mark overlapped the greeting (phone QA sweep:
+     'phone view panels odd or bad placed'). In flow, the panel simply grows. */
   .dashboard-hero-controls {
-    inset-inline: 0;
-    bottom: 0;
+    position: static;
+    margin-top: 22px;
   }
-  /* the mark no longer needs phone surgery: base rule spans the controls box
-     (full width here, since actions become a 2-col grid) and bottom:100%+
-     tracks whatever height the button grid stacks to */
+  .dashboard-hero-mark {
+    position: static;
+    margin-bottom: 14px;
+  }
   .dashboard-hero-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
