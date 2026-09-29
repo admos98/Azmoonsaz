@@ -1310,25 +1310,38 @@ select::-webkit-calendar-picker-indicator {
 }
 .dashboard-hero-controls {
   position: absolute;
-  inset-inline-start: 24px;
+  /* inline-END = physical LEFT in RTL — the actions live bottom-left (user
+     spec); the copy stays right-aligned above them. */
+  inset-inline-end: 24px;
   bottom: 24px;
   z-index: 20;
 }
 /* The Mark watermark is tuned per theme: on light glass it sits back as a
    quiet ink ghost; on the dark pane it is brightened to stay visible. */
+/* The Mark sits ABOVE the actions and spans exactly their width (the
+   controls box shrink-wraps the flex row, so inset-inline:0 = first button's
+   edge to last button's edge). Its size tracks that length: the SVG scales
+   to 100% of the row and keeps its 128.4:44.4 aspect — logo proportion is
+   derived from the buttons, never a fixed chip. */
 .dashboard-hero-mark {
   position: absolute;
-  inset-inline-start: 0;
-  bottom: 132px;
+  inset-inline: 0;
+  bottom: calc(100% + 18px);
   opacity: 0.1;
-  filter: blur(1.5px);
+  filter: blur(0.5px);
   pointer-events: none;
+}
+.dashboard-hero-mark svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 :root[data-theme='dark'] .dashboard-hero-mark {
   opacity: 0.16;
   /* Same ghost treatment the mark always had on the ink pane: flipped to a
-     light watermark so it survives on the deep hero. */
-  filter: blur(1.5px) invert(1) brightness(1.8);
+     light watermark so it survives on the deep hero. Blur cut 1.5 -> 0.5 with
+     light theme — the watermark must read, not smudge. */
+  filter: blur(0.5px) invert(1) brightness(1.8);
 }
 .dashboard-hero-actions {
   display: flex;
@@ -1439,12 +1452,9 @@ select::-webkit-calendar-picker-indicator {
     inset-inline: 0;
     bottom: 0;
   }
-  .dashboard-hero-mark {
-    inset-inline-start: 0;
-    bottom: 112px;
-    transform: scale(0.72);
-    transform-origin: left bottom;
-  }
+  /* the mark no longer needs phone surgery: base rule spans the controls box
+     (full width here, since actions become a 2-col grid) and bottom:100%+
+     tracks whatever height the button grid stacks to */
   .dashboard-hero-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;

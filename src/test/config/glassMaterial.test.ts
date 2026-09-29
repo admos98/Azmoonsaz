@@ -211,8 +211,11 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).not.toMatch(/glass-edge-mid-f|glass-edge-bot-f/);
     const before = css.match(/\.glass-edge::before\s*\{[^}]*\}/s)![0];
     expect(before).not.toMatch(/linear-gradient\(\s*to bottom/);
-    // a blurred line reads as a gray hairline, not light — the rim never blurs
-    expect(css).not.toMatch(/filter:\s*blur\(0\.5px\)/);
+    // a blurred line reads as a gray hairline, not light — the rim never blurs.
+    // Scoped to the rim block: other layers (the hero watermark) legitimately
+    // carry their own small blur.
+    const rimBlock = css.match(/\.glass-edge::before\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(rimBlock).not.toMatch(/filter:\s*blur/);
   });
 
   it('the rim band stays crisp and stays CLEAR on sides/bottom', () => {
