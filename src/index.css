@@ -189,12 +189,12 @@
      Trimmed from 0.22/0.12: the fill must tint, never coat — at 0.22 the dark
      theme's equivalent read as gray putty. 0.20/0.10 + the dim layer below
      keeps the panel ON the page while the backdrop shows through it. */
-  /* Light fill presence. Below ~0.28 the panel vanished against the pale
-     page (user: "some panels are completely transparent with no
-     visibility"); 0.30/0.16 keeps a real material step ON the page while
-     the blurred backdrop still reads through. */
-  --glass-p-a1: 0.3;
-  --glass-p-a2: 0.16;
+  /* Panel fill — the pane must have a BODY. 0.30/0.16 read as a clear sheet
+     over the near-empty plate (panel-vs-page Δ≈7/255 = \"no material, no
+     weight\"). Raised toward the measured chrome band (45-60%) so the panel
+     carries real presence while the deeper plate now shows through it. */
+  --glass-p-a1: 0.5;
+  --glass-p-a2: 0.34;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 10px;
@@ -425,12 +425,13 @@
      flare spreads wider — a slow sheen instead of a crisp curve */
   --glass-bloom-line-a: 0.1;
   --glass-bloom-a: 0.09;
-  /* Dark panels float on a near-black page: with zero elevation they merge
-     into it. A whisper of shadow restores the float; the light-theme value
-     above stays a hard 0. */
-  --glass-sh-a: 0.14;
+  /* iOS 26 rule: glass carries NO resting drop shadow, dark included. A dark
+     panel over a dark page separates via the rim, the fill step and the deeper
+     plate behind it — a shadow on glass is the moulded-plastic cue. The deep
+     plate now supplies the floor lift the whisper was faking. */
+  --glass-sh-a: 0;
   --glass-sh-color: 0 0 0;
-  --glass-sh-strong-a: 0.18;
+  --glass-sh-strong-a: 0;
 
   /* Option rows on dark glass — translucent white, not opaque purple */
   --pref-row-bg: rgba(255, 255, 255, 0.055);
@@ -840,6 +841,19 @@ select::-webkit-calendar-picker-indicator {
   /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own
      blur stays at --glass-p-blur (0) — the double blur comes from the layers. */
   backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
+}
+
+/* Continuous-curvature corners — the iOS superellipse (n=4). `corner-shape`
+   does nothing without a non-zero `border-radius`; both the rim's mask and
+   the fill's feather already `border-radius: inherit`, so the curve propagates
+   to every glass layer automatically. Chromium 139+ renders it; every other
+   engine drops the unknown property and keeps the plain arc (harmless). */
+@supports (corner-shape: squircle) {
+  .glx,
+  .glx-strong,
+  .glass-edge {
+    corner-shape: squircle;
+  }
 }
 
 /* ─── The lens bend — refraction on the panel itself ──────────────────────

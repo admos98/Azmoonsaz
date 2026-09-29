@@ -34,10 +34,36 @@ VIOLET = "#7A6AD6"
 
 THEMES = {
     "light": dict(page="#f2efe8", line=INK, grain=INK, bloom=GOLD,
-                  line_a=0.055, gold_a=0.24, grain_a=0.085, lift="#FFFDF8"),
+                  line_a=0.10, gold_a=0.42, grain_a=0.05, lift="#FFFDF8"),
     "dark":  dict(page="#131220", line=CREAM, grain=CREAM, bloom=VIOLET,
-                  line_a=0.070, gold_a=0.34, grain_a=0.105, lift="#8C7AEB"),
+                  line_a=0.14, gold_a=0.55, grain_a=0.06, lift="#8C7AEB"),
 }
+
+
+def mark_ring(cx, cy, d, color, opacity, filled=False):
+    """One answer bubble of The Mark: D diameter, stroke 0.22xD, gold = filled."""
+    r = d / 2
+    if filled:
+        return f'<circle cx="{n(cx)}" cy="{n(cy)}" r="{n(r)}" fill="{color}" fill-opacity="{opacity}"/>'
+    sw = d * 0.22
+    return (f'<circle cx="{n(cx)}" cy="{n(cy)}" r="{n(r - sw/2)}" fill="none" '
+            f'stroke="{color}" stroke-opacity="{opacity}" stroke-width="{n(sw)}"/>')
+
+
+def mark_cluster(cx, cy, d, theme):
+    """The 2x2 Mark grid at brand spec: spacing 1.4xD, gold bubble top-right.
+    Large + ghost-alpha, so glass panels refract real brand geometry."""
+    t = THEMES[theme]
+    ink = t["line"]; gold = GOLD
+    gap = d * 1.4
+    o = gap / 2
+    parts = [
+        mark_ring(cx - o, cy - o, d, ink, 0.16 if theme == "light" else 0.20),
+        mark_ring(cx + o, cy - o, d, gold, 0.34 if theme == "light" else 0.50, filled=True),
+        mark_ring(cx - o, cy + o, d, ink, 0.16 if theme == "light" else 0.20),
+        mark_ring(cx + o, cy + o, d, ink, 0.16 if theme == "light" else 0.20),
+    ]
+    return "".join(parts)
 
 
 def grain(seed, color, freq=0.85):
@@ -160,25 +186,33 @@ def build_D(theme):
             f'stroke-width="{1.7 if gold else 1}" stroke-linecap="round" stroke-linejoin="round"/>')
 
     defs = f"""
-    <radialGradient id="bloom" cx="0.62" cy="0.18" r="0.85">
-      <stop offset="0%" stop-color="{t['bloom']}" stop-opacity="{0.085 if theme=='light' else 0.17}"/>
+    <radialGradient id="bloom" cx="0.62" cy="0.18" r="0.9">
+      <stop offset="0%" stop-color="{t['bloom']}" stop-opacity="{0.16 if theme=='light' else 0.22}"/>
+      <stop offset="55%" stop-color="{t['bloom']}" stop-opacity="{0.05 if theme=='light' else 0.07}"/>
       <stop offset="100%" stop-color="{t['bloom']}" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="pool" cx="0.04" cy="1.03" r="0.9">
-      <stop offset="0%" stop-color="{'#221E4A' if theme=='light' else '#000000'}" stop-opacity="{0.055 if theme=='light' else 0.45}"/>
+    <radialGradient id="pool" cx="0.04" cy="1.03" r="0.95">
+      <stop offset="0%" stop-color="{'#221E4A' if theme=='light' else '#000000'}" stop-opacity="{0.11 if theme=='light' else 0.5}"/>
       <stop offset="100%" stop-color="{'#221E4A' if theme=='light' else '#000000'}" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="fade" cx="0.6" cy="0.34" r="0.78">
+    <radialGradient id="fade" cx="0.6" cy="0.34" r="0.9">
       <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="62%" stop-color="#fff" stop-opacity="0.55"/>
-      <stop offset="100%" stop-color="#fff" stop-opacity="0.06"/>
+      <stop offset="70%" stop-color="#fff" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0.25"/>
     </radialGradient>
     <mask id="m"><rect width="{W}" height="{H}" fill="url(#fade)"/></mask>
     {grain(21, t['grain'])}"""
 
+    # The Mark, ghosted large where panels actually sit (upper-right and a
+    # low-left echo). Drawn OUTSIDE the contour mask so it stays crisp enough
+    # for the lens to pick up; alpha tuned so it reads as watermark, not art.
+    marks = (f'<g>{mark_cluster(W*0.66, H*0.30, 120, theme)}</g>\n'
+             f'<g opacity="0.6">{mark_cluster(W*0.13, H*0.86, 74, theme)}</g>')
+
     body = (f'<rect width="{W}" height="{H}" fill="{t["page"]}"/>\n'
             f'<rect width="{W}" height="{H}" fill="url(#bloom)"/>\n'
             f'<g mask="url(#m)">\n' + "\n".join(layers) + "\n</g>\n"
+            f'{marks}\n'
             f'<rect width="{W}" height="{H}" fill="url(#pool)"/>\n'
             f'<rect width="{W}" height="{H}" filter="url(#grain)" opacity="{t["grain_a"]}"/>')
     return svg(defs, body)

@@ -61,16 +61,16 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(bg).toBeLessThanOrEqual(9);
   });
 
-  it('light: fill is a trim with real presence (0.28 <= a1 <= 0.34)', () => {
-    // Raised from 0.26: panels below ~0.28 vanished against the pale page
-    // (user: "some panels are completely transparent with no visibility").
-    // The fill is still a trim, not a coat — an upper bound is kept so it
-    // cannot drift back to the 0.40-0.56 range that read as gray putty.
+  it('light: fill is a BODY with real presence (0.48 <= a1 <= 0.56)', () => {
+    // Raised from 0.30/0.16: over the (previously flat) plate the panel
+    // composited to Δ≈7/255 vs the page — a clear sheet, "no material, no
+    // weight". Toward the measured chrome band (45-60%). The deeper plate now
+    // shows through it, so presence no longer costs the backdrop read.
     const v = token('--glass-p-a1');
     expect(v).not.toBeNull();
     const a = parseFloat(v!);
-    expect(a).toBeGreaterThanOrEqual(0.28);
-    expect(a).toBeLessThanOrEqual(0.34);
+    expect(a).toBeGreaterThanOrEqual(0.48);
+    expect(a).toBeLessThanOrEqual(0.56);
   });
 
   it('light: panels are DIMMED, not lightened — the floor sits below the page', () => {
@@ -105,11 +105,14 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(v!)).toBe(0);
   });
 
-  it('light: overlay elevation is zero too; dark keeps only a whisper', () => {
+  it('overlay elevation is zero in BOTH themes — glass casts no shadow (iOS 26)', () => {
+    // "A whisper of shadow to restore the float" is the moulded-plastic cue;
+    // the deep plate now supplies the floor lift. Zero in both themes.
     const light = token('--glass-sh-strong-a', ':root');
     expect(parseFloat(light!)).toBe(0);
     const dark = token('--glass-sh-strong-a', ":root[data-theme='dark']");
-    expect(parseFloat(dark!)).toBeLessThanOrEqual(0.25);
+    expect(parseFloat(dark!)).toBe(0);
+    expect(parseFloat(token('--glass-sh-a', ":root[data-theme='dark']")!)).toBe(0);
   });
 
   it('rim crisp ring stays hairline-thin (max 1.6px) — 2.2px+ read as a border in the user photos', () => {
