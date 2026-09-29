@@ -61,16 +61,16 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(bg).toBeLessThanOrEqual(9);
   });
 
-  it('light: fill is a BODY with real presence (0.48 <= a1 <= 0.56)', () => {
-    // Raised from 0.30/0.16: over the (previously flat) plate the panel
-    // composited to Δ≈7/255 vs the page — a clear sheet, "no material, no
-    // weight". Toward the measured chrome band (45-60%). The deeper plate now
-    // shows through it, so presence no longer costs the backdrop read.
+  it('light: fill is a faint FROST, not a coat (iOS 26 reference: panels ~85-90% clear)', () => {
+    // The iOS reference panels show ~85-90% of the backdrop; weight comes from
+    // the edge lens + blur, not the fill. 0.50/0.34 over-corrected into paint.
+    // Kept low enough to read as glass: 0.14/0.09 frost. Upper bound guards
+    // against drifting back toward the "putty" band.
     const v = token('--glass-p-a1');
     expect(v).not.toBeNull();
     const a = parseFloat(v!);
-    expect(a).toBeGreaterThanOrEqual(0.48);
-    expect(a).toBeLessThanOrEqual(0.56);
+    expect(a).toBeGreaterThanOrEqual(0.12);
+    expect(a).toBeLessThanOrEqual(0.2);
   });
 
   it('light: panels are DIMMED, not lightened — the floor sits below the page', () => {

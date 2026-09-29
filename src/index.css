@@ -189,12 +189,12 @@
      Trimmed from 0.22/0.12: the fill must tint, never coat — at 0.22 the dark
      theme's equivalent read as gray putty. 0.20/0.10 + the dim layer below
      keeps the panel ON the page while the backdrop shows through it. */
-  /* Panel fill — the pane must have a BODY. 0.30/0.16 read as a clear sheet
-     over the near-empty plate (panel-vs-page Δ≈7/255 = \"no material, no
-     weight\"). Raised toward the measured chrome band (45-60%) so the panel
-     carries real presence while the deeper plate now shows through it. */
-  --glass-p-a1: 0.5;
-  --glass-p-a2: 0.34;
+  /* Panel fill — CLEAR glass, faint frost only (iOS 26 reference: panels are
+     ~85-90% transparent; the colour you see IS the blurred backdrop, and
+     "weight" comes from the edge lens + blur, not from coating the pane).
+     The 0.50/0.34 body over-corrected into paint. 0.14/0.09 is the frost. */
+  --glass-p-a1: 0.14;
+  --glass-p-a2: 0.09;
   --glass-p-angle: 108deg;
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 10px;
@@ -841,19 +841,6 @@ select::-webkit-calendar-picker-indicator {
   /* Modal / hero: sits on the bgfx veil + halo beneath it, so the panel's own
      blur stays at --glass-p-blur (0) — the double blur comes from the layers. */
   backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
-}
-
-/* Continuous-curvature corners — the iOS superellipse (n=4). `corner-shape`
-   does nothing without a non-zero `border-radius`; both the rim's mask and
-   the fill's feather already `border-radius: inherit`, so the curve propagates
-   to every glass layer automatically. Chromium 139+ renders it; every other
-   engine drops the unknown property and keeps the plain arc (harmless). */
-@supports (corner-shape: squircle) {
-  .glx,
-  .glx-strong,
-  .glass-edge {
-    corner-shape: squircle;
-  }
 }
 
 /* ─── The lens bend — refraction on the panel itself ──────────────────────
