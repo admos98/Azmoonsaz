@@ -19,6 +19,11 @@ import { join } from 'node:path';
 const root = join(__dirname, '../../..');
 const cssRaw = readFileSync(join(root, 'src/index.css'), 'utf8');
 const html = readFileSync(join(root, 'index.html'), 'utf8');
+/** The boot script moved out of index.html into /public/boot.js: Vercel's CSP
+ *  (script-src 'self') blocked the inline copy in production, so data-lens /
+ *  data-glass / data-theme never ran on the live site. Assert on the real file
+ *  AND that index.html only ever loads it same-origin. */
+const boot = readFileSync(join(root, 'public/boot.js'), 'utf8');
 /** Comments stripped — they otherwise glue onto selectors and break exact
  *  block matching (regex token parsing only needs declaration bodies). */
 const css = cssRaw.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -319,8 +324,8 @@ describe('glass material contract (pixel-audit gates)', () => {
     // the lens is purely ADDITIVE: the base utilities keep plain blur so a
     // paint-time url() failure can never strip blur again
     expect(css).toMatch(/@utility glx \{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-bg-blur\)\) saturate\(var\(--glass-bg-sat\)\);/);
-    // the boot probe sets the gate
-    expect(html).toMatch(/dataset\.lens = major >= 138 \? 'on' : 'off'/);
+    // the boot probe sets the gate (external /boot.js — inline was CSP-blocked)
+    expect(boot).toMatch(/dataset\.lens = major >= 138 \? 'on' : 'off'/);
     // the false-positive @supports syntax probe is GONE
     expect(css).not.toMatch(/@supports \(backdrop-filter:\s*url/);
   });
@@ -342,9 +347,28 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('the tier probe never downgrades capable machines to blurless lite', () => {
     // navigator.deviceMemory reports 4 on many 16 GB machines — the old
     // cores<4 / memory<=4 downgrade shipped blurless plastic to real users
-    expect(html).not.toMatch(/cores\s*<\s*4/);
-    expect(html).not.toMatch(/memory\s*<=\s*4/);
-    expect(html).toMatch(/prefers-reduced-transparency/); // lite is a CHOICE now
+    expect(boot).not.toMatch(/cores\s*<\s*4/);
+    expect(boot).not.toMatch(/memory\s*<=\s*4/);
+    expect(boot).toMatch(/prefers-reduced-transparency/); // lite is a CHOICE now
+  });
+
+  it('CSP compliance: no inline scripts in index.html, boot loads same-origin and blocking', () => {
+    // Vercel serves `Content-Security-Policy: script-src 'self'` (vercel.json).
+    // The boot IIFE used to sit inline in index.html → blocked in production,
+    // so data-theme / data-glass / data-lens were never set: the refraction
+    // bend (selector :root[data-lens='on']) was dead on the live site and the
+    // tier/theme gates never fired before paint. Boot lives in /public/boot.js.
+    expect(html).toMatch(/<script src="\/boot\.js"><\/script>/);
+    // zero inline <script> bodies (a script tag without src=)
+    expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/);
+    // blocking on purpose — the dataset gates must land before first paint
+    expect(html).not.toMatch(/<script[^>]*src="\/boot\.js"[^>]*(defer|async)/);
+    // the login-art preload left index.html (it fired on every route and
+    // warned "preloaded but not used"); boot.js gates it on login path + no
+    // persisted Supabase session
+    expect(html).not.toMatch(/login-education/);
+    expect(boot).toMatch(/-auth-token/);
+    expect(boot).toMatch(/login-education-light\.avif/);
   });
 
   it('refraction filter #lg-lens is defined ONCE, single generated-PNG map, box-clipped', () => {
