@@ -133,6 +133,30 @@ export default function FixtureGallery() {
   const [toast, setToast] = useState(false);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  // ── Drag for panel A/B test ──
+  const [panelAPos, setPanelAPos] = useState({ x: 40, y: 40 });
+  const [panelBPos, setPanelBPos] = useState({ x: 420, y: 220 });
+  const dragRef = useRef<{ id: 'a' | 'b'; startX: number; startY: number; originX: number; originY: number } | null>(null);
+
+  const onPanelPointerDown = (e: React.PointerEvent, id: 'a' | 'b') => {
+    const pos = id === 'a' ? panelAPos : panelBPos;
+    dragRef.current = { id, startX: e.clientX, startY: e.clientY, originX: pos.x, originY: pos.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPanelPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const { id, startX, startY, originX, originY } = dragRef.current;
+    const x = originX + e.clientX - startX;
+    const y = originY + e.clientY - startY;
+    if (id === 'a') setPanelAPos({ x, y });
+    else setPanelBPos({ x, y });
+  };
+
+  const onPanelPointerUp = () => {
+    dragRef.current = null;
+  };
+
   // Structural match for Tabs' internal TabItem (id + label, icon optional).
   const tabs = [
     { id: 'one', label: 'اول' },
@@ -445,16 +469,30 @@ export default function FixtureGallery() {
               <div className="absolute rounded-xl" style={{ width: 150, height: 150, top: '65%', left: '25%', background: 'linear-gradient(135deg, #5cb85c, #3d8b3d)' }} />
               <div className="absolute rounded-xl" style={{ width: 180, height: 100, top: '20%', left: '70%', background: 'linear-gradient(135deg, #f0ad4e, #d4882a)' }} />
             </div>
-            {/* Type A panel */}
-            <div className="panel-a absolute rounded-3xl p-6" style={{ width: 380, minHeight: 200, top: 40, left: 40, cursor: 'grab' }}>
+            {/* Type A panel — real glass: lens bend + rim + squircle corners */}
+            <div
+              className="panel-a glx-sheen glass-edge absolute rounded-3xl p-6"
+              style={{ width: 380, minHeight: 200, top: panelAPos.y, left: panelAPos.x, cursor: 'grab' }}
+              onPointerDown={(e) => onPanelPointerDown(e, 'a')}
+              onPointerMove={onPanelPointerMove}
+              onPointerUp={onPanelPointerUp}
+              onPointerCancel={onPanelPointerUp}
+            >
               <p className="text-label font-black text-[var(--color-gold)]">Type A — Notification Banner</p>
               <p className="text-caption text-[var(--color-text-tertiary)]">High transparency, low blur, reflects nearest horizontal color</p>
               <p className="mt-3 text-body text-[var(--color-text-primary)]">
                 خوانایی متن روی این سطح باید بدون تلاش انجام شود.
               </p>
             </div>
-            {/* Type B panel */}
-            <div className="panel-b absolute rounded-3xl p-6" style={{ width: 380, minHeight: 200, top: 220, left: 420, cursor: 'grab' }}>
+            {/* Type B panel — real glass: lens bend + rim + squircle corners */}
+            <div
+              className="panel-b glx-sheen glass-edge absolute rounded-3xl p-6"
+              style={{ width: 380, minHeight: 200, top: panelBPos.y, left: panelBPos.x, cursor: 'grab' }}
+              onPointerDown={(e) => onPanelPointerDown(e, 'b')}
+              onPointerMove={onPanelPointerMove}
+              onPointerUp={onPanelPointerUp}
+              onPointerCancel={onPanelPointerUp}
+            >
               <p className="text-label font-black text-[var(--color-gold)]">Type B — Menu Panel</p>
               <p className="text-caption text-[var(--color-text-tertiary)]">Lower transparency, higher blur, reflects fixed background color</p>
               <p className="mt-3 text-body text-[var(--color-text-primary)]">

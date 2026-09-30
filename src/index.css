@@ -842,8 +842,10 @@ select::-webkit-calendar-picker-indicator {
 
 /* With the fill moved to ::after, the element body must be clear so the
    feathered band actually shows the background. (Non-glass-edge .glx uses
-   keep their on-element fill — this override is scoped to the pair.) */
-.glass-edge {
+   keep their on-element fill — this override is scoped to the pair.)
+   Panel A/B keep their own fill (the ::after feather is tuned per-panel). */
+.glx.glass-edge,
+.glx-strong.glass-edge {
   background: transparent;
 }
 
@@ -1674,124 +1676,71 @@ button {
   gap: 0.5rem;
 }
 
-/* ─── Panel Type A/B test — scoped, no visual impact on existing panels ───
-   Type A: notification banner — high transparency, low blur, reflects nearest horizontal color
-   Type B: menu panel — lower transparency, higher blur, reflects fixed background color
-   Rim: 4 layers (dark outer, light bigger, light shorter/reflection, bg color inner) */
+/* ─── Panel Type A/B — the two live materials. ────────────────────────────
+   These are REAL glass panels, not imitations: they compose the app's own
+   fill/glaze utilities with the rim ring (.glass-edge ::before) and the
+   refraction lens in one chain. The rim IS the bent background (iOS 26),
+   not a painted border. Tokens below only TUNE the recipe, never replace it.
+
+   panel-a — notification banner: thinnest blur, highest transparency, the
+     backdrop stays readable (iOS 26 "banner" behaviour — content legible
+     through it), rim reflects the nearest horizontal colour HARD.
+   panel-b — menu panel: dimmer/thicker fill, heavier blur, rim is the
+     page's own anchor colour, not the content behind. */
 @utility panel-a {
   --glass-p-fa1: var(--panel-a-fill);
   --glass-p-fa2: var(--panel-a-fill);
-  background: rgb(var(--panel-a-rim-bg) / var(--panel-a-fill));
+  --glass-p-blur: var(--panel-a-blur);
+  --glass-p-sat: var(--panel-a-sat);
+  --glass-p-tint: var(--panel-a-rim-bg);
+  --glass-edge-base: 0.55;
+  --glass-edge-hot: 0.6;
+  --glass-edge-color: var(--panel-a-reflect);
+  --glass-edge-ink: var(--panel-a-rim-dark);
+  --glass-edge-ink-a: 0.22;
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--panel-a-rim-bg) / var(--panel-a-fill)),
+    rgb(var(--panel-a-rim-bg) / var(--panel-a-fill))
+  );
   backdrop-filter: blur(var(--panel-a-blur)) saturate(var(--panel-a-sat));
 }
 
 @utility panel-b {
   --glass-p-fa1: var(--panel-b-fill);
   --glass-p-fa2: var(--panel-b-fill);
-  background: rgb(var(--panel-b-rim-bg) / var(--panel-b-fill));
+  --glass-p-blur: var(--panel-b-blur);
+  --glass-p-sat: var(--panel-b-sat);
+  --glass-p-tint: var(--panel-b-rim-bg);
+  --glass-edge-base: 0.42;
+  --glass-edge-hot: 0.45;
+  --glass-edge-color: var(--panel-b-reflect);
+  --glass-edge-ink: var(--panel-b-rim-dark);
+  --glass-edge-ink-a: 0.18;
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--panel-b-rim-bg) / var(--panel-b-fill)),
+    rgb(var(--panel-b-rim-bg) / var(--panel-b-fill))
+  );
   backdrop-filter: blur(var(--panel-b-blur)) saturate(var(--panel-b-sat));
 }
 
-/* Rim ring — 4 layers composited on ::before, masked to the border band */
-.panel-a::before,
-.panel-b::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 2;
-  padding: var(--panel-a-rim-total);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+/* The bend runs LAST over the already-soft backdrop, same chain as .glx —
+   gated on data-lens so the plain blur base above survives on engines that
+   drop url() inside backdrop-filter. */
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-a {
+  backdrop-filter: blur(var(--panel-a-blur)) saturate(var(--panel-a-sat))
+    url('#lg-lens');
+}
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-b {
+  backdrop-filter: blur(var(--panel-b-blur)) saturate(var(--panel-b-sat))
+    url('#lg-lens');
 }
 
-.panel-a::before {
-  background:
-    /* Layer 4: bg color rim — inner 1px, consistent */
-    linear-gradient(
-      to right,
-      rgb(var(--panel-a-rim-bg) / 1) 0,
-      rgb(var(--panel-a-rim-bg) / 1) var(--panel-a-rim-bg-w),
-      transparent var(--panel-a-rim-bg-w),
-      transparent calc(100% - var(--panel-a-rim-bg-w)),
-      rgb(var(--panel-a-rim-bg) / 1) calc(100% - var(--panel-a-rim-bg-w)),
-      rgb(var(--panel-a-rim-bg) / 1) 100%
-    ),
-    /* Layer 3: light rim (shorter) — 2.5px, reflects nearest horizontal color */
-    linear-gradient(
-      to bottom,
-      rgb(var(--panel-a-reflect) / 0.9) 0,
-      rgb(var(--panel-a-reflect) / 0.9) var(--panel-a-rim-reflect-w),
-      transparent var(--panel-a-rim-reflect-w),
-      transparent calc(100% - var(--panel-a-rim-reflect-w)),
-      rgb(var(--panel-a-reflect) / 0.9) calc(100% - var(--panel-a-rim-reflect-w)),
-      rgb(var(--panel-a-reflect) / 0.9) 100%
-    ),
-    /* Layer 2: light rim (bigger) — 1.5px, same color as main light rim */
-    linear-gradient(
-      to bottom,
-      rgb(var(--panel-a-rim-light) / 0.85) 0,
-      rgb(var(--panel-a-rim-light) / 0.85) var(--panel-a-rim-light-w),
-      transparent var(--panel-a-rim-light-w),
-      transparent calc(100% - var(--panel-a-rim-light-w)),
-      rgb(var(--panel-a-rim-light) / 0.85) calc(100% - var(--panel-a-rim-light-w)),
-      rgb(var(--panel-a-rim-light) / 0.85) 100%
-    ),
-    /* Layer 1: dark rim — left/right edges, 2px */
-    linear-gradient(
-      to right,
-      rgb(var(--panel-a-rim-dark) / 1) 0,
-      rgb(var(--panel-a-rim-dark) / 1) var(--panel-a-rim-dark-w),
-      transparent var(--panel-a-rim-dark-w),
-      transparent calc(100% - var(--panel-a-rim-dark-w)),
-      rgb(var(--panel-a-rim-dark) / 1) calc(100% - var(--panel-a-rim-dark-w)),
-      rgb(var(--panel-a-rim-dark) / 1) 100%
-    );
-}
+/* The corrective inner-fill feather + dimming base every glass panel carries.
+   Identical layering to .glx/.glx-strong ::after — paint-only, the bend and
+   the blur ride the real backdrop-filter chain on the element itself. */
 
-.panel-b::before {
-  background:
-    linear-gradient(
-      to right,
-      rgb(var(--panel-b-rim-bg) / 1) 0,
-      rgb(var(--panel-b-rim-bg) / 1) var(--panel-b-rim-bg-w),
-      transparent var(--panel-b-rim-bg-w),
-      transparent calc(100% - var(--panel-b-rim-bg-w)),
-      rgb(var(--panel-b-rim-bg) / 1) calc(100% - var(--panel-b-rim-bg-w)),
-      rgb(var(--panel-b-rim-bg) / 1) 100%
-    ),
-    linear-gradient(
-      to bottom,
-      rgb(var(--panel-b-reflect) / 0.9) 0,
-      rgb(var(--panel-b-reflect) / 0.9) var(--panel-b-rim-reflect-w),
-      transparent var(--panel-b-rim-reflect-w),
-      transparent calc(100% - var(--panel-b-rim-reflect-w)),
-      rgb(var(--panel-b-reflect) / 0.9) calc(100% - var(--panel-b-rim-reflect-w)),
-      rgb(var(--panel-b-reflect) / 0.9) 100%
-    ),
-    linear-gradient(
-      to bottom,
-      rgb(var(--panel-b-rim-light) / 0.85) 0,
-      rgb(var(--panel-b-rim-light) / 0.85) var(--panel-b-rim-light-w),
-      transparent var(--panel-b-rim-light-w),
-      transparent calc(100% - var(--panel-b-rim-light-w)),
-      rgb(var(--panel-b-rim-light) / 0.85) calc(100% - var(--panel-b-rim-light-w)),
-      rgb(var(--panel-b-rim-light) / 0.85) 100%
-    ),
-    linear-gradient(
-      to right,
-      rgb(var(--panel-b-rim-dark) / 1) 0,
-      rgb(var(--panel-b-rim-dark) / 1) var(--panel-b-rim-dark-w),
-      transparent var(--panel-b-rim-dark-w),
-      transparent calc(100% - var(--panel-b-rim-dark-w)),
-      rgb(var(--panel-b-rim-dark) / 1) calc(100% - var(--panel-b-rim-dark-w)),
-      rgb(var(--panel-b-rim-dark) / 1) 100%
-    );
-}
+/* The rim ring comes from .glass-edge ::before (the app's real edge-light
+   system) — panel-a/panel-b only override its tokens above. No painted
+   border here: the rim IS the refracted background. */
