@@ -86,10 +86,12 @@ describe('glass material contract (pixel-audit gates)', () => {
 
   it('grain is RETIRED — Apple glass is perfectly smooth (user: "i hate the grain … apple never uses grain")', () => {
     expect(css).not.toMatch(/--glass-grain/);
-    // both used to ride the feathered fill layer; the glint stays alone
+    // grain used to ride the feathered fill layer; the glint was retired too
     const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
     expect(after).not.toMatch(/var\(--glass-grain\)/);
-    expect(after).toMatch(/var\(--glass-glint-a\)/);
+    // the diagonal `112deg` glint was also retired — it painted a stripe
+    // inside every panel (~+16 lum, measured in crop image_277b16.png)
+    expect(after).not.toMatch(/linear-gradient\(\s*112deg/);
   });
 
   it('light: saturation stays iOS-subtle (1.4–1.6; 1.7 read as candy next to the page)', () => {

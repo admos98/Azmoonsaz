@@ -463,11 +463,13 @@
   --glass-edge-ink: 0 0 0;
   --glass-edge-ink-a: 0.06;
   --glass-edge-fade: 0.12;
-  /* dark keeps the soft material: the top specular is dimmer and the pointer
+  /* Dark keeps the soft material: the top specular is dimmer and the pointer
      flare spreads wider — a slow sheen instead of a crisp curve. The 0.10
      hairline painted a static full-width white STRIPE across the top of every
      dark panel (hero/menus/notif — user report): 0.05 keeps the barely-there
-     top lift without the line; the wide bloom drops with it. */
+     top lift without the line; the wide bloom drops with it. The DIAGONAL
+     stripe running across panels (112deg glint in .glass-edge::after)
+     was retired separately — see that layer. */
   --glass-bloom-line-a: 0.05;
   --glass-bloom-a: 0.05;
   /* iOS 26 rule: glass carries NO resting drop shadow, dark included. A dark
@@ -745,13 +747,13 @@ select::-webkit-calendar-picker-indicator {
   /* fill alphas — derived so glx-strong's +6% modal boost flows through and
      the lite/off tier alpha swaps apply untouched */
   background:
-    /* one resting glint — a pane reflecting the room */
-    linear-gradient(
-      112deg,
-      rgb(255 255 255 / 0) 42%,
-      rgb(255 255 255 / var(--glass-glint-a)) 50%,
-      rgb(255 255 255 / 0) 58%
-    ),
+    /* The 112° glint is RETIRED. At 0% it painted a diagonal white stripe
+       crossing every glass panel top->bottom (~+16 lum, measured in crop
+       image_277b16.png) — user: "a white blurred stripe going from top to
+       bottom of the whole panel, not on the edge". The rim light and the
+       dominant corner glow already read as the material's specular story;
+       a band across the incoming mid-line is decoration that the eye reads
+       as a paint error. */
     /* the WIDE interior glow of the single dominant corner light (top-start,
        RTL: top-right) — light entering the material, no echo source */
     radial-gradient(
