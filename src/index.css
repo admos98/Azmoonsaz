@@ -369,9 +369,12 @@
   --color-gold-soft: #382d10;
   --color-gold-glow: rgba(248, 197, 66, 0.18);
 
-  /* Hero focal pane — built from the ink field, one step deeper than the
-     cards because the hero anchors the page. */
-  --color-hero-pane: linear-gradient(125deg, rgba(16, 15, 21, 0.97), rgba(26, 26, 46, 0.94));
+  /* Hero focal pane — DARK carries no paint. It used to be a 0.97-opaque
+     near-black gradient: with the strong fill stacked on top the plate bloom
+     never composed through and the hero measured as a flat slab (left field
+     21 vs floor 18). Transparent like light — depth comes from the glass
+     itself (rim + card-level fill + the bloom behind). */
+  --color-hero-pane: transparent;
   --color-accent: #dcd9e6;
   --color-accent-hover: #ffffff;
   --color-accent-soft: #322f47;
@@ -413,10 +416,21 @@
   --glass-p-a1: 0.36;
   --glass-p-a2: 0.28;
   --glass-p-tint: 16 15 28;
-  /* dark strong boost: menus still hold (0.36+0.18 = 0.54) but the hero and
-     modals stop reading as paint */
-  --glass-p-boost1: 0.18;
-  --glass-p-boost2: 0.12;
+  /* dark strong boost: menus/modals float over the BUSIEST content (a white
+     heading, an accent button) — at 0.18 a solid white block behind the menu
+     transmitted as a blurred band +83 luminance over the panel floor (the
+     "extra line behind the dark panels"). 0.36+0.34 = 0.70 with the 26px body
+     blur measures +35 — the backdrop stops reading as a line. Cards (glx)
+     take NO boost; they stay at a1. */
+  --glass-p-boost1: 0.34;
+  --glass-p-boost2: 0.26;
+  /* Dark body blur — glx-strong only (glx uses --glass-bg-blur). iOS dark
+     materials blur heavier than light; 22px still let the band through (+44),
+     26px cuts it. */
+  --glass-p-blur: 26px;
+  /* The feather floor: at 0.5 the rim band handed half the bright backdrop
+     straight back through the panel edge. */
+  --glass-fill-edge: 0.7;
   /* dark keeps no grain — see the retired token note in :root */
   --glass-p-ba: 0;
   --glass-p-bc: 255 255 255;
@@ -1306,7 +1320,15 @@ select::-webkit-calendar-picker-indicator {
 
 /* The hero's colours are fully token-driven — no hardcoded slab. Light mode:
    plain warm glass via `glx`, ink-on-glass text like every other panel.
-   Dark mode: the deeper focal pane comes from --color-hero-pane. */
+   Dark mode: hero-pane is transparent (see the token note) — and the strong
+   tier's menu density is CUT here. At full boost the hero interior crushed
+   the plate bloom (fa 0.70 over the dark plate ≈ page floor everywhere);
+   card-level fill measures +41 luminance at the bloom zone and +13 across
+   the left field — inside the iOS dark band, structure back. */
+:root[data-theme='dark'] #dashboard-hero-banner {
+  --glass-p-boost1: 0;
+  --glass-p-boost2: 0;
+}
 #dashboard-hero-banner {
   background: var(--color-hero-pane);
   color: var(--color-text-primary);
@@ -1355,10 +1377,12 @@ select::-webkit-calendar-picker-indicator {
 }
 :root[data-theme='dark'] .dashboard-hero-mark {
   opacity: 0.16;
-  /* Same ghost treatment the mark always had on the ink pane: flipped to a
-     light watermark so it survives on the deep hero. Blur cut 1.5 -> 0.5 with
-     light theme — the watermark must read, not smudge. */
-  filter: blur(0.5px) invert(1) brightness(1.8);
+  /* NO invert: dark --color-ink is already LIGHT (#f5f6fa). The legacy
+     flip-invert was written when ink was dark on this pane — applied now it
+     turned the mark near-black on a near-black hero (measured spread 11 vs
+     38 without it: a flat box, i.e. invisible — QA #46 "its not there").
+     Blur stays: the watermark must read, not smudge. */
+  filter: blur(0.5px);
 }
 .dashboard-hero-actions {
   display: flex;

@@ -238,11 +238,25 @@ describe('glass material contract (pixel-audit gates)', () => {
     // the element body is clear so the feather actually reveals the page
     expect(css).toMatch(/\.glass-edge\s*\{\s*background:\s*transparent;/);
     // glx-strong keeps its modal fill boost through derived alphas — and the
-    // boost is a TOKEN so dark can take less (0.64 total read as a static
-    // near-black slab on the dark hero; 0.36+0.18 = 0.54 lets the plate glow)
+    // boost is a TOKEN so dark can take more: at 0.18 a white heading behind
+    // a dark menu transmitted as a blurred band (+83 lum over the floor).
+    // 0.36+0.34 = 0.70 plus the dark 26px body blur measures +35. Cards take
+    // no boost (glx = a1), so this never touches them.
     expect(css).toMatch(/--glass-p-fa1:\s*calc\(var\(--glass-p-a1\) \+ var\(--glass-p-boost1\)\)/);
     expect(token('--glass-p-boost1')).toBe('0.24');
-    expect(token('--glass-p-boost1', ":root[data-theme='dark']")).toBe('0.18');
+    expect(token('--glass-p-boost1', ":root[data-theme='dark']")).toBe('0.34');
+    expect(token('--glass-p-boost2', ":root[data-theme='dark']")).toBe('0.26');
+    // dark strong-tier body blur: the 22px experiment still let the band
+    // through (+44); 26px cuts it to +35. Light keeps the 12-20px chrome band.
+    expect(token('--glass-p-blur', ":root[data-theme='dark']")).toBe('26px');
+    // dark feather floor — the rim band must not hand bright backdrop back
+    expect(token('--glass-fill-edge', ":root[data-theme='dark']")).toBe('0.7');
+    // dark hero slab fix: no opaque pane paint, no menu-density boost — the
+    // plate bloom must compose through (measured +41 lum at the bloom zone)
+    expect(token('--color-hero-pane', ":root[data-theme='dark']")).toBe('transparent');
+    expect(css).toMatch(
+      /:root\[data-theme='dark'\] #dashboard-hero-banner\s*{\s*--glass-p-boost1:\s*0;\s*--glass-p-boost2:\s*0;/s,
+    );
   });
 
   it('no static hairline: the panel border is transparent in both themes', () => {
