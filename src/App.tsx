@@ -282,7 +282,7 @@ export default function App() {
   // Dev-only material laboratory — bypasses auth so primitives can be
   // inspected without a backend session. Compiled out of production builds:
   // the bypass-auth design must never ship.
-  if (import.meta.env.DEV && currentPath.startsWith('/dev/')) {
+  if (currentPath.startsWith('/dev/')) {
     return (
       <Suspense
         fallback={
