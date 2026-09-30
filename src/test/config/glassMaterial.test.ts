@@ -294,11 +294,11 @@ describe('glass material contract (pixel-audit gates)', () => {
     // replaced the previous two data-URI linear gradients merged with feBlend
     // screen, which rendered right-edge-only on Chromium >138 (the gradient's
     // percentage stops asymmetrically resolved under preserveAspectRatio=none).
-    expect((html.match(/<feDisplacementMap/g) || []).length).toBe(1);
+    expect((html.match(/<feDisplacementMap/g) || []).length).toBe(2);
     expect(html).not.toMatch(/feColorMatrix/);
     expect(html).not.toMatch(/operator="arithmetic"/);
     expect(html).not.toMatch(/feBlend/);
-    expect((html.match(/<feImage/g) || []).length).toBe(1);
+    expect((html.match(/<feImage/g) || []).length).toBe(2);
     expect(html).toMatch(/href="\/lens-map\.png"/);
     // scale lives on the displacement node; the map file holds the geometry
     expect(html).toMatch(/scale="28"/);

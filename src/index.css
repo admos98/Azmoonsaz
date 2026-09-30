@@ -302,32 +302,23 @@
   --glass-text-ambient-a: 0.5;
 
   /* ── Panel Type A/B test tokens ── */
-  --panel-a-fill: 0.38;
   --panel-a-blur: 3px;
   --panel-a-sat: 1.4;
   --panel-a-rim-light: 255 255 255;
   --panel-a-rim-dark: 26 28 34;
   --panel-a-rim-bg: 200 189 175;
   --panel-a-reflect: 255 255 255;
-  --panel-a-rim-total: 8px;
-  --panel-a-rim-dark-w: 2px;
-  --panel-a-rim-light-w: 1.5px;
-  --panel-a-rim-reflect-w: 2.5px;
-  --panel-a-rim-bg-w: 1px;
+  --panel-a-dim-tint: 0 0 20;
+  --panel-a-dim-a: 0.38;
 
-  --panel-b-fill: 0.62;
   --panel-b-blur: 20px;
   --panel-b-sat: 1.5;
   --panel-b-rim-light: 255 255 255;
   --panel-b-rim-dark: 26 28 34;
   --panel-b-rim-bg: 200 189 175;
   --panel-b-reflect: 200 189 175;
-  --panel-b-rim-total: 8px;
-  --panel-b-rim-dark-w: 2px;
-  --panel-b-rim-light-w: 1.5px;
-  --panel-b-rim-reflect-w: 2.5px;
-  --panel-b-rim-bg-w: 1px;
-  --panel-b-rim-light-side-opacity: 0.075;
+  --panel-b-dim-tint: 0 0 20;
+  --panel-b-dim-a: 0.44;
 
   /* Inner bloom — iOS rims spill light just inside the panel: a hairline of
      light under the top rim that melts downward. Paint-only (inset shadows,
@@ -517,19 +508,21 @@
   --pref-row-sheen: rgba(255, 255, 255, 0.12);
 
   /* ── Panel Type A/B test tokens (dark) ── */
-  --panel-a-fill: 0.36;
   --panel-a-blur: 3px;
   --panel-a-rim-light: 236 242 255;
   --panel-a-rim-dark: 0 0 0;
   --panel-a-rim-bg: 41 45 67;
   --panel-a-reflect: 236 242 255;
+  --panel-a-dim-tint: 0 0 10;
+  --panel-a-dim-a: 0.22;
 
-  --panel-b-fill: 0.66;
   --panel-b-blur: 26px;
   --panel-b-rim-light: 236 242 255;
   --panel-b-rim-dark: 0 0 0;
   --panel-b-rim-bg: 41 45 67;
   --panel-b-reflect: 41 45 67;
+  --panel-b-dim-tint: 0 0 10;
+  --panel-b-dim-a: 0.28;
 }
 
 /* Compatibility layer for older utility-coded surfaces while they are migrated
@@ -1688,8 +1681,8 @@ button {
    panel-b — menu panel: dimmer/thicker fill, heavier blur, rim is the
      page's own anchor colour, not the content behind. */
 @utility panel-a {
-  --glass-p-fa1: var(--panel-a-fill);
-  --glass-p-fa2: var(--panel-a-fill);
+  --glass-p-fa1: 0;
+  --glass-p-fa2: 0;
   --glass-p-blur: var(--panel-a-blur);
   --glass-p-sat: var(--panel-a-sat);
   --glass-p-tint: var(--panel-a-rim-bg);
@@ -1698,17 +1691,21 @@ button {
   --glass-edge-color: var(--panel-a-reflect);
   --glass-edge-ink: var(--panel-a-rim-dark);
   --glass-edge-ink-a: 0.22;
-  background: linear-gradient(
-    var(--glass-p-angle),
-    rgb(var(--panel-a-rim-bg) / var(--panel-a-fill)),
-    rgb(var(--panel-a-rim-bg) / var(--panel-a-fill))
-  );
+  /* No fill — the dim is the only paint. RGB-aware dim: darks lift, brights
+     compress, blue survives. Base tint at 0.38 + blue-heavy top layer pushes
+     blue's effective alpha to ~0.56. */
+  background:
+    linear-gradient(
+      var(--glass-p-angle),
+      rgb(var(--panel-a-dim-tint) / var(--panel-a-dim-a)),
+      rgb(var(--panel-a-dim-tint) / var(--panel-a-dim-a))
+    );
   backdrop-filter: blur(var(--panel-a-blur)) saturate(var(--panel-a-sat));
 }
 
 @utility panel-b {
-  --glass-p-fa1: var(--panel-b-fill);
-  --glass-p-fa2: var(--panel-b-fill);
+  --glass-p-fa1: 0;
+  --glass-p-fa2: 0;
   --glass-p-blur: var(--panel-b-blur);
   --glass-p-sat: var(--panel-b-sat);
   --glass-p-tint: var(--panel-b-rim-bg);
@@ -1717,11 +1714,12 @@ button {
   --glass-edge-color: var(--panel-b-reflect);
   --glass-edge-ink: var(--panel-b-rim-dark);
   --glass-edge-ink-a: 0.18;
-  background: linear-gradient(
-    var(--glass-p-angle),
-    rgb(var(--panel-b-rim-bg) / var(--panel-b-fill)),
-    rgb(var(--panel-b-rim-bg) / var(--panel-b-fill))
-  );
+  background:
+    linear-gradient(
+      var(--glass-p-angle),
+      rgb(var(--panel-b-dim-tint) / var(--panel-b-dim-a)),
+      rgb(var(--panel-b-dim-tint) / var(--panel-b-dim-a))
+    );
   backdrop-filter: blur(var(--panel-b-blur)) saturate(var(--panel-b-sat));
 }
 
@@ -1730,17 +1728,73 @@ button {
    drop url() inside backdrop-filter. */
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-a {
   backdrop-filter: blur(var(--panel-a-blur)) saturate(var(--panel-a-sat))
-    url('#lg-lens');
+    url('#panel-lens');
 }
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-b {
   backdrop-filter: blur(var(--panel-b-blur)) saturate(var(--panel-b-sat))
-    url('#lg-lens');
+    url('#panel-lens');
 }
 
-/* The corrective inner-fill feather + dimming base every glass panel carries.
-   Identical layering to .glx/.glx-strong ::after — paint-only, the bend and
-   the blur ride the real backdrop-filter chain on the element itself. */
-
 /* The rim ring comes from .glass-edge ::before (the app's real edge-light
-   system) — panel-a/panel-b only override its tokens above. No painted
-   border here: the rim IS the refracted background. */
+   system) — panel-a/panel-b tune its weight via the tokens above. */
+
+/* The spec's directional rim: light on top/bottom (reflection), dark on
+   left/right (non-reflective). Both fade at corners into the crossfade.
+   These are extra paint layers on ::before, additive, so the generic corner
+   catch and pointer flare (which live on .glass-edge::before) still compose
+   through — .glass-edge and .panel-a/.panel-b are used together. */
+
+.panel-a::before,
+.panel-b::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  mix-blend-mode: plus-lighter;
+  background:
+    /* light rim — top/bottom, fades near the corner */
+    linear-gradient(
+      to right,
+      rgb(var(--glass-edge-color) / 0) 8%,
+      rgb(var(--glass-edge-color) / var(--glass-edge-base)) 18%,
+      rgb(var(--glass-edge-color) / var(--glass-edge-base)) 82%,
+      rgb(var(--glass-edge-color) / 0) 92%
+    ) top / 100% var(--eg-t) no-repeat,
+    linear-gradient(
+      to right,
+      rgb(var(--glass-edge-color) / 0) 8%,
+      rgb(var(--glass-edge-color) / var(--glass-edge-base)) 18%,
+      rgb(var(--glass-edge-color) / var(--glass-edge-base)) 82%,
+      rgb(var(--glass-edge-color) / 0) 92%
+    ) bottom / 100% var(--eg-t) no-repeat,
+    /* dark line — left/right, fades near the corner */
+    linear-gradient(
+      to bottom,
+      rgb(var(--glass-edge-ink) / 0) 8%,
+      rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 18%,
+      rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 82%,
+      rgb(var(--glass-edge-ink) / 0) 92%
+    ) left / var(--eg-t) 100% no-repeat,
+    linear-gradient(
+      to bottom,
+      rgb(var(--glass-edge-ink) / 0) 8%,
+      rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 18%,
+      rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 82%,
+      rgb(var(--glass-edge-ink) / 0) 92%
+    ) right / var(--eg-t) 100% no-repeat;
+}
+
+.panel-a::after,
+.panel-b::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  /* 1px inner line = THE BACKGROUND colour, not the panel's tint. It makes
+     the fill boundary read as part of the page, not part of the material. */
+  box-shadow: inset 0 0 0 1px rgb(var(--panel-a-rim-bg) / 0.55);
+}
