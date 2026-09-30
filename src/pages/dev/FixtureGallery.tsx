@@ -432,6 +432,38 @@ export default function FixtureGallery() {
           </Card>
         </Section>
 
+        {/* 10 ─ Panel Type A/B test */}
+        <Section
+          title="۱۰. پنل نوع A/B"
+          hint="Type A: notification banner — high transparency, low blur. Type B: menu panel — lower transparency, higher blur. Drag to test."
+        >
+          <div className="relative overflow-hidden rounded-3xl" style={{ minHeight: 400 }}>
+            {/* Background surfaces for reflection testing */}
+            <div className="absolute inset-0">
+              <div className="absolute rounded-xl" style={{ width: 200, height: 120, top: '15%', left: '10%', background: 'linear-gradient(135deg, #4a90d9, #2c5aa0)' }} />
+              <div className="absolute rounded-xl" style={{ width: 300, height: 80, top: '40%', left: '60%', background: 'linear-gradient(135deg, #f5f0e1, #e8e0cc)' }} />
+              <div className="absolute rounded-xl" style={{ width: 150, height: 150, top: '65%', left: '25%', background: 'linear-gradient(135deg, #5cb85c, #3d8b3d)' }} />
+              <div className="absolute rounded-xl" style={{ width: 180, height: 100, top: '20%', left: '70%', background: 'linear-gradient(135deg, #f0ad4e, #d4882a)' }} />
+            </div>
+            {/* Type A panel */}
+            <div className="panel-a absolute rounded-3xl p-6" style={{ width: 380, minHeight: 200, top: 40, left: 40, cursor: 'grab' }}>
+              <p className="text-label font-black text-[var(--color-gold)]">Type A — Notification Banner</p>
+              <p className="text-caption text-[var(--color-text-tertiary)]">High transparency, low blur, reflects nearest horizontal color</p>
+              <p className="mt-3 text-body text-[var(--color-text-primary)]">
+                خوانایی متن روی این سطح باید بدون تلاش انجام شود.
+              </p>
+            </div>
+            {/* Type B panel */}
+            <div className="panel-b absolute rounded-3xl p-6" style={{ width: 380, minHeight: 200, top: 220, left: 420, cursor: 'grab' }}>
+              <p className="text-label font-black text-[var(--color-gold)]">Type B — Menu Panel</p>
+              <p className="text-caption text-[var(--color-text-tertiary)]">Lower transparency, higher blur, reflects fixed background color</p>
+              <p className="mt-3 text-body text-[var(--color-text-primary)]">
+                خوانایی متن روی این سطح باید بدون تلاش انجام شود.
+              </p>
+            </div>
+          </div>
+        </Section>
+
         <footer className="pb-8 text-center text-micro text-[var(--color-text-tertiary)]">
           آزمایشگاه مواد — فاز صفر از بازطراحی رابط کاربری
         </footer>

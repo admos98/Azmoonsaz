@@ -301,6 +301,34 @@
   --glass-text-ambient: 255 255 255;
   --glass-text-ambient-a: 0.5;
 
+  /* ── Panel Type A/B test tokens ── */
+  --panel-a-fill: 0.38;
+  --panel-a-blur: 3px;
+  --panel-a-sat: 1.4;
+  --panel-a-rim-light: 255 255 255;
+  --panel-a-rim-dark: 26 28 34;
+  --panel-a-rim-bg: 200 189 175;
+  --panel-a-reflect: 255 255 255;
+  --panel-a-rim-total: 8px;
+  --panel-a-rim-dark-w: 2px;
+  --panel-a-rim-light-w: 1.5px;
+  --panel-a-rim-reflect-w: 2.5px;
+  --panel-a-rim-bg-w: 1px;
+
+  --panel-b-fill: 0.62;
+  --panel-b-blur: 20px;
+  --panel-b-sat: 1.5;
+  --panel-b-rim-light: 255 255 255;
+  --panel-b-rim-dark: 26 28 34;
+  --panel-b-rim-bg: 200 189 175;
+  --panel-b-reflect: 200 189 175;
+  --panel-b-rim-total: 8px;
+  --panel-b-rim-dark-w: 2px;
+  --panel-b-rim-light-w: 1.5px;
+  --panel-b-rim-reflect-w: 2.5px;
+  --panel-b-rim-bg-w: 1px;
+  --panel-b-rim-light-side-opacity: 0.075;
+
   /* Inner bloom — iOS rims spill light just inside the panel: a hairline of
      light under the top rim that melts downward. Paint-only (inset shadows,
      no filter). Dark dims both values so panels keep their soft sheen. */
@@ -487,6 +515,21 @@
   --pref-row-sel-bg: rgba(248, 197, 66, 0.11);
   --pref-row-sel-border: rgba(248, 197, 66, 0.5);
   --pref-row-sheen: rgba(255, 255, 255, 0.12);
+
+  /* ── Panel Type A/B test tokens (dark) ── */
+  --panel-a-fill: 0.36;
+  --panel-a-blur: 3px;
+  --panel-a-rim-light: 236 242 255;
+  --panel-a-rim-dark: 0 0 0;
+  --panel-a-rim-bg: 41 45 67;
+  --panel-a-reflect: 236 242 255;
+
+  --panel-b-fill: 0.66;
+  --panel-b-blur: 26px;
+  --panel-b-rim-light: 236 242 255;
+  --panel-b-rim-dark: 0 0 0;
+  --panel-b-rim-bg: 41 45 67;
+  --panel-b-reflect: 41 45 67;
 }
 
 /* Compatibility layer for older utility-coded surfaces while they are migrated
@@ -1629,4 +1672,126 @@ button {
 
 :root[data-density='compact'] .density-list {
   gap: 0.5rem;
+}
+
+/* ─── Panel Type A/B test — scoped, no visual impact on existing panels ───
+   Type A: notification banner — high transparency, low blur, reflects nearest horizontal color
+   Type B: menu panel — lower transparency, higher blur, reflects fixed background color
+   Rim: 4 layers (dark outer, light bigger, light shorter/reflection, bg color inner) */
+@utility panel-a {
+  --glass-p-fa1: var(--panel-a-fill);
+  --glass-p-fa2: var(--panel-a-fill);
+  background: rgb(var(--panel-a-rim-bg) / var(--panel-a-fill));
+  backdrop-filter: blur(var(--panel-a-blur)) saturate(var(--panel-a-sat));
+}
+
+@utility panel-b {
+  --glass-p-fa1: var(--panel-b-fill);
+  --glass-p-fa2: var(--panel-b-fill);
+  background: rgb(var(--panel-b-rim-bg) / var(--panel-b-fill));
+  backdrop-filter: blur(var(--panel-b-blur)) saturate(var(--panel-b-sat));
+}
+
+/* Rim ring — 4 layers composited on ::before, masked to the border band */
+.panel-a::before,
+.panel-b::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  padding: var(--panel-a-rim-total);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.panel-a::before {
+  background:
+    /* Layer 4: bg color rim — inner 1px, consistent */
+    linear-gradient(
+      to right,
+      rgb(var(--panel-a-rim-bg) / 1) 0,
+      rgb(var(--panel-a-rim-bg) / 1) var(--panel-a-rim-bg-w),
+      transparent var(--panel-a-rim-bg-w),
+      transparent calc(100% - var(--panel-a-rim-bg-w)),
+      rgb(var(--panel-a-rim-bg) / 1) calc(100% - var(--panel-a-rim-bg-w)),
+      rgb(var(--panel-a-rim-bg) / 1) 100%
+    ),
+    /* Layer 3: light rim (shorter) — 2.5px, reflects nearest horizontal color */
+    linear-gradient(
+      to bottom,
+      rgb(var(--panel-a-reflect) / 0.9) 0,
+      rgb(var(--panel-a-reflect) / 0.9) var(--panel-a-rim-reflect-w),
+      transparent var(--panel-a-rim-reflect-w),
+      transparent calc(100% - var(--panel-a-rim-reflect-w)),
+      rgb(var(--panel-a-reflect) / 0.9) calc(100% - var(--panel-a-rim-reflect-w)),
+      rgb(var(--panel-a-reflect) / 0.9) 100%
+    ),
+    /* Layer 2: light rim (bigger) — 1.5px, same color as main light rim */
+    linear-gradient(
+      to bottom,
+      rgb(var(--panel-a-rim-light) / 0.85) 0,
+      rgb(var(--panel-a-rim-light) / 0.85) var(--panel-a-rim-light-w),
+      transparent var(--panel-a-rim-light-w),
+      transparent calc(100% - var(--panel-a-rim-light-w)),
+      rgb(var(--panel-a-rim-light) / 0.85) calc(100% - var(--panel-a-rim-light-w)),
+      rgb(var(--panel-a-rim-light) / 0.85) 100%
+    ),
+    /* Layer 1: dark rim — left/right edges, 2px */
+    linear-gradient(
+      to right,
+      rgb(var(--panel-a-rim-dark) / 1) 0,
+      rgb(var(--panel-a-rim-dark) / 1) var(--panel-a-rim-dark-w),
+      transparent var(--panel-a-rim-dark-w),
+      transparent calc(100% - var(--panel-a-rim-dark-w)),
+      rgb(var(--panel-a-rim-dark) / 1) calc(100% - var(--panel-a-rim-dark-w)),
+      rgb(var(--panel-a-rim-dark) / 1) 100%
+    );
+}
+
+.panel-b::before {
+  background:
+    linear-gradient(
+      to right,
+      rgb(var(--panel-b-rim-bg) / 1) 0,
+      rgb(var(--panel-b-rim-bg) / 1) var(--panel-b-rim-bg-w),
+      transparent var(--panel-b-rim-bg-w),
+      transparent calc(100% - var(--panel-b-rim-bg-w)),
+      rgb(var(--panel-b-rim-bg) / 1) calc(100% - var(--panel-b-rim-bg-w)),
+      rgb(var(--panel-b-rim-bg) / 1) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgb(var(--panel-b-reflect) / 0.9) 0,
+      rgb(var(--panel-b-reflect) / 0.9) var(--panel-b-rim-reflect-w),
+      transparent var(--panel-b-rim-reflect-w),
+      transparent calc(100% - var(--panel-b-rim-reflect-w)),
+      rgb(var(--panel-b-reflect) / 0.9) calc(100% - var(--panel-b-rim-reflect-w)),
+      rgb(var(--panel-b-reflect) / 0.9) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgb(var(--panel-b-rim-light) / 0.85) 0,
+      rgb(var(--panel-b-rim-light) / 0.85) var(--panel-b-rim-light-w),
+      transparent var(--panel-b-rim-light-w),
+      transparent calc(100% - var(--panel-b-rim-light-w)),
+      rgb(var(--panel-b-rim-light) / 0.85) calc(100% - var(--panel-b-rim-light-w)),
+      rgb(var(--panel-b-rim-light) / 0.85) 100%
+    ),
+    linear-gradient(
+      to right,
+      rgb(var(--panel-b-rim-dark) / 1) 0,
+      rgb(var(--panel-b-rim-dark) / 1) var(--panel-b-rim-dark-w),
+      transparent var(--panel-b-rim-dark-w),
+      transparent calc(100% - var(--panel-b-rim-dark-w)),
+      rgb(var(--panel-b-rim-dark) / 1) calc(100% - var(--panel-b-rim-dark-w)),
+      rgb(var(--panel-b-rim-dark) / 1) 100%
+    );
 }
