@@ -295,11 +295,15 @@ describe('glass material contract (pixel-audit gates)', () => {
     // replaced the previous two data-URI linear gradients merged with feBlend
     // screen, which rendered right-edge-only on Chromium >138 (the gradient's
     // percentage stops asymmetrically resolved under preserveAspectRatio=none).
-    expect((html.match(/<feDisplacementMap/g) || []).length).toBe(2);
-    expect(html).not.toMatch(/feColorMatrix/);
+    // RULE CHANGE (user, 2026-10-02): playground == app — feColorMatrix and
+    // feBlend are back as part of the full kube chain in #panel-lens{,-dark}
+    // (fed by GENERATED PNG feImages). The original regression cause stays
+    // banned: data-URI gradients inside a filter (assertions below).
+    expect((html.match(/<feDisplacementMap/g) || []).length).toBe(3); // lg-lens + panel x2 themes
     expect(html).not.toMatch(/operator="arithmetic"/);
-    expect(html).not.toMatch(/feBlend/);
-    expect((html.match(/<feImage/g) || []).length).toBe(2);
+    expect((html.match(/<feImage/g) || []).length).toBe(5); // lg map + (disp+spec) x2
+    expect((html.match(/<feColorMatrix/g) || []).length).toBe(2); // saturate ring, per theme
+    expect((html.match(/<feBlend/g) || []).length).toBe(4); // 2 composites x2 themes
     expect(html).toMatch(/href="\/lens-map\.png"/);
     // scale lives on the displacement node; the map file holds the geometry
     expect(html).toMatch(/scale="28"/);
@@ -465,21 +469,19 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(pref).not.toMatch(/gold-soft/);
   });
 
-  it('Type A/B are LIBRARY material: shared tokens, composed rim, one lens chain', () => {
-    // ── tokens: ONE number drives every panel of the class app-wide ──
-    expect(token('--panel-dim')).toBe('0.15'); // light
-    expect(token('--panel-dim', ":root[data-theme='dark']")).toBe('0.06');
-    // tiers swap TOKENS, never markup: blur goes, the dim carries contrast
-    expect(token('--panel-dim', ":root[data-glass='lite']")).toBe('0.32');
-    expect(token('--panel-dim', ":root[data-glass='off']")).toBe('0.85');
+  it('Type A/B ARE the playground material: zero-difference kube chain', () => {
+    // ── tokens: the kube.io replica tune, 1:1 (playground export) ──
+    // rgb-dim lives IN the filter: light 0.15, dark is the ONLY change
+    expect(token('--panel-lens-dim')).toBe('0.15');
+    expect(token('--panel-lens-dim', ":root[data-theme='dark']")).toBe('0.06');
+    // glassBg → the CSS fallback fill (0 while the filter runs; tiers that
+    // strip backdrop-filter swap in a real fill — token swap, not markup)
+    expect(token('--panel-fill')).toBe('0');
+    expect(token('--panel-fill', ":root[data-glass='lite']")).toBe('0.32');
+    expect(token('--panel-fill', ":root[data-glass='off']")).toBe('0.85');
     expect(token('--panel-dim-tint')).toBe('103 100 112');
-    expect(token('--panel-rim')).toBe('0.55');
-    expect(token('--panel-rim', ":root[data-theme='dark']")).toBe('0.42');
-    // Type A light = the kube.io replica tune, 1:1 (playground export)
     expect(token('--panel-a-blur')).toBe('1px'); // Blur Level 1.0px
-    expect(token('--panel-a-blur', ":root[data-theme='dark']")).toBe('1px'); // dark: dim is the ONLY change
-    expect(token('--panel-a-rim')).toBe('0.34'); // Specular Opacity (rim weight)
-    expect(token('--panel-a-rim-hot')).toBe('0.34'); // keep = base
+    expect(token('--panel-a-blur', ":root[data-theme='dark']")).toBe('1px');
     expect(token('--panel-b-blur')).toBe('20px');
     expect(token('--panel-b-blur', ":root[data-theme='dark']")).toBe('26px');
     // physics params: the map generator parses these from src/index.css
@@ -494,7 +496,8 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--panel-lens-radius')).toBe('21px');
     expect(token('--panel-lens-size')).toBe('326px 64px');
     expect(token('--panel-lens-max-displacement')).toBe('43.67px');
-    // the deleted second-source tokens must never come back
+    // deleted second-source tokens must never come back: the old painted
+    // rim/dim/saturate layers are FILTER OUTPUT now (playground parity)
     for (const dead of [
       '--panel-a-dim-tint',
       '--panel-a-dim-a',
@@ -502,57 +505,106 @@ describe('glass material contract (pixel-audit gates)', () => {
       '--panel-a-reflect',
       '--panel-a-rim-bg',
       '--panel-b-rim-bg',
+      '--panel-dim',
+      '--panel-a-sat',
+      '--panel-b-sat',
+      '--panel-a-rim',
+      '--panel-a-rim-hot',
+      '--panel-rim',
+      '--panel-rim-hot',
+      '--panel-ink-a',
     ]) {
       expect(token(dead)).toBeNull();
     }
 
-    // ── utilities CONSUME tokens; no own paint, no bespoke rim layer ──
-    for (const [u, blur, rim, rimHot] of [
-      ['panel-a', '--panel-a-blur', '--panel-a-rim', '--panel-a-rim-hot'],
-      ['panel-b', '--panel-b-blur', '--panel-rim', '--panel-rim-hot'],
+    // ── utilities: BARE like the playground's #glass — tokens + blur, done.
+    // Rim/sat/dim/gloss come out of #panel-lens, so nothing is painted and
+    // nothing tunes .glass-edge: no rim, no bloom, no glow, no saturate. ──
+    for (const [u, blur] of [
+      ['panel-a', '--panel-a-blur'],
+      ['panel-b', '--panel-b-blur'],
     ] as const) {
       const util = css.match(new RegExp(`@utility ${u} \\{[\\s\\S]*?\\n\\}`))![0];
-      expect(util).toMatch(/--glass-p-fa1: var\(--panel-dim\)/); // dim IS the fill
-      expect(util).toMatch(/--glass-p-fa2: var\(--panel-dim\)/);
-      expect(util).toMatch(/--glass-p-tint: var\(--panel-dim-tint\)/);
-      expect(util).toMatch(new RegExp(`--glass-edge-base: var\\(${rim}\\)`));
-      expect(util).toMatch(new RegExp(`--glass-edge-hot: var\\(${rimHot}\\)`));
-      expect(util).toMatch(new RegExp(`--glass-p-blur: var\\(${blur}\\)`));
-      expect(util).toMatch(/background: transparent/);
+      // glassBg = the fallback fill; 0 on capable devices (transparent)
+      expect(util).toMatch(/background: rgb\(var\(--panel-dim-tint\) \/ var\(--panel-fill\)\)/);
       expect(util).toMatch(/border: 0/);
-      expect(util).not.toMatch(/linear-gradient/); // nothing painted by hand
-      // additive base: plain blur survives a paint-time url() failure
-      expect(util).toMatch(
-        new RegExp(
-          `backdrop-filter: blur\\(var\\(${blur}\\)\\) saturate\\(var\\(--panel-[ab]-sat\\)\\);`,
-        ),
-      );
+      expect(util).toMatch(new RegExp(`backdrop-filter: blur\\(var\\(${blur}\\)\\);`));
+      expect(util).not.toMatch(/box-shadow|text-shadow|linear-gradient|saturate/);
+      expect(util).not.toMatch(/--glass-edge|--glass-p-fa|--glass-p-sat|--glass-p-blur/);
     }
-    // the rim lives ONLY in .glass-edge — no .panel-x::before/::after anywhere
+    // no bespoke rim layer anywhere — the filter rim is the only rim
     expect(css).not.toMatch(/\.panel-[ab]::before/);
     expect(css).not.toMatch(/\.panel-[ab]::after/);
 
-    // ── ONE backdrop-filter, blur first, bend last, gated like .glx ──
+    // ── the chain: blur first (CSS), bend last (filter), gated like .glx;
+    // the dark theme swaps ONLY the filter id (its dim lives inside it) ──
+    const gateBody = `\\[data-lens='on'\\]:not\\(\\[data-glass='lite'\\]\\):not\\(\\[data-glass='off'\\]\\)`;
+    const gate = `:root${gateBody}`;
+    const darkGate = `:root\\[data-theme='dark'\\]${gateBody}`;
     for (const u of ['panel-a', 'panel-b'] as const) {
       expect(css).toMatch(
         new RegExp(
-          `:root\\[data-lens='on'\\]:not\\(\\[data-glass='lite'\\]\\):not\\(\\[data-glass='off'\\]\\) \\.${
-            u
-          } \\{[^}]*backdrop-filter: blur\\(var\\(--${
-            u
-          }-blur\\)\\) saturate\\(var\\(--${u}-sat\\)\\)\\s+url\\('#panel-lens'\\)`,
+          `${gate} \\.${u} \\{[^}]*backdrop-filter: blur\\(var\\(--${u}-blur\\)\\)\\s+url\\('#panel-lens'\\)`,
         ),
       );
+      expect(css).toMatch(new RegExp(`${darkGate}\\s*\\.${u} \\{[^}]*url\\('#panel-lens-dark'\\)`));
     }
+    // no CSS saturate in any panel rule — saturation 5 lives IN the filter
+    expect(css).not.toMatch(/\.panel-a[^{]*\{[^}]*saturate/);
+    expect(css).not.toMatch(/\.panel-b[^{]*\{[^}]*saturate/);
 
-    // ── the physics lens: ONE definition, box-clipped, scale = the tune ──
+    // ── the FULL kube chain in index.html: playground renderFilter() ported,
+    // two filters (theme picks the dim), each box-clipped, ONE definition ──
     expect(html.match(/id="panel-lens"/g)!.length).toBe(1);
-    expect(html).toMatch(/<filter id="panel-lens" x="0" y="0" width="100%" height="100%"/);
-    expect(html).not.toMatch(/<filter id="panel-lens" x="-/);
-    expect(html).toMatch(/href="\/panel-lens-map\.png"/);
-    expect(html).toMatch(/scale="43.67"/); // ±21.8px = approved playground tune
-    // the map is a GENERATED artifact (tools/gen-panel-lens.py), checked in
+    expect(html.match(/id="panel-lens-dark"/g)!.length).toBe(1);
+    // maps are GENERATED artifacts (tools/gen-panel-lens.py), checked in
     expect(existsSync(join(root, 'public/panel-lens-map.png'))).toBe(true);
+    expect(existsSync(join(root, 'public/panel-specular-map.png'))).toBe(true);
+    const specOpacity = token('--panel-lens-spec-opacity')!;
+    const specSat = token('--panel-lens-spec-saturation')!;
+    const dimTint = token('--panel-dim-tint')!.split(' ').map(Number);
+    // the playground's dimParams(): per-channel linear wash, toFixed(4)
+    const dimTables = (base: number): string[] => {
+      const [tr, tg, tb] = dimTint.map((c) => c / 255);
+      const [ar, ag, ab] = [base, base * 1.0526, Math.min(1, base * 1.4737)];
+      return [
+        `slope="${(1 - ar).toFixed(4)}" intercept="${(ar * tr).toFixed(4)}"`,
+        `slope="${(1 - ag).toFixed(4)}" intercept="${(ag * tg).toFixed(4)}"`,
+        `slope="${(1 - ab).toFixed(4)}" intercept="${(ab * tb).toFixed(4)}"`,
+      ];
+    };
+    const expectChain = (id: string, dim: string) => {
+      const f = html.match(new RegExp(`<filter id="${id}"[\\s\\S]*?</filter>`))![0];
+      // box-clipped: the % feImage resolves against the region = element box
+      expect(f).toMatch(
+        /<filter id="[^"]+" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">/,
+      );
+      expect(f).not.toMatch(/x="-/);
+      // playground result names, verbatim
+      expect(f).toMatch(/<feDisplacementMap in="SourceGraphic"[^>]*result="displaced"/);
+      expect(f).toMatch(
+        new RegExp(`type="saturate" values="${specSat}" result="displaced_saturated"`),
+      );
+      expect(f).toMatch(/in="displaced" result="rgb_dimmed"/);
+      expect(f).toMatch(/in="displaced_saturated" result="saturated_dimmed"/);
+      expect(f).toMatch(/href="\/panel-specular-map\.png"[^>]*result="specular_layer"/);
+      expect(f).toMatch(
+        /<feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/,
+      );
+      expect(f).toMatch(/<feComponentTransfer in="specular_layer" result="specular_faded">/);
+      expect(f).toMatch(`<feFuncA type="linear" slope="${specOpacity}"`);
+      expect(f).toMatch(
+        /<feBlend in="specular_saturated" in2="rgb_dimmed" mode="normal" result="withSaturation"/,
+      );
+      expect(f).toMatch(/<feBlend in="specular_faded" in2="withSaturation" mode="normal"/);
+      expect(f).toMatch(/scale="43.67"/); // = --panel-lens-max-displacement
+      // dim tables recomputed from --panel-lens-dim (same math as playground)
+      for (const line of dimTables(parseFloat(dim))) {
+        expect(f.split(line).length - 1).toBe(2); // both feComponentTransfer blocks
+      }
+    };
+    expectChain('panel-lens', token('--panel-lens-dim')!);
+    expectChain('panel-lens-dark', token('--panel-lens-dim', ":root[data-theme='dark']")!);
 
     // ── panels ride the same structural rules as every glass surface ──
     expect(css).toMatch(

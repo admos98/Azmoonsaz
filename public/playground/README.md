@@ -22,7 +22,10 @@ block that maps 1:1 onto `src/index.css` plus the new
 **Dim Strength (RGB wash)** — per-channel linear wash over mid-grey
 (ratios 1 : 1.053 : 1.474): white washes to warm grey, blue keeps its
 blue, zero at 0. Defaults: **0.15 light mode, 0.05-0.08 dark mode**.
-Maps to `--panel-dim` in the app.
+Maps to `--panel-lens-dim` in the app, where — like here — it runs
+INSIDE the filter. App rule: this playground and the live panels are
+identical chains (`#panel-lens` / `#panel-lens-dark` in `index.html`,
+maps from `tools/gen-panel-lens.py`).
 
 ## Run it locally
 

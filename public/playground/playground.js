@@ -714,25 +714,27 @@ function tokensJSON() {
   return JSON.stringify({ ...P, maxDisplacementPx: mapInfo ? +mapInfo.maxAbs.toFixed(2) : null }, null, 2);
 }
 function tokensAppCSS() {
-  return `/* ── 1:1 onto existing app tokens (src/index.css) ── */
---panel-a-blur: ${P.blur.toFixed(1)}px;              /* Blur Level */
---panel-a-dim-a: ${P.rgbDim.toFixed(2)};              /* RGB Dim — per-channel wash (white→grey, blue survives) */
---glass-edge-base: ${P.specOpacity.toFixed(2)};       /* Specular Opacity (rim weight) */
---glass-edge-hot: ${P.specOpacity.toFixed(2)};        /* keep = base on panels */
+  return `/* ── 1:1 onto the app's tokens (src/index.css) — Type A/B ── */
+--panel-a-blur: ${P.blur.toFixed(1)}px;              /* Blur Level — CSS chain, before url() */
+--panel-lens-dim: ${P.rgbDim.toFixed(2)};             /* RGB Dim — per-channel wash IN the filter */
+--panel-dim-tint: 103 100 112;                        /* dim wash target (mid-grey) */
+--panel-fill: ${P.glassBg.toFixed(2)};                   /* Glass Background Opacity (CSS fallback fill) */
 
-/* ── new physics params for the panel lens filter (kube.io chain) ── */
+/* ── panel lens filter params (the kube chain, index.html #panel-lens) ── */
 --panel-lens-surface: ${P.surface};
 --panel-lens-bezel: ${P.bezel}px;
 --panel-lens-thickness: ${P.thickness}px;
 --panel-lens-refraction-level: ${P.refraction.toFixed(2)};
 --panel-lens-scale-ratio: ${P.scale.toFixed(2)};
---panel-lens-spec-opacity: ${P.specOpacity.toFixed(2)};
---panel-lens-spec-saturation: ${P.saturation};
---panel-lens-spec-angle: ${P.angle}deg;
+--panel-lens-spec-opacity: ${P.specOpacity.toFixed(2)};    /* feFuncA slope */
+--panel-lens-spec-saturation: ${P.saturation};             /* feColorMatrix saturate */
+--panel-lens-spec-angle: ${P.angle}deg;                    /* specular map light */
 --panel-lens-radius: ${P.radius}px;
 --panel-lens-size: ${P.w}px ${P.h}px;
 /* max displacement: ${(mapInfo ? mapInfo.maxAbs.toFixed(1) : '—')}px
-   backdrop-filter: blur(${P.blur.toFixed(1)}px) saturate(...) url(#panel-lens) — Chromium only */`;
+   backdrop-filter: blur(${P.blur.toFixed(1)}px) url('#panel-lens');  — Chromium >= 138
+   the filter carries: saturate ring -> RGB dim -> specular blend (this playground,
+   ported by tools/gen-panel-lens.py into public/panel-lens-map.png + panel-specular-map.png) */`;
 }
 function bindExport() {
   $('copyBtn').addEventListener('click', () => copy(tokensCSS(), 'CSS tokens copied'));

@@ -24,6 +24,10 @@ fix; the smoothed profile normalizes to maxAbs 40.35 now, which only
 affects the internal normalization, not the pull). The script verifies
 index.html carries the token's scale.
 
+Also emits public/panel-specular-map.png — the playground's
+buildSpecularMap port (cos^2 x bump, light from --panel-lens-spec-angle),
+which the filter composites as the rim highlight.
+
 Stdlib only — writes RGBA8 PNG without Pillow. Run: python tools/gen-panel-lens.py
 """
 
@@ -65,6 +69,7 @@ def load_tune() -> dict:
         "bezel": px(css_token(css, "--panel-lens-bezel")),
         "thickness": px(css_token(css, "--panel-lens-thickness")),
         "max_disp": css_token(css, "--panel-lens-max-displacement").removesuffix("px"),
+        "angle": float(css_token(css, "--panel-lens-spec-angle").removesuffix("deg")),
     }
 
 
@@ -192,6 +197,55 @@ def build(tune: dict) -> tuple[bytes, int, int, float]:
     return bytes(buf), w, h, max_abs
 
 
+SPEC_OUT = ROOT / "public" / "panel-specular-map.png"
+
+
+def build_specular(tune: dict) -> bytes:
+    """Specular rim map — exact port of the playground's buildSpecularMap:
+    white-ish grey whose alpha = cos^2(normal - light) x parabolic bump,
+    bump peaked MAP_SCALE px inside the border, zero AT the border. Light
+    angle from --panel-lens-spec-angle (playground: -55deg). RGBA8,
+    transparent elsewhere; stretched onto the element by feImage."""
+    w = int(tune["w"] * MAP_SCALE)
+    h = int(tune["h"] * MAP_SCALE)
+    p = min(tune["radius"] * MAP_SCALE, min(w, h) / 2 - 1)
+    g_out = (p + 1) ** 2
+    light = tune["angle"] * math.pi / 180
+    ring = 2 * MAP_SCALE  # bump support: 0 .. 2*MAP_SCALE map px
+    peak = 1 * MAP_SCALE  # bump peak position
+    js_round = lambda v: int(v + 0.5)  # noqa: E731  Math.round is half-up
+    buf = bytearray(w * h * 4)  # all zeros = transparent
+    for y in range(h):
+        for x in range(w):
+            l, m = border_sdf(x, y, w, h, p)
+            s2 = l * l + m * m
+            if s2 > g_out:
+                continue
+            t = math.sqrt(s2)
+            if t < 1e-6:
+                continue
+            r_d = p - t  # distance from border
+            if r_d > ring:
+                continue
+            k = (r_d - peak) / peak  # parabolic window
+            bump = 1 - k * k
+            if bump <= 0:
+                continue
+            theta = math.atan2(m, l)  # outward normal angle
+            cv = math.cos(theta - light)
+            it = cv * cv * bump  # cos^2 x bump
+            a = min(255, js_round(it * 255))
+            if a <= 0:
+                continue
+            g = min(255, js_round(math.sqrt(it) * 255))
+            i = (y * w + x) * 4
+            buf[i] = g
+            buf[i + 1] = g
+            buf[i + 2] = g
+            buf[i + 3] = a
+    return bytes(buf)
+
+
 def main() -> None:
     tune = load_tune()
     rgba, w, h, max_abs = build(tune)
@@ -201,6 +255,8 @@ def main() -> None:
         f"bezel={tune['bezel']} thickness={tune['thickness']} radius={tune['radius']}  "
         f"profile maxAbs={max_abs:.2f}px"
     )
+    write_png(SPEC_OUT, w, h, build_specular(tune))
+    print(f"wrote {SPEC_OUT}  {w}x{h}  light angle {tune['angle']}deg")
     # the filter must carry the same max displacement as the token
     html = HTML_PATH.read_text(encoding="utf-8")
     want = f'scale="{tune["max_disp"]}"'
