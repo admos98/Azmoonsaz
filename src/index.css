@@ -304,18 +304,43 @@
   /* ── Panel Type A/B — shared material tokens ─────────────────────────────
      Transparent panels, no own fill: the RGB dim keeps text readable (whites
      wash, blues survive), the .glass-edge rim gives weight, #panel-lens
-     bends the backdrop (Snell/squircle map from tools/gen-panel-lens.py).
-     ONE number here drives every panel of that class app-wide — the
-     utilities below only consume var(). */
-  --panel-dim: 0.15; /* dim strength (light theme) */
+     bends the backdrop (Snell/squircle map from tools/gen-panel-lens.py —
+     the generator PARSES the --panel-lens-* tokens below).
+
+     LIGHT Type A is the kube.io replica tune, 1:1 from the playground
+     export (surface convex_squircle, bezel 14, thickness 72, radius 21,
+     refraction 0.50, blur 1.0, specular 0.34, rgb-dim 0.15). The dark
+     theme changes exactly ONE number: --panel-dim (0.05–0.08 band). */
+  --panel-dim: 0.15; /* rgb-dim — white→grey, blue survives */
   --panel-dim-tint: 103 100 112; /* wash target — Apple-measured mid-grey */
-  --panel-a-blur: 3px; /* banner: backdrop stays readable */
+  --panel-a-blur: 1px; /* Blur Level 1.0px (kube tune) */
   --panel-a-sat: 1.4;
+  --panel-a-rim: 0.34; /* Specular Opacity (rim weight) */
+  --panel-a-rim-hot: 0.34; /* keep = base on panels */
   --panel-b-blur: 20px; /* menu: heavier blur, reads as an object */
   --panel-b-sat: 1.5;
-  --panel-rim: 0.55; /* .glass-edge base weight on panels */
+  --panel-rim: 0.55; /* .glass-edge base weight (Type B) */
   --panel-rim-hot: 0.6; /* pointer-flare ceiling */
   --panel-ink-a: 0.22; /* dark corner line alpha */
+
+  /* ── the panel-lens physics params (kube.io chain) — SOURCE OF TRUTH:
+     tools/gen-panel-lens.py parses these; --panel-lens-max-displacement is
+     the feDisplacementMap scale in index.html. 43.67 is the approved
+     playground number (= 2·maxAbs·refraction·ratio at export time; the
+     head-smoothed profile now normalizes to 40.35 — normalization only)
+     → ±21.8px peak pull at the border. Change here → rerun the generator
+     → the filter follows. */
+  --panel-lens-surface: convex_squircle;
+  --panel-lens-bezel: 14px;
+  --panel-lens-thickness: 72px;
+  --panel-lens-refraction-level: 0.5;
+  --panel-lens-scale-ratio: 1;
+  --panel-lens-spec-opacity: 0.34;
+  --panel-lens-spec-saturation: 5;
+  --panel-lens-spec-angle: -55deg;
+  --panel-lens-radius: 21px;
+  --panel-lens-size: 326px 64px;
+  --panel-lens-max-displacement: 43.67px;
 
   /* Inner bloom — iOS rims spill light just inside the panel: a hairline of
      light under the top rim that melts downward. Paint-only (inset shadows,
@@ -504,10 +529,11 @@
   --pref-row-sel-border: rgba(248, 197, 66, 0.5);
   --pref-row-sheen: rgba(255, 255, 255, 0.12);
 
-  /* ── Panel Type A/B tokens (dark) — same names, softer numbers.
-     Dark theme: dim only lifts whites (0.05–0.08 band), rim reads as sheen. */
+  /* ── Panel Type A/B tokens (dark) — the kube tune, EXCEPT dim:
+     the one number that changes is --panel-dim (0.05–0.08 band → 0.06).
+     Blur, rim and lens params inherit the light values. */
   --panel-dim: 0.06;
-  --panel-a-blur: 3px;
+  --panel-a-blur: 1px;
   --panel-b-blur: 26px;
   --panel-rim: 0.42;
   --panel-rim-hot: 0.5;
@@ -1682,7 +1708,8 @@ button {
 /* ─── Panel Type A/B — the shared transparent material ────────────────────
    BOTH compose the library, never replace it:
      · .glass-edge ::before — the rim (corner catches + pointer flare + ink).
-       Panels only retune its WEIGHT via --panel-rim* tokens.
+       Panels only retune its WEIGHT: Type A via --panel-a-rim* (kube
+       specular 0.34/0.34), Type B via --panel-rim*.
      · .glass-edge ::after — the BODY: the RGB dim rides the fill slot
        (--glass-p-fa1/2), so it feathers at the rim like every other panel
        and the outer band shows the raw bent background (iOS 26).
@@ -1702,8 +1729,8 @@ button {
   --glass-p-tint: var(--panel-dim-tint);
   --glass-p-blur: var(--panel-a-blur);
   --glass-p-sat: var(--panel-a-sat);
-  --glass-edge-base: var(--panel-rim);
-  --glass-edge-hot: var(--panel-rim-hot);
+  --glass-edge-base: var(--panel-a-rim);
+  --glass-edge-hot: var(--panel-a-rim-hot);
   --glass-edge-ink-a: var(--panel-ink-a);
   background: transparent; /* ::after carries the dim — nothing painted here */
   border: 0; /* silhouette comes from the rim, not a border */

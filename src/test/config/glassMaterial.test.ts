@@ -475,9 +475,25 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--panel-dim-tint')).toBe('103 100 112');
     expect(token('--panel-rim')).toBe('0.55');
     expect(token('--panel-rim', ":root[data-theme='dark']")).toBe('0.42');
-    expect(token('--panel-a-blur')).toBe('3px');
+    // Type A light = the kube.io replica tune, 1:1 (playground export)
+    expect(token('--panel-a-blur')).toBe('1px'); // Blur Level 1.0px
+    expect(token('--panel-a-blur', ":root[data-theme='dark']")).toBe('1px'); // dark: dim is the ONLY change
+    expect(token('--panel-a-rim')).toBe('0.34'); // Specular Opacity (rim weight)
+    expect(token('--panel-a-rim-hot')).toBe('0.34'); // keep = base
     expect(token('--panel-b-blur')).toBe('20px');
     expect(token('--panel-b-blur', ":root[data-theme='dark']")).toBe('26px');
+    // physics params: the map generator parses these from src/index.css
+    expect(token('--panel-lens-surface')).toBe('convex_squircle');
+    expect(token('--panel-lens-bezel')).toBe('14px');
+    expect(token('--panel-lens-thickness')).toBe('72px');
+    expect(token('--panel-lens-refraction-level')).toBe('0.5'); // = 0.50 (prettier drops trailing zeros)
+    expect(token('--panel-lens-scale-ratio')).toBe('1'); // = 1.00
+    expect(token('--panel-lens-spec-opacity')).toBe('0.34');
+    expect(token('--panel-lens-spec-saturation')).toBe('5');
+    expect(token('--panel-lens-spec-angle')).toBe('-55deg');
+    expect(token('--panel-lens-radius')).toBe('21px');
+    expect(token('--panel-lens-size')).toBe('326px 64px');
+    expect(token('--panel-lens-max-displacement')).toBe('43.67px');
     // the deleted second-source tokens must never come back
     for (const dead of [
       '--panel-a-dim-tint',
@@ -491,15 +507,16 @@ describe('glass material contract (pixel-audit gates)', () => {
     }
 
     // ── utilities CONSUME tokens; no own paint, no bespoke rim layer ──
-    for (const [u, blur] of [
-      ['panel-a', '--panel-a-blur'],
-      ['panel-b', '--panel-b-blur'],
+    for (const [u, blur, rim, rimHot] of [
+      ['panel-a', '--panel-a-blur', '--panel-a-rim', '--panel-a-rim-hot'],
+      ['panel-b', '--panel-b-blur', '--panel-rim', '--panel-rim-hot'],
     ] as const) {
       const util = css.match(new RegExp(`@utility ${u} \\{[\\s\\S]*?\\n\\}`))![0];
       expect(util).toMatch(/--glass-p-fa1: var\(--panel-dim\)/); // dim IS the fill
       expect(util).toMatch(/--glass-p-fa2: var\(--panel-dim\)/);
       expect(util).toMatch(/--glass-p-tint: var\(--panel-dim-tint\)/);
-      expect(util).toMatch(/--glass-edge-base: var\(--panel-rim\)/);
+      expect(util).toMatch(new RegExp(`--glass-edge-base: var\\(${rim}\\)`));
+      expect(util).toMatch(new RegExp(`--glass-edge-hot: var\\(${rimHot}\\)`));
       expect(util).toMatch(new RegExp(`--glass-p-blur: var\\(${blur}\\)`));
       expect(util).toMatch(/background: transparent/);
       expect(util).toMatch(/border: 0/);
@@ -533,7 +550,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(html).toMatch(/<filter id="panel-lens" x="0" y="0" width="100%" height="100%"/);
     expect(html).not.toMatch(/<filter id="panel-lens" x="-/);
     expect(html).toMatch(/href="\/panel-lens-map\.png"/);
-    expect(html).toMatch(/scale="44"/); // ±22px = tuned playground pull
+    expect(html).toMatch(/scale="43.67"/); // ±21.8px = approved playground tune
     // the map is a GENERATED artifact (tools/gen-panel-lens.py), checked in
     expect(existsSync(join(root, 'public/panel-lens-map.png'))).toBe(true);
 

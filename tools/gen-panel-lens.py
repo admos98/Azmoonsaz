@@ -8,40 +8,64 @@ playground.js buildDisplacementMap/computeProfile), same math end to end:
   (n1=1, n2=1.5)  ->  per-distance profile (monotone head, box-smoothed)
   ->  rounded-rect border field  ->  normalized R/G displacement map
 
-Replaces the earlier heuristic (mirror zones / U-pull / zero verticals)
-with the tuned physical model — the app panels must bend exactly like the
-playground that produced the approved tune.
+SOURCE OF TRUTH IS src/index.css: the geometry (--panel-lens-size, -radius,
+-bezel, -thickness) is PARSED from the tokens, so the map can only ever be
+built from the approved tune (bezel 14, thickness 72, radius 21, 326x64).
+The raster is 2x that (652x128) so the vector field stays smooth when
+feImage stretches it box-clipped onto a panel.
 
-The map is SQUARE canonical geometry: <feImage preserveAspectRatio="none">
-stretches it box-clipped onto whatever panel consumes #panel-lens, so
-proportions carry the shape, not pixels — the same contract as
-/lens-map.png. The border starts at the PEAK and decays smoothly inward
-(no 0 -> peak cliff: monotone head + two box-smooth passes — the fix for
-the "bad corner" tearing).
+The border starts at the PEAK and decays smoothly inward (monotone head +
+two box-smooth passes — the fix for the "bad corner" tearing).
 
-Feed the PNG to <feDisplacementMap scale="44">  ->  max +/-22px pull at
-the border (the tuned playground number: refraction 0.5 x 43.7px).
+Feeding the PNG to <feDisplacementMap scale="43.67"> gives +/-21.8px
+peak pull at the border. 43.67 is the approved playground export number
+(2 * maxAbs * refraction * ratio AT EXPORT TIME — before the head-smoothing
+fix; the smoothed profile normalizes to maxAbs 40.35 now, which only
+affects the internal normalization, not the pull). The script verifies
+index.html carries the token's scale.
 
-Stdlib only — writes RGBA8 PNG without Pillow.
+Stdlib only — writes RGBA8 PNG without Pillow. Run: python tools/gen-panel-lens.py
 """
 
 from __future__ import annotations
 
 import math
+import re
 import struct
+import sys
 import zlib
 from pathlib import Path
 
-# ── canonical geometry (map space) ──────────────────────────────────────────
-SIZE = 512  # square; stretched onto the panel box by feImage
-RADIUS = 64  # corner radius of the rounded rect the band follows
-BEZEL = 24  # band width = the decay distance of the profile
-# playground ratio thickness:bezel = 72:14
-THICKNESS = 123
+ROOT = Path(__file__).resolve().parent.parent
+CSS_PATH = ROOT / "src" / "index.css"
+HTML_PATH = ROOT / "index.html"
+OUT = ROOT / "public" / "panel-lens-map.png"
+
+MAP_SCALE = 2  # raster 2x the canonical size (smooth field under stretch)
 IOR = 1.5
 SAMPLES = 256
 
-OUT = Path(__file__).resolve().parent.parent / "public" / "panel-lens-map.png"
+
+def css_token(css: str, name: str) -> str:
+    m = re.search(re.escape(name) + r":\s*([^;]+);", css)
+    if not m:
+        sys.exit(f"gen-panel-lens: token {name} not found in {CSS_PATH}")
+    return m.group(1).strip()
+
+
+def load_tune() -> dict:
+    """Read the approved geometry from the CSS tokens (single source)."""
+    css = CSS_PATH.read_text(encoding="utf-8")
+    w_s, h_s = css_token(css, "--panel-lens-size").split()
+    px = lambda v: float(v.removesuffix("px"))  # noqa: E731
+    return {
+        "w": px(w_s),
+        "h": px(h_s),
+        "radius": px(css_token(css, "--panel-lens-radius")),
+        "bezel": px(css_token(css, "--panel-lens-bezel")),
+        "thickness": px(css_token(css, "--panel-lens-thickness")),
+        "max_disp": css_token(css, "--panel-lens-max-displacement").removesuffix("px"),
+    }
 
 
 def surface(s: float) -> float:
@@ -122,12 +146,15 @@ def write_png(path: Path, w: int, h: int, rgba: bytes) -> None:
     )
 
 
-def build(size: int = SIZE) -> tuple[bytes, float]:
-    profile = compute_profile(BEZEL, THICKNESS)
+def build(tune: dict) -> tuple[bytes, int, int, float]:
+    # profile in CSS px (validates against the playground's maxAbs)
+    profile = compute_profile(tune["bezel"], tune["thickness"])
     max_abs = max(abs(v) for v in profile) or 1.0
-    w = h = size
-    p = min(RADIUS, min(w, h) / 2 - 1)
-    bez = max(0.75, float(BEZEL))
+    # raster in map px (2x the canonical size)
+    w = int(tune["w"] * MAP_SCALE)
+    h = int(tune["h"] * MAP_SCALE)
+    p = min(tune["radius"] * MAP_SCALE, min(w, h) / 2 - 1)
+    bez = max(0.75, tune["bezel"] * MAP_SCALE)
     g_out = (p + 1) ** 2
     g_in = p * p
     g_lo = (p - bez) ** 2
@@ -162,16 +189,27 @@ def build(size: int = SIZE) -> tuple[bytes, float]:
             buf[i] = int(128 + ux * v * 127 * fade) & 0xFF
             buf[i + 1] = int(128 + uy * v * 127 * fade) & 0xFF
             # B stays 0, A stays 255
-    return bytes(buf), max_abs
+    return bytes(buf), w, h, max_abs
 
 
 def main() -> None:
-    rgba, max_abs = build()
-    write_png(OUT, SIZE, SIZE, rgba)
+    tune = load_tune()
+    rgba, w, h, max_abs = build(tune)
+    write_png(OUT, w, h, rgba)
     print(
-        f"wrote {OUT}  {SIZE}x{SIZE}  "
-        f"profile maxAbs={max_abs:.2f}px  bezel={BEZEL} thickness={THICKNESS}"
+        f"wrote {OUT}  {w}x{h} (2x of {tune['w']}x{tune['h']})  "
+        f"bezel={tune['bezel']} thickness={tune['thickness']} radius={tune['radius']}  "
+        f"profile maxAbs={max_abs:.2f}px"
     )
+    # the filter must carry the same max displacement as the token
+    html = HTML_PATH.read_text(encoding="utf-8")
+    want = f'scale="{tune["max_disp"]}"'
+    if want not in html:
+        sys.exit(
+            f"gen-panel-lens: index.html is missing {want} "
+            f"(--panel-lens-max-displacement = {tune['max_disp']}px)"
+        )
+    print(f"filter scale verified: {want}")
 
 
 if __name__ == "__main__":
