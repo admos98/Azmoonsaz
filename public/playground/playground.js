@@ -279,7 +279,8 @@ function bindSliders() {
       P[id] = parseFloat(el.value);
       out.textContent = fmt[f](P[id]);
       if (id === 'specOpacity' || id === 'saturation' ||
-          id === 'refraction'  || id === 'blur' || id === 'rgbDim') {
+          id === 'refraction'  || id === 'blur' || id === 'rgbDim' ||
+          id === 'glassBg') {
         renderFilterAttrs();                       // attribute-only: instant
       } else if (id === 'angle') {
         schedule({ spec:true });                   // specular map only
@@ -403,7 +404,12 @@ function renderFilterAttrs() {
   if (dispEl) dispEl.setAttribute('scale', effectiveScale().toFixed(3));
   if (satEl)  satEl.setAttribute('values', P.saturation);
   if (slopeEl)slopeEl.setAttribute('slope', P.specOpacity);
-  if (bgEl)   bgEl.style.background =
+  applyGlassBg();
+}
+/* white veil fill (the site's Glass Background Opacity — panels keep it 0) */
+function applyGlassBg() {
+  const bgEl = $('glass');
+  if (bgEl) bgEl.style.background =
     P.glassBg > 0 ? `rgba(255,255,255,${P.glassBg})` : '';
 }
 
@@ -420,14 +426,11 @@ function dimParams() {
   ];
 }
 function setDimFuncs() {
-  const fR = document.querySelector(`#${FID} feFuncR`);
-  const fG = document.querySelector(`#${FID} feFuncG`);
-  const fB = document.querySelector(`#${FID} feFuncB`);
-  if (!fR) return;
   const [r, g, b] = dimParams();
-  fR.setAttribute('slope', r[0].toFixed(4)); fR.setAttribute('intercept', r[1].toFixed(4));
-  fG.setAttribute('slope', g[0].toFixed(4)); fG.setAttribute('intercept', g[1].toFixed(4));
-  fB.setAttribute('slope', b[0].toFixed(4)); fB.setAttribute('intercept', b[1].toFixed(4));
+  const all = (tag, pr) => document.querySelectorAll(`#${FID} ${tag}`)
+    .forEach(el => { el.setAttribute('slope', pr[0].toFixed(4));
+                     el.setAttribute('intercept', pr[1].toFixed(4)); });
+  all('feFuncR', r); all('feFuncG', g); all('feFuncB', b);
 }
 
 /* full filter element rebuild with fresh map data-URLs */
@@ -443,14 +446,19 @@ function renderFilter() {
                xChannelSelector="R" yChannelSelector="G" result="displaced"/>
       <feColorMatrix in="displaced" type="saturate"
                values="${P.saturation}" result="displaced_saturated"/>
-      <feComponentTransfer in="displaced_saturated" result="rgb_dimmed">
+      <feComponentTransfer in="displaced" result="rgb_dimmed">
+        <feFuncR type="linear" slope="${dimParams()[0][0].toFixed(4)}" intercept="${dimParams()[0][1].toFixed(4)}"/>
+        <feFuncG type="linear" slope="${dimParams()[1][0].toFixed(4)}" intercept="${dimParams()[1][1].toFixed(4)}"/>
+        <feFuncB type="linear" slope="${dimParams()[2][0].toFixed(4)}" intercept="${dimParams()[2][1].toFixed(4)}"/>
+      </feComponentTransfer>
+      <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">
         <feFuncR type="linear" slope="${dimParams()[0][0].toFixed(4)}" intercept="${dimParams()[0][1].toFixed(4)}"/>
         <feFuncG type="linear" slope="${dimParams()[1][0].toFixed(4)}" intercept="${dimParams()[1][1].toFixed(4)}"/>
         <feFuncB type="linear" slope="${dimParams()[2][0].toFixed(4)}" intercept="${dimParams()[2][1].toFixed(4)}"/>
       </feComponentTransfer>
       <feImage href="${specURL}" x="0" y="0"
                width="${P.w}" height="${P.h}" result="specular_layer"/>
-      <feComposite in="rgb_dimmed" in2="specular_layer"
+      <feComposite in="saturated_dimmed" in2="specular_layer"
                operator="in" result="specular_saturated"/>
       <feComponentTransfer in="specular_layer" result="specular_faded">
         <feFuncA type="linear" slope="${P.specOpacity}"/>
@@ -490,6 +498,7 @@ function runRebuild() {
       }
       specURL = toURL(buildSpecularMap(P.w, P.h, P.radius, P.angle));
       renderFilter();
+      applyGlassBg();
       drawChart();
     }
     if (dirty.sim) drawSim();
