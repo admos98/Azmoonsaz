@@ -432,23 +432,26 @@ function applyGlassBg() {
     P.glassBg > 0 ? `rgba(255,255,255,${P.glassBg})` : '';
 }
 
-/* RGB-aware dim — Apple-style HIGHLIGHT COMPRESSION, not a flat wash:
-   out(x) = x - s*x^3  (per channel, ratios 1 : 1.053 : 1.474).
-   White compresses to warm grey; mid tones barely move; darks are
-   mathematically untouched (x<0.3 shifts <0.3%).  So the slider IS the
-   'how much white dims' strength: light mode 0.15, dark mode 0.05-0.08. */
-const DIM_X = Array.from({length: 17}, (_, i) => i / 16);      // table knots
-function dimTable(sIdx) {
-  const s = Math.min(1, P.rgbDim * sIdx);
-  return DIM_X.map(x => Math.max(0, Math.min(1, x - s * x * x * x)).toFixed(4)).join(' ');
+/* RGB-aware dim — per-channel linear wash (rolled back from the table
+   curve: slider must stay responsive).  out = (1-a)*in + a*T per channel,
+   ratios 1 : 1.053 : 1.474 over mid-grey — white washes to warm grey,
+   blue keeps its blue.  Defaults carry the tuned numbers: light 0.15,
+   dark 0.05-0.08 (switch plate, retune, copy). */
+const DIM_TINT = [103/255, 100/255, 112/255];
+function dimParams() {
+  const base = P.rgbDim;
+  return [                                             // [slope, intercept]
+    [1 - base,                         base * DIM_TINT[0]],
+    [1 - base * 1.0526,                base * 1.0526 * DIM_TINT[1]],
+    [1 - Math.min(1, base * 1.4737),   Math.min(1, base * 1.4737) * DIM_TINT[2]]
+  ];
 }
 function setDimFuncs() {
-  const all = (tag, vals) => document.querySelectorAll(`#${FID} ${tag}`)
-    .forEach(el => { el.setAttribute('type', 'table');
-                     el.setAttribute('values', vals); });
-  all('feFuncR', dimTable(1));
-  all('feFuncG', dimTable(1.0526));
-  all('feFuncB', dimTable(1.4737));
+  const [r, g, b] = dimParams();
+  const all = (tag, pr) => document.querySelectorAll(`#${FID} ${tag}`)
+    .forEach(el => { el.setAttribute('slope', pr[0].toFixed(4));
+                     el.setAttribute('intercept', pr[1].toFixed(4)); });
+  all('feFuncR', r); all('feFuncG', g); all('feFuncB', b);
 }
 
 /* full filter element rebuild with fresh map data-URLs */
@@ -465,14 +468,14 @@ function renderFilter() {
       <feColorMatrix in="displaced" type="saturate"
                values="${P.saturation}" result="displaced_saturated"/>
       <feComponentTransfer in="displaced" result="rgb_dimmed">
-        <feFuncR type="table" values="${dimTable(1)}"/>
-        <feFuncG type="table" values="${dimTable(1.0526)}"/>
-        <feFuncB type="table" values="${dimTable(1.4737)}"/>
+        <feFuncR type="linear" slope="${dimParams()[0][0].toFixed(4)}" intercept="${dimParams()[0][1].toFixed(4)}"/>
+        <feFuncG type="linear" slope="${dimParams()[1][0].toFixed(4)}" intercept="${dimParams()[1][1].toFixed(4)}"/>
+        <feFuncB type="linear" slope="${dimParams()[2][0].toFixed(4)}" intercept="${dimParams()[2][1].toFixed(4)}"/>
       </feComponentTransfer>
       <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">
-        <feFuncR type="table" values="${dimTable(1)}"/>
-        <feFuncG type="table" values="${dimTable(1.0526)}"/>
-        <feFuncB type="table" values="${dimTable(1.4737)}"/>
+        <feFuncR type="linear" slope="${dimParams()[0][0].toFixed(4)}" intercept="${dimParams()[0][1].toFixed(4)}"/>
+        <feFuncG type="linear" slope="${dimParams()[1][0].toFixed(4)}" intercept="${dimParams()[1][1].toFixed(4)}"/>
+        <feFuncB type="linear" slope="${dimParams()[2][0].toFixed(4)}" intercept="${dimParams()[2][1].toFixed(4)}"/>
       </feComponentTransfer>
       <feImage href="${specURL}" x="0" y="0"
                width="${P.w}" height="${P.h}" result="specular_layer"/>

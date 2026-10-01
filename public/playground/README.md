@@ -19,11 +19,10 @@ convex squircle bezel). Tune there, then **Copy app tokens** for a
 block that maps 1:1 onto `src/index.css` plus the new
 `--panel-lens-*` physics params.
 
-**Dim Strength (RGB wash)** — Apple-style highlight compression
-(`out = x - s*x^3` per channel, ratios 1 : 1.053 : 1.474): white
-compresses to warm grey, darks mathematically untouched (no tint at 0).
-Slider = how much white dims: **0.15 light mode, 0.05-0.08 dark mode**.
-Maps to `--panel-a-dim-a` in the app.
+**Dim Strength (RGB wash)** — per-channel linear wash over mid-grey
+(ratios 1 : 1.053 : 1.474): white washes to warm grey, blue keeps its
+blue, zero at 0. Defaults: **0.15 light mode, 0.05-0.08 dark mode**.
+Maps to `--panel-dim` in the app.
 
 ## Run it locally
 
