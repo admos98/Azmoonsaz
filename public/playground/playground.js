@@ -9,7 +9,11 @@
                               feColorMatrix/feComposite/feFuncA/feBlend)
    ════════════════════════════════════════════════════════════════════ */
 
-let DPR = Math.min(window.devicePixelRatio || 1, 2);
+/* Map supersampling: floor at 2x so a 100%-scaled (1x) display still gets
+   a 2x bitmap drawn into CSS-px rect — diagonals stay smooth like Apple's
+   3x compositing instead of stair-stepping at 45°. */
+const mapDPR = () => Math.max(2, Math.min(window.devicePixelRatio || 1, 2));
+let DPR = mapDPR();
 const FID = 'lgf';
 const IOR = 1.5;                     // glass refractive index (article default)
 
@@ -58,6 +62,21 @@ function computeProfile(bezelPx, thicknessPx, surfaceFn, samples = 256) {
       out[k] = n[0] * (depth / n[1]);
     } else out[k] = 0;
   }
+  /* FIX: the squircle's infinite slope at s=0 makes the first samples spike
+     then cliff (15px -> 40px inside half a pixel) — over flat colour that is
+     invisible, over a colour seam it tears/ghosts (the "bad corner").
+     Start the border at the peak, decay monotonically, box-smooth twice. */
+  out[0] = out[1];
+  for (let i = 2; i < samples; i++) {
+    if (Math.abs(out[i]) > Math.abs(out[i - 1])) out[i] = out[i - 1];
+  }
+  for (let pass = 0; pass < 2; pass++) {
+    const tmp = Float64Array.from(out);
+    for (let i = 1; i < samples - 1; i++) {
+      out[i] = (tmp[i - 1] + 2 * tmp[i] + tmp[i + 1]) / 4;
+    }
+  }
+  out[samples - 1] = 0;
   return out;
 }
 
@@ -168,7 +187,7 @@ function profileIconPath(fn, size = 20, pad = 3) {
 const $ = id => document.getElementById(id);
 const P = {  // parameter state — defaults = site Searchbox demo + app RGB dim
   specOpacity:0.20, saturation:4, refraction:0.70, blur:1.0,
-  angle:-60, glassBg:0, rgbDim:0.38,
+  angle:-60, glassBg:0, rgbDim:0.15,
   surface:'convex_squircle', bezel:14, thickness:66, scale:1,
   radius:21, w:320, h:42
 };
@@ -197,10 +216,10 @@ const PRESETS = {          // exact values shown in the article's demos
      defaults (convex squircle bezel, IOR 1.5) — tune from here. */
   panelA: { specOpacity:0.45, saturation:8, refraction:0.70, blur:3.0,
             surface:'convex_squircle', bezel:12, thickness:66,
-            radius:12, w:380, h:200, glassBg:0, rgbDim:0.38 },
+            radius:12, w:380, h:200, glassBg:0, rgbDim:0.15 },
   panelB: { specOpacity:0.35, saturation:6, refraction:0.70, blur:20.0,
             surface:'convex_squircle', bezel:16, thickness:70,
-            radius:24, w:360, h:300, glassBg:0, rgbDim:0.44 }
+            radius:24, w:360, h:300, glassBg:0, rgbDim:0.15 }
 };
 
 /* ── URL-hash state: the address bar IS the shareable tuning ──
@@ -413,24 +432,23 @@ function applyGlassBg() {
     P.glassBg > 0 ? `rgba(255,255,255,${P.glassBg})` : '';
 }
 
-/* RGB-aware dim — per-channel alpha over a mid-grey tint, ratios from the
-   app measurement (alpha 0.38R / 0.40G / 0.56B).  out = (1-a)*in + a*T, so
-   white washes to warm grey while dark blue keeps its blue.            */
-const DIM_TINT = [103/255, 100/255, 112/255];
-function dimParams() {
-  const base = P.rgbDim;
-  return [                              // [slope, intercept] per channel
-    [1 - base,            base * DIM_TINT[0]],
-    [1 - base*1.0526,     base*1.0526 * DIM_TINT[1]],   // cap below
-    [1 - Math.min(1, base*1.4737), Math.min(1, base*1.4737) * DIM_TINT[2]]
-  ];
+/* RGB-aware dim — Apple-style HIGHLIGHT COMPRESSION, not a flat wash:
+   out(x) = x - s*x^3  (per channel, ratios 1 : 1.053 : 1.474).
+   White compresses to warm grey; mid tones barely move; darks are
+   mathematically untouched (x<0.3 shifts <0.3%).  So the slider IS the
+   'how much white dims' strength: light mode 0.15, dark mode 0.05-0.08. */
+const DIM_X = Array.from({length: 17}, (_, i) => i / 16);      // table knots
+function dimTable(sIdx) {
+  const s = Math.min(1, P.rgbDim * sIdx);
+  return DIM_X.map(x => Math.max(0, Math.min(1, x - s * x * x * x)).toFixed(4)).join(' ');
 }
 function setDimFuncs() {
-  const [r, g, b] = dimParams();
-  const all = (tag, pr) => document.querySelectorAll(`#${FID} ${tag}`)
-    .forEach(el => { el.setAttribute('slope', pr[0].toFixed(4));
-                     el.setAttribute('intercept', pr[1].toFixed(4)); });
-  all('feFuncR', r); all('feFuncG', g); all('feFuncB', b);
+  const all = (tag, vals) => document.querySelectorAll(`#${FID} ${tag}`)
+    .forEach(el => { el.setAttribute('type', 'table');
+                     el.setAttribute('values', vals); });
+  all('feFuncR', dimTable(1));
+  all('feFuncG', dimTable(1.0526));
+  all('feFuncB', dimTable(1.4737));
 }
 
 /* full filter element rebuild with fresh map data-URLs */
@@ -447,14 +465,14 @@ function renderFilter() {
       <feColorMatrix in="displaced" type="saturate"
                values="${P.saturation}" result="displaced_saturated"/>
       <feComponentTransfer in="displaced" result="rgb_dimmed">
-        <feFuncR type="linear" slope="${dimParams()[0][0].toFixed(4)}" intercept="${dimParams()[0][1].toFixed(4)}"/>
-        <feFuncG type="linear" slope="${dimParams()[1][0].toFixed(4)}" intercept="${dimParams()[1][1].toFixed(4)}"/>
-        <feFuncB type="linear" slope="${dimParams()[2][0].toFixed(4)}" intercept="${dimParams()[2][1].toFixed(4)}"/>
+        <feFuncR type="table" values="${dimTable(1)}"/>
+        <feFuncG type="table" values="${dimTable(1.0526)}"/>
+        <feFuncB type="table" values="${dimTable(1.4737)}"/>
       </feComponentTransfer>
       <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">
-        <feFuncR type="linear" slope="${dimParams()[0][0].toFixed(4)}" intercept="${dimParams()[0][1].toFixed(4)}"/>
-        <feFuncG type="linear" slope="${dimParams()[1][0].toFixed(4)}" intercept="${dimParams()[1][1].toFixed(4)}"/>
-        <feFuncB type="linear" slope="${dimParams()[2][0].toFixed(4)}" intercept="${dimParams()[2][1].toFixed(4)}"/>
+        <feFuncR type="table" values="${dimTable(1)}"/>
+        <feFuncG type="table" values="${dimTable(1.0526)}"/>
+        <feFuncB type="table" values="${dimTable(1.4737)}"/>
       </feComponentTransfer>
       <feImage href="${specURL}" x="0" y="0"
                width="${P.w}" height="${P.h}" result="specular_layer"/>
@@ -769,7 +787,7 @@ function toast(msg) {
   }
 
   window.addEventListener('resize', () => {
-    const d = Math.min(window.devicePixelRatio || 1, 2);
+    const d = mapDPR();
     if (d !== DPR) {           // browser zoom changed — maps must be rebuilt
       DPR = d;
       schedule({ map:true, spec:true, sim:true });
