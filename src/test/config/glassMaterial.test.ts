@@ -13,7 +13,7 @@
  * pipeline and update the audit doc.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = join(__dirname, '../../..');
@@ -48,6 +48,7 @@ function token(name: string, scope = ':root'): string | null {
  *  classes don't trip the absence gates. */
 function component(path: string): string {
   return readFileSync(join(root, path), 'utf8')
+    .replace(/\r/g, '') // autocrlf checkouts are CRLF; // strips need line ends
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n')
     .map((l) => l.replace(/^\s*\/\/.*$/, ''))
@@ -190,7 +191,7 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('rim shows the REFRACTED BACKGROUND + ONE dominant corner catch + an INK shadow line', () => {
     // the fixed per-edge tint ring (the "static line with static colour") is gone
     expect(token('--glass-edge-base')).toBe('0.42');
-    expect(token('--glass-edge-base', ':root[data-theme=\'dark\']')).toBe('0.24');
+    expect(token('--glass-edge-base', ":root[data-theme='dark']")).toBe('0.24');
     // the single top-centre searchlight is retired
     expect(css).not.toMatch(/140% 90% at 50% 0%/);
     // ONE tight dominant corner catch on the ring (Apple: a single light source)
@@ -199,7 +200,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     // the white band needs its dark counterpart to read as glass
     expect(css).toMatch(/var\(--glass-edge-ink\) \/ var\(--glass-edge-ink-a\)/);
     expect(token('--glass-edge-ink-a', ':root')).toBe('0.18');
-    expect(token('--glass-edge-ink-a', ':root[data-theme=\'dark\']')).toBe('0.06');
+    expect(token('--glass-edge-ink-a', ":root[data-theme='dark']")).toBe('0.06');
     // + the WIDE soft half of the single light glows INSIDE the fill (::after);
     // the echo-corner token is RETIRED (two painted sources read as decoration)
     const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
@@ -207,7 +208,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--glass-corner-b', ':root')).toBeNull();
     // corner light colour is a token (warm in light, cool in dark), not static white
     expect(token('--glass-edge-corner')).toBe('255 248 231');
-    expect(token('--glass-edge-corner', ':root[data-theme=\'dark\']')).toBe('236 242 255');
+    expect(token('--glass-edge-corner', ":root[data-theme='dark']")).toBe('236 242 255');
     // no fixed tint tokens, no resting linear rim, anywhere
     expect(css).not.toMatch(/--glass-edge-tint-/);
     expect(css).not.toMatch(/glass-edge-mid-f|glass-edge-bot-f/);
@@ -223,7 +224,7 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('the rim band stays crisp and stays CLEAR on sides/bottom', () => {
     const max = token('--glass-edge-max');
     expect(parseFloat(max!)).toBeLessThanOrEqual(2.5);
-    const darkMax = token('--glass-edge-max', ':root[data-theme=\'dark\']');
+    const darkMax = token('--glass-edge-max', ":root[data-theme='dark']");
     expect(parseFloat(darkMax!)).toBeLessThanOrEqual(2.5);
     // uniform band mask (no directional feather) — sides show the lens output
     expect(css).toMatch(
@@ -263,9 +264,9 @@ describe('glass material contract (pixel-audit gates)', () => {
 
   it('no static hairline: the panel border is transparent in both themes', () => {
     expect(token('--glass-p-ba')).toBe('0');
-    expect(token('--glass-p-ba', ':root[data-theme=\'dark\']')).toBe('0');
+    expect(token('--glass-p-ba', ":root[data-theme='dark']")).toBe('0');
     // off tier restores a visible border for solid panels
-    expect(token('--glass-p-ba', ':root[data-glass=\'off\']')).toBe('0.35');
+    expect(token('--glass-p-ba', ":root[data-glass='off']")).toBe('0.35');
     // and disables the feather (a solid fill must not have a soft fringe)
     expect(css).toMatch(
       /:root\[data-glass='off'\] \.glass-edge::after\s*\{[^}]*mask-image:\s*none/s,
@@ -275,11 +276,11 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('inner bloom — light spills inside under the top rim (paint-only)', () => {
     expect(token('--glass-bloom-line-a')).toBe('0.24');
     expect(token('--glass-bloom-a')).toBe('0.38');
-    expect(token('--glass-bloom-a', ':root[data-theme=\'dark\']')).toBe('0.05');
+    expect(token('--glass-bloom-a', ":root[data-theme='dark']")).toBe('0.05');
     // dark keeps its own dim hairline (it used to inherit the 0.24 light value;
     // at 0.10 it painted a static full-width WHITE STRIPE across every dark
     // panel — hero/menus/notif — so it halved to 0.05)
-    expect(token('--glass-bloom-line-a', ':root[data-theme=\'dark\']')).toBe('0.05');
+    expect(token('--glass-bloom-line-a', ":root[data-theme='dark']")).toBe('0.05');
     expect(css).toMatch(/inset 0 1px 0 rgb\(255 255 255 \/ var\(--glass-bloom-line-a\)\)/);
   });
 
@@ -308,7 +309,9 @@ describe('glass material contract (pixel-audit gates)', () => {
     const app = readFileSync(join(root, 'src/App.tsx'), 'utf8');
     expect(app).not.toMatch(/app-bg-stage/);
     // the plate the user asked for is the only background
-    expect(css).toMatch(/--page-plate:\s*url\('~\/backgrounds\/bg-d-(light|dark)\.svg'\)|--page-plate:\s*url\('\/backgrounds\/bg-d-(light|dark)\.svg'\)/);
+    expect(css).toMatch(
+      /--page-plate:\s*url\('~\/backgrounds\/bg-d-(light|dark)\.svg'\)|--page-plate:\s*url\('\/backgrounds\/bg-d-(light|dark)\.svg'\)/,
+    );
     expect(css).toMatch(/#app-teacher-shell::before/);
   });
 
@@ -355,7 +358,9 @@ describe('glass material contract (pixel-audit gates)', () => {
     );
     // the lens is purely ADDITIVE: the base utilities keep plain blur so a
     // paint-time url() failure can never strip blur again
-    expect(css).toMatch(/@utility glx \{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-bg-blur\)\) saturate\(var\(--glass-bg-sat\)\);/);
+    expect(css).toMatch(
+      /@utility glx \{[\s\S]*?backdrop-filter:\s*blur\(var\(--glass-bg-blur\)\) saturate\(var\(--glass-bg-sat\)\);/,
+    );
     // the boot probe sets the gate (external /boot.js — inline was CSP-blocked)
     expect(boot).toMatch(/dataset\.lens = major >= 138 \? 'on' : 'off'/);
     // the false-positive @supports syntax probe is GONE
@@ -366,10 +371,10 @@ describe('glass material contract (pixel-audit gates)', () => {
     // backdrop root scoping made nested filters useless and stacked fills
     // into a wash — the de-nest rule strips filter + rim + feather in one hit
     expect(css).toMatch(
-      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+:is\(\.glx, \.glx-strong, \.glx-dark\)\s+:is\(\.glx, \.glx-strong, \.glx-dark\)\s*\{[^}]*backdrop-filter:\s*none/s,
+      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.panel-a, \.panel-b\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.panel-a, \.panel-b\)\s*\{[^}]*backdrop-filter:\s*none/s,
     );
     expect(css).toMatch(
-      /:is\(\.glx, \.glx-strong, \.glx-dark\)\s+:is\(\.glx, \.glx-strong, \.glx-dark\)\.glass-edge::before\s*\{[^}]*content:\s*none/s,
+      /:is\(\.glx, \.glx-strong, \.glx-dark, \.panel-a, \.panel-b\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.panel-a, \.panel-b\)\.glass-edge::before\s*\{[^}]*content:\s*none/s,
     );
     // and inset rows no longer ask for a rim in markup
     const ui = component('src/components/UIComponents.tsx');
@@ -460,7 +465,98 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(pref).not.toMatch(/gold-soft/);
   });
 
+  it('Type A/B are LIBRARY material: shared tokens, composed rim, one lens chain', () => {
+    // ── tokens: ONE number drives every panel of the class app-wide ──
+    expect(token('--panel-dim')).toBe('0.15'); // light
+    expect(token('--panel-dim', ":root[data-theme='dark']")).toBe('0.06');
+    // tiers swap TOKENS, never markup: blur goes, the dim carries contrast
+    expect(token('--panel-dim', ":root[data-glass='lite']")).toBe('0.32');
+    expect(token('--panel-dim', ":root[data-glass='off']")).toBe('0.85');
+    expect(token('--panel-dim-tint')).toBe('103 100 112');
+    expect(token('--panel-rim')).toBe('0.55');
+    expect(token('--panel-rim', ":root[data-theme='dark']")).toBe('0.42');
+    expect(token('--panel-a-blur')).toBe('3px');
+    expect(token('--panel-b-blur')).toBe('20px');
+    expect(token('--panel-b-blur', ":root[data-theme='dark']")).toBe('26px');
+    // the deleted second-source tokens must never come back
+    for (const dead of [
+      '--panel-a-dim-tint',
+      '--panel-a-dim-a',
+      '--panel-b-dim-a',
+      '--panel-a-reflect',
+      '--panel-a-rim-bg',
+      '--panel-b-rim-bg',
+    ]) {
+      expect(token(dead)).toBeNull();
+    }
+
+    // ── utilities CONSUME tokens; no own paint, no bespoke rim layer ──
+    for (const [u, blur] of [
+      ['panel-a', '--panel-a-blur'],
+      ['panel-b', '--panel-b-blur'],
+    ] as const) {
+      const util = css.match(new RegExp(`@utility ${u} \\{[\\s\\S]*?\\n\\}`))![0];
+      expect(util).toMatch(/--glass-p-fa1: var\(--panel-dim\)/); // dim IS the fill
+      expect(util).toMatch(/--glass-p-fa2: var\(--panel-dim\)/);
+      expect(util).toMatch(/--glass-p-tint: var\(--panel-dim-tint\)/);
+      expect(util).toMatch(/--glass-edge-base: var\(--panel-rim\)/);
+      expect(util).toMatch(new RegExp(`--glass-p-blur: var\\(${blur}\\)`));
+      expect(util).toMatch(/background: transparent/);
+      expect(util).toMatch(/border: 0/);
+      expect(util).not.toMatch(/linear-gradient/); // nothing painted by hand
+      // additive base: plain blur survives a paint-time url() failure
+      expect(util).toMatch(
+        new RegExp(
+          `backdrop-filter: blur\\(var\\(${blur}\\)\\) saturate\\(var\\(--panel-[ab]-sat\\)\\);`,
+        ),
+      );
+    }
+    // the rim lives ONLY in .glass-edge — no .panel-x::before/::after anywhere
+    expect(css).not.toMatch(/\.panel-[ab]::before/);
+    expect(css).not.toMatch(/\.panel-[ab]::after/);
+
+    // ── ONE backdrop-filter, blur first, bend last, gated like .glx ──
+    for (const u of ['panel-a', 'panel-b'] as const) {
+      expect(css).toMatch(
+        new RegExp(
+          `:root\\[data-lens='on'\\]:not\\(\\[data-glass='lite'\\]\\):not\\(\\[data-glass='off'\\]\\) \\.${
+            u
+          } \\{[^}]*backdrop-filter: blur\\(var\\(--${
+            u
+          }-blur\\)\\) saturate\\(var\\(--${u}-sat\\)\\)\\s+url\\('#panel-lens'\\)`,
+        ),
+      );
+    }
+
+    // ── the physics lens: ONE definition, box-clipped, scale = the tune ──
+    expect(html.match(/id="panel-lens"/g)!.length).toBe(1);
+    expect(html).toMatch(/<filter id="panel-lens" x="0" y="0" width="100%" height="100%"/);
+    expect(html).not.toMatch(/<filter id="panel-lens" x="-/);
+    expect(html).toMatch(/href="\/panel-lens-map\.png"/);
+    expect(html).toMatch(/scale="44"/); // ±22px = tuned playground pull
+    // the map is a GENERATED artifact (tools/gen-panel-lens.py), checked in
+    expect(existsSync(join(root, 'public/panel-lens-map.png'))).toBe(true);
+
+    // ── panels ride the same structural rules as every glass surface ──
+    expect(css).toMatch(
+      /:root\[data-glass='lite'\]\s+:is\([^)]*\.panel-a, \.panel-b[^)]*\)\s*\{\s*backdrop-filter: none;/,
+    );
+    expect(css).toMatch(
+      /:root\[data-glass='off'\]\s+:is\([^)]*\.panel-a, \.panel-b[^)]*\)\s*\{\s*backdrop-filter: none;/,
+    );
+    // de-nest: a panel inside a panel flattens (backdrop roots)
+    expect(css).toMatch(
+      /:is\(\.glx, \.glx-strong, \.glx-dark, \.panel-a, \.panel-b\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.panel-a, \.panel-b\)\s*\{[^}]*backdrop-filter:\s*none/s,
+    );
+    // squircle corners apply to the panel utilities too
+    expect(css).toMatch(
+      /@supports \(corner-shape: squircle\) \{[\s\S]*?\.panel-a,\s*\.panel-b \{\s*corner-shape: squircle;/,
+    );
+  });
+
   it('dark login token pin exists (white-on-white regression fix)', () => {
-    expect(css).toMatch(/:root\[data-theme='dark'\] \.login-shell\s*\{[^}]*--color-ink:\s*#1a1a2e/s);
+    expect(css).toMatch(
+      /:root\[data-theme='dark'\] \.login-shell\s*\{[^}]*--color-ink:\s*#1a1a2e/s,
+    );
   });
 });

@@ -93,10 +93,18 @@ function TestBackdrop({ label }: { label: string }) {
 
 const MATERIALS: Array<{ name: string; job: string; cls: string }> = [
   { name: 'glx', job: 'quiet content surface — cards, panels, topbar', cls: 'glx glass-edge' },
-  { name: 'glx-strong', job: 'modal / hero — the primary floating material', cls: 'glx-strong glass-edge' },
+  {
+    name: 'glx-strong',
+    job: 'modal / hero — the primary floating material',
+    cls: 'glx-strong glass-edge',
+  },
   { name: 'glx-dark', job: 'brand field — ink surface with gold warmth', cls: 'glx-dark' },
   { name: 'glx-inset', job: 'concave — inputs, wells, nested controls', cls: 'glx-inset' },
-  { name: 'glx-clear', job: 'barely-there — over already-quiet content', cls: 'glx-clear glass-edge' },
+  {
+    name: 'glx-clear',
+    job: 'barely-there — over already-quiet content',
+    cls: 'glx-clear glass-edge',
+  },
 ];
 
 const ELEVATIONS = [
@@ -132,30 +140,6 @@ export default function FixtureGallery() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState(false);
   const triggerRef = useRef<HTMLElement | null>(null);
-
-  // ── Drag for panel A/B test ──
-  const [panelAPos, setPanelAPos] = useState({ x: 40, y: 40 });
-  const [panelBPos, setPanelBPos] = useState({ x: 420, y: 220 });
-  const dragRef = useRef<{ id: 'a' | 'b'; startX: number; startY: number; originX: number; originY: number } | null>(null);
-
-  const onPanelPointerDown = (e: React.PointerEvent, id: 'a' | 'b') => {
-    const pos = id === 'a' ? panelAPos : panelBPos;
-    dragRef.current = { id, startX: e.clientX, startY: e.clientY, originX: pos.x, originY: pos.y };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  };
-
-  const onPanelPointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const { id, startX, startY, originX, originY } = dragRef.current;
-    const x = originX + e.clientX - startX;
-    const y = originY + e.clientY - startY;
-    if (id === 'a') setPanelAPos({ x, y });
-    else setPanelBPos({ x, y });
-  };
-
-  const onPanelPointerUp = () => {
-    dragRef.current = null;
-  };
 
   // Structural match for Tabs' internal TabItem (id + label, icon optional).
   const tabs = [
@@ -284,15 +268,7 @@ export default function FixtureGallery() {
           <Card glassLayer="light" className="space-y-5 p-5">
             <div className="flex flex-wrap items-center gap-3">
               {(
-                [
-                  'primary',
-                  'secondary',
-                  'outline',
-                  'ghost',
-                  'danger',
-                  'success',
-                  'gold',
-                ] as const
+                ['primary', 'secondary', 'outline', 'ghost', 'danger', 'success', 'gold'] as const
               ).map((v) => (
                 <Button key={v} variant={v}>
                   {v}
@@ -454,52 +430,6 @@ export default function FixtureGallery() {
               </div>
             ))}
           </Card>
-        </Section>
-
-        {/* 10 ─ Panel Type A/B test */}
-        <Section
-          title="۱۰. پنل نوع A/B"
-          hint="Type A: notification banner — high transparency, low blur. Type B: menu panel — lower transparency, higher blur. Drag to test."
-        >
-          <div className="relative overflow-hidden rounded-3xl" style={{ minHeight: 400 }}>
-            {/* Background surfaces for reflection testing */}
-            <div className="absolute inset-0">
-              <div className="absolute rounded-xl" style={{ width: 200, height: 120, top: '15%', left: '10%', background: 'linear-gradient(135deg, #4a90d9, #2c5aa0)' }} />
-              <div className="absolute rounded-xl" style={{ width: 300, height: 80, top: '40%', left: '60%', background: 'linear-gradient(135deg, #f5f0e1, #e8e0cc)' }} />
-              <div className="absolute rounded-xl" style={{ width: 150, height: 150, top: '65%', left: '25%', background: 'linear-gradient(135deg, #5cb85c, #3d8b3d)' }} />
-              <div className="absolute rounded-xl" style={{ width: 180, height: 100, top: '20%', left: '70%', background: 'linear-gradient(135deg, #f0ad4e, #d4882a)' }} />
-            </div>
-            {/* Type A panel — real glass: lens bend + rim + squircle corners */}
-            <div
-              className="panel-a glx-sheen glass-edge absolute rounded-3xl p-6"
-              style={{ width: 380, minHeight: 200, top: panelAPos.y, left: panelAPos.x, cursor: 'grab' }}
-              onPointerDown={(e) => onPanelPointerDown(e, 'a')}
-              onPointerMove={onPanelPointerMove}
-              onPointerUp={onPanelPointerUp}
-              onPointerCancel={onPanelPointerUp}
-            >
-              <p className="text-label font-black text-[var(--color-gold)]">Type A — Notification Banner</p>
-              <p className="text-caption text-[var(--color-text-tertiary)]">High transparency, low blur, reflects nearest horizontal color</p>
-              <p className="mt-3 text-body text-[var(--color-text-primary)]">
-                خوانایی متن روی این سطح باید بدون تلاش انجام شود.
-              </p>
-            </div>
-            {/* Type B panel — real glass: lens bend + rim + squircle corners */}
-            <div
-              className="panel-b glx-sheen glass-edge absolute rounded-3xl p-6"
-              style={{ width: 380, minHeight: 200, top: panelBPos.y, left: panelBPos.x, cursor: 'grab' }}
-              onPointerDown={(e) => onPanelPointerDown(e, 'b')}
-              onPointerMove={onPanelPointerMove}
-              onPointerUp={onPanelPointerUp}
-              onPointerCancel={onPanelPointerUp}
-            >
-              <p className="text-label font-black text-[var(--color-gold)]">Type B — Menu Panel</p>
-              <p className="text-caption text-[var(--color-text-tertiary)]">Lower transparency, higher blur, reflects fixed background color</p>
-              <p className="mt-3 text-body text-[var(--color-text-primary)]">
-                خوانایی متن روی این سطح باید بدون تلاش انجام شود.
-              </p>
-            </div>
-          </div>
         </Section>
 
         <footer className="pb-8 text-center text-micro text-[var(--color-text-tertiary)]">

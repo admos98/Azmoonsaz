@@ -301,24 +301,21 @@
   --glass-text-ambient: 255 255 255;
   --glass-text-ambient-a: 0.5;
 
-  /* ── Panel Type A/B test tokens ── */
-  --panel-a-blur: 3px;
+  /* ── Panel Type A/B — shared material tokens ─────────────────────────────
+     Transparent panels, no own fill: the RGB dim keeps text readable (whites
+     wash, blues survive), the .glass-edge rim gives weight, #panel-lens
+     bends the backdrop (Snell/squircle map from tools/gen-panel-lens.py).
+     ONE number here drives every panel of that class app-wide — the
+     utilities below only consume var(). */
+  --panel-dim: 0.15; /* dim strength (light theme) */
+  --panel-dim-tint: 103 100 112; /* wash target — Apple-measured mid-grey */
+  --panel-a-blur: 3px; /* banner: backdrop stays readable */
   --panel-a-sat: 1.4;
-  --panel-a-rim-light: 255 255 255;
-  --panel-a-rim-dark: 26 28 34;
-  --panel-a-rim-bg: 200 189 175;
-  --panel-a-reflect: 255 255 255;
-  --panel-a-dim-tint: 0 0 20;
-  --panel-a-dim-a: 0.38;
-
-  --panel-b-blur: 20px;
+  --panel-b-blur: 20px; /* menu: heavier blur, reads as an object */
   --panel-b-sat: 1.5;
-  --panel-b-rim-light: 255 255 255;
-  --panel-b-rim-dark: 26 28 34;
-  --panel-b-rim-bg: 200 189 175;
-  --panel-b-reflect: 200 189 175;
-  --panel-b-dim-tint: 0 0 20;
-  --panel-b-dim-a: 0.44;
+  --panel-rim: 0.55; /* .glass-edge base weight on panels */
+  --panel-rim-hot: 0.6; /* pointer-flare ceiling */
+  --panel-ink-a: 0.22; /* dark corner line alpha */
 
   /* Inner bloom — iOS rims spill light just inside the panel: a hairline of
      light under the top rim that melts downward. Paint-only (inset shadows,
@@ -507,22 +504,14 @@
   --pref-row-sel-border: rgba(248, 197, 66, 0.5);
   --pref-row-sheen: rgba(255, 255, 255, 0.12);
 
-  /* ── Panel Type A/B test tokens (dark) ── */
+  /* ── Panel Type A/B tokens (dark) — same names, softer numbers.
+     Dark theme: dim only lifts whites (0.05–0.08 band), rim reads as sheen. */
+  --panel-dim: 0.06;
   --panel-a-blur: 3px;
-  --panel-a-rim-light: 236 242 255;
-  --panel-a-rim-dark: 0 0 0;
-  --panel-a-rim-bg: 41 45 67;
-  --panel-a-reflect: 236 242 255;
-  --panel-a-dim-tint: 0 0 10;
-  --panel-a-dim-a: 0.22;
-
   --panel-b-blur: 26px;
-  --panel-b-rim-light: 236 242 255;
-  --panel-b-rim-dark: 0 0 0;
-  --panel-b-rim-bg: 41 45 67;
-  --panel-b-reflect: 41 45 67;
-  --panel-b-dim-tint: 0 0 10;
-  --panel-b-dim-a: 0.28;
+  --panel-rim: 0.42;
+  --panel-rim-hot: 0.5;
+  --panel-ink-a: 0.16;
 }
 
 /* Compatibility layer for older utility-coded surfaces while they are migrated
@@ -695,11 +684,7 @@ select::-webkit-calendar-picker-indicator {
   isolation: isolate;
 
   /* Thickness. The percentage resolves against the panel's inline size. */
-  --eg-t: clamp(
-    var(--glass-edge-min),
-    var(--glass-edge-t),
-    var(--glass-edge-max)
-  );
+  --eg-t: clamp(var(--glass-edge-min), var(--glass-edge-t), var(--glass-edge-max));
   /* Resting rim: NO painted perimeter any more. iOS's rim is the background's
      own light bent at the edge — a painted tint per edge zone reads as a
      "static line with static colour" (measured: rim↔bg corr ~0 vs +0.6 on
@@ -730,19 +715,18 @@ select::-webkit-calendar-picker-indicator {
   mix-blend-mode: plus-lighter;
   background:
     /* pointer flare — brightest on the edge the pointer is nearest */
-      radial-gradient(
-        ellipse var(--glass-edge-spread) var(--glass-edge-spread) at
-          var(--eg-x, 50%) var(--eg-y, 50%),
-        rgb(var(--glass-edge-color) / var(--eg-flare)) 0%,
-        rgb(var(--glass-edge-color) / calc(var(--eg-flare) * 0.45)) 34%,
-        rgb(var(--glass-edge-color) / 0) 68%
-      ),
+    radial-gradient(
+      ellipse var(--glass-edge-spread) var(--glass-edge-spread) at var(--eg-x, 50%) var(--eg-y, 50%),
+      rgb(var(--glass-edge-color) / var(--eg-flare)) 0%,
+      rgb(var(--glass-edge-color) / calc(var(--eg-flare) * 0.45)) 34%,
+      rgb(var(--glass-edge-color) / 0) 68%
+    ),
     /* TWO tight corner CATCHES — small sources, not one static sun, and NOT
        wide arcs: a fat bright ellipse on the ring is what read as a "thick
        line" in the user's photos. These are concentrated points of light
        where the edge actually faces the source; the WIDE soft half of each
        light lives inside the fill (::after), not on the ring. */
-      radial-gradient(
+    radial-gradient(
         26% 34% at 92% 0%,
         rgb(var(--glass-edge-corner) / var(--glass-edge-base)) 0%,
         rgb(var(--glass-edge-corner) / calc(var(--glass-edge-base) * 0.3)) 45%,
@@ -751,7 +735,7 @@ select::-webkit-calendar-picker-indicator {
     /* ink hairline, bottom-end (Apple light-glass shows a dark total-internal-
        reflection line on the shadowed side — with plus-lighter this adds
        *darkness*, which is exactly the contrast the white band needs) */
-      radial-gradient(
+    radial-gradient(
         24% 32% at 8% 100%,
         rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 0%,
         rgb(var(--glass-edge-ink) / calc(var(--glass-edge-ink-a) * 0.4)) 50%,
@@ -760,8 +744,12 @@ select::-webkit-calendar-picker-indicator {
   /* Mask the ring to the thin band. Uniform on all four sides: sides and
      bottom stay CLEAR so the refracted background is the rim there — the
      paint above exists only at the two corners and near the pointer. */
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
@@ -800,35 +788,51 @@ select::-webkit-calendar-picker-indicator {
     ),
     /* dimming base — the floor sits below the page (light theme) */
     linear-gradient(
-      var(--glass-p-angle),
-      rgb(var(--glass-dim-tint) / var(--glass-dim-a1)),
-      rgb(var(--glass-dim-tint) / var(--glass-dim-a2))
-    ),
+        var(--glass-p-angle),
+        rgb(var(--glass-dim-tint) / var(--glass-dim-a1)),
+        rgb(var(--glass-dim-tint) / var(--glass-dim-a2))
+      ),
     /* glx-sheen hover light, folded in as the next layer (var-driven) */
     radial-gradient(
-      circle at 90% 0%,
-      rgb(255 255 255 / calc(0.1 * var(--glass-sheen-a, 0))) 0%,
-      rgb(255 255 255 / 0) 50%
-    ),
+        circle at 90% 0%,
+        rgb(255 255 255 / calc(0.1 * var(--glass-sheen-a, 0))) 0%,
+        rgb(255 255 255 / 0) 50%
+      ),
     linear-gradient(
       var(--glass-p-angle),
       rgb(var(--glass-p-tint) / var(--glass-p-fa1, var(--glass-p-a1))),
       rgb(var(--glass-p-tint) / var(--glass-p-fa2, var(--glass-p-a2)))
     );
   -webkit-mask-image:
-    linear-gradient(to right, rgb(0 0 0 / var(--glass-fill-edge)) 0,
-      #000 var(--glass-ff), #000 calc(100% - var(--glass-ff)),
-      rgb(0 0 0 / var(--glass-fill-edge)) 100%),
-    linear-gradient(to bottom, rgb(0 0 0 / var(--glass-fill-edge)) 0,
-      #000 var(--glass-ff), #000 calc(100% - var(--glass-ff)),
-      rgb(0 0 0 / var(--glass-fill-edge)) 100%);
+    linear-gradient(
+      to right,
+      rgb(0 0 0 / var(--glass-fill-edge)) 0,
+      #000 var(--glass-ff),
+      #000 calc(100% - var(--glass-ff)),
+      rgb(0 0 0 / var(--glass-fill-edge)) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgb(0 0 0 / var(--glass-fill-edge)) 0,
+      #000 var(--glass-ff),
+      #000 calc(100% - var(--glass-ff)),
+      rgb(0 0 0 / var(--glass-fill-edge)) 100%
+    );
   mask-image:
-    linear-gradient(to right, rgb(0 0 0 / var(--glass-fill-edge)) 0,
-      #000 var(--glass-ff), #000 calc(100% - var(--glass-ff)),
-      rgb(0 0 0 / var(--glass-fill-edge)) 100%),
-    linear-gradient(to bottom, rgb(0 0 0 / var(--glass-fill-edge)) 0,
-      #000 var(--glass-ff), #000 calc(100% - var(--glass-ff)),
-      rgb(0 0 0 / var(--glass-fill-edge)) 100%);
+    linear-gradient(
+      to right,
+      rgb(0 0 0 / var(--glass-fill-edge)) 0,
+      #000 var(--glass-ff),
+      #000 calc(100% - var(--glass-ff)),
+      rgb(0 0 0 / var(--glass-fill-edge)) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      rgb(0 0 0 / var(--glass-fill-edge)) 0,
+      #000 var(--glass-ff),
+      #000 calc(100% - var(--glass-ff)),
+      rgb(0 0 0 / var(--glass-fill-edge)) 100%
+    );
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
 }
@@ -854,7 +858,9 @@ select::-webkit-calendar-picker-indicator {
   .glass-edge-glow,
   .glx,
   .glx-strong,
-  .glx-dark {
+  .glx-dark,
+  .panel-a,
+  .panel-b {
     corner-shape: squircle;
   }
 }
@@ -899,8 +905,8 @@ select::-webkit-calendar-picker-indicator {
     /* inner bloom — light spills inside under the top rim (iOS 26) */
     inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
     inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
-    /* rim fade — bright at the crisp ring, melted away by ~8px inward */
-    inset 0 0 14px -6px rgb(var(--glass-edge-color) / var(--glass-edge-fade));
+    /* rim fade — bright at the crisp ring, melted away by ~8px inward */ inset 0 0 14px -6px
+      rgb(var(--glass-edge-color) / var(--glass-edge-fade));
   /* Text micro-shadow: a 1px ambient that lifts label contrast over busy
      glass. Imperceptible on calm backdrops, decisive over dense content. */
   text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
@@ -973,12 +979,10 @@ select::-webkit-calendar-picker-indicator {
    interior, so the displacement is identity in the middle: centre colour ≡
    corner colour except at the rim. */
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx {
-  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat))
-    url('#lg-lens');
+  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat)) url('#lg-lens');
 }
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-strong {
-  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat))
-    url('#lg-lens');
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat)) url('#lg-lens');
 }
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-dark {
   backdrop-filter: blur(10px) saturate(1.4) url('#lg-lens');
@@ -994,8 +998,8 @@ select::-webkit-calendar-picker-indicator {
    Same-specificity prefix as the lens rules — this block sits AFTER them, so
    on a tie the de-nest wins. */
 :root:not([data-glass='lite']):not([data-glass='off'])
-  :is(.glx, .glx-strong, .glx-dark)
-  :is(.glx, .glx-strong, .glx-dark) {
+  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b)
+  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b) {
   backdrop-filter: none;
   /* flat, quiet fill — a row resting on glass, not glass on glass */
   --glass-p-fa1: 0.05;
@@ -1010,13 +1014,13 @@ select::-webkit-calendar-picker-indicator {
 }
 /* nested rims die too: a row on glass gets no ring, no feather */
 :root:not([data-glass='lite']):not([data-glass='off'])
-  :is(.glx, .glx-strong, .glx-dark)
-  :is(.glx, .glx-strong, .glx-dark).glass-edge::before {
+  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b)
+  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b).glass-edge::before {
   content: none;
 }
 :root:not([data-glass='lite']):not([data-glass='off'])
-  :is(.glx, .glx-strong, .glx-dark)
-  :is(.glx, .glx-strong, .glx-dark).glass-edge::after {
+  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b)
+  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b).glass-edge::after {
   background: linear-gradient(
     var(--glass-p-angle),
     rgb(var(--glass-p-tint) / 0.05),
@@ -1114,14 +1118,19 @@ select::-webkit-calendar-picker-indicator {
   /* Raise fill alphas to keep contrast without blur */
   --glass-p-a1: 0.58;
   --glass-p-a2: 0.44;
+  /* transparent panels lose their blur first — the dim carries contrast */
+  --panel-dim: 0.32;
 }
-:root[data-glass='lite'] :is(.glx, .glx-strong, .glx-dark, .veil-blur, .chrome-blur) {
+:root[data-glass='lite']
+  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
 
 :root[data-glass='off'] {
   --glass-p-a1: 0.97;
   --glass-p-a2: 0.97;
+  /* off = solid silhouette: transparent panels go solid with the tier */
+  --panel-dim: 0.85;
   --ui-inset-fill: rgba(250, 248, 245, 1);
   /* solid panels need their silhouette back */
   --glass-p-ba: 0.35;
@@ -1131,7 +1140,8 @@ select::-webkit-calendar-picker-indicator {
   --ui-inset-fill: rgba(33, 31, 41, 1);
   --glass-p-ba: 0.4;
 }
-:root[data-glass='off'] :is(.glx, .glx-strong, .glx-dark, .veil-blur, .chrome-blur) {
+:root[data-glass='off']
+  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
 :root[data-glass='off'] .glass-edge::after {
@@ -1669,57 +1679,59 @@ button {
   gap: 0.5rem;
 }
 
-/* ─── Panel Type A/B — the two live materials. ────────────────────────────
-   These are REAL glass panels, not imitations: they compose the app's own
-   fill/glaze utilities with the rim ring (.glass-edge ::before) and the
-   refraction lens in one chain. The rim IS the bent background (iOS 26),
-   not a painted border. Tokens below only TUNE the recipe, never replace it.
+/* ─── Panel Type A/B — the shared transparent material ────────────────────
+   BOTH compose the library, never replace it:
+     · .glass-edge ::before — the rim (corner catches + pointer flare + ink).
+       Panels only retune its WEIGHT via --panel-rim* tokens.
+     · .glass-edge ::after — the BODY: the RGB dim rides the fill slot
+       (--glass-p-fa1/2), so it feathers at the rim like every other panel
+       and the outer band shows the raw bent background (iOS 26).
+     · ONE backdrop-filter — blur + saturate now, url(#panel-lens) last once
+       the boot probe allows it (gate below).
+   No painted rim gradients, no second fill layer: transparent panels where
+   dim + rim + bend carry the material ("no fill at all — the rims give it
+   weight and the dim and light blur make it readable").
 
-   panel-a — notification banner: thinnest blur, highest transparency, the
-     backdrop stays readable (iOS 26 "banner" behaviour — content legible
-     through it), rim reflects the nearest horizontal colour HARD.
-   panel-b — menu panel: dimmer/thicker fill, heavier blur, rim is the
-     page's own anchor colour, not the content behind. */
+   panel-a — notification banner: light blur, backdrop stays legible.
+   panel-b — menu panel: heavier blur, reads as a floating object.
+   Pair with `glass-edge` in markup — that pairing IS the material. */
 @utility panel-a {
-  --glass-p-fa1: 0;
-  --glass-p-fa2: 0;
+  /* the dim IS the fill: one token drives every Type A panel app-wide */
+  --glass-p-fa1: var(--panel-dim);
+  --glass-p-fa2: var(--panel-dim);
+  --glass-p-tint: var(--panel-dim-tint);
   --glass-p-blur: var(--panel-a-blur);
   --glass-p-sat: var(--panel-a-sat);
-  --glass-p-tint: var(--panel-a-rim-bg);
-  --glass-edge-base: 0.55;
-  --glass-edge-hot: 0.6;
-  --glass-edge-color: var(--panel-a-reflect);
-  --glass-edge-ink: var(--panel-a-rim-dark);
-  --glass-edge-ink-a: 0.22;
-  /* No fill — the dim is the only paint. RGB-aware dim: darks lift, brights
-     compress, blue survives. Base tint at 0.38 + blue-heavy top layer pushes
-     blue's effective alpha to ~0.56. */
-  background:
-    linear-gradient(
-      var(--glass-p-angle),
-      rgb(var(--panel-a-dim-tint) / var(--panel-a-dim-a)),
-      rgb(var(--panel-a-dim-tint) / var(--panel-a-dim-a))
-    );
+  --glass-edge-base: var(--panel-rim);
+  --glass-edge-hot: var(--panel-rim-hot);
+  --glass-edge-ink-a: var(--panel-ink-a);
+  background: transparent; /* ::after carries the dim — nothing painted here */
+  border: 0; /* silhouette comes from the rim, not a border */
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 0 14px -6px rgb(var(--glass-edge-color) / var(--glass-edge-fade));
+  text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
   backdrop-filter: blur(var(--panel-a-blur)) saturate(var(--panel-a-sat));
 }
 
 @utility panel-b {
-  --glass-p-fa1: 0;
-  --glass-p-fa2: 0;
+  /* same body as panel-a — ONE material at two weights, tokens differ */
+  --glass-p-fa1: var(--panel-dim);
+  --glass-p-fa2: var(--panel-dim);
+  --glass-p-tint: var(--panel-dim-tint);
   --glass-p-blur: var(--panel-b-blur);
   --glass-p-sat: var(--panel-b-sat);
-  --glass-p-tint: var(--panel-b-rim-bg);
-  --glass-edge-base: 0.42;
-  --glass-edge-hot: 0.45;
-  --glass-edge-color: var(--panel-b-reflect);
-  --glass-edge-ink: var(--panel-b-rim-dark);
-  --glass-edge-ink-a: 0.18;
-  background:
-    linear-gradient(
-      var(--glass-p-angle),
-      rgb(var(--panel-b-dim-tint) / var(--panel-b-dim-a)),
-      rgb(var(--panel-b-dim-tint) / var(--panel-b-dim-a))
-    );
+  --glass-edge-base: var(--panel-rim);
+  --glass-edge-hot: var(--panel-rim-hot);
+  --glass-edge-ink-a: var(--panel-ink-a);
+  background: transparent;
+  border: 0;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 16px 38px -24px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 0 16px -6px rgb(var(--glass-edge-color) / var(--glass-edge-fade));
+  text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
   backdrop-filter: blur(var(--panel-b-blur)) saturate(var(--panel-b-sat));
 }
 
@@ -1727,74 +1739,11 @@ button {
    gated on data-lens so the plain blur base above survives on engines that
    drop url() inside backdrop-filter. */
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-a {
-  backdrop-filter: blur(var(--panel-a-blur)) saturate(var(--panel-a-sat))
-    url('#panel-lens');
+  backdrop-filter: blur(var(--panel-a-blur)) saturate(var(--panel-a-sat)) url('#panel-lens');
 }
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-b {
-  backdrop-filter: blur(var(--panel-b-blur)) saturate(var(--panel-b-sat))
-    url('#panel-lens');
+  backdrop-filter: blur(var(--panel-b-blur)) saturate(var(--panel-b-sat)) url('#panel-lens');
 }
 
 /* The rim ring comes from .glass-edge ::before (the app's real edge-light
    system) — panel-a/panel-b tune its weight via the tokens above. */
-
-/* The spec's directional rim: light on top/bottom (reflection), dark on
-   left/right (non-reflective). Both fade at corners into the crossfade.
-   These are extra paint layers on ::before, additive, so the generic corner
-   catch and pointer flare (which live on .glass-edge::before) still compose
-   through — .glass-edge and .panel-a/.panel-b are used together. */
-
-.panel-a::before,
-.panel-b::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 2;
-  mix-blend-mode: plus-lighter;
-  background:
-    /* light rim — top/bottom, fades near the corner */
-    linear-gradient(
-      to right,
-      rgb(var(--glass-edge-color) / 0) 8%,
-      rgb(var(--glass-edge-color) / var(--glass-edge-base)) 18%,
-      rgb(var(--glass-edge-color) / var(--glass-edge-base)) 82%,
-      rgb(var(--glass-edge-color) / 0) 92%
-    ) top / 100% var(--eg-t) no-repeat,
-    linear-gradient(
-      to right,
-      rgb(var(--glass-edge-color) / 0) 8%,
-      rgb(var(--glass-edge-color) / var(--glass-edge-base)) 18%,
-      rgb(var(--glass-edge-color) / var(--glass-edge-base)) 82%,
-      rgb(var(--glass-edge-color) / 0) 92%
-    ) bottom / 100% var(--eg-t) no-repeat,
-    /* dark line — left/right, fades near the corner */
-    linear-gradient(
-      to bottom,
-      rgb(var(--glass-edge-ink) / 0) 8%,
-      rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 18%,
-      rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 82%,
-      rgb(var(--glass-edge-ink) / 0) 92%
-    ) left / var(--eg-t) 100% no-repeat,
-    linear-gradient(
-      to bottom,
-      rgb(var(--glass-edge-ink) / 0) 8%,
-      rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 18%,
-      rgb(var(--glass-edge-ink) / var(--glass-edge-ink-a)) 82%,
-      rgb(var(--glass-edge-ink) / 0) 92%
-    ) right / var(--eg-t) 100% no-repeat;
-}
-
-.panel-a::after,
-.panel-b::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: -1;
-  /* 1px inner line = THE BACKGROUND colour, not the panel's tint. It makes
-     the fill boundary read as part of the page, not part of the material. */
-  box-shadow: inset 0 0 0 1px rgb(var(--panel-a-rim-bg) / 0.55);
-}

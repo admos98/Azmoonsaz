@@ -1,169 +1,177 @@
-# gen-panel-lens.py -- the Type A/B displacement map.
-#
-# User spec (session 2026-09-30):
-#  - Horizontal edges pull the backdrop DOWN/UP (mirror), verticals pull zero.
-#  - The pull starts a few mm from the edge (safe distance), consistent force,
-#    then bends toward the corner like a black hole.
-#  - At the corner the pulled colour rotates: pulled down by the bottom edge,
-#    pushed up and sucked into the nearest vertical edge (U-shape), fading
-#    before it reaches the far corner on tall panels.
-#  - Rim reflection: the outer band samples ACROSS the edge (mirror), so the
-#    rim shows the backdrop's light, not a painted tint.
-#
-# Map layout (normalized -1..1, square, sampled on the element box):
-#  R = x displacement, G = y displacement, 128 = neutral.
-#
-#  - mirrorZone: outer band (top/bottom) where the sample point is pulled
-#    outward across the edge -- a mirror reflection.
-#  - sideZero: left/right bands are exactly 128 (no pull).
-#  - cornerPull: inside the corner square the pull vector rotates from the
-#    horizontal-edge direction (down/up) toward the vertical-edge direction
-#    (left/right) -- the U-bend -- with a height-based fade so tall panels
-#    don't pull all the way up the side.
-#
-# Output: public/panel-lens-map.png  (feImage href in index.html)
+#!/usr/bin/env python3
+"""Panel lens displacement map — the Type A/B shared glass material.
+
+Physics port of the playground's kube.io replica (public/playground/
+playground.js buildDisplacementMap/computeProfile), same math end to end:
+
+  convex-squircle surface  ->  surface normal  ->  Snell refraction
+  (n1=1, n2=1.5)  ->  per-distance profile (monotone head, box-smoothed)
+  ->  rounded-rect border field  ->  normalized R/G displacement map
+
+Replaces the earlier heuristic (mirror zones / U-pull / zero verticals)
+with the tuned physical model — the app panels must bend exactly like the
+playground that produced the approved tune.
+
+The map is SQUARE canonical geometry: <feImage preserveAspectRatio="none">
+stretches it box-clipped onto whatever panel consumes #panel-lens, so
+proportions carry the shape, not pixels — the same contract as
+/lens-map.png. The border starts at the PEAK and decays smoothly inward
+(no 0 -> peak cliff: monotone head + two box-smooth passes — the fix for
+the "bad corner" tearing).
+
+Feed the PNG to <feDisplacementMap scale="44">  ->  max +/-22px pull at
+the border (the tuned playground number: refraction 0.5 x 43.7px).
+
+Stdlib only — writes RGBA8 PNG without Pillow.
+"""
 
 from __future__ import annotations
 
-import argparse
-import zlib
+import math
 import struct
+import zlib
 from pathlib import Path
 
-N = 256
+# ── canonical geometry (map space) ──────────────────────────────────────────
+SIZE = 512  # square; stretched onto the panel box by feImage
+RADIUS = 64  # corner radius of the rounded rect the band follows
+BEZEL = 24  # band width = the decay distance of the profile
+# playground ratio thickness:bezel = 72:14
+THICKNESS = 123
+IOR = 1.5
+SAMPLES = 256
+
+OUT = Path(__file__).resolve().parent.parent / "public" / "panel-lens-map.png"
 
 
-def smoothstep(u: float) -> float:
-    u = max(0.0, min(1.0, u))
-    return u * u * (3 - 2 * u)
+def surface(s: float) -> float:
+    """Convex squircle (kube.io surface family, n=4)."""
+    return (1 - (1 - s) ** 4) ** 0.25
 
 
-def clamp(v: float, lo: float, hi: float) -> float:
-    return max(lo, min(hi, v))
+def refract2d(nx: float, ny: float, eta: float):
+    """Snell refraction of a vertical ray about a 2-D normal.
+    None on total internal reflection."""
+    r = 1 - eta * eta * (1 - ny * ny)
+    if r < 0:
+        return None
+    i = math.sqrt(r)
+    return [-(eta * ny + i) * nx, eta - (eta * ny + i) * ny]
 
 
-def build_map(
-    edge: float,
-    corner: float,
-    height_fade: float,
-    mirror_depth: float,
-) -> bytes:
-    """edge: fraction of half-size that is the rim band (e.g. 0.18).
-    corner: fraction of half-size that is the corner square (e.g. 0.22).
-    height_fade: rate at which the corner U-pull decays along the vertical edge
-      (0 = no fade, 1 = fade to zero at the opposite corner).
-    mirror_depth: how far across the edge the mirror samples (0..1).
-    """
-    img = bytearray(N * N * 4)
-    for py in range(N):
-        ny = (py + 0.5) / N * 2 - 1  # -1..1
-        ay = abs(ny)
-        for px in range(N):
-            nx = (px + 0.5) / N * 2 - 1
-            ax = abs(nx)
-
-            # Chebyshev radius: 0 centre, 1 at the square edge
-            r = max(ax, ay)
-            dx = 0.0
-            dy = 0.0
-
-            # rim band on horizontal edges only
-            in_top = ay > 1 - edge and nx != 0
-            in_bot = ay > 1 - edge and nx != 0
-            in_left = ax > 1 - edge and ny != 0
-            in_right = ax > 1 - edge and ny != 0
-
-            # corner squares
-            in_corner = ax > 1 - corner and ay > 1 - corner
-
-            if in_corner:
-                # U-pull: rotate from horizontal-edge direction to vertical-edge
-                # direction across the corner, with height fade.
-                cu = (ax - (1 - corner)) / corner  # 0..1 across corner x
-                cv = (ay - (1 - corner)) / corner  # 0..1 across corner y
-                u = max(cu, cv)
-
-                # horizontal pull (down/up) decays across the corner
-                # vertical pull (left/right) grows across the corner
-                horiz_pull = (1 - u)
-                vert_pull = u
-
-                # height fade: the further from the corner start,
-                # the weaker the pull.
-                fade = 1.0 - height_fade * u
-
-                # pull direction: horizontal edges pull toward the edge (down/up),
-                # corners pull toward the nearest vertical edge (left/right),
-                # then the vertical edge pulls up/down toward the corner.
-                # At the corner apex both are ~50% (the U-bend).
-                if ny > 0:
-                    # bottom corner: pull down from bottom edge, then up toward
-                    # the vertical edge — the U goes down, right/left, up.
-                    corner_dy = ny * horiz_pull * fade  # down
-                else:
-                    # top corner: pull up from top edge, then down toward the
-                    # vertical edge — the U goes up, right/left, down.
-                    corner_dy = ny * horiz_pull * fade  # up
-
-                corner_dx = nx * vert_pull * fade  # toward nearest vertical edge
-
-                dx = corner_dx
-                dy = corner_dy
-            elif in_top or in_bot:
-                # horizontal edge mirror: pull outward across the edge
-                u = (ay - (1 - edge)) / edge
-                pull = smoothstep(u) * mirror_depth
-                dy = -ny * pull  # toward the edge
-                dx = 0.0
-            elif in_left or in_right:
-                # vertical edges: zero pull
-                dx = 0.0
-                dy = 0.0
-
-            # encode: 128 = neutral, 127 = max pull
-            r8 = round(128 + dx * 127)
-            g8 = round(128 + dy * 127)
-            i = (py * N + px) * 4
-            img[i] = clamp(r8, 0, 255)
-            img[i + 1] = clamp(g8, 0, 255)
-            img[i + 2] = 128
-            img[i + 3] = 255
-    return bytes(img)
+def compute_profile(bezel_px: float, thickness_px: float, samples: int = SAMPLES):
+    """Horizontal displacement (px) of a ray that hits the bezel at
+    normalized distance s from the border. Exact port of computeProfile:
+    numeric derivative of the surface, refract, depth scaling, then the
+    head fix — border starts at the peak, decays monotonically, box
+    smoothed twice, last sample zeroed."""
+    eta = 1 / IOR
+    out = [0.0] * samples
+    for k in range(samples):
+        s = k / samples
+        c = surface(s)
+        eps = 1e-4 if s < 1 else -1e-4
+        u = (surface(min(1.0, max(0.0, s + eps))) - c) / eps
+        d = math.hypot(u, 1)
+        n = refract2d(-u / d, -1 / d, eta)
+        if n:
+            depth = c * thickness_px + bezel_px  # ray origin height
+            out[k] = n[0] * (depth / n[1])
+        else:
+            out[k] = 0.0
+    # monotone head (kills the squircle's infinite-slope spike at s=0)
+    out[0] = out[1]
+    for i in range(2, samples):
+        if abs(out[i]) > abs(out[i - 1]):
+            out[i] = out[i - 1]
+    for _ in range(2):  # 2x box smooth
+        tmp = out[:]
+        for i in range(1, samples - 1):
+            out[i] = (tmp[i - 1] + 2 * tmp[i] + tmp[i + 1]) / 4
+    out[samples - 1] = 0.0
+    return out
 
 
-def write_png(path: Path, raw: bytes) -> None:
-    """Minimal PNG encoder, no dependencies."""
+def border_sdf(x: float, y: float, w: int, h: int, p: float):
+    """Signed component distances from the inner inset rect edge."""
+    l = x - p if x < p else (x - (w - p) if x >= w - p else 0.0)
+    m = y - p if y < p else (y - (h - p) if y >= h - p else 0.0)
+    return l, m
+
+
+def write_png(path: Path, w: int, h: int, rgba: bytes) -> None:
+    """Minimal PNG encoder (RGBA8, filter 0), no dependencies."""
 
     def chunk(tag: bytes, data: bytes) -> bytes:
         return (
             struct.pack(">I", len(data))
             + tag
             + data
-            + struct.pack(">I", zlib.crc32(tag + data))
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
         )
 
-    ihdr = chunk(
-        b"IHDR",
-        struct.pack(">IIBBBBB", N, N, 8, 6, 0, 0, 0),
-    )
     scanlines = b"".join(
-        b"\x00" + raw[y * N * 4 : (y + 1) * N * 4] for y in range(N)
+        b"\x00" + rgba[y * w * 4:(y + 1) * w * 4] for y in range(h)
     )
-    idat = chunk(b"IDAT", zlib.compress(scanlines, 9))
-    path.write_bytes(b"\x89PNG\r\n\x1a\n" + ihdr + idat + chunk(b"IEND", b""))
+    ihdr = struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)
+    path.write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(scanlines, 9))
+        + chunk(b"IEND", b"")
+    )
+
+
+def build(size: int = SIZE) -> tuple[bytes, float]:
+    profile = compute_profile(BEZEL, THICKNESS)
+    max_abs = max(abs(v) for v in profile) or 1.0
+    w = h = size
+    p = min(RADIUS, min(w, h) / 2 - 1)
+    bez = max(0.75, float(BEZEL))
+    g_out = (p + 1) ** 2
+    g_in = p * p
+    g_lo = (p - bez) ** 2
+    n = len(profile)
+
+    buf = bytearray(w * h * 4)
+    # neutral fill: R=128 G=128 B=0 A=255 (B unused by feDisplacementMap)
+    for i in range(0, len(buf), 4):
+        buf[i] = 128
+        buf[i + 1] = 128
+        buf[i + 2] = 0
+        buf[i + 3] = 255
+
+    for y in range(h):
+        for x in range(w):
+            l, m = border_sdf(x, y, w, h, p)
+            s2 = l * l + m * m
+            if s2 > g_out or s2 < g_lo:
+                continue
+            t = math.sqrt(s2)
+            if t < 1e-6:
+                continue
+            fade = 1.0
+            if s2 > g_in:
+                fade = max(0.0, 1 - (t - p))  # 1px AA ring
+            r_d = p - t  # distance from border
+            idx = min(n - 1, max(0, int(r_d / bez * n)))
+            v = profile[idx] / max_abs  # normalized [-1,1]
+            ux = -l / t  # inward unit vector
+            uy = -m / t
+            i = (y * w + x) * 4
+            buf[i] = int(128 + ux * v * 127 * fade) & 0xFF
+            buf[i + 1] = int(128 + uy * v * 127 * fade) & 0xFF
+            # B stays 0, A stays 255
+    return bytes(buf), max_abs
 
 
 def main() -> None:
-    p = argparse.ArgumentParser()
-    p.add_argument("--edge", type=float, default=0.18)
-    p.add_argument("--corner", type=float, default=0.22)
-    p.add_argument("--height-fade", type=float, default=0.55)
-    p.add_argument("--mirror-depth", type=float, default=1.0)
-    p.add_argument("--out", type=Path, default=Path("public/panel-lens-map.png"))
-    args = p.parse_args()
-    raw = build_map(args.edge, args.corner, args.height_fade, args.mirror_depth)
-    write_png(args.out, raw)
-    print(f"wrote {args.out} ({N}x{N})")
+    rgba, max_abs = build()
+    write_png(OUT, SIZE, SIZE, rgba)
+    print(
+        f"wrote {OUT}  {SIZE}x{SIZE}  "
+        f"profile maxAbs={max_abs:.2f}px  bezel={BEZEL} thickness={THICKNESS}"
+    )
 
 
 if __name__ == "__main__":
