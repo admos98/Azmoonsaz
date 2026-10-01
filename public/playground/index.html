@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liquid Glass Playground — CSS + SVG (kube.io replica)</title>
+<style>
+  :root{
+    --bg:#fafafa; --card:#fff; --ink:#171717; --mut:#737373; --line:#e5e5e5;
+    --track:rgba(0,0,0,.18); --accent:#0369a1;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+    font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px;margin:0 auto;padding:20px 16px 60px}
+  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:6px}
+  header h1{font-size:20px;margin:0;letter-spacing:-.01em}
+  .badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;
+    background:#fef3c7;color:#92400e;border:1px solid #fde68a;white-space:nowrap}
+  .badge.bad{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+  .sub{color:var(--mut);font-size:12.5px;margin:0 0 16px;max-width:76ch}
+  .sub code{background:#f0f0f0;border:1px solid var(--line);border-radius:5px;padding:0 4px;font-size:11.5px}
+  .banner{display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;
+    border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+  .banner.show{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+  .card h2{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+    margin:0 0 14px;color:var(--ink)}
+  .card h2 .n{color:var(--mut);font-weight:400;text-transform:none;letter-spacing:0}
+  /* stage */
+  #stage{position:relative;height:400px;border-radius:14px;overflow:hidden;
+    border:1px solid var(--line);background-size:cover;background-position:center}
+  #stage.dark{--gInk:#f5f5f5}
+  #stage.light{--gInk:#1c1c1c}
+  #glass{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);
+    display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--gInk,#1c1c1c);
+    backdrop-filter:url(#lgf);-webkit-backdrop-filter:url(#lgf)}
+  #glass.fallback{backdrop-filter:blur(8px) saturate(1.4);-webkit-backdrop-filter:blur(8px) saturate(1.4);
+    background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+  #glass svg{flex:none;width:16px;height:16px;opacity:.75}
+  #glass span{font-size:13px;opacity:.75;user-select:none}
+  .stagebar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+  .chip{font-size:11.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);
+    background:#fff;color:#404040;cursor:pointer}
+  .chip.on{border-color:#0369a1;color:#0369a1;background:#f0f9ff;font-weight:600}
+  .chk{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#404040;
+    margin-left:auto;cursor:pointer;user-select:none}
+  /* control rows — kube.io style */
+  .row{display:flex;align-items:center;gap:14px;padding:7px 0}
+  .row label{flex:none;width:210px;font-size:11px;font-weight:500;letter-spacing:.08em;
+    text-transform:uppercase;opacity:.8;user-select:none;line-height:1.2}
+  .row output{flex:none;width:44px;text-align:right;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-variant-numeric:tabular-nums;color:#0009}
+  .row input[type=range]{flex:1;appearance:none;-webkit-appearance:none;height:2px;
+    background:var(--track);border-radius:2px;outline:none;cursor:pointer}
+  .row input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;
+    width:13px;height:13px;border-radius:50%;background:#fff;border:1px solid #0004;
+    box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .row input[type=number]{width:74px;font:12px ui-monospace,monospace;padding:4px 6px;
+    border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
+  .surfaces{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .sbtn{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:5px 12px 5px 7px;
+    border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;color:#404040}
+  .sbtn svg{width:20px;height:20px}
+  .sbtn.on{border-color:#0369a1;color:#0369a1;background:#f0f9ff;font-weight:600}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+  .presets .lbl{font-size:11px;color:var(--mut);align-self:center;margin-right:2px}
+  .pbtn{font-size:11.5px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);
+    background:#fafafa;cursor:pointer;color:#525252}
+  .pbtn:hover{border-color:#a3a3a3;color:#171717}
+  /* charts */
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-bottom:14px}
+  .grid3 .card{margin-bottom:0}
+  .grid3 h3{font-size:12px;font-weight:600;margin:0 0 10px;color:var(--ink)}
+  .grid3 canvas{width:100%;height:150px;display:block;border-radius:8px;background:#fcfcfc;border:1px solid #f0f0f0}
+  .axlab{display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-top:5px}
+  /* footer */
+  .foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .btn{font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:9px;border:none;cursor:pointer;
+    background:#171717;color:#fff}
+  .btn:hover{background:#000}
+  #status{font:11px ui-monospace,monospace;color:var(--mut)}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);
+    background:#171717;color:#fff;font-size:12.5px;padding:8px 16px;border-radius:9px;
+    opacity:0;pointer-events:none;transition:.25s}
+  #toast.show{opacity:1;transform:translateX(-50%)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.two{grid-template-columns:1fr}.row label{width:150px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Liquid Glass Playground</h1>
+    <span class="badge" id="browserBadge">Chromium-only demo</span>
+  </header>
+  <p class="sub">Faithful replica of the <a href="https://kube.io/blog/liquid-glass-css-svg/" target="_blank" rel="noopener">kube.io&nbsp;Liquid&nbsp;Glass</a>
+    demo: refraction via SVG displacement map + specular rim, applied with <code>backdrop-filter:url(#lgf)</code>.
+    The rim is <b>not a painted color</b> — it is the refracted background itself, saturation-boosted inside the
+    specular ring, with the specular highlight blended on top (article §Combining Refraction and Specular Highlight).
+    Tune the sliders exactly like on the site, then copy the values into the app tokens.</p>
+  <div class="banner" id="banner">This demo needs <b>SVG filters as backdrop-filter</b> — currently supported only in
+    Chromium. Controls and charts below still work; the glass panel falls back to a plain frosted style.</div>
+
+  <!-- ═══════════ PREVIEW ═══════════ -->
+  <div class="card">
+    <h2>Preview <span class="n">— glass panel over the app environment</span></h2>
+    <div id="stage" class="light">
+      <div id="glass">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span>Search</span>
+      </div>
+    </div>
+    <div class="stagebar">
+      <button class="chip plate on" data-plate="e" data-theme="light">App · E light</button>
+      <button class="chip plate" data-plate="e" data-theme="dark">App · E dark</button>
+      <button class="chip plate" data-plate="d" data-theme="light">App · D light</button>
+      <button class="chip plate" data-plate="d" data-theme="dark">App · D dark</button>
+      <button class="chip plate" data-plate="f" data-theme="light">App · F light</button>
+      <button class="chip plate" data-plate="g" data-theme="dark">App · G dark</button>
+      <label class="chk"><input type="checkbox" id="imgBg"> Use image background</label>
+    </div>
+  </div>
+
+  <!-- ═══════════ PARAMETERS ═══════════ -->
+  <div class="two">
+    <div class="card">
+      <h2>Parameters</h2>
+      <div class="row"><label>Specular Opacity</label><output id="o-specOpacity">0.20</output>
+        <input type="range" id="specOpacity" min="0" max="1" step="0.01" value="0.20"></div>
+      <div class="row"><label>Specular Saturation</label><output id="o-saturation">4</output>
+        <input type="range" id="saturation" min="0" max="50" step="1" value="4"></div>
+      <div class="row"><label>Refraction Level</label><output id="o-refraction">0.70</output>
+        <input type="range" id="refraction" min="0" max="1" step="0.01" value="0.70"></div>
+      <div class="row"><label>Blur Level</label><output id="o-blur">1.0</output>
+        <input type="range" id="blur" min="0" max="40" step="0.1" value="1.0"></div>
+      <div class="row"><label>Specular Angle</label><output id="o-angle">-60°</output>
+        <input type="range" id="angle" min="-180" max="180" step="1" value="-60"></div>
+      <div class="row"><label>Glass Background Opacity</label><output id="o-glassBg">0.00</output>
+        <input type="range" id="glassBg" min="0" max="1" step="0.01" value="0"></div>
+    </div>
+
+    <div class="card">
+      <h2>Surface &amp; Controls</h2>
+      <div class="surfaces" id="surfaceBtns"></div>
+      <div class="row"><label>Bezel Width</label><output id="o-bezel">14</output>
+        <input type="range" id="bezel" min="0" max="100" step="1" value="14"></div>
+      <div class="row"><label>Glass Thickness</label><output id="o-thickness">66</output>
+        <input type="range" id="thickness" min="0" max="100" step="1" value="66"></div>
+      <div class="row"><label>Scale Ratio</label><output id="o-scale">1.00</output>
+        <input type="range" id="scale" min="0" max="1" step="0.01" value="1"></div>
+      <div class="row"><label>Corner Radius</label><output id="o-radius">21</output>
+        <input type="range" id="radius" min="0" max="21" step="1" value="21"></div>
+      <div class="row"><label>Panel Size</label>
+        <input type="number" id="pw" min="60" max="720" step="2" value="320" style="flex:1;max-width:110px">
+        <span style="color:#0006">×</span>
+        <input type="number" id="ph" min="32" max="320" step="2" value="42" style="flex:1;max-width:110px">
+        <span style="font-size:11px;color:var(--mut)">px</span>
+      </div>
+      <div class="presets">
+        <span class="lbl">Site presets:</span>
+        <button class="pbtn" data-preset="searchbox">Searchbox</button>
+        <button class="pbtn" data-preset="switch">Switch</button>
+        <button class="pbtn" data-preset="slider">Slider</button>
+        <button class="pbtn" data-preset="player">Music Player</button>
+        <button class="pbtn" data-preset="magnifier">Magnifying Glass</button>
+      </div>
+      <div class="presets">
+        <span class="lbl">App panels:</span>
+        <button class="pbtn" data-preset="panelA" style="border-color:#0369a1;color:#0369a1">Type A · banner</button>
+        <button class="pbtn" data-preset="panelB" style="border-color:#0369a1;color:#0369a1">Type B · menu</button>
+        <span class="lbl" style="margin-left:auto">URL keeps your state — copy the address bar to share a tuning</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ VISUALISATIONS ═══════════ -->
+  <div class="grid3">
+    <div class="card">
+      <h3>Radius Simulation</h3>
+      <canvas id="simCanvas"></canvas>
+      <div class="axlab"><span>Section</span><span>arrow = displacement · longer → more purple</span></div>
+    </div>
+    <div class="card">
+      <h3>Radius Displacements</h3>
+      <canvas id="chartCanvas"></canvas>
+      <div class="axlab"><span>Displacement (px)</span><span>Distance to border (px) →</span></div>
+    </div>
+    <div class="card">
+      <h3>Displacement Map</h3>
+      <canvas id="mapCanvas"></canvas>
+      <div class="axlab"><span>R = Δx · G = Δy · 128 = neutral</span><span id="mapMeta"></span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ EXPORT ═══════════ -->
+  <div class="card">
+    <div class="foot">
+      <button class="btn" id="copyBtn">Copy CSS tokens</button>
+      <button class="btn" id="copyJsonBtn" style="background:#525252">Copy JSON</button>
+      <button class="btn" id="copyAppBtn" style="background:#0369a1">Copy app tokens</button>
+      <span id="status"></span>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<!-- SVG filter farm (kube.io structure) -->
+<svg colorInterpolationFilters="sRGB" style="display:none" aria-hidden="true">
+  <defs id="filterDefs"></defs>
+</svg>
+
+
+
+<script src="./playground.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+<defs>
+
+    <filter id="penumbra" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
+    <filter id="spill" x="-45%" y="-45%" width="190%" height="190%">
+      <feGaussianBlur stdDeviation="120"/>
+    </filter>
+    <linearGradient id="throw" x1="0.75" y1="0" x2="0.15" y2="1">
+      <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="52%" stop-color="#fff" stop-opacity="0.62"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0.05"/>
+    </linearGradient>
+    <mask id="throwmask"><rect width="1600" height="1000" fill="url(#throw)"/></mask>
+    <radialGradient id="pool" cx="0.02" cy="1.05" r="0.95">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="warm" cx="0.8" cy="0.02" r="0.7">
+      <stop offset="0%" stop-color="#F5B301" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#F5B301" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch" seed="47" result="t"/>
+      <feColorMatrix in="t" type="matrix" result="a"
+        values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.7 0.7 0.7 0 -0.6"/>
+      <feFlood flood-color="#F7F1E4" result="f"/>
+      <feComposite in="f" in2="a" operator="in"/>
+    </filter>
+</defs>
+<rect width="1600" height="1000" fill="#131220"/>
+<g mask="url(#throwmask)">
+  <g fill="#B9A6FF" opacity="0.088" filter="url(#spill)"><g transform="matrix(1,0.13,-0.42,1,0,0)"><rect x="430" y="-240" width="430" height="370" rx="8"/><rect x="906" y="-240" width="430" height="370" rx="8"/><rect x="430" y="176" width="430" height="370" rx="8"/><rect x="906" y="176" width="430" height="370" rx="8"/><rect x="430" y="592" width="430" height="370" rx="8"/><rect x="906" y="592" width="430" height="370" rx="8"/></g></g>
+  <g fill="#B9A6FF" opacity="0.160" filter="url(#penumbra)"><g transform="matrix(1,0.13,-0.42,1,0,0)"><rect x="430" y="-240" width="430" height="370" rx="8"/><rect x="906" y="-240" width="430" height="370" rx="8"/><rect x="430" y="176" width="430" height="370" rx="8"/><rect x="906" y="176" width="430" height="370" rx="8"/><rect x="430" y="592" width="430" height="370" rx="8"/><rect x="906" y="592" width="430" height="370" rx="8"/></g></g>
+</g>
+<rect width="1600" height="1000" fill="url(#warm)"/>
+<rect width="1600" height="1000" fill="url(#pool)"/>
+<rect width="1600" height="1000" filter="url(#grain)" opacity="0.06"/>
+</svg>
