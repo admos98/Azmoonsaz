@@ -166,9 +166,9 @@ function profileIconPath(fn, size = 20, pad = 3) {
 /* ══════════════════ state & UI wiring ══════════════════ */
 
 const $ = id => document.getElementById(id);
-const P = {  // parameter state — defaults = site Searchbox demo
+const P = {  // parameter state — defaults = site Searchbox demo + app RGB dim
   specOpacity:0.20, saturation:4, refraction:0.70, blur:1.0,
-  angle:-60, glassBg:0,
+  angle:-60, glassBg:0, rgbDim:0.38,
   surface:'convex_squircle', bezel:14, thickness:66, scale:1,
   radius:21, w:320, h:42
 };
@@ -176,19 +176,19 @@ const P = {  // parameter state — defaults = site Searchbox demo
 const PRESETS = {          // exact values shown in the article's demos
   searchbox:{ specOpacity:0.20, saturation:4,  refraction:0.70, blur:1.0,
               surface:'convex_squircle', bezel:14, thickness:66,
-              radius:21,  w:320, h:42,  glassBg:0 },
+              radius:21,  w:320, h:42,  glassBg:0, rgbDim:0 },
   switch:  { specOpacity:0.50, saturation:6,  refraction:1.00, blur:0.2,
              surface:'lip',            bezel:10, thickness:60,
-             radius:32,  w:140, h:64,  glassBg:0 },
+             radius:32,  w:140, h:64,  glassBg:0, rgbDim:0 },
   slider:  { specOpacity:0.40, saturation:7,  refraction:1.00, blur:0.0,
              surface:'convex_circle',  bezel:10, thickness:60,
-             radius:20,  w:280, h:40,  glassBg:0 },
+             radius:20,  w:280, h:40,  glassBg:0, rgbDim:0 },
   player:  { specOpacity:0.40, saturation:6,  refraction:1.00, blur:1.0,
              surface:'convex_circle',  bezel:20, thickness:80,
-             radius:24,  w:300, h:200, glassBg:0.60 },
+             radius:24,  w:300, h:200, glassBg:0.60, rgbDim:0 },
   magnifier:{specOpacity:0.50, saturation:9,  refraction:1.00, blur:0.0,
              surface:'convex_circle',  bezel:16, thickness:80,
-             radius:75,  w:210, h:150, glassBg:0 },
+             radius:75,  w:210, h:150, glassBg:0, rgbDim:0 },
   /* App panels — seeds from the app's measured spec (session 2026-09-30):
      A = notification banner: R≈12px, light blur ≈3px, transparent (dim only),
      rim reflects the nearest horizontal colour hard.
@@ -197,10 +197,10 @@ const PRESETS = {          // exact values shown in the article's demos
      defaults (convex squircle bezel, IOR 1.5) — tune from here. */
   panelA: { specOpacity:0.45, saturation:8, refraction:0.70, blur:3.0,
             surface:'convex_squircle', bezel:12, thickness:66,
-            radius:12, w:380, h:200, glassBg:0 },
+            radius:12, w:380, h:200, glassBg:0, rgbDim:0.38 },
   panelB: { specOpacity:0.35, saturation:6, refraction:0.70, blur:20.0,
             surface:'convex_squircle', bezel:16, thickness:70,
-            radius:24, w:360, h:300, glassBg:0 }
+            radius:24, w:360, h:300, glassBg:0, rgbDim:0.44 }
 };
 
 /* ── URL-hash state: the address bar IS the shareable tuning ──
@@ -269,7 +269,7 @@ function renderSurfaceButtons() {
 /* ── slider bindings ── */
 const SLIDERS = [
   ['specOpacity', 'two'], ['saturation', 'int'], ['refraction', 'two'],
-  ['blur', 'one'], ['angle', 'deg'], ['glassBg', 'two'],
+  ['blur', 'one'], ['angle', 'deg'], ['glassBg', 'two'], ['rgbDim', 'two'],
   ['bezel', 'int'], ['thickness', 'int'], ['scale', 'two'], ['radius', 'int']
 ];
 function bindSliders() {
@@ -279,7 +279,7 @@ function bindSliders() {
       P[id] = parseFloat(el.value);
       out.textContent = fmt[f](P[id]);
       if (id === 'specOpacity' || id === 'saturation' ||
-          id === 'refraction'  || id === 'blur') {
+          id === 'refraction'  || id === 'blur' || id === 'rgbDim') {
         renderFilterAttrs();                       // attribute-only: instant
       } else if (id === 'angle') {
         schedule({ spec:true });                   // specular map only
@@ -398,12 +398,36 @@ function renderFilterAttrs() {
   const satEl  = document.querySelector(`#${FID} feColorMatrix`);
   const slopeEl= document.querySelector(`#${FID} feFuncA`);
   const bgEl   = $('glass');
+  setDimFuncs();
   if (blurEl) blurEl.setAttribute('stdDeviation', P.blur);
   if (dispEl) dispEl.setAttribute('scale', effectiveScale().toFixed(3));
   if (satEl)  satEl.setAttribute('values', P.saturation);
   if (slopeEl)slopeEl.setAttribute('slope', P.specOpacity);
   if (bgEl)   bgEl.style.background =
     P.glassBg > 0 ? `rgba(255,255,255,${P.glassBg})` : '';
+}
+
+/* RGB-aware dim — per-channel alpha over a mid-grey tint, ratios from the
+   app measurement (alpha 0.38R / 0.40G / 0.56B).  out = (1-a)*in + a*T, so
+   white washes to warm grey while dark blue keeps its blue.            */
+const DIM_TINT = [103/255, 100/255, 112/255];
+function dimParams() {
+  const base = P.rgbDim;
+  return [                              // [slope, intercept] per channel
+    [1 - base,            base * DIM_TINT[0]],
+    [1 - base*1.0526,     base*1.0526 * DIM_TINT[1]],   // cap below
+    [1 - Math.min(1, base*1.4737), Math.min(1, base*1.4737) * DIM_TINT[2]]
+  ];
+}
+function setDimFuncs() {
+  const fR = document.querySelector(`#${FID} feFuncR`);
+  const fG = document.querySelector(`#${FID} feFuncG`);
+  const fB = document.querySelector(`#${FID} feFuncB`);
+  if (!fR) return;
+  const [r, g, b] = dimParams();
+  fR.setAttribute('slope', r[0].toFixed(4)); fR.setAttribute('intercept', r[1].toFixed(4));
+  fG.setAttribute('slope', g[0].toFixed(4)); fG.setAttribute('intercept', g[1].toFixed(4));
+  fB.setAttribute('slope', b[0].toFixed(4)); fB.setAttribute('intercept', b[1].toFixed(4));
 }
 
 /* full filter element rebuild with fresh map data-URLs */
@@ -419,14 +443,19 @@ function renderFilter() {
                xChannelSelector="R" yChannelSelector="G" result="displaced"/>
       <feColorMatrix in="displaced" type="saturate"
                values="${P.saturation}" result="displaced_saturated"/>
+      <feComponentTransfer in="displaced_saturated" result="rgb_dimmed">
+        <feFuncR type="linear" slope="${dimParams()[0][0].toFixed(4)}" intercept="${dimParams()[0][1].toFixed(4)}"/>
+        <feFuncG type="linear" slope="${dimParams()[1][0].toFixed(4)}" intercept="${dimParams()[1][1].toFixed(4)}"/>
+        <feFuncB type="linear" slope="${dimParams()[2][0].toFixed(4)}" intercept="${dimParams()[2][1].toFixed(4)}"/>
+      </feComponentTransfer>
       <feImage href="${specURL}" x="0" y="0"
                width="${P.w}" height="${P.h}" result="specular_layer"/>
-      <feComposite in="displaced_saturated" in2="specular_layer"
+      <feComposite in="rgb_dimmed" in2="specular_layer"
                operator="in" result="specular_saturated"/>
       <feComponentTransfer in="specular_layer" result="specular_faded">
         <feFuncA type="linear" slope="${P.specOpacity}"/>
       </feComponentTransfer>
-      <feBlend in="specular_saturated" in2="displaced"
+      <feBlend in="specular_saturated" in2="rgb_dimmed"
                mode="normal" result="withSaturation"/>
       <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
     </filter>`;
@@ -648,6 +677,7 @@ function tokensCSS() {
 --lg-specular-saturation: ${P.saturation};
 --lg-specular-angle: ${P.angle}deg;
 --lg-glass-bg-opacity: ${P.glassBg.toFixed(2)};
+--lg-rgb-dim: ${P.rgbDim.toFixed(2)};
 /* backdrop-filter: url(#liquid-glass-filter);  — Chromium only */`;
 }
 function tokensJSON() {
@@ -656,7 +686,7 @@ function tokensJSON() {
 function tokensAppCSS() {
   return `/* ── 1:1 onto existing app tokens (src/index.css) ── */
 --panel-a-blur: ${P.blur.toFixed(1)}px;              /* Blur Level */
---panel-a-dim-a: ${P.glassBg.toFixed(2)};             /* Glass Background Opacity — the dim */
+--panel-a-dim-a: ${P.rgbDim.toFixed(2)};              /* RGB Dim — per-channel wash (white→grey, blue survives) */
 --glass-edge-base: ${P.specOpacity.toFixed(2)};       /* Specular Opacity (rim weight) */
 --glass-edge-hot: ${P.specOpacity.toFixed(2)};        /* keep = base on panels */
 

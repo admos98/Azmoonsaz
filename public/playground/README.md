@@ -19,6 +19,11 @@ convex squircle bezel). Tune there, then **Copy app tokens** for a
 block that maps 1:1 onto `src/index.css` plus the new
 `--panel-lens-*` physics params.
 
+**RGB Dim (white wash)** — the app's RGB-aware dim, as an
+`feComponentTransfer` per-channel layer in the filter chain (ratios
+0.38R / 0.40G / 0.56B over mid-grey): white compresses to warm grey,
+dark blue keeps its blue. Maps to `--panel-a-dim-a` in the app.
+
 ## Run it locally
 
 Open `index.html` in **Chrome / Edge / any Chromium** (SVG filters as
