@@ -41,18 +41,25 @@ function cssNum(el: Element, name: string, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function readParams(el: Element): LensParams {
+function readParams(el: HTMLElement): LensParams {
+  const cs = getComputedStyle(el);
+  // inline override wins (engine sets el.style.backdropFilter first)
+  const cssVar = (name: string, fallback: number) => {
+    const v = cs.getPropertyValue(name).trim() || el.style.getPropertyValue(name).trim();
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
   return {
-    bezel: cssNum(el, '--lens-bezel', 14),
-    thickness: cssNum(el, '--lens-thickness', 72),
-    refraction: cssNum(el, '--lens-refraction-level', 0.5),
-    scaleRatio: cssNum(el, '--lens-scale-ratio', 1),
-    specOpacity: cssNum(el, '--lens-spec-opacity', 0.34),
-    specSaturation: cssNum(el, '--lens-spec-saturation', 5),
-    specAngle: cssNum(el, '--lens-spec-angle', -55),
-    dim: cssNum(el, '--lens-dim', 0.15),
+    bezel: cssVar('--lens-bezel', 14),
+    thickness: cssVar('--lens-thickness', 72),
+    refraction: cssVar('--lens-refraction-level', 0.5),
+    scaleRatio: cssVar('--lens-scale-ratio', 1),
+    specOpacity: cssVar('--lens-spec-opacity', 0.34),
+    specSaturation: cssVar('--lens-spec-saturation', 5),
+    specAngle: cssVar('--lens-spec-angle', -55),
+    dim: cssVar('--lens-dim', 0.15),
     dimTint: [103, 100, 112],
-    blur: cssNum(el, '--lens-blur', 1),
+    blur: cssVar('--lens-blur', 1),
   };
 }
 
@@ -79,6 +86,9 @@ function kindOf(el: Element): 'lens' | 'pane' | 'drop' | null {
 function sync(el: HTMLElement): void {
   const kind = kindOf(el);
   if (!kind) return;
+  // boot gate: engine only runs where backdrop-filter:url() actually paints
+  const root = document.documentElement;
+  if (root.dataset.lens !== 'on' || root.dataset.glass === 'lite' || root.dataset.glass === 'off') return;
   const p = readParams(el);
   const w = el.offsetWidth;
   const h = el.offsetHeight;
@@ -86,7 +96,7 @@ function sync(el: HTMLElement): void {
   const radius = cssNum(el, '--lens-radius', 21);
   const dpr = currentDPR();
   // signature: everything in the spatial region that changes the filter
-  const sig = [kind, w | 0, h | 0, radius, p.bezel, p.thickness, p.refraction, p.scaleRatio, dpr, p.specAngle, p.specOpacity, p.specSaturation, p.dim].join('|');
+  const sig = [kind, w | 0, h | 0, radius, p.bezel, p.thickness, p.refraction, p.scaleRatio, dpr, p.specAngle, p.specOpacity, p.specSaturation, p.dim, p.blur].join('|');
   let id = byEl.get(el);
   if (!id) {
     id = `lg-${++seq}`;
@@ -114,10 +124,10 @@ function sync(el: HTMLElement): void {
   // is a backdrop root by definition, so glass inside it stays flat in the
   // de-nest rule; the rule keys on this class, not on guesswork.
   el.classList.add('lg-root');
-  const blur = el.classList.contains('lens--menu')
-    ? cssNum(el, '--lens-blur', 1) * 3
-    : p.blur;
-  el.style.backdropFilter = `blur(${blur.toFixed(2)}px) url(#${id})`;
+  // inline url only — the filter's feGaussianBlur does the backdrop blur
+  // (playground: backdrop-filter:url(#lgf) has no blur in CSS). Setting
+  // blur() here too would double the softness.
+  el.style.backdropFilter = `url(#${id})`;
 }
 
 /** Drop filters whose owning element is gone (unmounted routes) — they are
@@ -159,6 +169,8 @@ export function mountGlassEngine(): void {
     for (const e of entries) sync(e.target as HTMLElement);
   });
   document.querySelectorAll<HTMLElement>('.lens, .pane, .drop').forEach((el) => {
+    const blur = cssNum(el, '--lens-blur', 1);
+    if (el.classList.contains('lens--menu')) el.style.setProperty('--lens-blur', (blur * 3).toFixed(2) + 'px');
     observer!.observe(el);
     try {
       sync(el);
@@ -183,7 +195,26 @@ export function mountGlassEngine(): void {
     attributes: true,
     attributeFilter: ['data-theme'],
   });
-  domObserver = new MutationObserver(() => resyncGlass());
+  domObserver = new MutationObserver((mutations) => {
+    // fires on every DOM change; only run the resync when something with
+    // .lens/.pane/.drop actually entered the tree — otherwise React renders
+    // would keep re-measuring every panel.
+    for (const m of mutations) {
+      if (!m.addedNodes.length) continue;
+      for (const n of m.addedNodes) {
+        const el = n as HTMLElement | null;
+        if (
+          el &&
+          el.nodeType === 1 &&
+          (el.matches?.('.lens, .pane, .drop') ||
+            el.querySelector?.('.lens, .pane, .drop'))
+        ) {
+          resyncGlass();
+          return;
+        }
+      }
+    }
+  });
   domObserver.observe(document.body, { childList: true, subtree: true });
 }
 

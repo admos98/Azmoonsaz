@@ -222,34 +222,31 @@ export function buildFilterMarkup(
   withDim: boolean,
 ): string {
   const [r, g, b] = dimParams(p);
-  const dim =
-    withDim
-      ? `
+  const dim = withDim
+    ? `
       <feFuncR type="linear" slope="${esc(r[0].toFixed(4))}" intercept="${esc(r[1].toFixed(4))}"/>
       <feFuncG type="linear" slope="${esc(g[0].toFixed(4))}" intercept="${esc(g[1].toFixed(4))}"/>
       <feFuncB type="linear" slope="${esc(b[0].toFixed(4))}" intercept="${esc(b[1].toFixed(4))}"/>`
-      : `
+    : `
       <feFuncR type="linear" slope="1" intercept="0"/>
       <feFuncG type="linear" slope="1" intercept="0"/>
       <feFuncB type="linear" slope="1" intercept="0"/>`;
   const displace = dispURL != null
     ? `
-      <feImage href="${esc(dispURL)}" x="0" y="0" width="100%" height="100%"
-               preserveAspectRatio="none" result="displacement_map"/>
+      <feImage href="${esc(dispURL)}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="displacement_map"/>
       <feDisplacementMap in="blurred_source" in2="displacement_map"
                scale="${esc(effectiveScale(maxAbs, p).toFixed(3))}"
                xChannelSelector="R" yChannelSelector="G" result="displaced"/>`
     : `
       <feOffset in="blurred_source" dx="0" dy="0" result="displaced"/>`;
-  return `<filter id="${esc(id)}" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="0" result="blurred_source"/>${displace}
+  return `<filter id="${esc(id)}" colorInterpolationFilters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="${esc(p.blur)}" result="blurred_source"/>${displace}
       <feColorMatrix in="displaced" type="saturate" values="${esc(p.specSaturation)}" result="displaced_saturated"/>
       <feComponentTransfer in="displaced" result="rgb_dimmed">${dim}
       </feComponentTransfer>
       <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">${dim}
       </feComponentTransfer>
-      <feImage href="${esc(specURL)}" x="0" y="0" width="100%" height="100%"
-               preserveAspectRatio="none" result="specular_layer"/>
+      <feImage href="${esc(specURL)}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
       <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
       <feComponentTransfer in="specular_layer" result="specular_faded">
         <feFuncA type="linear" slope="${esc(p.specOpacity)}"/>
