@@ -1743,19 +1743,16 @@ button {
    exclude .field for that reason. */
 @utility lens {
   background: rgb(var(--dim-tint) / var(--glass-fill));
-  border: 0; /* silhouette comes from the filter rim, not a border */
   backdrop-filter: blur(var(--lens-blur));
 }
 
 @utility pane {
   background: rgb(var(--dim-tint) / var(--glass-fill));
-  border: 0;
   backdrop-filter: blur(var(--pane-blur));
 }
 
 @utility frost {
   background: rgb(var(--dim-tint) / var(--glass-fill));
-  border: 0;
   backdrop-filter: blur(var(--frost-blur));
   /* static rim — painted once, never samples the backdrop (quiet boxes;
      the reflective rim lives only in the lens/pane/drop filters) */
@@ -1849,10 +1846,12 @@ button {
   --btn-tint-mix: 0%;
   --btn-edge-a: 0.16;
 }
-/* pure ghost: no body — toolbars and rows that only need press feedback */
+/* pure ghost: no body — toolbars, rows and inactive tabs that only need
+   press feedback; reads muted so it can sit beside a tinted sibling */
 .btn-glass--bare {
   background: none;
   border-color: transparent;
   box-shadow: none;
   backdrop-filter: none;
+  color: var(--color-text-tertiary);
 }

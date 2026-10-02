@@ -38,12 +38,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   const [allowBacktrack, setAllowBacktrack] = useState(true);
   const [showImmediateResults, _setShowImmediateResults] = useState(false);
   const [browserLockdown, setBrowserLockdown] = useState(true);
-  const {
-    questions: questionBank,
-    classGroups,
-    status,
-    upsertExam,
-  } = useTeacherCollections();
+  const { questions: questionBank, classGroups, status, upsertExam } = useTeacherCollections();
   const questionsLoading = status.questions === 'loading';
 
   // Selection never references out-of-bank ids: the checkboxes render from
@@ -148,19 +143,16 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   };
 
   return (
-    <div
-      className="glx rounded-2xl overflow-hidden"
-      id="new-exam-wizard-wrapper"
-    >
+    <div className="lens rounded-2xl overflow-hidden" id="new-exam-wizard-wrapper">
       {/* Header and Back Button */}
-      <div className="px-6 py-5 glx border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
+      <div className="px-6 py-5 pane border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             type="button"
             id="btn-back-to-exams-from-wizard"
             aria-label="بازگشت به آزمون‌ها"
             onClick={onBack}
-            className="p-1.5 hover:glx-inset rounded-lg text-[var(--color-text-tertiary)] cursor-pointer"
+            className="p-1.5 btn-glass btn-glass--quiet rounded-lg text-[var(--color-text-tertiary)] cursor-pointer"
           >
             <ArrowRight className="w-5 h-5" />
           </button>
@@ -320,7 +312,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           {/* Quick select database */}
           <div className="space-y-3">
             {questionsLoading && (
-              <div className="p-6 rounded-2xl border border-[var(--color-glass-light-stroke)] glx text-center text-caption font-bold text-[var(--color-text-tertiary)]">
+              <div className="p-6 rounded-2xl border-[var(--color-glass-light-stroke)] pane text-center text-caption font-bold text-[var(--color-text-tertiary)]">
                 در حال دریافت سوالات از بانک سوالات...
               </div>
             )}
@@ -429,7 +421,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 p-3 glx rounded-xl border border-[var(--color-glass-light-stroke)]">
+            <div className="flex items-center gap-3 p-3 pane rounded-xl border-[var(--color-glass-light-stroke)]">
               <Toggle
                 checked={shuffleQuestions}
                 onChange={setShuffleQuestions}
@@ -437,7 +429,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               />
             </div>
 
-            <div className="flex items-center gap-3 p-3 glx rounded-xl border border-[var(--color-glass-light-stroke)]">
+            <div className="flex items-center gap-3 p-3 pane rounded-xl border-[var(--color-glass-light-stroke)]">
               <Toggle
                 checked={shuffleOptions}
                 onChange={setShuffleOptions}
@@ -445,7 +437,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               />
             </div>
 
-            <div className="flex items-center gap-3 p-3 glx rounded-xl border border-[var(--color-glass-light-stroke)]">
+            <div className="flex items-center gap-3 p-3 pane rounded-xl border-[var(--color-glass-light-stroke)]">
               <Toggle
                 checked={allowBacktrack}
                 onChange={setAllowBacktrack}
@@ -481,7 +473,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
             </span>
           </div>
 
-          <div className="p-5 rounded-2xl border border-[var(--color-glass-light-stroke)] glx space-y-4 max-w-2xl text-caption text-[var(--color-text-secondary)] leading-relaxed">
+          <div className="p-5 rounded-2xl border-[var(--color-glass-light-stroke)] pane space-y-4 max-w-2xl text-caption text-[var(--color-text-secondary)] leading-relaxed">
             <div>
               <span className="text-[var(--color-text-tertiary)] block mb-1">عنوان آزمون:</span>
               <p className="font-bold text-[var(--color-text-primary)] text-label">
@@ -546,14 +538,14 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       )}
 
       {/* FOOTER NAV CONTROLS */}
-      <div className="p-5 border-t border-[var(--color-glass-light-stroke)] glx flex justify-between items-center">
+      <div className="p-5 border-t border-[var(--color-glass-light-stroke)] pane flex justify-between items-center">
         <div>
           {step > 1 && (
             <button
               type="button"
               id="wizard-btn-prev"
               onClick={() => setStep(step - 1)}
-              className="px-4 py-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl text-caption font-semibold border transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl text-caption font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowRight className="w-4 h-4" />
               <span>مرحله قبلی</span>
@@ -565,7 +557,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           <button
             type="button"
             onClick={onBack}
-            className="px-4 py-2 glx-inset hover:glx-inset text-[var(--color-text-tertiary)] rounded-xl text-caption font-semibold cursor-pointer"
+            className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-tertiary)] rounded-xl text-caption font-semibold cursor-pointer"
           >
             انصراف و خروج
           </button>
@@ -595,7 +587,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               type="button"
               id="wizard-btn-publish"
               onClick={handlePublish}
-              className="px-5 py-2 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] rounded-xl text-caption font-black shadow-xs flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2 btn-glass btn-glass--success rounded-xl text-caption font-black flex items-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-4.5 h-4.5" />
               <span>ثبت، زمان‌بندی و انتشار آزمون عمومی</span>

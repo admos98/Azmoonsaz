@@ -24,8 +24,7 @@ import {
    1. BUTTON COMPONENT
    ========================================== */
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?:
-    'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'gold';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'gold';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
@@ -50,18 +49,16 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyle =
       'inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50 disabled:pointer-events-none';
 
+    // kube-style glass buttons: the material, tint and press states all live
+    // in the library (@utility btn-glass) — variants only pick the tint.
     const variants: Record<ButtonProps['variant'] & {}, string> = {
-      primary:
-        'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] shadow-sm',
-      secondary: 'glx-inset hover:brightness-105 text-[var(--color-text-primary)]',
-      outline:
-        'bg-transparent hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-primary)]',
-      ghost: 'bg-transparent hover:glx-inset text-[var(--color-text-secondary)]',
-      danger:
-        'bg-[var(--color-danger-solid)] hover:bg-[var(--color-danger-solid)]/90 text-[var(--color-text-on-solid)] shadow-sm',
-      success:
-        'bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] shadow-sm',
-      gold: 'bg-[var(--color-gold)] hover:bg-[var(--color-gold)]/90 text-[var(--color-ink)] shadow-sm',
+      primary: 'btn-glass btn-glass--primary',
+      secondary: 'btn-glass btn-glass--quiet',
+      outline: 'btn-glass btn-glass--quiet',
+      ghost: 'btn-glass btn-glass--bare',
+      danger: 'btn-glass btn-glass--danger',
+      success: 'btn-glass btn-glass--success',
+      gold: 'btn-glass btn-glass--gold',
     };
 
     const sizes: Record<ButtonProps['size'] & {}, string> = {
@@ -107,19 +104,19 @@ export const Card = ({
   ...props
 }: CardProps) => {
   const glassClass = {
-    light: 'glx',
-    strong: 'glx-strong',
+    /* light = top-level section card → the full lens material (bend + the
+       reflective rim lives IN the filter, no painted glass-edge ring) */
+    light: 'lens',
+    /* strong = nested / heavier card → pane: same rim physics, no bend,
+       blur 2× lens — the sanctioned glass-inside-glass material */
+    strong: 'pane',
+    /* inset and none sit INSIDE other panels — rows, not panels. A rim on
+       every nested row reads as double-framed plastic; iOS nests rows as
+       quiet fills under the host panel's rim. */
     inset: 'glx-inset',
-    /* No material at all — for content nested inside an already-glass panel.
-       Glass-on-glass multiplies backdrop-filter cost and muddies the read:
-       real glass doesn't refract inside itself. */
     none: '',
   }[glassLayer];
-  const edgeClass =
-    glassLayer === 'light' || glassLayer === 'strong' ? 'glass-edge' : '';
-  /* 'inset' and 'none' sit INSIDE other panels — they get no rim ring.
-     A rim on every nested row is what made panels read as double-framed
-     plastic; iOS nests rows as quiet fills under the host panel's rim. */
+  const edgeClass = '';
 
   if (hoverable) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -222,10 +219,7 @@ export const StatusBadge = ({ status, className = '' }: StatusBadgeProps) => {
   const item = config[status] || { variant: 'info' as const, label: String(status) };
 
   return (
-    <Badge
-      variant={item.variant}
-      className={`${item.live ? 'animate-pulse ' : ''}${className}`}
-    >
+    <Badge variant={item.variant} className={`${item.live ? 'animate-pulse ' : ''}${className}`}>
       {item.label}
     </Badge>
   );
@@ -291,9 +285,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const generatedId = useId();
     const inputId = id || generatedId;
     const sizeBase =
-      size === 'sm'
-        ? 'text-micro px-2.5 py-1.5 rounded-lg'
-        : 'text-label px-4 py-2.5 rounded-xl';
+      size === 'sm' ? 'text-micro px-2.5 py-1.5 rounded-lg' : 'text-label px-4 py-2.5 rounded-xl';
     return (
       <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
         {label && (
@@ -309,7 +301,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             type={type}
-            className={`w-full ${sizeBase} glx-inset hover:brightness-105 border outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${icon ? 'pr-11' : ''} ${trailing ? 'pl-11' : ''} ${className}`}
+            className={`w-full ${sizeBase} glx-inset field hover:brightness-105 border outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${icon ? 'pr-11' : ''} ${trailing ? 'pl-11' : ''} ${className}`}
             {...props}
           />
           {icon && (
@@ -472,7 +464,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={open ? `${dropdownId}-list` : undefined}
-          className={`relative w-full flex items-center justify-between glx glass-edge border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
+          className={`relative w-full flex items-center justify-between glx field border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
             compact ? 'px-2.5 py-1.5 text-caption' : 'px-3.5 py-2.5 text-label'
           } ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)] hover:brightness-105'}`}
         >
@@ -510,7 +502,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                 role="listbox"
                 aria-label={label || placeholder}
                 onKeyDown={handleListKeyDown}
-                className="relative glx-strong glass-edge rounded-xl max-h-56 overflow-y-auto"
+                className="relative glx-strong field rounded-xl max-h-56 overflow-y-auto"
               >
                 {options.map((opt, i) => (
                   <React.Fragment key={opt.value}>
@@ -617,7 +609,7 @@ export const Tabs = ({ tabs, activeTab, onChange, className = '', ariaLabel }: T
             aria-selected={isActive}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 text-caption md:text-label font-bold rounded-xl transition-all cursor-pointer select-none ${isActive ? 'bg-[var(--color-gold)]/10 text-[var(--color-ink)] shadow-sm border border-[var(--color-glass-light-stroke)]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-glass-light-stroke)]/20'}`}
+            className={`flex items-center gap-2 px-4 py-2 text-caption md:text-label font-bold rounded-xl transition-all cursor-pointer select-none ${isActive ? 'btn-glass btn-glass--gold' : 'btn-glass btn-glass--bare'}`}
           >
             {tab.icon && tab.icon}
             <span>{tab.label}</span>
@@ -724,7 +716,9 @@ export const Modal = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className={`fixed inset-0 z-50 ${isSide ? '' : 'flex items-end justify-center p-0 sm:items-center sm:p-4'}`}>
+        <div
+          className={`fixed inset-0 z-50 ${isSide ? '' : 'flex items-end justify-center p-0 sm:items-center sm:p-4'}`}
+        >
           {/* Scrim — fades via opacity, carries NO backdrop-filter. Animating opacity
               on a filtered layer freezes its last frame, and that frozen frame
               outlives the unmount — the ghost print left behind after closing. */}
@@ -775,13 +769,13 @@ export const Modal = ({
               style={originStyle}
               className={
                 isSide
-                  ? `relative glx-strong glass-edge flex h-full w-full flex-col overflow-hidden ${sideWidth}`
+                  ? `relative lens flex h-full w-full flex-col overflow-hidden ${sideWidth}`
                   : /* overflow-hidden: the glx-inset footer is a nearly-opaque child;
                        without the clip its square corners painted OVER the panel's
                        rounded bottom corners (the "sharp corners on the down side"
                        in the user's photos of the manual-add modal). Dropdowns are
                        portalled to body, so nothing legitimate is clipped. */
-                    'relative glx-strong glass-edge flex max-h-[min(90vh,90dvh)] w-full flex-col overflow-hidden rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0'
+                    'relative lens flex max-h-[min(90vh,90dvh)] w-full flex-col overflow-hidden rounded-t-3xl pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:pb-0'
               }
               role="dialog"
               tabIndex={-1}
@@ -818,7 +812,9 @@ export const Modal = ({
 
               {/* Footer */}
               {footer && (
-                <div className={`px-6 py-4 glx-inset border-t border-[var(--color-glass-light-stroke)] flex items-center ${footerClassName ?? 'justify-end'} gap-3`}>
+                <div
+                  className={`px-6 py-4 glx-inset border-t border-[var(--color-glass-light-stroke)] flex items-center ${footerClassName ?? 'justify-end'} gap-3`}
+                >
                   {footer}
                 </div>
               )}
@@ -851,7 +847,7 @@ export const EmptyState = ({
 }: EmptyStateProps) => {
   return (
     <div
-      className={`relative flex flex-col items-center justify-center text-center border border-dashed glx glass-edge ${
+      className={`relative flex flex-col items-center justify-center text-center border border-dashed glx field ${
         compact ? 'p-6 md:p-8 space-y-2.5 rounded-2xl' : 'p-10 md:p-14 space-y-4 rounded-3xl'
       }`}
     >
@@ -1232,9 +1228,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const generatedId = useId();
     const fieldId = id || generatedId;
     const sizeBase =
-      size === 'sm'
-        ? 'text-micro px-2.5 py-1.5 rounded-lg'
-        : 'text-label px-4 py-2.5 rounded-xl';
+      size === 'sm' ? 'text-micro px-2.5 py-1.5 rounded-lg' : 'text-label px-4 py-2.5 rounded-xl';
     const valueLength = typeof value === 'string' ? value.length : 0;
     return (
       <div className={`space-y-1.5 text-right w-full ${wrapperClassName}`}>
@@ -1251,7 +1245,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           rows={rows}
           value={value}
-          className={`w-full ${sizeBase} glx-inset hover:brightness-105 border outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] resize-y leading-relaxed ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${className}`}
+          className={`w-full ${sizeBase} glx-inset field hover:brightness-105 border outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] resize-y leading-relaxed ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${className}`}
           {...props}
         />
         {maxCount !== undefined && (

@@ -51,7 +51,7 @@ export default function SettingsHub({
           <Suspense
             fallback={
               <div
-                className="h-64 rounded-2xl glx skeleton"
+                className="h-64 rounded-2xl lens skeleton"
                 role="status"
                 aria-label="در حال بارگذاری بانک سوالات"
               />

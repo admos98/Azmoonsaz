@@ -59,8 +59,12 @@ export default function Questions() {
   const { showToast, toastElement } = useToast();
   // The question bank rides the shared cache — NewExam and ExamPreview see a
   // new question immediately, no remount refetch needed.
-  const { questions: rawQuestions, status, upsertQuestion, removeQuestion } =
-    useTeacherCollections();
+  const {
+    questions: rawQuestions,
+    status,
+    upsertQuestion,
+    removeQuestion,
+  } = useTeacherCollections();
   const loading = status.questions === 'loading';
 
   // Display-list enrichment, stable per cache cycle: difficulty/section/tags
@@ -687,17 +691,13 @@ export default function Questions() {
   }
 
   return (
-    <div
-      className="space-y-6 text-right font-sans mb-12"
-      dir="rtl"
-      id="questions-tab-view"
-    >
+    <div className="space-y-6 text-right font-sans mb-12" dir="rtl" id="questions-tab-view">
       {toastElement}
       <SaveStatusIndicator state={saveState} savedAt={lastSavedAt} />
 
       {/* Page Title Board */}
       <div
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx p-6 rounded-3xl border"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 lens p-6 rounded-3xl"
         id="questions-title-plate"
       >
         <PageHeader
@@ -707,7 +707,7 @@ export default function Questions() {
 
         <div className="flex items-center gap-2 w-full md:w-auto">
           {/* Card / Table Toggle */}
-          <div className="glx border rounded-xl p-1 flex items-center gap-1 shrink-0">
+          <div className="glx field border rounded-xl p-1 flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('card')}
@@ -750,7 +750,7 @@ export default function Questions() {
       </div>
 
       {/* COMPREHENSIVE MULTI-FILTER PANEL */}
-      <div className="glx p-5 rounded-3xl border space-y-4" id="filters-container">
+      <div className="lens p-5 rounded-3xl space-y-4" id="filters-container">
         <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-2.5 mb-2">
           <Sliders className="w-4 h-4 text-[var(--color-accent)]" />
           <h4 className="text-caption font-bold text-[var(--color-text-secondary)]">
@@ -1020,7 +1020,7 @@ export default function Questions() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
-                      className="glx rounded-3xl p-5 border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
+                      className="lens rounded-3xl p-5 border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
                       id={`card-q-${q.id}`}
                     >
                       <div className="space-y-3.5">
@@ -1056,7 +1056,7 @@ export default function Questions() {
 
                         {/* Middle specific indicators badges */}
                         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--color-glass-light-stroke)]">
-                          <span className="glx text-[var(--color-text-secondary)] rounded-md px-2 py-0.5 text-micro font-semibold border border-[var(--color-glass-light-stroke)]/60">
+                          <span className="glx field text-[var(--color-text-secondary)] rounded-md px-2 py-0.5 text-micro font-semibold border border-[var(--color-glass-light-stroke)]/60">
                             {getTypeNameInPersian(q.type)}
                           </span>
 
@@ -1087,12 +1087,12 @@ export default function Questions() {
                       </div>
 
                       {/* Card Action footer operations */}
-                      <div className="border-t pt-3.5 flex justify-between items-center glx -m-5 mt-2 px-5 py-3">
+                      <div className="border-t pt-3.5 flex justify-between items-center pane -m-5 mt-2 px-5 py-3">
                         <div className="flex gap-1.5">
                           {q.tags?.slice(0, 2).map((tag, i) => (
                             <span
                               key={i}
-                              className="text-micro text-[var(--color-accent)] glx border px-1.5 py-0.5 rounded-md font-bold"
+                              className="text-micro text-[var(--color-accent)] glx field border px-1.5 py-0.5 rounded-md font-bold"
                             >
                               #{tag}
                             </span>
@@ -1138,7 +1138,7 @@ export default function Questions() {
               </div>
             ) : (
               /* TABLE ROW VIEW MODE */
-              <div className="glx rounded-3xl border overflow-hidden" id="questions-table-view-box">
+              <div className="lens rounded-3xl overflow-hidden" id="questions-table-view-box">
                 <div className="overflow-x-auto text-right">
                   <table
                     className="w-full text-caption text-[var(--color-text-secondary)]"
@@ -1297,8 +1297,7 @@ export default function Questions() {
             <>
               <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
               <span>
-                بروزرسانی شده در:{' '}
-                {toPersianDigits(formatPersianDate(previewQuestion.createdAt))}
+                بروزرسانی شده در: {toPersianDigits(formatPersianDate(previewQuestion.createdAt))}
               </span>
             </>
           )
@@ -1335,828 +1334,796 @@ export default function Questions() {
           </>
         }
       >
-                  {/* Left Column (Realtime live visual preview of QuestionRenderer as the teacher types!) */}
-                  <div
-                    className="hidden lg:block lg:col-span-5 glx-inset p-5 overflow-y-auto border-l border-[var(--color-glass-light-stroke)]"
-                    id="drawer-live-visual"
+        {/* Left Column (Realtime live visual preview of QuestionRenderer as the teacher types!) */}
+        <div
+          className="hidden lg:block lg:col-span-5 glx-inset p-5 overflow-y-auto border-l border-[var(--color-glass-light-stroke)]"
+          id="drawer-live-visual"
+        >
+          <div className="sticky top-0 space-y-3.5">
+            <div className="flex items-center gap-1 text-[var(--color-text-tertiary)] font-bold mb-1">
+              <Eye className="w-4 h-4 text-[var(--color-accent)]" />
+              <span className="text-micro">محیط پیش‌نمایش لحظه‌ای دبیر:</span>
+            </div>
+
+            {/* Construct temporary dummy question to feed to high-fidelity QuestionRenderer in real-time! */}
+            <QuestionRenderer
+              question={{
+                id: 'dummy-drawer',
+                type: formType,
+                title: formTitle || 'بدون عنوان',
+                text: formText || 'لطفاً متن صورت سوال را بنویسید...',
+                points: formPoints,
+                category: formSubject,
+                grade: formGrade,
+                section: formSection,
+                difficulty: formDifficulty,
+                options:
+                  formType === 'single_choice' ||
+                  formType === 'multiple_choice' ||
+                  formType === 'image_based'
+                    ? formOptions
+                    : undefined,
+                correctAnswer: formType === 'true_false' ? formCorrectTrueFalse : undefined, // choices mapping takes formOptions isCorrect in renderer
+                correctFillBlanks: formType === 'fill_blank' ? formFillBlanks : undefined,
+                matchingPairs: formType === 'matching' ? formMatchingPairs : undefined,
+                orderingItems: formType === 'ordering' ? formOrderingItems : undefined,
+                imageUrl: formImageUrl || undefined,
+                explanation: formExplanation || undefined,
+                sampleAnswer: formSampleAnswer || undefined,
+                rubrics: formType === 'long_answer' ? formRubrics : undefined,
+                parts:
+                  formType === 'cloze' || formType === 'reading_comprehension'
+                    ? formParts
+                    : undefined,
+                tags: formTagsString
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter(Boolean),
+              }}
+              showCorrectAnswers={true}
+            />
+
+            <div className="glx0 border border-[var(--color-glass-light-stroke)] p-3.5 rounded-2xl text-micro leading-relaxed text-[var(--color-text-tertiary)] flex items-start gap-1.5 shadow-xs">
+              <Info className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-tertiary)] mt-0.5" />
+              <span>
+                تغیرات بالا بلافاصله با تایپ کردن فرم زیر، به‌روزرسانی می‌شوند تا ساختار نهایی را
+                بررسی نمایید.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (Intense Form controls) */}
+        <div className="lg:col-span-7 overflow-y-auto p-6 lens space-y-5" id="drawer-form-contents">
+          <form id="question-editor-form" onSubmit={handleSaveQuestion} className="space-y-4">
+            {/* 1. Grade, Subject, Section, Difficulty */}
+            <div className="pane p-4 rounded-2xl space-y-3">
+              <span className="font-bold text-[var(--color-text-primary)] text-micro block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">
+                شناسنامه علمی سوال
+              </span>
+
+              <div className="grid grid-cols-2 gap-3.5">
+                {/* Grade Selector */}
+                <div className="space-y-1">
+                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                    پایه تحصیلی:
+                  </label>
+                  <Dropdown
+                    value={formGrade}
+                    onChange={(v) => setFormGrade(v)}
+                    options={[
+                      { value: '', label: 'انتخاب پایه...' },
+                      { value: 'اول', label: 'اول', group: 'دبستان' },
+                      { value: 'دوم', label: 'دوم', group: 'دبستان' },
+                      { value: 'سوم', label: 'سوم', group: 'دبستان' },
+                      { value: 'چهارم', label: 'چهارم', group: 'دبستان' },
+                      { value: 'پنجم', label: 'پنجم', group: 'دبستان' },
+                      { value: 'ششم', label: 'ششم', group: 'دبستان' },
+                      { value: 'هفتم', label: 'هفتم', group: 'دوره اول متوسطه' },
+                      { value: 'هشتم', label: 'هشتم', group: 'دوره اول متوسطه' },
+                      { value: 'نهم', label: 'نهم', group: 'دوره اول متوسطه' },
+                      { value: 'دهم', label: 'دهم', group: 'دوره دوم متوسطه' },
+                      { value: 'یازدهم', label: 'یازدهم', group: 'دوره دوم متوسطه' },
+                      { value: 'دوازدهم', label: 'دوازدهم', group: 'دوره دوم متوسطه' },
+                    ]}
+                  />
+                </div>
+
+                {/* Subject */}
+                <Input
+                  label="موضوع درس:"
+                  size="sm"
+                  type="text"
+                  required
+                  value={formSubject}
+                  onChange={(e) => setFormSubject(e.target.value)}
+                  placeholder="مثال: علوم تجربی، ریاضی"
+                />
+
+                {/* Section */}
+                <Input
+                  label="بخش / فصل کتاب:"
+                  size="sm"
+                  type="text"
+                  required
+                  value={formSection}
+                  onChange={(e) => setFormSection(e.target.value)}
+                  placeholder="مثال: فصل اول یا مبحث فیزیک"
+                />
+
+                {/* Difficulty */}
+                <div className="space-y-1">
+                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                    سطح سختی علمی:
+                  </label>
+                  <Dropdown
+                    value={formDifficulty}
+                    onChange={(v) => setFormDifficulty(v as 'easy' | 'medium' | 'hard')}
+                    options={[
+                      { value: 'easy', label: 'آسان' },
+                      { value: 'medium', label: 'متوسط' },
+                      { value: 'hard', label: 'سخت / استعداد درخشان' },
+                    ]}
+                  />
+                </div>
+
+                {/* Points / Barom */}
+                <Input
+                  label="امتیاز / بارم نمره:"
+                  size="sm"
+                  type="number"
+                  min={0.25}
+                  max={20}
+                  step={0.25}
+                  value={formPoints}
+                  onChange={(e) => setFormPoints(Number(e.target.value))}
+                  className="font-bold"
+                />
+
+                {/* Tags separated */}
+                <Input
+                  label="کلمات کلیدی / تگ‌ها (کاما جدا کننده):"
+                  size="sm"
+                  type="text"
+                  value={formTagsString}
+                  onChange={(e) => setFormTagsString(e.target.value)}
+                  placeholder="کنکوری، تستی، مهم"
+                  className="text-[var(--color-accent)] font-bold"
+                />
+              </div>
+            </div>
+
+            {/* 2. Type selection picker */}
+            <div className="space-y-1.5">
+              <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                انتخاب قالب بندی ساختاری سوال (۱۱ نوع):
+              </label>
+              <Dropdown
+                value={formType}
+                onChange={(v) => setFormType(v as QuestionType)}
+                options={[
+                  { value: 'single_choice', label: 'چهارگزینه‌ای تک‌پاسخ' },
+                  { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
+                  { value: 'true_false', label: 'درست / نادرست' },
+                  { value: 'fill_blank', label: 'جای خالی' },
+                  { value: 'short_answer', label: 'پاسخ کوتاه تشریحی' },
+                  { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
+                  { value: 'matching', label: 'وصل‌کردنی' },
+                  { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
+                  { value: 'cloze', label: 'کلوز تست (Cloze)' },
+                  { value: 'reading_comprehension', label: 'درک مطلب passage' },
+                  { value: 'image_based', label: 'سوال تصویری اختصاصی' },
+                ]}
+              />
+            </div>
+
+            {/* 3. Title & Text prompts */}
+            <div className="space-y-3.5">
+              <Input
+                label="عنوان خلاصه سوال (برای معلم):"
+                size="sm"
+                type="text"
+                required
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                placeholder="ماشاالله: محاسبه سرعت زاویه‌ای"
+                className="font-bold"
+              />
+
+              <Textarea
+                label="متن اصلی صورت سوال / مسئله (فرمول گذاری):"
+                size="sm"
+                required
+                rows={4}
+                value={formText}
+                onChange={(e) => setFormText(e.target.value)}
+                placeholder="متن کامل سوال خود را به زبان فارسی روان تالیف کنید..."
+                className="font-medium"
+              />
+            </div>
+
+            {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
+            <div className="relative pane p-4 rounded-xl space-y-2">
+              <span className="text-micro text-[var(--color-text-primary)] font-bold block">
+                الصاق پرونده تصویر برای کل سوال (اختیاری):
+              </span>
+
+              <div className="flex items-center gap-3">
+                {/* Hidden manual selector */}
+                <label className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] text-micro rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>انتخاب فایل تصویر</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleMockImageUpload(e, 'main')}
+                  />
+                </label>
+
+                {formImageUrl ? (
+                  <div className="flex items-center gap-2">
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={formImageUrl}
+                      alt="تصویر بارگذاری شده در فرم"
+                      className="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormImageUrl('')}
+                      className="text-[var(--color-danger)] font-bold hover:underline"
+                    >
+                      حذف پیوست ×
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-micro text-[var(--color-text-tertiary)]">
+                    تصویری ضمیمه نشده است (فرمت .png, .jpg و .gif پشتیبانی می‌شود)
+                  </span>
+                )}
+              </div>
+              {/* Outline structure for Supabase integration comment per specs */}
+              <p className="text-micro text-[var(--color-accent)] bg-[var(--color-accent-soft)]/30 p-2 rounded-lg italic leading-normal">
+                داده به صورت base64 محلی ذخیره می‌شود. ساختار تابع آماده ارتقای سنکرون به خدمات
+                استوریج ابری Supabase Storage از بستر کلاینت است.
+              </p>
+            </div>
+
+            {/* 5. TYPE SPECIFIC OPTIONS BUILDERS */}
+
+            {/* Choice builder (single_choice, multiple_choice, image_based) */}
+            {(formType === 'single_choice' ||
+              formType === 'multiple_choice' ||
+              formType === 'image_based') && (
+              <div className="pane p-4.5 rounded-2xl space-y-4">
+                <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2 mb-1">
+                  <span className="font-bold text-[var(--color-text-primary)] text-micro">
+                    سازنده گزینه‌های آزمون (تعداد کلید گزینه‌ها)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={addOptionRow}
+                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded-lg text-micro font-bold cursor-pointer"
                   >
-                    <div className="sticky top-0 space-y-3.5">
-                      <div className="flex items-center gap-1 text-[var(--color-text-tertiary)] font-bold mb-1">
-                        <Eye className="w-4 h-4 text-[var(--color-accent)]" />
-                        <span className="text-micro">محیط پیش‌نمایش لحظه‌ای دبیر:</span>
+                    + افزودن گزینه نو
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {formOptions.map((opt, oIdx) => (
+                    <div key={opt.id} className="pane p-3 rounded-xl space-y-2 text-right">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Is correct tick check */}
+                        <label className="flex items-center gap-1 text-micro font-bold text-[var(--color-text-secondary)] cursor-pointer">
+                          <input
+                            type={formType === 'multiple_choice' ? 'checkbox' : 'radio'}
+                            name="drawer-opt-correct"
+                            checked={opt.isCorrect}
+                            onChange={() => handleOptionCorrectChange(oIdx)}
+                            className="w-4 h-4 text-[var(--color-success)] border-[var(--color-glass-light-stroke)] cursor-pointer accent-emerald-500"
+                          />
+                          <span
+                            className={
+                              opt.isCorrect ? 'text-[var(--color-success)] font-black' : ''
+                            }
+                          >
+                            پاسخ صحیح
+                          </span>
+                        </label>
+
+                        {/* Remove opt */}
+                        <button
+                          type="button"
+                          aria-label={`حذف گزینه شماره ${toPersianDigits(oIdx + 1)}`}
+                          title="حذف گزینه"
+                          onClick={() => removeOptionRow(oIdx)}
+                          className="mr-auto p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
+                        >
+                          <Trash className="w-3.5 h-3.5" />
+                        </button>
                       </div>
 
-                      {/* Construct temporary dummy question to feed to high-fidelity QuestionRenderer in real-time! */}
-                      <QuestionRenderer
-                        question={{
-                          id: 'dummy-drawer',
-                          type: formType,
-                          title: formTitle || 'بدون عنوان',
-                          text: formText || 'لطفاً متن صورت سوال را بنویسید...',
-                          points: formPoints,
-                          category: formSubject,
-                          grade: formGrade,
-                          section: formSection,
-                          difficulty: formDifficulty,
-                          options:
-                            formType === 'single_choice' ||
-                            formType === 'multiple_choice' ||
-                            formType === 'image_based'
-                              ? formOptions
-                              : undefined,
-                          correctAnswer:
-                            formType === 'true_false' ? formCorrectTrueFalse : undefined, // choices mapping takes formOptions isCorrect in renderer
-                          correctFillBlanks: formType === 'fill_blank' ? formFillBlanks : undefined,
-                          matchingPairs: formType === 'matching' ? formMatchingPairs : undefined,
-                          orderingItems: formType === 'ordering' ? formOrderingItems : undefined,
-                          imageUrl: formImageUrl || undefined,
-                          explanation: formExplanation || undefined,
-                          sampleAnswer: formSampleAnswer || undefined,
-                          rubrics: formType === 'long_answer' ? formRubrics : undefined,
-                          parts:
-                            formType === 'cloze' || formType === 'reading_comprehension'
-                              ? formParts
-                              : undefined,
-                          tags: formTagsString
-                            .split(',')
-                            .map((s) => s.trim())
-                            .filter(Boolean),
-                        }}
-                        showCorrectAnswers={true}
-                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        {/* Option text */}
+                        <div className="space-y-1">
+                          <span className="text-micro text-[var(--color-text-tertiary)] block">
+                            متن گزینه:
+                          </span>
+                          <input
+                            type="text"
+                            required
+                            value={opt.text}
+                            onChange={(e) => {
+                              const updated = [...formOptions];
+                              updated[oIdx].text = e.target.value;
+                              setFormOptions(updated);
+                            }}
+                            placeholder={`عبارت گزینه ${oIdx + 1}`}
+                            className="w-full glx field border px-3.5 py-1.5 rounded-lg text-micro"
+                          />
+                        </div>
 
-                      <div className="glx0 border border-[var(--color-glass-light-stroke)] p-3.5 rounded-2xl text-micro leading-relaxed text-[var(--color-text-tertiary)] flex items-start gap-1.5 shadow-xs">
-                        <Info className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-tertiary)] mt-0.5" />
-                        <span>
-                          تغیرات بالا بلافاصله با تایپ کردن فرم زیر، به‌روزرسانی می‌شوند تا ساختار
-                          نهایی را بررسی نمایید.
-                        </span>
+                        {/* Option image */}
+                        <div className="space-y-1">
+                          <span className="text-micro text-[var(--color-text-tertiary)] block">
+                            پیوست عکس گزینه (الزامی برای سوال تصویری):
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <label className="px-2 py-1 btn-glass btn-glass--quiet border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro font-bold cursor-pointer shrink-0">
+                              <span>الحاق تصویر</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleMockImageUpload(e, { optIndex: oIdx })}
+                              />
+                            </label>
+                            {opt.imageUrl ? (
+                              <div className="flex items-center gap-1.5">
+                                <img
+                                  loading="lazy"
+                                  decoding="async"
+                                  src={opt.imageUrl}
+                                  className="w-6 h-6 rounded object-cover border"
+                                  alt="گزینه"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...formOptions];
+                                    updated[oIdx].imageUrl = '';
+                                    setFormOptions(updated);
+                                  }}
+                                  className="text-[var(--color-danger)] text-micro"
+                                >
+                                  حذف
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-micro text-[var(--color-text-tertiary)] italic">
+                                عکسی نیست
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                  {/* Right Column (Intense Form controls) */}
-                  <div
-                    className="lg:col-span-7 overflow-y-auto p-6 glx space-y-5"
-                    id="drawer-form-contents"
+            {/* True / False picker builder */}
+            {formType === 'true_false' && (
+              <div className="relative pane p-4 rounded-xl space-y-2">
+                <span className="font-bold text-[var(--color-text-secondary)] text-micro block">
+                  انتخاب گزینه پاسخ درست:
+                </span>
+                <div className="flex gap-4">
+                  <label
+                    className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
+                      formCorrectTrueFalse === true
+                        ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]'
+                        : 'glx border-[var(--color-glass-light-stroke)]'
+                    }`}
                   >
-                    <form id="question-editor-form" onSubmit={handleSaveQuestion} className="space-y-4">
-                      {/* 1. Grade, Subject, Section, Difficulty */}
-                      <div className="glx p-4 rounded-2xl border space-y-3">
-                        <span className="font-bold text-[var(--color-text-primary)] text-micro block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">
-                          شناسنامه علمی سوال
+                    <input
+                      type="radio"
+                      name="drawer-tf-key"
+                      checked={formCorrectTrueFalse === true}
+                      onChange={() => setFormCorrectTrueFalse(true)}
+                      className="hidden"
+                    />
+                    <span>صحیح / درست</span>
+                  </label>
+
+                  <label
+                    className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
+                      formCorrectTrueFalse === false
+                        ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]'
+                        : 'glx border-[var(--color-glass-light-stroke)]'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="drawer-tf-key"
+                      checked={formCorrectTrueFalse === false}
+                      onChange={() => setFormCorrectTrueFalse(false)}
+                      className="hidden"
+                    />
+                    <span>غلط / نادرست</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Fill blank builder */}
+            {formType === 'fill_blank' && (
+              <div className="relative pane p-4 rounded-xl space-y-3">
+                <div className="flex justify-between items-center mb-1 pane p-2 rounded-lg">
+                  <strong className="text-[var(--color-text-primary)] text-micro">
+                    کلید واژه‌های صحیح برای جاهای خالی:
+                  </strong>
+                  <button
+                    type="button"
+                    onClick={() => setFormFillBlanks([...formFillBlanks, ''])}
+                    className="px-2 py-0.5 btn-glass btn-glass--primary rounded text-micro font-bold"
+                  >
+                    + الحاق محل جدید
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {formFillBlanks.map((fb, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <span className="text-micro text-[var(--color-text-tertiary)] font-bold w-12 shrink-0">
+                        جای خالی {idx + 1}:
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        value={fb}
+                        onChange={(e) => {
+                          const updated = [...formFillBlanks];
+                          updated[idx] = e.target.value;
+                          setFormFillBlanks(updated);
+                        }}
+                        placeholder="کلمه کلید صحیح"
+                        className="w-full glx field border px-2.5 py-1.5 rounded-md text-micro"
+                      />
+                      {formFillBlanks.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormFillBlanks(formFillBlanks.filter((_, i) => i !== idx))
+                          }
+                          className="text-[var(--color-danger)] font-bold p-1 text-label"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Matching matchingPairs builder */}
+            {formType === 'matching' && (
+              <div className="glx p-4.5 rounded-2xl border space-y-3">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <span className="font-bold text-[var(--color-text-primary)] text-micro">
+                    پلاس لغات تطبیقی وصل‌کردنی
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormMatchingPairs([...formMatchingPairs, { left: '', right: '' }])
+                    }
+                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded-lg text-micro font-bold cursor-pointer"
+                  >
+                    + درج جفت جدید
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {formMatchingPairs.map((pair, idx) => (
+                    <div key={idx} className="grid grid-cols-2 gap-3 pane p-3 rounded-xl relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormMatchingPairs(formMatchingPairs.filter((_, i) => i !== idx))
+                        }
+                        className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-full flex items-center justify-center font-bold"
+                      >
+                        &times;
+                      </button>
+                      <div className="space-y-1">
+                        <span className="text-micro text-[var(--color-text-tertiary)] block">
+                          سطر چپ (هدف):
                         </span>
-
-                        <div className="grid grid-cols-2 gap-3.5">
-                          {/* Grade Selector */}
-                          <div className="space-y-1">
-                            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              پایه تحصیلی:
-                            </label>
-                            <Dropdown
-                              value={formGrade}
-                              onChange={(v) => setFormGrade(v)}
-                              options={[
-                                { value: '', label: 'انتخاب پایه...' },
-                                { value: 'اول', label: 'اول', group: 'دبستان' },
-                                { value: 'دوم', label: 'دوم', group: 'دبستان' },
-                                { value: 'سوم', label: 'سوم', group: 'دبستان' },
-                                { value: 'چهارم', label: 'چهارم', group: 'دبستان' },
-                                { value: 'پنجم', label: 'پنجم', group: 'دبستان' },
-                                { value: 'ششم', label: 'ششم', group: 'دبستان' },
-                                { value: 'هفتم', label: 'هفتم', group: 'دوره اول متوسطه' },
-                                { value: 'هشتم', label: 'هشتم', group: 'دوره اول متوسطه' },
-                                { value: 'نهم', label: 'نهم', group: 'دوره اول متوسطه' },
-                                { value: 'دهم', label: 'دهم', group: 'دوره دوم متوسطه' },
-                                { value: 'یازدهم', label: 'یازدهم', group: 'دوره دوم متوسطه' },
-                                { value: 'دوازدهم', label: 'دوازدهم', group: 'دوره دوم متوسطه' },
-                              ]}
-                            />
-                          </div>
-
-                          {/* Subject */}
-                          <Input
-                            label="موضوع درس:"
-                            size="sm"
-                            type="text"
-                            required
-                            value={formSubject}
-                            onChange={(e) => setFormSubject(e.target.value)}
-                            placeholder="مثال: علوم تجربی، ریاضی"
-                          />
-
-                          {/* Section */}
-                          <Input
-                            label="بخش / فصل کتاب:"
-                            size="sm"
-                            type="text"
-                            required
-                            value={formSection}
-                            onChange={(e) => setFormSection(e.target.value)}
-                            placeholder="مثال: فصل اول یا مبحث فیزیک"
-                          />
-
-                          {/* Difficulty */}
-                          <div className="space-y-1">
-                            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                              سطح سختی علمی:
-                            </label>
-                            <Dropdown
-                              value={formDifficulty}
-                              onChange={(v) => setFormDifficulty(v as 'easy' | 'medium' | 'hard')}
-                              options={[
-                                { value: 'easy', label: 'آسان' },
-                                { value: 'medium', label: 'متوسط' },
-                                { value: 'hard', label: 'سخت / استعداد درخشان' },
-                              ]}
-                            />
-                          </div>
-
-                          {/* Points / Barom */}
-                          <Input
-                            label="امتیاز / بارم نمره:"
-                            size="sm"
-                            type="number"
-                            min={0.25}
-                            max={20}
-                            step={0.25}
-                            value={formPoints}
-                            onChange={(e) => setFormPoints(Number(e.target.value))}
-                            className="font-bold"
-                          />
-
-                          {/* Tags separated */}
-                          <Input
-                            label="کلمات کلیدی / تگ‌ها (کاما جدا کننده):"
-                            size="sm"
-                            type="text"
-                            value={formTagsString}
-                            onChange={(e) => setFormTagsString(e.target.value)}
-                            placeholder="کنکوری، تستی، مهم"
-                            className="text-[var(--color-accent)] font-bold"
-                          />
-                        </div>
-                      </div>
-
-                      {/* 2. Type selection picker */}
-                      <div className="space-y-1.5">
-                        <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                          انتخاب قالب بندی ساختاری سوال (۱۱ نوع):
-                        </label>
-                        <Dropdown
-                          value={formType}
-                          onChange={(v) => setFormType(v as QuestionType)}
-                          options={[
-                            { value: 'single_choice', label: 'چهارگزینه‌ای تک‌پاسخ' },
-                            { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
-                            { value: 'true_false', label: 'درست / نادرست' },
-                            { value: 'fill_blank', label: 'جای خالی' },
-                            { value: 'short_answer', label: 'پاسخ کوتاه تشریحی' },
-                            { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
-                            { value: 'matching', label: 'وصل‌کردنی' },
-                            { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
-                            { value: 'cloze', label: 'کلوز تست (Cloze)' },
-                            { value: 'reading_comprehension', label: 'درک مطلب passage' },
-                            { value: 'image_based', label: 'سوال تصویری اختصاصی' },
-                          ]}
-                        />
-                      </div>
-
-                      {/* 3. Title & Text prompts */}
-                      <div className="space-y-3.5">
-                        <Input
-                          label="عنوان خلاصه سوال (برای معلم):"
-                          size="sm"
+                        <input
                           type="text"
                           required
-                          value={formTitle}
-                          onChange={(e) => setFormTitle(e.target.value)}
-                          placeholder="ماشاالله: محاسبه سرعت زاویه‌ای"
-                          className="font-bold"
-                        />
-
-                        <Textarea
-                          label="متن اصلی صورت سوال / مسئله (فرمول گذاری):"
-                          size="sm"
-                          required
-                          rows={4}
-                          value={formText}
-                          onChange={(e) => setFormText(e.target.value)}
-                          placeholder="متن کامل سوال خود را به زبان فارسی روان تالیف کنید..."
-                          className="font-medium"
+                          value={pair.left}
+                          onChange={(e) => {
+                            const updated = [...formMatchingPairs];
+                            updated[idx].left = e.target.value;
+                            setFormMatchingPairs(updated);
+                          }}
+                          className="w-full glx field px-2 py-1.5 rounded-md"
                         />
                       </div>
-
-                      {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
-                      <div className="relative glx glass-edge p-4 rounded-xl border space-y-2">
-                        <span className="text-micro text-[var(--color-text-primary)] font-bold block">
-                          الصاق پرونده تصویر برای کل سوال (اختیاری):
+                      <div className="space-y-1">
+                        <span className="text-micro text-[var(--color-text-tertiary)] block">
+                          سطر راست (مبدا):
                         </span>
+                        <input
+                          type="text"
+                          required
+                          value={pair.right}
+                          onChange={(e) => {
+                            const updated = [...formMatchingPairs];
+                            updated[idx].right = e.target.value;
+                            setFormMatchingPairs(updated);
+                          }}
+                          className="w-full glx field px-2 py-1.5 rounded-md"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                        <div className="flex items-center gap-3">
-                          {/* Hidden manual selector */}
-                          <label className="px-4 py-2 glx-inset hover:brightness-105 border text-[var(--color-text-secondary)] text-micro rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
-                            <ImageIcon className="w-3.5 h-3.5" />
-                            <span>انتخاب فایل تصویر</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => handleMockImageUpload(e, 'main')}
-                            />
-                          </label>
+            {/* Ordering lists builder */}
+            {formType === 'ordering' && (
+              <div className="relative pane p-4 rounded-xl space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b">
+                  <span className="font-bold text-micro text-[var(--color-text-primary)]">
+                    سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFormOrderingItems([...formOrderingItems, ''])}
+                    className="px-2 py-0.5 btn-glass btn-glass--primary rounded text-micro font-bold"
+                  >
+                    + گام جدید
+                  </button>
+                </div>
 
-                          {formImageUrl ? (
-                            <div className="flex items-center gap-2">
-                              <img
-                                loading="lazy"
-                                decoding="async"
-                                src={formImageUrl}
-                                alt="تصویر بارگذاری شده در فرم"
-                                className="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setFormImageUrl('')}
-                                className="text-[var(--color-danger)] font-bold hover:underline"
-                              >
-                                حذف پیوست ×
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-micro text-[var(--color-text-tertiary)]">
-                              تصویری ضمیمه نشده است (فرمت .png, .jpg و .gif پشتیبانی می‌شود)
+                <div className="space-y-2">
+                  {formOrderingItems.map((item, idx) => (
+                    <div key={idx} className="flex gap-2 items-center pane p-2 rounded-lg">
+                      <span className="text-micro font-bold text-[var(--color-text-tertiary)] w-12 shrink-0">
+                        رتبه {idx + 1}:
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        value={item}
+                        onChange={(e) => {
+                          const updated = [...formOrderingItems];
+                          updated[idx] = e.target.value;
+                          setFormOrderingItems(updated);
+                        }}
+                        className="w-full glx field px-2 py-1.5 rounded-md text-micro"
+                      />
+                      {formOrderingItems.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormOrderingItems(formOrderingItems.filter((_, i) => i !== idx))
+                          }
+                          className="text-[var(--color-danger)] font-bold"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Descriptive elements, criteria & rubrics (Long Answer) */}
+            {formType === 'long_answer' && (
+              <div className="space-y-4">
+                {/* Sample answer */}
+                <Textarea
+                  label="پاسخ تشریحی استاندارد نمونه (برای تصحیح و مقایسه هوشمند):"
+                  size="sm"
+                  rows={3}
+                  value={formSampleAnswer}
+                  onChange={(e) => setFormSampleAnswer(e.target.value)}
+                  placeholder="نمونه پاسخ ایده‌آل بنویسید..."
+                />
+
+                {/* Rubric Criteria dynamic builder */}
+                <div className="bg-[var(--color-danger-soft)]/40/50 p-4 rounded-2xl border border-[var(--color-danger)]/10 space-y-3">
+                  <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-2">
+                    <span className="font-bold text-[var(--color-danger)] text-micro">
+                      معیارهای خرد بارم‌بندی پاسخ تشریحی (Rubrics Builder)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={addRubricRow}
+                      className="px-3 py-1 btn-glass btn-glass--danger rounded-lg text-micro font-bold transition-all cursor-pointer"
+                    >
+                      + معیار جدید
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {formRubrics.map((rub) => (
+                      <div
+                        key={rub.id}
+                        className="pane p-3 rounded-xl border-[var(--color-danger)]/10 space-y-2 relative"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => removeRubricRow(rub.id)}
+                          className="absolute top-2 left-2 text-[var(--color-danger)] font-bold text-label"
+                        >
+                          &times;
+                        </button>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="col-span-2 space-y-1">
+                            <span className="text-micro text-[var(--color-text-tertiary)] block">
+                              عنوان معیار:
                             </span>
-                          )}
+                            <input
+                              type="text"
+                              required
+                              value={rub.title}
+                              onChange={(e) => {
+                                const updated = formRubrics.map((r) =>
+                                  r.id === rub.id ? { ...r, title: e.target.value } : r,
+                                );
+                                setFormRubrics(updated);
+                              }}
+                              className="w-full glx field px-2 py-1 rounded text-micro"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-micro text-[var(--color-text-tertiary)] block">
+                              سقف نمره:
+                            </span>
+                            <input
+                              type="number"
+                              required
+                              step={0.25}
+                              value={rub.maxPoints}
+                              onChange={(e) => {
+                                const updated = formRubrics.map((r) =>
+                                  r.id === rub.id ? { ...r, maxPoints: Number(e.target.value) } : r,
+                                );
+                                setFormRubrics(updated);
+                              }}
+                              className="w-full glx field p-1 text-center rounded text-micro"
+                            />
+                          </div>
                         </div>
-                        {/* Outline structure for Supabase integration comment per specs */}
-                        <p className="text-micro text-[var(--color-accent)] bg-[var(--color-accent-soft)]/30 p-2 rounded-lg italic leading-normal">
-                          داده به صورت base64 محلی ذخیره می‌شود. ساختار تابع آماده ارتقای سنکرون به
-                          خدمات استوریج ابری Supabase Storage از بستر کلاینت است.
-                        </p>
+                        <div className="space-y-1">
+                          <span className="text-micro text-[var(--color-text-tertiary)] block">
+                            توضیح ملاک نمره‌دهی:
+                          </span>
+                          <input
+                            type="text"
+                            value={rub.description}
+                            onChange={(e) => {
+                              const updated = formRubrics.map((r) =>
+                                r.id === rub.id ? { ...r, description: e.target.value } : r,
+                              );
+                              setFormRubrics(updated);
+                            }}
+                            placeholder="ملاک نیم‌نمره چیست..."
+                            className="w-full glx field px-2 py-1 rounded text-micro text-[var(--color-text-tertiary)]"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Manual correct warning representation in drawer */}
+                <div className="bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/20.5 rounded-xl p-3 text-micro text-[var(--color-warning)]/80 flex items-start gap-1.5 leading-relaxed">
+                  <Info className="w-4 h-4 text-[var(--color-warning)] shrink-0 mt-0.5" />
+                  <div>
+                    <strong>توجه تصحیح آزمون:</strong>
+                    <p>
+                      تصحیح سوالات تشریحی به صورت دستی انجام می‌شود. در آینده می‌توان پیشنهاد نمره
+                      با هوش مصنوعی اضافه کرد.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Reading comprehension & Cloze parts dynamic details */}
+            {(formType === 'reading_comprehension' || formType === 'cloze') && (
+              <div className="glx p-4.5 rounded-2xl border space-y-3">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <span className="font-bold text-[var(--color-text-primary)] text-micro">
+                    بخش‌ها و زیرسوالات تابعه ({formParts.length} مینی‌سوال)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={addPartRow}
+                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded text-micro font-bold"
+                  >
+                    + افزودن زیرسوال تابعه
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {formParts.map((part, idx) => (
+                    <div key={part.id} className="pane p-3 rounded-xl relative space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => removePartRow(idx)}
+                        className="absolute top-2 left-2 text-[var(--color-danger)] font-bold"
+                      >
+                        &times;
+                      </button>
+                      <span className="glx-inset rounded px-1.5 py-0.5 text-micro font-bold text-[var(--color-text-secondary)] block w-20 text-center">
+                        بخش شماره {idx + 1}
+                      </span>
+
+                      <div className="space-y-1">
+                        <span className="text-micro text-[var(--color-text-tertiary)] block">
+                          صورت مینی‌سوال:
+                        </span>
+                        <input
+                          type="text"
+                          required
+                          value={part.text}
+                          onChange={(e) => {
+                            const updated = [...formParts];
+                            updated[idx].text = e.target.value;
+                            setFormParts(updated);
+                          }}
+                          className="w-full glx field px-2 py-1 rounded text-micro"
+                        />
                       </div>
 
-                      {/* 5. TYPE SPECIFIC OPTIONS BUILDERS */}
+                      <div className="space-y-1">
+                        <span className="text-micro text-[var(--color-text-tertiary)] block">
+                          پاسخ صحیح مینی سوال:
+                        </span>
+                        <input
+                          type="text"
+                          required
+                          value={String(part.correctAnswer || '')}
+                          onChange={(e) => {
+                            const updated = [...formParts];
+                            updated[idx].correctAnswer = e.target.value;
+                            setFormParts(updated);
+                          }}
+                          placeholder="گزینه یا عبارت کلید مینی‌سوال"
+                          className="w-full glx field px-2 py-1 rounded text-micro font-mono"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                      {/* Choice builder (single_choice, multiple_choice, image_based) */}
-                      {(formType === 'single_choice' ||
-                        formType === 'multiple_choice' ||
-                        formType === 'image_based') && (
-                        <div className="glx p-4.5 rounded-2xl border space-y-4">
-                          <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2 mb-1">
-                            <span className="font-bold text-[var(--color-text-primary)] text-micro">
-                              سازنده گزینه‌های آزمون (تعداد کلید گزینه‌ها)
-                            </span>
-                            <button
-                              type="button"
-                              onClick={addOptionRow}
-                              className="px-2.5 py-1 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-lg text-micro font-bold cursor-pointer"
-                            >
-                              + افزودن گزینه نو
-                            </button>
-                          </div>
-
-                          <div className="space-y-3">
-                            {formOptions.map((opt, oIdx) => (
-                              <div
-                                key={opt.id}
-                                className="glx p-3 rounded-xl border space-y-2 text-right"
-                              >
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {/* Is correct tick check */}
-                                  <label className="flex items-center gap-1 text-micro font-bold text-[var(--color-text-secondary)] cursor-pointer">
-                                    <input
-                                      type={formType === 'multiple_choice' ? 'checkbox' : 'radio'}
-                                      name="drawer-opt-correct"
-                                      checked={opt.isCorrect}
-                                      onChange={() => handleOptionCorrectChange(oIdx)}
-                                      className="w-4 h-4 text-[var(--color-success)] border-[var(--color-glass-light-stroke)] cursor-pointer accent-emerald-500"
-                                    />
-                                    <span
-                                      className={
-                                        opt.isCorrect
-                                          ? 'text-[var(--color-success)] font-black'
-                                          : ''
-                                      }
-                                    >
-                                      پاسخ صحیح
-                                    </span>
-                                  </label>
-
-                                  {/* Remove opt */}
-                                  <button
-                                    type="button"
-                                    aria-label={`حذف گزینه شماره ${toPersianDigits(oIdx + 1)}`}
-                                    title="حذف گزینه"
-                                    onClick={() => removeOptionRow(oIdx)}
-                                    className="mr-auto p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
-                                  >
-                                    <Trash className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                                  {/* Option text */}
-                                  <div className="space-y-1">
-                                    <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                      متن گزینه:
-                                    </span>
-                                    <input
-                                      type="text"
-                                      required
-                                      value={opt.text}
-                                      onChange={(e) => {
-                                        const updated = [...formOptions];
-                                        updated[oIdx].text = e.target.value;
-                                        setFormOptions(updated);
-                                      }}
-                                      placeholder={`عبارت گزینه ${oIdx + 1}`}
-                                      className="w-full glx border px-3.5 py-1.5 rounded-lg text-micro"
-                                    />
-                                  </div>
-
-                                  {/* Option image */}
-                                  <div className="space-y-1">
-                                    <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                      پیوست عکس گزینه (الزامی برای سوال تصویری):
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                      <label className="px-2 py-1 glx-inset hover:glx-inset border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro font-bold cursor-pointer shrink-0">
-                                        <span>الحاق تصویر</span>
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          className="hidden"
-                                          onChange={(e) =>
-                                            handleMockImageUpload(e, { optIndex: oIdx })
-                                          }
-                                        />
-                                      </label>
-                                      {opt.imageUrl ? (
-                                        <div className="flex items-center gap-1.5">
-                                          <img
-                                            loading="lazy"
-                                            decoding="async"
-                                            src={opt.imageUrl}
-                                            className="w-6 h-6 rounded object-cover border"
-                                            alt="گزینه"
-                                          />
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const updated = [...formOptions];
-                                              updated[oIdx].imageUrl = '';
-                                              setFormOptions(updated);
-                                            }}
-                                            className="text-[var(--color-danger)] text-micro"
-                                          >
-                                            حذف
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <span className="text-micro text-[var(--color-text-tertiary)] italic">
-                                          عکسی نیست
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* True / False picker builder */}
-                      {formType === 'true_false' && (
-                        <div className="relative glx glass-edge p-4 rounded-xl border space-y-2">
-                          <span className="font-bold text-[var(--color-text-secondary)] text-micro block">
-                            انتخاب گزینه پاسخ درست:
-                          </span>
-                          <div className="flex gap-4">
-                            <label
-                              className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
-                                formCorrectTrueFalse === true
-                                  ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]'
-                                  : 'glx border-[var(--color-glass-light-stroke)]'
-                              }`}
-                            >
-                              <input
-                                type="radio"
-                                name="drawer-tf-key"
-                                checked={formCorrectTrueFalse === true}
-                                onChange={() => setFormCorrectTrueFalse(true)}
-                                className="hidden"
-                              />
-                              <span>صحیح / درست</span>
-                            </label>
-
-                            <label
-                              className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
-                                formCorrectTrueFalse === false
-                                  ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]'
-                                  : 'glx border-[var(--color-glass-light-stroke)]'
-                              }`}
-                            >
-                              <input
-                                type="radio"
-                                name="drawer-tf-key"
-                                checked={formCorrectTrueFalse === false}
-                                onChange={() => setFormCorrectTrueFalse(false)}
-                                className="hidden"
-                              />
-                              <span>غلط / نادرست</span>
-                            </label>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Fill blank builder */}
-                      {formType === 'fill_blank' && (
-                        <div className="relative glx glass-edge p-4 rounded-xl border space-y-3">
-                          <div className="flex justify-between items-center mb-1 glx p-2 rounded-lg border">
-                            <strong className="text-[var(--color-text-primary)] text-micro">
-                              کلید واژه‌های صحیح برای جاهای خالی:
-                            </strong>
-                            <button
-                              type="button"
-                              onClick={() => setFormFillBlanks([...formFillBlanks, ''])}
-                              className="px-2 py-0.5 bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] rounded text-micro font-bold"
-                            >
-                              + الحاق محل جدید
-                            </button>
-                          </div>
-
-                          <div className="space-y-2">
-                            {formFillBlanks.map((fb, idx) => (
-                              <div key={idx} className="flex gap-2 items-center">
-                                <span className="text-micro text-[var(--color-text-tertiary)] font-bold w-12 shrink-0">
-                                  جای خالی {idx + 1}:
-                                </span>
-                                <input
-                                  type="text"
-                                  required
-                                  value={fb}
-                                  onChange={(e) => {
-                                    const updated = [...formFillBlanks];
-                                    updated[idx] = e.target.value;
-                                    setFormFillBlanks(updated);
-                                  }}
-                                  placeholder="کلمه کلید صحیح"
-                                  className="w-full glx border px-2.5 py-1.5 rounded-md text-micro"
-                                />
-                                {formFillBlanks.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setFormFillBlanks(formFillBlanks.filter((_, i) => i !== idx))
-                                    }
-                                    className="text-[var(--color-danger)] font-bold p-1 text-label"
-                                  >
-                                    &times;
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Matching matchingPairs builder */}
-                      {formType === 'matching' && (
-                        <div className="glx p-4.5 rounded-2xl border space-y-3">
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-bold text-[var(--color-text-primary)] text-micro">
-                              پلاس لغات تطبیقی وصل‌کردنی
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setFormMatchingPairs([
-                                  ...formMatchingPairs,
-                                  { left: '', right: '' },
-                                ])
-                              }
-                              className="px-2.5 py-1 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-lg text-micro font-bold cursor-pointer"
-                            >
-                              + درج جفت جدید
-                            </button>
-                          </div>
-
-                          <div className="space-y-3">
-                            {formMatchingPairs.map((pair, idx) => (
-                              <div
-                                key={idx}
-                                className="grid grid-cols-2 gap-3 glx p-3 rounded-xl border relative"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setFormMatchingPairs(
-                                      formMatchingPairs.filter((_, i) => i !== idx),
-                                    )
-                                  }
-                                  className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-full flex items-center justify-center font-bold"
-                                >
-                                  &times;
-                                </button>
-                                <div className="space-y-1">
-                                  <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                    سطر چپ (هدف):
-                                  </span>
-                                  <input
-                                    type="text"
-                                    required
-                                    value={pair.left}
-                                    onChange={(e) => {
-                                      const updated = [...formMatchingPairs];
-                                      updated[idx].left = e.target.value;
-                                      setFormMatchingPairs(updated);
-                                    }}
-                                    className="w-full glx px-2 py-1.5 rounded-md"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                    سطر راست (مبدا):
-                                  </span>
-                                  <input
-                                    type="text"
-                                    required
-                                    value={pair.right}
-                                    onChange={(e) => {
-                                      const updated = [...formMatchingPairs];
-                                      updated[idx].right = e.target.value;
-                                      setFormMatchingPairs(updated);
-                                    }}
-                                    className="w-full glx px-2 py-1.5 rounded-md"
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Ordering lists builder */}
-                      {formType === 'ordering' && (
-                        <div className="relative glx glass-edge p-4 rounded-xl border space-y-3">
-                          <div className="flex justify-between items-center pb-2 border-b">
-                            <span className="font-bold text-micro text-[var(--color-text-primary)]">
-                              سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setFormOrderingItems([...formOrderingItems, ''])}
-                              className="px-2 py-0.5 bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] rounded text-micro font-bold"
-                            >
-                              + گام جدید
-                            </button>
-                          </div>
-
-                          <div className="space-y-2">
-                            {formOrderingItems.map((item, idx) => (
-                              <div
-                                key={idx}
-                                className="flex gap-2 items-center glx p-2 rounded-lg border"
-                              >
-                                <span className="text-micro font-bold text-[var(--color-text-tertiary)] w-12 shrink-0">
-                                  رتبه {idx + 1}:
-                                </span>
-                                <input
-                                  type="text"
-                                  required
-                                  value={item}
-                                  onChange={(e) => {
-                                    const updated = [...formOrderingItems];
-                                    updated[idx] = e.target.value;
-                                    setFormOrderingItems(updated);
-                                  }}
-                                  className="w-full glx px-2 py-1.5 rounded-md text-micro"
-                                />
-                                {formOrderingItems.length > 2 && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setFormOrderingItems(
-                                        formOrderingItems.filter((_, i) => i !== idx),
-                                      )
-                                    }
-                                    className="text-[var(--color-danger)] font-bold"
-                                  >
-                                    &times;
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Descriptive elements, criteria & rubrics (Long Answer) */}
-                      {formType === 'long_answer' && (
-                        <div className="space-y-4">
-                          {/* Sample answer */}
-                          <Textarea
-                            label="پاسخ تشریحی استاندارد نمونه (برای تصحیح و مقایسه هوشمند):"
-                            size="sm"
-                            rows={3}
-                            value={formSampleAnswer}
-                            onChange={(e) => setFormSampleAnswer(e.target.value)}
-                            placeholder="نمونه پاسخ ایده‌آل بنویسید..."
-                          />
-
-                          {/* Rubric Criteria dynamic builder */}
-                          <div className="bg-[var(--color-danger-soft)]/40/50 p-4 rounded-2xl border border-[var(--color-danger)]/10 space-y-3">
-                            <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-2">
-                              <span className="font-bold text-[var(--color-danger)] text-micro">
-                                معیارهای خرد بارم‌بندی پاسخ تشریحی (Rubrics Builder)
-                              </span>
-                              <button
-                                type="button"
-                                onClick={addRubricRow}
-                                className="px-3 py-1 bg-[var(--color-danger-solid)] hover:bg-[var(--color-danger-solid)]/90 text-[var(--color-text-on-solid)] rounded-lg text-micro font-bold transition-all cursor-pointer"
-                              >
-                                + معیار جدید
-                              </button>
-                            </div>
-
-                            <div className="space-y-2">
-                              {formRubrics.map((rub) => (
-                                <div
-                                  key={rub.id}
-                                  className="glx p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2 relative"
-                                >
-                                  <button
-                                    type="button"
-                                    onClick={() => removeRubricRow(rub.id)}
-                                    className="absolute top-2 left-2 text-[var(--color-danger)] font-bold text-label"
-                                  >
-                                    &times;
-                                  </button>
-
-                                  <div className="grid grid-cols-3 gap-2">
-                                    <div className="col-span-2 space-y-1">
-                                      <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                        عنوان معیار:
-                                      </span>
-                                      <input
-                                        type="text"
-                                        required
-                                        value={rub.title}
-                                        onChange={(e) => {
-                                          const updated = formRubrics.map((r) =>
-                                            r.id === rub.id ? { ...r, title: e.target.value } : r,
-                                          );
-                                          setFormRubrics(updated);
-                                        }}
-                                        className="w-full glx px-2 py-1 rounded text-micro"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                        سقف نمره:
-                                      </span>
-                                      <input
-                                        type="number"
-                                        required
-                                        step={0.25}
-                                        value={rub.maxPoints}
-                                        onChange={(e) => {
-                                          const updated = formRubrics.map((r) =>
-                                            r.id === rub.id
-                                              ? { ...r, maxPoints: Number(e.target.value) }
-                                              : r,
-                                          );
-                                          setFormRubrics(updated);
-                                        }}
-                                        className="w-full glx p-1 text-center rounded text-micro"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                      توضیح ملاک نمره‌دهی:
-                                    </span>
-                                    <input
-                                      type="text"
-                                      value={rub.description}
-                                      onChange={(e) => {
-                                        const updated = formRubrics.map((r) =>
-                                          r.id === rub.id
-                                            ? { ...r, description: e.target.value }
-                                            : r,
-                                        );
-                                        setFormRubrics(updated);
-                                      }}
-                                      placeholder="ملاک نیم‌نمره چیست..."
-                                      className="w-full glx px-2 py-1 rounded text-micro text-[var(--color-text-tertiary)]"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Manual correct warning representation in drawer */}
-                          <div className="bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/20.5 rounded-xl p-3 text-micro text-[var(--color-warning)]/80 flex items-start gap-1.5 leading-relaxed">
-                            <Info className="w-4 h-4 text-[var(--color-warning)] shrink-0 mt-0.5" />
-                            <div>
-                              <strong>توجه تصحیح آزمون:</strong>
-                              <p>
-                                تصحیح سوالات تشریحی به صورت دستی انجام می‌شود. در آینده می‌توان
-                                پیشنهاد نمره با هوش مصنوعی اضافه کرد.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Reading comprehension & Cloze parts dynamic details */}
-                      {(formType === 'reading_comprehension' || formType === 'cloze') && (
-                        <div className="glx p-4.5 rounded-2xl border space-y-3">
-                          <div className="flex justify-between items-center border-b pb-2">
-                            <span className="font-bold text-[var(--color-text-primary)] text-micro">
-                              بخش‌ها و زیرسوالات تابعه ({formParts.length} مینی‌سوال)
-                            </span>
-                            <button
-                              type="button"
-                              onClick={addPartRow}
-                              className="px-2.5 py-1 bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] rounded text-micro font-bold"
-                            >
-                              + افزودن زیرسوال تابعه
-                            </button>
-                          </div>
-
-                          <div className="space-y-3">
-                            {formParts.map((part, idx) => (
-                              <div
-                                key={part.id}
-                                className="glx p-3 rounded-xl border relative space-y-2"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => removePartRow(idx)}
-                                  className="absolute top-2 left-2 text-[var(--color-danger)] font-bold"
-                                >
-                                  &times;
-                                </button>
-                                <span className="glx-inset rounded px-1.5 py-0.5 text-micro font-bold text-[var(--color-text-secondary)] block w-20 text-center">
-                                  بخش شماره {idx + 1}
-                                </span>
-
-                                <div className="space-y-1">
-                                  <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                    صورت مینی‌سوال:
-                                  </span>
-                                  <input
-                                    type="text"
-                                    required
-                                    value={part.text}
-                                    onChange={(e) => {
-                                      const updated = [...formParts];
-                                      updated[idx].text = e.target.value;
-                                      setFormParts(updated);
-                                    }}
-                                    className="w-full glx px-2 py-1 rounded text-micro"
-                                  />
-                                </div>
-
-                                <div className="space-y-1">
-                                  <span className="text-micro text-[var(--color-text-tertiary)] block">
-                                    پاسخ صحیح مینی سوال:
-                                  </span>
-                                  <input
-                                    type="text"
-                                    required
-                                    value={String(part.correctAnswer || '')}
-                                    onChange={(e) => {
-                                      const updated = [...formParts];
-                                      updated[idx].correctAnswer = e.target.value;
-                                      setFormParts(updated);
-                                    }}
-                                    placeholder="گزینه یا عبارت کلید مینی‌سوال"
-                                    className="w-full glx px-2 py-1 rounded text-micro font-mono"
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 6. General explanation (teacher comments / solutions) */}
-                      <Textarea
-                        label="توضیح پاسخ تشریحی / راهنمای نمره‌دهی متفرقه (اختیاری):"
-                        size="sm"
-                        rows={2}
-                        value={formExplanation}
-                        onChange={(e) => setFormExplanation(e.target.value)}
-                        placeholder="این یادداشت به دانش‌آموزان در قالب پاسخ‌برگ تشریحی سیستم نشان داده خواهد گردید..."
-                      />
-
-                    </form>
-                  </div>
+            {/* 6. General explanation (teacher comments / solutions) */}
+            <Textarea
+              label="توضیح پاسخ تشریحی / راهنمای نمره‌دهی متفرقه (اختیاری):"
+              size="sm"
+              rows={2}
+              value={formExplanation}
+              onChange={(e) => setFormExplanation(e.target.value)}
+              placeholder="این یادداشت به دانش‌آموزان در قالب پاسخ‌برگ تشریحی سیستم نشان داده خواهد گردید..."
+            />
+          </form>
+        </div>
       </Modal>
 
       {/* Delete Question Confirmation */}

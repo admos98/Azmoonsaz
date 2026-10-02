@@ -246,7 +246,7 @@ export default function CommandPalette({
             role="dialog"
             aria-modal="true"
             aria-label="جستجو و فرمان‌ها"
-            className="relative glx-strong glass-edge w-full max-w-xl overflow-hidden rounded-3xl"
+            className="relative lens w-full max-w-xl overflow-hidden rounded-3xl"
             onKeyDown={(event) => {
               if (event.key === 'ArrowDown') {
                 event.preventDefault();

@@ -4,16 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import {
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  CheckCircle2,
-  ArrowRight,
-  KeyRound,
-  Send,
-} from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, CheckCircle2, ArrowRight, KeyRound, Send } from 'lucide-react';
 import { TheMark } from '../../components/TheMark';
 import { Input } from '../../components/UIComponents';
 import { authService } from '../../services/api';
@@ -137,7 +128,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           </div>
 
           {/* Card — glx glass surface */}
-          <div className="glx rounded-3xl p-8">
+          <div className="lens rounded-3xl p-8">
             {/* View: Enter Email */}
             {view === 'email' && (
               <form onSubmit={handleEmailSubmit} className="space-y-5">
@@ -164,7 +155,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
                 <button
                   type="submit"
-                  className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full btn-glass btn-glass--primary font-bold text-label py-3 rounded-xl cursor-pointer flex items-center justify-center gap-2"
                 >
                   ادامه
                   <ArrowRight className="w-4 h-4" />
@@ -227,7 +218,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[var(--color-ink)] hover:bg-[var(--color-ink)]/90 disabled:opacity-60 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-ink)]/10 cursor-pointer"
+                  className="w-full btn-glass btn-glass--primary disabled:opacity-60 font-bold text-label py-3 rounded-xl cursor-pointer"
                 >
                   {loading ? 'در حال بررسی...' : 'ورود'}
                 </button>
@@ -326,7 +317,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 disabled:opacity-60 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-success)]/10 cursor-pointer"
+                  className="w-full btn-glass btn-glass--success disabled:opacity-60 font-bold text-label py-3 rounded-xl cursor-pointer"
                 >
                   {loading ? 'در حال ثبت‌نام...' : 'ساخت حساب'}
                 </button>
@@ -359,7 +350,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   <br />
                   پس از تأیید، با همین ایمیل و رمز عبور وارد شوید.
                 </p>
-                <div className="glx-inset rounded-xl px-4 py-3">
+                <div className="glx-inset field rounded-xl px-4 py-3">
                   <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
                   <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
                     {email}
@@ -442,7 +433,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   <br />
                   لینک را باز کنید و رمز جدید انتخاب کنید.
                 </p>
-                <div className="glx-inset rounded-xl px-4 py-3">
+                <div className="glx-inset field rounded-xl px-4 py-3">
                   <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
                   <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
                     {email}

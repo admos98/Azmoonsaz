@@ -340,8 +340,10 @@ describe('glass material contract (pixel-audit gates)', () => {
     // the PANEL silhouette itself: no border class (internal row dividers are
     // fine — they are separators, not the glass edge)
     expect(palette).toMatch(
-      /className="relative glx-strong glass-edge w-full max-w-xl overflow-hidden rounded-3xl"/,
+      /className="relative lens w-full max-w-xl overflow-hidden rounded-3xl"/,
     );
+    // the rim lives IN the filter now — no painted glass-edge ring on the panel
+    expect(palette).not.toMatch(/glx-strong glass-edge/);
   });
 
   it('the nested lens band is GONE (it bent the panel itself and doubled every filter)', () => {
@@ -389,9 +391,12 @@ describe('glass material contract (pixel-audit gates)', () => {
     const denest = cssRaw.slice(cssRaw.indexOf('De-nest'), cssRaw.indexOf('Ink glass'));
     expect(denest).toContain(':is(.glx, .glx-strong, .glx-dark, .lens)');
     expect(denest).not.toMatch(/[.]pane|[.]frost|[.]field|[.]drop/);
-    // and inset rows no longer ask for a rim in markup
+    // and no material paints a rim in markup: Card maps light→lens, strong→pane
+    // (rims come from the filters) and edgeClass is permanently empty
     const ui = component('src/components/UIComponents.tsx');
-    expect(ui).toMatch(/glassLayer === 'light' \|\| glassLayer === 'strong' \? 'glass-edge' : ''/);
+    expect(ui).toMatch(/light: 'lens'/);
+    expect(ui).toMatch(/strong: 'pane'/);
+    expect(ui).toMatch(/const edgeClass = '';/);
   });
 
   it('the tier probe never downgrades capable machines to blurless lite', () => {
@@ -539,7 +544,6 @@ describe('glass material contract (pixel-audit gates)', () => {
     ] as const) {
       const b = util(u);
       expect(b).toMatch(/background: rgb\(var\(--dim-tint\) \/ var\(--glass-fill\)\)/);
-      expect(b).toMatch(/border: 0/); // silhouette from the filter rim
       expect(b).toMatch(new RegExp(`backdrop-filter: blur\\(var\\(${tok}\\)\\);`));
       expect(b).not.toMatch(/box-shadow|text-shadow|saturate|linear-gradient/);
     }
@@ -547,7 +551,6 @@ describe('glass material contract (pixel-audit gates)', () => {
     // only material allowed a box-shadow (reflective rims live in filters)
     const frost = util('frost');
     expect(frost).toMatch(/background: rgb\(var\(--dim-tint\) \/ var\(--glass-fill\)\)/);
-    expect(frost).toMatch(/border: 0/);
     expect(frost).toMatch(/backdrop-filter: blur\(var\(--frost-blur\)\);/);
     expect(frost).toMatch(/inset 0 0 0 1px rgb\(255 255 255 \/ 0\.13\)/);
     expect(frost).not.toMatch(/text-shadow|saturate|linear-gradient/);

@@ -18,7 +18,15 @@ import {
   BookOpen,
 } from 'lucide-react';
 
-import { Badge, Button, Card, StatusBadge, EmptyState, Table, StatCard } from '../../components/UIComponents';
+import {
+  Badge,
+  Button,
+  Card,
+  StatusBadge,
+  EmptyState,
+  Table,
+  StatCard,
+} from '../../components/UIComponents';
 import { TheMark } from '../../components/TheMark';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
 import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext';
@@ -80,7 +88,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
       {/* 1. Welcome Card Hero — liquid glass with The Mark watermark */}
       <div
-        className="relative overflow-hidden p-6 md:p-10 rounded-3xl glx-strong glass-edge"
+        className="relative overflow-hidden p-6 md:p-10 rounded-3xl lens"
         id="dashboard-hero-banner"
       >
         <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
@@ -111,7 +119,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 id="hero-btn-new-exam"
                 type="button"
                 onClick={() => onNavigate('exams/new')}
-                className="px-5 py-3 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer"
+                className="px-5 py-3 btn-glass btn-glass--primary rounded-xl text-caption font-bold transition-all flex items-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>طراحی آزمون نو</span>
@@ -120,7 +128,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 id="hero-btn-questions"
                 type="button"
                 onClick={() => onNavigate('questions')}
-                className="px-5 py-3 glx-inset hover:brightness-110 text-[var(--color-text-primary)] rounded-xl text-caption font-semibold transition-all cursor-pointer"
+                className="px-5 py-3 btn-glass btn-glass--primary text-[var(--color-text-primary)] rounded-xl text-caption font-semibold transition-all cursor-pointer"
               >
                 افزودن سوال جدید
               </button>
@@ -135,7 +143,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       >
         {/* 2. Stats Grid (5 Cards) */}
         <div
-          className="relative glx glass-edge rounded-2xl p-5 grid grid-cols-2 gap-3 content-stretch"
+          className="relative lens rounded-2xl p-5 grid grid-cols-2 gap-3 content-stretch"
           id="stats-grid-layouts"
         >
           {/* Card 1: Students */}
@@ -165,7 +173,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             label="آزمون‌های فعال در کلاس"
             value={formatPersianNumber(activeExams)}
             unit="آزمون"
-            footnote={activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمونی در حال برگزاری نیست'}
+            footnote={
+              activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمونی در حال برگزاری نیست'
+            }
             footnoteTone={activeExams > 0 ? 'warning' : 'neutral'}
             icon={<Clock className="w-4 h-4" />}
             tone="warning"
@@ -196,7 +206,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         </div>
 
         {/* 3. Quick Actions Row */}
-        <div className="relative glx glass-edge p-6 rounded-2xl text-right" id="quick-actions-section">
+        <div className="relative lens p-6 rounded-2xl text-right" id="quick-actions-section">
           <h3 className="text-label font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
             <span>اقدامات سریع</span>
           </h3>
@@ -209,7 +219,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 excelTriggerRef.current = e.currentTarget;
                 setIsExcelModalOpen(true);
               }}
-              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
             >
               <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
                 <Upload className="w-5 h-5" />
@@ -223,7 +233,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               type="button"
               id="qa-btn-add-question"
               onClick={() => onNavigate('questions')}
-              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
             >
               <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
                 <Plus className="w-5 h-5" />
@@ -237,7 +247,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               type="button"
               id="qa-btn-new-exam"
               onClick={() => onNavigate('exams/new')}
-              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
             >
               <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
                 <FileText className="w-5 h-5" />
@@ -251,7 +261,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               type="button"
               id="qa-btn-view-results"
               onClick={() => onNavigate('results')}
-              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
+              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
             >
               <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
                 <Eye className="w-5 h-5" />
@@ -265,7 +275,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               type="button"
               id="qa-btn-correct-essays"
               onClick={() => onNavigate('results')}
-              className="p-4 glx-inset hover:brightness-105 rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer"
+              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer"
             >
               <div className="p-2.5 glx-inset glx-inset-clear bg-[var(--color-danger)]/15 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
                 <CheckSquare className="w-5 h-5" />
@@ -283,7 +293,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         {/* Equal operational panels */}
         <div className="contents">
           {/* 4. Upcoming and Active Exams Section */}
-          <div className="glx p-6 rounded-2xl" id="section-upcoming-exams">
+          <div className="lens p-6 rounded-2xl" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-label font-bold text-[var(--color-text-primary)]">
@@ -309,7 +319,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   {upcomingExams.map((ex) => (
                     <div
                       key={ex.id}
-                      className="p-4 rounded-2xl glx hover:brightness-105 transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 text-right"
+                      className="p-4 rounded-2xl pane transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 text-right"
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -374,7 +384,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
 
           {/* 5. Recent Submissions Section */}
-          <div className="glx rounded-2xl overflow-hidden" id="section-recent-submissions">
+          <div className="lens rounded-2xl overflow-hidden" id="section-recent-submissions">
             <div className="p-6 border-b border-[var(--color-glass-light-stroke)] flex justify-between items-center">
               <div>
                 <h3 className="text-label font-bold text-[var(--color-text-primary)]">
@@ -563,4 +573,3 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
     </div>
   );
 }
-

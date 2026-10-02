@@ -111,7 +111,12 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   // Construct complete row data pairing cohort with submissions, then derive
   // overview stats and the filtered view — all logic lives in the pure
   // ./exam-results/student-rows module.
-  const studentRows = buildStudentRows({ exam, submissions, students: effectiveCohort, classGroups });
+  const studentRows = buildStudentRows({
+    exam,
+    submissions,
+    students: effectiveCohort,
+    classGroups,
+  });
   const activeSubmission = selectedSubmissionId
     ? studentRows.find((row) => row.id === selectedSubmissionId) || null
     : null;
@@ -393,10 +398,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   };
 
   return (
-    <div
-      className="space-y-6 text-right"
-      id="exam-grading-dashboard"
-    >
+    <div className="space-y-6 text-right" id="exam-grading-dashboard">
       <AnimatePresence mode="wait">
         {!selectedSubmissionId ? (
           <motion.div
@@ -408,7 +410,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             id="panel-results-list"
           >
             {/* Top Navigation & Action Title Raw header bar */}
-            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 glx glass-edge p-6 rounded-3xl border">
+            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 lens p-6 rounded-3xl">
               <div className="flex items-center gap-4">
                 <button
                   type="button"
@@ -559,7 +561,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             </div>
 
             {/* Smart Reactive Filters Panel */}
-            <div className="relative glx glass-edge border rounded-3xl p-5 md:p-6 space-y-4">
+            <div className="relative lens rounded-3xl p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-3">
                 <div className="flex items-center gap-2">
                   <Filter className="w-4.5 h-4.5 text-[var(--color-accent)]" />
@@ -675,7 +677,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
             {/* Structured Submissions Tables */}
             <div
-              className="glx border rounded-3xl p-4 md:p-6 overflow-hidden space-y-4"
+              className="lens rounded-3xl p-4 md:p-6 overflow-hidden space-y-4"
               id="section-structured-submissions"
             >
               <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-2">
@@ -905,7 +907,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             {/* Right evaluation control details drawer list (or column top) */}
             <div className="lg:col-span-8 space-y-6">
               {/* Grading panel title row */}
-              <div className="glx p-5 rounded-3xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="pane p-5 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -927,7 +929,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   </div>
                 </div>
 
-                <div className="glx border px-4 py-2.5 rounded-2xl flex items-center gap-4 text-caption">
+                <div className="pane px-4 py-2.5 rounded-2xl flex items-center gap-4 text-caption">
                   <div>
                     <span className="text-[var(--color-text-tertiary)] font-bold block text-micro mb-0.5">
                       ثبت نهایی ساعت:
@@ -981,7 +983,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   return (
                     <div
                       key={q.id}
-                      className="relative glx glass-edge border rounded-3xl p-5 md:p-6 space-y-4"
+                      className="relative lens rounded-3xl p-5 md:p-6 space-y-4"
                       id={`sheet-qscol-${q.id}`}
                     >
                       {/* Section heading bar */}
@@ -1024,7 +1026,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                       {!isDescriptive ? (
                         /* Objective grading review widget */
                         <div
-                          className="space-y-3.5 glx border p-4 rounded-2xl"
+                          className="space-y-3.5 pane p-4 rounded-2xl"
                           id="objective-grading-review"
                         >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1033,7 +1035,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               <span className="text-micro text-[var(--color-danger)] font-bold block">
                                 ● کاندید انتخابی دانش‌آموز:
                               </span>
-                              <div className="glx border rounded-xl p-3 text-caption font-bold text-[var(--color-text-secondary)]">
+                              <div className="pane rounded-xl p-3 text-caption font-bold text-[var(--color-text-secondary)]">
                                 {stdAnsObj ? (
                                   q.type === 'single_choice' ? (
                                     q.options?.find((o) => o.id === stdAnswerValue)?.text ||
@@ -1087,7 +1089,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               <span className="text-micro text-[var(--color-success)] font-bold block">
                                 ✔ کلید پاسخ آزمون‌ساز:
                               </span>
-                              <div className="glx border border-[var(--color-success)]/10 rounded-xl p-3 text-caption font-bold text-[var(--color-text-secondary)]">
+                              <div className="pane border-[var(--color-success)]/10 rounded-xl p-3 text-caption font-bold text-[var(--color-text-secondary)]">
                                 {q.type === 'single_choice' ? (
                                   q.options?.find((o) => o.id === q.correctAnswer)?.text ||
                                   `گزینه ${toPersianDigits(q.correctAnswer as string)}`
@@ -1156,17 +1158,14 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                         </div>
                       ) : (
                         /* Extensive Descriptive Rubrics evaluation interface */
-                        <div
-                          className="space-y-4 glx border p-4 rounded-2xl"
-                          id="descriptive-evaluation"
-                        >
+                        <div className="space-y-4 pane p-4 rounded-2xl" id="descriptive-evaluation">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Student Answer Sheet design */}
                             <div className="space-y-1">
                               <span className="text-micro text-[var(--color-accent)] font-bold block">
                                 ● برگه دست‌نویس داوطلب:
                               </span>
-                              <div className="glx border rounded-xl p-4 text-caption font-bold text-[var(--color-text-primary)] font-sans leading-relaxed whitespace-pre-wrap min-h-[110px]">
+                              <div className="pane rounded-xl p-4 text-caption font-bold text-[var(--color-text-primary)] font-sans leading-relaxed whitespace-pre-wrap min-h-[110px]">
                                 {formatAnswerValue(stdAnswerValue) || (
                                   <span className="text-[var(--color-text-tertiary)] font-normal">
                                     ورقه سفید رها شده است.
@@ -1194,7 +1193,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                           </div>
 
                           {/* 5. SPECIFICATION REQ: Rubric criteria table for descriptive evaluation */}
-                          <div className="space-y-2.5 glx p-4 border rounded-xl">
+                          <div className="space-y-2.5 pane p-4 rounded-xl">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[var(--color-danger)]/10/60 pb-2">
                               <span className="text-micro font-black text-[var(--color-danger)]/80 block">
                                 جدول بارم‌بندی تفصیلی تصحیح (Rubrics):
@@ -1235,88 +1234,88 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                 rubric's fixed w-24/w-32 columns exceed a 360px
                                 viewport (phone QA sweep). */}
                             <div className="overflow-x-auto">
-                            <table
-                              className="w-full text-micro text-right"
-                              id={`rubric-tab-${q.id}`}
-                            >
-                              <thead>
-                                <tr className="text-[var(--color-text-tertiary)] font-bold border-b border-[var(--color-glass-light-stroke)]">
-                                  <th className="py-2">معیار ارزیابی</th>
-                                  <th className="py-2 text-center w-24">حداکثر بارم</th>
-                                  <th className="py-2 text-left w-32">نمره تخصیصی دبیر</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-[var(--color-glass-light-stroke)]">
-                                {getQuestionRubrics(q).map((rubric) => {
-                                  // Live-reactive state allocation variables
-                                  const currentScoreObj = rubricScores[q.id] || {};
-                                  const scoreVal = currentScoreObj[rubric.id] ?? 0;
+                              <table
+                                className="w-full text-micro text-right"
+                                id={`rubric-tab-${q.id}`}
+                              >
+                                <thead>
+                                  <tr className="text-[var(--color-text-tertiary)] font-bold border-b border-[var(--color-glass-light-stroke)]">
+                                    <th className="py-2">معیار ارزیابی</th>
+                                    <th className="py-2 text-center w-24">حداکثر بارم</th>
+                                    <th className="py-2 text-left w-32">نمره تخصیصی دبیر</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--color-glass-light-stroke)]">
+                                  {getQuestionRubrics(q).map((rubric) => {
+                                    // Live-reactive state allocation variables
+                                    const currentScoreObj = rubricScores[q.id] || {};
+                                    const scoreVal = currentScoreObj[rubric.id] ?? 0;
 
-                                  return (
-                                    <tr
-                                      key={rubric.id}
-                                      className="text-[var(--color-text-secondary)] font-semibold"
-                                    >
-                                      <td className="py-3">
-                                        <div className="font-bold text-[var(--color-text-primary)]">
-                                          {rubric.title}
-                                        </div>
-                                        <div className="text-micro text-[var(--color-text-tertiary)] mt-0.5 font-normal leading-relaxed">
-                                          {rubric.description}
-                                        </div>
-                                      </td>
-                                      <td className="py-3 text-center font-bold text-[var(--color-text-secondary)] text-caption">
-                                        {toPersianDigits(rubric.maxPoints)} امتیاز
-                                      </td>
-                                      <td className="py-3 text-left">
-                                        <input
-                                          type="number"
-                                          min={0}
-                                          max={rubric.maxPoints}
-                                          step={0.25}
-                                          value={scoreVal}
-                                          onChange={(e) => {
-                                            const keyInput = Math.min(
-                                              rubric.maxPoints,
-                                              Math.max(0, Number(e.target.value)),
-                                            );
-                                            setRubricScores((prev) => ({
-                                              ...prev,
-                                              [q.id]: {
-                                                ...(prev[q.id] || {}),
+                                    return (
+                                      <tr
+                                        key={rubric.id}
+                                        className="text-[var(--color-text-secondary)] font-semibold"
+                                      >
+                                        <td className="py-3">
+                                          <div className="font-bold text-[var(--color-text-primary)]">
+                                            {rubric.title}
+                                          </div>
+                                          <div className="text-micro text-[var(--color-text-tertiary)] mt-0.5 font-normal leading-relaxed">
+                                            {rubric.description}
+                                          </div>
+                                        </td>
+                                        <td className="py-3 text-center font-bold text-[var(--color-text-secondary)] text-caption">
+                                          {toPersianDigits(rubric.maxPoints)} امتیاز
+                                        </td>
+                                        <td className="py-3 text-left">
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            max={rubric.maxPoints}
+                                            step={0.25}
+                                            value={scoreVal}
+                                            onChange={(e) => {
+                                              const keyInput = Math.min(
+                                                rubric.maxPoints,
+                                                Math.max(0, Number(e.target.value)),
+                                              );
+                                              setRubricScores((prev) => ({
+                                                ...prev,
+                                                [q.id]: {
+                                                  ...(prev[q.id] || {}),
+                                                  [rubric.id]: keyInput,
+                                                },
+                                              }));
+
+                                              // Auto sync sum to the total assigned scores
+                                              const subTotal = {
+                                                ...(rubricScores[q.id] || {}),
                                                 [rubric.id]: keyInput,
-                                              },
-                                            }));
+                                              };
+                                              const totalManual = (
+                                                Object.values(subTotal) as number[]
+                                              ).reduce((sum, s) => sum + s, 0);
+                                              setAssignedScores((prev) => ({
+                                                ...prev,
+                                                [q.id]: Number(totalManual.toFixed(2)),
+                                              }));
 
-                                            // Auto sync sum to the total assigned scores
-                                            const subTotal = {
-                                              ...(rubricScores[q.id] || {}),
-                                              [rubric.id]: keyInput,
-                                            };
-                                            const totalManual = (
-                                              Object.values(subTotal) as number[]
-                                            ).reduce((sum, s) => sum + s, 0);
-                                            setAssignedScores((prev) => ({
-                                              ...prev,
-                                              [q.id]: Number(totalManual.toFixed(2)),
-                                            }));
-
-                                            // Reset saved status since score changed
-                                            setSavedDescriptiveQuestions((prev) => ({
-                                              ...prev,
-                                              [q.id]: false,
-                                            }));
-                                          }}
-                                          className="w-20 px-2 py-1.5 border rounded-lg glx text-center font-black text-[var(--color-text-primary)] text-label focus:ring-1 focus:ring-[var(--color-accent)]/40 focus:outline-hidden font-mono"
-                                        />
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                                                        </div>
-                                                      </div>
+                                              // Reset saved status since score changed
+                                              setSavedDescriptiveQuestions((prev) => ({
+                                                ...prev,
+                                                [q.id]: false,
+                                              }));
+                                            }}
+                                            className="w-20 px-2 py-1.5 border rounded-lg glx field text-center font-black text-[var(--color-text-primary)] text-label focus:ring-1 focus:ring-[var(--color-accent)]/40 focus:outline-hidden font-mono"
+                                          />
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
 
                           {/* Feedback text row */}
                           <div className="space-y-1.5" id="teacher-comment-box">
@@ -1339,7 +1338,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                 }));
                               }}
                               placeholder="رهنمودهای آموزشی خود را بنویسید (مثال: پاراگراف اول فاقد مستند بومی است، بقیه بخش‌ها غنی بود)."
-                              className="w-full glx border text-caption text-[var(--color-text-secondary)] p-2.5 rounded-xl outline-hidden focus:border-[var(--color-accent)]/40 leading-relaxed font-semibold transition-colors"
+                              className="w-full glx field border text-caption text-[var(--color-text-secondary)] p-2.5 rounded-xl outline-hidden focus:border-[var(--color-accent)]/40 leading-relaxed font-semibold transition-colors"
                             />
                           </div>
 
@@ -1374,7 +1373,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
             {/* Left static metadata summary & finalizing drawer col */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="glx border rounded-3xl p-5 sticky top-6 space-y-5 text-right">
+              <div className="pane rounded-3xl p-5 sticky top-6 space-y-5 text-right">
                 <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-3">
                   <Award className="w-5 h-5 text-[var(--color-accent)]" />
                   <h3 className="text-caption font-black text-[var(--color-text-primary)]">
@@ -1403,7 +1402,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                 </div>
 
                 {/* Detailed Student description block */}
-                <div className="space-y-3 text-micro font-semibold text-[var(--color-text-secondary)] glx border p-4 rounded-2xl leading-relaxed">
+                <div className="space-y-3 text-micro font-semibold text-[var(--color-text-secondary)] pane p-4 rounded-2xl leading-relaxed">
                   <div>
                     🏫 <strong>آزمون آنلاین:</strong> {exam.title}
                   </div>
@@ -1424,7 +1423,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
                 {/* Correction Progress meter list */}
                 {hasDescriptiveQuestions && (
-                  <div className="glx border rounded-2xl p-4 text-micro font-bold text-[var(--color-text-secondary)] space-y-3">
+                  <div className="pane rounded-2xl p-4 text-micro font-bold text-[var(--color-text-secondary)] space-y-3">
                     <span className="text-[var(--color-text-tertiary)] block pb-1 border-b">
                       وضعیت تصحیح سوالات تشریحی:
                     </span>
@@ -1473,7 +1472,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                     type="button"
                     id="btn-grading-finalize-worksheet"
                     onClick={handleFinalizeGrading}
-                    className="w-full py-3 bg-[var(--color-success-solid)] hover:bg-[var(--color-success-solid)]/90 text-[var(--color-text-on-solid)] rounded-xl text-caption font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[var(--color-success)]/10"
+                    className="w-full py-3 btn-glass btn-glass--success rounded-xl text-caption font-black flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>تکمیل تصحیح و ثبت نهایی کارنامه</span>
@@ -1481,7 +1480,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   <button
                     type="button"
                     onClick={() => setSelectedSubmissionId(null)}
-                    className="w-full py-2.5 glx-inset hover:glx-inset text-[var(--color-text-tertiary)] rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border border-[var(--color-glass-light-stroke)]"
+                    className="w-full py-2.5 btn-glass btn-glass--quiet text-[var(--color-text-tertiary)] rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border-[var(--color-glass-light-stroke)]"
                   >
                     <span>انصراف و بازگشت</span>
                   </button>

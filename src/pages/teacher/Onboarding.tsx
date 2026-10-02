@@ -111,7 +111,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
         {/* Form */}
-        <div className="glx-strong rounded-3xl border p-8">
+        <div className="lens rounded-3xl p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* School Name */}
             <Input
@@ -164,7 +164,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] disabled:bg-[var(--color-accent-soft)]/40 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-lg shadow-[var(--color-accent)]/10 cursor-pointer"
+              className="w-full btn-glass btn-glass--primary font-bold text-label py-3 rounded-xl cursor-pointer"
             >
               {loading ? 'در حال ذخیره...' : 'شروع کنید'}
             </button>

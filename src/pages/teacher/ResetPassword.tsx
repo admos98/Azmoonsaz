@@ -95,7 +95,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
               آزمون‌ساز
             </h1>
           </div>
-          <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
+          <div className="lens rounded-3xl shadow-2xl p-8 text-center space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full">
               <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
             </div>
@@ -108,7 +108,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <button
               type="button"
               onClick={onDone}
-              className="w-full bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors cursor-pointer"
+              className="w-full btn-glass btn-glass--primary font-bold text-label py-3 rounded-xl cursor-pointer"
             >
               ورود
             </button>
@@ -130,7 +130,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
               آزمون‌ساز
             </h1>
           </div>
-          <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8 text-center space-y-4">
+          <div className="lens rounded-3xl shadow-2xl p-8 text-center space-y-4">
             <p className="text-label text-[var(--color-danger)]">
               {error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}
             </p>
@@ -160,7 +160,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
           <p className="text-label text-[var(--color-text-tertiary)] mt-1">تغییر رمز عبور</p>
         </div>
 
-        <div className="glx-strong rounded-3xl shadow-2xl border border-[var(--color-glass-light-stroke)] p-8">
+        <div className="lens rounded-3xl shadow-2xl p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
               label="رمز عبور جدید"
@@ -192,7 +192,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] disabled:bg-[var(--color-accent-soft)]/40 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-lg shadow-lg cursor-pointer"
+              className="w-full btn-glass btn-glass--primary font-bold text-label py-3 rounded-xl cursor-pointer"
             >
               {loading ? 'در حال ذخیره...' : 'ذخیره رمز جدید'}
             </button>

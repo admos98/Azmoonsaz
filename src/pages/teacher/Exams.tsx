@@ -15,12 +15,7 @@ import {
   Calendar,
   Play,
 } from 'lucide-react';
-import {
-  Button,
-  EmptyState,
-  PageHeader,
-  StatusBadge,
-} from '../../components/UIComponents';
+import { Button, EmptyState, PageHeader, StatusBadge } from '../../components/UIComponents';
 import { Exam } from '../../types';
 import { examService } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -36,7 +31,7 @@ const ExamResults = lazy(() => import('./ExamResults'));
 function SubViewLoader() {
   return (
     <div
-      className="space-y-4 p-6 rounded-2xl glx"
+      className="space-y-4 p-6 rounded-2xl lens"
       role="status"
       aria-label="در حال بارگذاری بخش آزمون"
     >
@@ -177,7 +172,7 @@ export default function Exams({
     <div className="space-y-6" id="exams-tab-view">
       {toastElement}
       {/* Upper Panel Header Section */}
-      <div className="relative glx glass-edge p-6 rounded-2xl">
+      <div className="relative lens p-6 rounded-2xl">
         <PageHeader
           title="مدیریت آزمون‌های دوره‌ای و هماهنگ کشوری"
           subtitle="امکان تعریف، زمان‌بندی، فعال‌سازی با یک کلیک و ارجاع به کلاس‌ها و ثبت نمره‌برگ نهایی"
@@ -239,7 +234,7 @@ export default function Exams({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="glx glass-edge rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
+                className="lens rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
                 id={`exam-box-${ex.id}`}
               >
                 {/* Visual Status Indicator Strip on Top */}
@@ -296,7 +291,7 @@ export default function Exams({
                       type="button"
                       id={`exam-pre-${ex.id}`}
                       onClick={() => navigateToSubView('preview', ex.id)}
-                      className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border cursor-pointer"
+                      className="p-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl transition-colors cursor-pointer"
                       title="پیش‌نمایش آزمون"
                     >
                       <Eye className="w-4 h-4" />
@@ -307,7 +302,7 @@ export default function Exams({
                       type="button"
                       id={`exam-set-${ex.id}`}
                       onClick={() => navigateToSubView('settings', ex.id)}
-                      className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-xl transition-colors border cursor-pointer"
+                      className="p-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl transition-colors cursor-pointer"
                       title="تنظیمات فنی آزمون"
                     >
                       <SettingsIcon className="w-4 h-4" />
@@ -318,7 +313,7 @@ export default function Exams({
                       type="button"
                       id={`exam-res-${ex.id}`}
                       onClick={() => navigateToSubView('results', ex.id)}
-                      className="p-2 glx hover:brightness-105 text-[var(--color-accent)] rounded-xl transition-colors border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] cursor-pointer"
+                      className="p-2 btn-glass btn-glass--quiet text-[var(--color-accent)] rounded-xl transition-colors border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] cursor-pointer"
                       title="مشاهده کارنامه‌ها و نتایج"
                     >
                       <CheckSquare className="w-4 h-4" />

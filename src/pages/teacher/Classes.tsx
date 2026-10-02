@@ -23,8 +23,12 @@ import { useTeacherCollections } from '../../contexts/TeacherContext';
 export default function Classes() {
   // The class list rides the shared cache — this page used to refetch the
   // whole collection after every mutation; patches make that unnecessary.
-  const { classGroups: classes, status, upsertClassGroup, removeClassGroup } =
-    useTeacherCollections();
+  const {
+    classGroups: classes,
+    status,
+    upsertClassGroup,
+    removeClassGroup,
+  } = useTeacherCollections();
   const loading = status.classGroups === 'loading';
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassGroup | null>(null);
@@ -209,7 +213,7 @@ export default function Classes() {
               </tr>
             )}
             renderMobileCard={(cls) => (
-              <Card key={cls.id} className="p-4 space-y-3 border-[var(--color-glass-light-stroke)]">
+              <Card key={cls.id} glassLayer="strong" className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-bold text-[var(--color-text-primary)]">{cls.name}</h4>
@@ -253,7 +257,7 @@ export default function Classes() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="مثلاً کلاس ۷۰۱ یا گروه پیشرفته نهم"
-              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] glx text-label focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
+              className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-glass-light-stroke)] glx field text-label focus:ring-2 focus:ring-[var(--color-accent)] outline-none transition-all"
             />
           </div>
           <div className="space-y-1.5">

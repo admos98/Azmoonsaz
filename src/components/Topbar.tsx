@@ -371,7 +371,7 @@ export default function Topbar({
                 openNotifications();
               }
             }}
-            className="relative z-[60] grid h-10 w-10 place-items-center rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)] transition-colors cursor-pointer"
+            className="drop relative z-[60] grid h-10 w-10 place-items-center rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
             aria-label="اعلان‌ها"
             aria-expanded={showNotifications}
             aria-haspopup="true"
@@ -398,7 +398,7 @@ export default function Topbar({
               300ms width transition Chromium resamples it per frame — a 200×40
               element, a third of a second, imperceptible cost. */}
           <div
-            className={`relative h-10 rounded-full overflow-hidden glx-strong glass-edge cursor-pointer transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            className={`drop relative h-10 rounded-full overflow-hidden cursor-pointer transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
               avatarExpanded ? 'w-[200px]' : 'w-10'
             }`}
             onMouseEnter={() => {
@@ -474,7 +474,7 @@ export default function Topbar({
           }}
           onMouseEnter={() => setHamburgerHover(true)}
           onMouseLeave={() => setHamburgerHover(false)}
-          className="relative z-[70] p-2 rounded-xl hover:bg-[var(--color-glass-light-stroke)] transition-colors duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
+          className="drop relative z-[70] p-2 transition-colors duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
           aria-label="منوی اصلی"
           aria-expanded={showHamburgerMenu}
           aria-haspopup="true"
@@ -485,12 +485,12 @@ export default function Topbar({
         {/* Search — a pill that opens the CommandPalette. Collapsed: a 44px
             icon. Hover/expand reveals a "جستجو" label; clicking anywhere on
             the pill opens the palette, which is the actual search field (the
-            old in-pill input typed into a void). Same `glx-strong` +
-            `glass-edge` material as the menu / notif panels, no kbd hint. */}
+            old in-pill input typed into a void). Same `drop` droplet
+            material as the bell / menu icon buttons, no kbd hint. */}
         <button
           type="button"
           ref={searchRef}
-          className={`relative h-11 flex items-center gap-2 overflow-hidden glx-strong glass-edge rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer ${
+          className={`drop relative h-11 flex items-center gap-2 overflow-hidden rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer ${
             showSearch ? 'w-[220px] px-4 justify-start' : 'w-11 justify-center p-0'
           }`}
           onClick={() => setCommandPaletteOpen(true)}
@@ -528,10 +528,9 @@ export default function Topbar({
             className="fixed z-[60] flex flex-col gap-3"
             style={hamburgerDropdownStyle}
           >
-
             {/* Panel 1: App info + date */}
             <div
-              className="glx-strong glass-edge rounded-2xl overflow-hidden"
+              className="lens rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(0),
                 animation: menuClosing
@@ -560,7 +559,7 @@ export default function Topbar({
 
             {/* Panel 2: Teacher profile */}
             <div
-              className="glx-strong glass-edge rounded-2xl overflow-hidden"
+              className="lens rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(1),
                 animation: menuClosing
@@ -608,7 +607,7 @@ export default function Topbar({
 
             {/* Panel 3: Management options */}
             <div
-              className="glx-strong glass-edge rounded-2xl overflow-hidden"
+              className="lens rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(2),
                 animation: menuClosing
@@ -647,7 +646,7 @@ export default function Topbar({
 
             {/* Panel 4: Exam panel + settings */}
             <div
-              className="glx-strong glass-edge rounded-2xl overflow-hidden"
+              className="lens rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(3),
                 animation: menuClosing
@@ -709,7 +708,7 @@ export default function Topbar({
           <div className="fixed z-[60] @container" style={notificationStyle}>
             <div
               ref={notifRef}
-              className="relative w-full glx-strong glass-edge rounded-2xl overflow-hidden glx-sheen"
+              className="relative w-full lens rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: bellRect
                   ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`

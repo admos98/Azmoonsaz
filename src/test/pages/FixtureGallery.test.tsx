@@ -58,9 +58,9 @@ describe('FixtureGallery', () => {
     ]) {
       expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
     }
-    // all five material recipes are present (name appears once per recipe, and
-    // `glx-inset` is also referenced in the fields section)
-    for (const material of ['glx', 'glx-strong', 'glx-dark', 'glx-inset', 'glx-clear']) {
+    // all six family recipes are present (name appears once per recipe; the
+    // `field` recipe also carries its glx-strong host class)
+    for (const material of ['lens', 'pane', 'frost', 'field', 'glx-dark', 'glx-inset']) {
       expect(screen.getAllByText(material, { exact: false }).length).toBeGreaterThan(0);
     }
   });

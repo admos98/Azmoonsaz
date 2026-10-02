@@ -262,7 +262,6 @@ export default function ExamPreview({
   // Delete question from section and questions array — gated by the designed
   // ConfirmDialog instead of browser chrome (open + confirm pair below).
   const runDeleteQuestion = (questionId: string) => {
-
     const updatedSections = localExam.sections.map((sec) => ({
       ...sec,
       questionIds: sec.questionIds.filter((id) => id !== questionId),
@@ -562,12 +561,12 @@ export default function ExamPreview({
 
   return (
     <div
-      className="space-y-6 text-right glx p-1 md:p-3 rounded-2xl"
+      className="space-y-6 text-right lens p-1 md:p-3 rounded-2xl"
       dir="rtl"
       id="exam-preview-edit-canvas"
     >
       {/* Upper header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glx p-6 rounded-3xl border">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pane p-6 rounded-3xl">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -666,14 +665,14 @@ export default function ExamPreview({
         {/* Right side specifications details (1/4 width) */}
         <div className="col-span-1 space-y-5" id="specifications-column">
           {/* 1. Exam Static Summary Panel */}
-          <div className="glx p-5 rounded-3xl border space-y-4 text-right">
+          <div className="pane p-5 rounded-3xl space-y-4 text-right">
             <h3 className="text-caption font-extrabold text-[var(--color-text-primary)] pb-2.5 border-b border-[var(--color-glass-light-stroke)] flex items-center gap-1.5">
               <Layers className="w-4.5 h-4.5 text-[var(--color-text-tertiary)]" />
               <span>جزییات شناسنامه آزمون</span>
             </h3>
 
             <div className="space-y-3.5 text-caption text-[var(--color-text-primary)]">
-              <div className="flex justify-between items-center glx p-2 rounded-xl border">
+              <div className="flex justify-between items-center pane p-2 rounded-xl">
                 <span className="text-[var(--color-text-tertiary)]">عنوان آزمون:</span>
                 <span
                   className="font-extrabold text-[var(--color-text-primary)] text-micro max-w-[130px] truncate"
@@ -768,7 +767,7 @@ export default function ExamPreview({
           </div>
 
           {/* Guidelines info block */}
-          <div className="glx p-5 rounded-3xl border text-caption space-y-3">
+          <div className="pane p-5 rounded-3xl text-caption space-y-3">
             <h4 className="font-bold text-[var(--color-text-secondary)] flex items-center gap-1.5">
               <Info className="w-4 h-4 text-[var(--color-accent)]" />
               <span>ملاحظات پاسخ‌نامه‌ها</span>
@@ -793,7 +792,7 @@ export default function ExamPreview({
             return (
               <div
                 key={section.id}
-                className="glx p-5 md:p-6 rounded-3xl border space-y-5"
+                className="pane p-5 md:p-6 rounded-3xl space-y-5"
                 id={`pview-section-${section.id}`}
               >
                 {/* Section Header */}
@@ -870,7 +869,7 @@ export default function ExamPreview({
                           </p>
 
                           {q.imageUrl && (
-                            <div className="max-w-md glx border rounded-2xl p-2 relative group inline-block">
+                            <div className="max-w-md pane rounded-2xl p-2 relative group inline-block">
                               <img
                                 loading="lazy"
                                 decoding="async"
@@ -1067,16 +1066,13 @@ export default function ExamPreview({
 
                             {/* Rubric evaluation criteria info boxes */}
                             {q.rubrics && q.rubrics.length > 0 && (
-                              <div className="glx border rounded-2xl p-4.5 space-y-2.5 text-micro">
+                              <div className="pane rounded-2xl p-4.5 space-y-2.5 text-micro">
                                 <span className="block font-bold text-[var(--color-text-secondary)]">
                                   معیارهای توزیع بارم تصحیح معلم:
                                 </span>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   {q.rubrics.map((rub: RubricCriterion) => (
-                                    <div
-                                      key={rub.id}
-                                      className="p-3 glx border rounded-xl space-y-1"
-                                    >
+                                    <div key={rub.id} className="p-3 pane rounded-xl space-y-1">
                                       <div className="flex justify-between items-center text-[var(--color-text-primary)] border-b border-[var(--color-glass-light-stroke)] pb-1">
                                         <strong className="font-bold">{rub.title}</strong>
                                         <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-md px-1.5 py-0.5 text-micro font-extrabold">
@@ -1117,7 +1113,7 @@ export default function ExamPreview({
                                         nextList[fIdx] = e.target.value;
                                         handleStudentAnswerChange(q.id, nextList);
                                       }}
-                                      className="glx border px-3 py-1.5 rounded-lg text-caption font-semibold focus:outline-hidden focus:border-[var(--color-accent)]/40 w-28 text-center"
+                                      className="glx field border px-3 py-1.5 rounded-lg text-caption font-semibold focus:outline-hidden focus:border-[var(--color-accent)]/40 w-28 text-center"
                                     />
                                   </div>
                                 ))}
@@ -1128,7 +1124,7 @@ export default function ExamPreview({
                                 {q.correctFillBlanks?.map((word, idx) => (
                                   <span
                                     key={idx}
-                                    className="glx px-2 py-0.5 rounded-md font-bold font-mono text-[var(--color-success)] ml-1"
+                                    className="glx field px-2 py-0.5 rounded-md font-bold font-mono text-[var(--color-success)] ml-1"
                                   >
                                     {toPersianDigits(idx + 1)}. {word}
                                   </span>
@@ -1140,7 +1136,7 @@ export default function ExamPreview({
 
                         {/* 6. Matching Pairs elements rendering */}
                         {q.type === 'matching' && q.matchingPairs && (
-                          <div className="glx rounded-2xl p-4.5 border mt-2 space-y-3.5 text-caption">
+                          <div className="pane rounded-2xl p-4.5 mt-2 space-y-3.5 text-caption">
                             <span className="block font-bold text-[var(--color-text-secondary)]">
                               تطبیق ستون الف با ب:
                             </span>
@@ -1148,7 +1144,7 @@ export default function ExamPreview({
                               {q.matchingPairs.map((pair, pIdx) => (
                                 <div
                                   key={pIdx}
-                                  className="flex items-center justify-between gap-2.5 glx px-3 py-2 rounded-xl border"
+                                  className="flex items-center justify-between gap-2.5 pane px-3 py-2 rounded-xl"
                                 >
                                   <span className="glx-inset text-[var(--color-text-secondary)] px-3 py-1.5 rounded-lg font-bold flex-1 text-center">
                                     {pair.right}
@@ -1167,14 +1163,14 @@ export default function ExamPreview({
 
                         {/* 7. Ordering array rendering */}
                         {q.type === 'ordering' && q.orderingItems && (
-                          <div className="glx rounded-2xl p-4.5 border mt-2 text-caption">
+                          <div className="pane rounded-2xl p-4.5 mt-2 text-caption">
                             <span className="font-bold text-[var(--color-text-primary)] block mb-2.5">
                               ترتیب قرارگیری مراحل صحیح:
                             </span>
                             <div className="flex flex-wrap gap-2 items-center">
                               {q.orderingItems.map((item, idx) => (
                                 <div key={idx} className="flex items-center gap-2">
-                                  <span className="glx border text-[var(--color-text-primary)] px-3.5 py-2 font-black rounded-xl">
+                                  <span className="glx field border text-[var(--color-text-primary)] px-3.5 py-2 font-black rounded-xl">
                                     {toPersianDigits(idx + 1)}. {item}
                                   </span>
                                   {idx < (q.orderingItems?.length || 0) - 1 && (
@@ -1198,10 +1194,7 @@ export default function ExamPreview({
                                 </span>
                                 {q.parts.map((part: QuestionPart, idx: number) => {
                                   return (
-                                    <div
-                                      key={part.id}
-                                      className="glx border rounded-xl p-3.5 space-y-3"
-                                    >
+                                    <div key={part.id} className="pane rounded-xl p-3.5 space-y-3">
                                       <h6 className="text-micro font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
                                         <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] w-5 h-5 rounded-full flex items-center justify-center text-micro font-black">
                                           {toPersianDigits(idx + 1)}
@@ -1244,7 +1237,7 @@ export default function ExamPreview({
                             {q.parts && q.parts.length > 0 && (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {q.parts.map((p, pIdx) => (
-                                  <div key={p.id} className="p-3 glx border rounded-xl space-y-2">
+                                  <div key={p.id} className="p-3 pane rounded-xl space-y-2">
                                     <strong className="text-[var(--color-accent)] font-bold text-micro block text-right">
                                       جای خالی کلوز شماره {toPersianDigits(pIdx + 1)}
                                     </strong>
@@ -1272,13 +1265,13 @@ export default function ExamPreview({
 
                         {/* Teacher Edit Controls (ONLY visible in teacher view mode) */}
                         {viewMode === 'teacher' && (
-                          <div className="glx -mx-5 -mb-6 mt-4 p-3.5 border-t flex flex-wrap items-center justify-between gap-3.5 rounded-b-3xl">
+                          <div className="pane -mx-5 -mb-6 mt-4 p-3.5 border-t flex flex-wrap items-center justify-between gap-3.5 rounded-b-3xl">
                             {/* Order Moving Controls */}
                             <div className="flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => moveQuestion(q.id, 'up')}
-                                className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-lg border cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
+                                className="p-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-lg cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
                                 title="جابه‌جایی سوال به بالا"
                               >
                                 <ChevronUp className="w-4 h-4 text-[var(--color-accent)]" />
@@ -1287,7 +1280,7 @@ export default function ExamPreview({
                               <button
                                 type="button"
                                 onClick={() => moveQuestion(q.id, 'down')}
-                                className="p-2 glx hover:brightness-105 text-[var(--color-text-secondary)] rounded-lg border cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
+                                className="p-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-lg cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
                                 title="جابه‌جایی سوال به پایین"
                               >
                                 <ChevronDown className="w-4 h-4 text-[var(--color-accent)]" />
@@ -1302,7 +1295,7 @@ export default function ExamPreview({
                                 onClick={(e) =>
                                   triggerEditQuestion(q, e.currentTarget as HTMLElement)
                                 }
-                                className="p-2 glx-inset hover:brightness-105 text-[var(--color-accent)] hover:text-[var(--color-accent)] rounded-lg border border-[var(--color-accent-soft)] hover:border-[var(--color-accent)]/20 cursor-pointer text-micro font-bold flex items-center gap-1.5 transition-all"
+                                className="p-2 btn-glass btn-glass--quiet text-[var(--color-accent)] hover:text-[var(--color-accent)] rounded-lg border border-[var(--color-accent-soft)] hover:border-[var(--color-accent)]/20 cursor-pointer text-micro font-bold flex items-center gap-1.5 transition-all"
                               >
                                 <Edit className="w-3.5 h-3.5 text-[var(--color-accent)]" />
                                 <span>ویرایش محتوا و گزینه‌ها</span>
@@ -1310,7 +1303,7 @@ export default function ExamPreview({
                               <button
                                 type="button"
                                 onClick={() => triggerReplaceQuestion(q.id, section.id)}
-                                className="p-2 glx-inset hover:brightness-105 text-[var(--color-warning)] hover:text-[var(--color-warning)] rounded-lg border border-[var(--color-warning)]/10 hover:border-[var(--color-warning)]/20 cursor-pointer text-micro font-bold flex items-center gap-1.5 transition-all"
+                                className="p-2 btn-glass btn-glass--quiet text-[var(--color-warning)] hover:text-[var(--color-warning)] rounded-lg border border-[var(--color-warning)]/10 hover:border-[var(--color-warning)]/20 cursor-pointer text-micro font-bold flex items-center gap-1.5 transition-all"
                               >
                                 <RefreshCw className="w-3.5 h-3.5 text-[var(--color-warning)]" />
                                 <span>جایگزینی از بانک سوالات</span>
@@ -1350,13 +1343,13 @@ export default function ExamPreview({
 
       {/* FOOTER ACTIONS BAR */}
       <div
-        className="border-t glx p-5 rounded-3xl mt-6 flex flex-col sm:flex-row justify-between items-center gap-4"
+        className="border-t pane p-5 rounded-3xl mt-6 flex flex-col sm:flex-row justify-between items-center gap-4"
         id="preview-footer-plate"
       >
         <button
           type="button"
           onClick={handleBack}
-          className="w-full sm:w-auto px-5 py-2.5 glx-inset hover:glx-inset text-[var(--color-text-secondary)] font-bold rounded-xl text-caption transition-all cursor-pointer text-center"
+          className="w-full sm:w-auto px-5 py-2.5 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] font-bold rounded-xl text-caption transition-all cursor-pointer text-center"
         >
           بازگشت به ساخت آزمون
         </button>
@@ -1409,169 +1402,164 @@ export default function ExamPreview({
           </span>
         }
       >
-
-            {/* Smart Filters Header block inside modal */}
-            <div className="p-4 glx-inset border-b border-[var(--color-glass-light-stroke)] space-y-3">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-caption">
-                <div className="space-y-1">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                    پایه تحصیلی:
-                  </label>
-                  <Dropdown
-                    value={replaceFilterGrade}
-                    onChange={setReplaceFilterGrade}
-                    options={[
-                      { value: 'all', label: 'همه پایه‌ها' },
-                      { value: 'هفتم', label: 'پایه هفتم' },
-                      { value: 'هشتم', label: 'پایه هشتم' },
-                      { value: 'نهم', label: 'پایه نهم' },
-                    ]}
-                    className="text-micro"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                    درس هدف:
-                  </label>
-                  <Dropdown
-                    value={replaceFilterSubject}
-                    onChange={setReplaceFilterSubject}
-                    options={[
-                      { value: 'all', label: 'همه درس‌ها' },
-                      { value: localExam.subject, label: localExam.subject },
-                      { value: 'علوم تجربی', label: 'علوم تجربی' },
-                      { value: 'ریاضی پایه هفتم', label: 'ریاضی پایه هفتم' },
-                      { value: 'ادبیات', label: 'ادبیات' },
-                    ]}
-                    className="text-micro"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                    قالب سوال قالب:
-                  </label>
-                  <Dropdown
-                    value={replaceFilterType}
-                    onChange={setReplaceFilterType}
-                    options={[
-                      { value: 'all', label: 'همه قالب‌ها' },
-                      { value: 'single_choice', label: 'چهارگزینه‌ای' },
-                      { value: 'multiple_choice', label: 'چندگزینه‌ای' },
-                      { value: 'true_false', label: 'درست/غلط' },
-                      { value: 'short_answer', label: 'پاسخ کوتاه' },
-                      { value: 'long_answer', label: 'تشریحی' },
-                      { value: 'matching', label: 'وصل‌کردنی' },
-                      { value: 'image_based', label: 'تصویری' },
-                    ]}
-                    className="text-micro"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                    سطح سختی:
-                  </label>
-                  <Dropdown
-                    compact
-                    value={replaceFilterDifficulty}
-                    onChange={setReplaceFilterDifficulty}
-                    options={[
-                      { value: 'all', label: 'همه سطوح' },
-                      { value: 'easy', label: 'آسان' },
-                      { value: 'medium', label: 'متوسط' },
-                      { value: 'hard', label: 'سخت' },
-                    ]}
-                  />
-                </div>
-              </div>
-
-              {/* Text search querying inside modal */}
-              <SearchInput
-                placeholder="جستجو در کل صورت سوال یا موضوعات..."
-                value={replaceSearchQuery}
-                onChange={(e) => setReplaceSearchQuery(e.target.value)}
+        {/* Smart Filters Header block inside modal */}
+        <div className="p-4 glx-inset border-b border-[var(--color-glass-light-stroke)] space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-caption">
+            <div className="space-y-1">
+              <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                پایه تحصیلی:
+              </label>
+              <Dropdown
+                value={replaceFilterGrade}
+                onChange={setReplaceFilterGrade}
+                options={[
+                  { value: 'all', label: 'همه پایه‌ها' },
+                  { value: 'هفتم', label: 'پایه هفتم' },
+                  { value: 'هشتم', label: 'پایه هشتم' },
+                  { value: 'نهم', label: 'پایه نهم' },
+                ]}
+                className="text-micro"
               />
             </div>
 
-            {/* Questions Bank scrolling container list */}
-            <div className="p-5 overflow-y-auto flex-1 space-y-4 glx">
-              {filteredBankQuestions.length > 0 ? (
-                filteredBankQuestions.map((bq) => {
-                  const hasImg = !!bq.imageUrl;
-                  return (
-                    <div
-                      key={bq.id}
-                      className="glx p-4 rounded-2xl border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-3"
-                    >
-                      <div className="space-y-2 text-right">
-                        {/* Upper indicators bar */}
-                        <div className="flex items-center justify-between gap-1 text-micro text-[var(--color-text-tertiary)]">
-                          <div className="flex items-center gap-1.5">
-                            <span className="glx-inset text-[var(--color-text-secondary)] font-bold px-1.5 py-0.5 rounded-md">
-                              پایه {bq.grade}
-                            </span>
-                            <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-semibold px-2 py-0.5 rounded-md">
-                              {bq.category}
-                            </span>
-                            <span className="glx text-[var(--color-text-tertiary)] rounded-md px-1.5 py-0.5 font-medium border">
-                              {getTypeNameInPersian(bq.type)}
-                            </span>
-                          </div>
+            <div className="space-y-1">
+              <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                درس هدف:
+              </label>
+              <Dropdown
+                value={replaceFilterSubject}
+                onChange={setReplaceFilterSubject}
+                options={[
+                  { value: 'all', label: 'همه درس‌ها' },
+                  { value: localExam.subject, label: localExam.subject },
+                  { value: 'علوم تجربی', label: 'علوم تجربی' },
+                  { value: 'ریاضی پایه هفتم', label: 'ریاضی پایه هفتم' },
+                  { value: 'ادبیات', label: 'ادبیات' },
+                ]}
+                className="text-micro"
+              />
+            </div>
 
-                          <div
-                            className={`px-2 py-0.5 rounded-full border font-bold ${getDifficultyColor(bq.difficulty || 'medium')}`}
-                          >
-                            {getDifficultyLabel(bq.difficulty || 'medium')}
-                          </div>
-                        </div>
+            <div className="space-y-1">
+              <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                قالب سوال قالب:
+              </label>
+              <Dropdown
+                value={replaceFilterType}
+                onChange={setReplaceFilterType}
+                options={[
+                  { value: 'all', label: 'همه قالب‌ها' },
+                  { value: 'single_choice', label: 'چهارگزینه‌ای' },
+                  { value: 'multiple_choice', label: 'چندگزینه‌ای' },
+                  { value: 'true_false', label: 'درست/غلط' },
+                  { value: 'short_answer', label: 'پاسخ کوتاه' },
+                  { value: 'long_answer', label: 'تشریحی' },
+                  { value: 'matching', label: 'وصل‌کردنی' },
+                  { value: 'image_based', label: 'تصویری' },
+                ]}
+                className="text-micro"
+              />
+            </div>
 
-                        {/* Text */}
-                        <h4 className="font-extrabold text-[var(--color-text-primary)] text-caption line-clamp-1">
-                          {bq.title}
-                        </h4>
-                        <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed line-clamp-2">
-                          {bq.text}
-                        </p>
+            <div className="space-y-1">
+              <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                سطح سختی:
+              </label>
+              <Dropdown
+                compact
+                value={replaceFilterDifficulty}
+                onChange={setReplaceFilterDifficulty}
+                options={[
+                  { value: 'all', label: 'همه سطوح' },
+                  { value: 'easy', label: 'آسان' },
+                  { value: 'medium', label: 'متوسط' },
+                  { value: 'hard', label: 'سخت' },
+                ]}
+              />
+            </div>
+          </div>
 
-                        {hasImg && (
-                          <div className="text-micro text-[var(--color-accent)] bg-[var(--color-accent-soft)]/30 rounded-lg px-2 py-0.5 w-fit border border-[var(--color-accent-soft)] font-semibold">
-                            دارای تصویر ضمیمه مرتبط
-                          </div>
-                        )}
+          {/* Text search querying inside modal */}
+          <SearchInput
+            placeholder="جستجو در کل صورت سوال یا موضوعات..."
+            value={replaceSearchQuery}
+            onChange={(e) => setReplaceSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* Questions Bank scrolling container list */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-4 pane">
+          {filteredBankQuestions.length > 0 ? (
+            filteredBankQuestions.map((bq) => {
+              const hasImg = !!bq.imageUrl;
+              return (
+                <div
+                  key={bq.id}
+                  className="pane p-4 rounded-2xl border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-3"
+                >
+                  <div className="space-y-2 text-right">
+                    {/* Upper indicators bar */}
+                    <div className="flex items-center justify-between gap-1 text-micro text-[var(--color-text-tertiary)]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="glx-inset text-[var(--color-text-secondary)] font-bold px-1.5 py-0.5 rounded-md">
+                          پایه {bq.grade}
+                        </span>
+                        <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-semibold px-2 py-0.5 rounded-md">
+                          {bq.category}
+                        </span>
+                        <span className="glx field text-[var(--color-text-tertiary)] rounded-md px-1.5 py-0.5 font-medium border">
+                          {getTypeNameInPersian(bq.type)}
+                        </span>
                       </div>
 
-                      {/* Select and apply button */}
-                      <div className="border-t border-[var(--color-glass-light-stroke)] pt-2.5 flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
-                        <span>بارم استاندارد: {toPersianDigits(bq.points)} نمره</span>
-                        <Button size="sm" onClick={() => handleExecuteReplacement(bq)}>
-                          تایید و جایگزینی این سوال
-                        </Button>
+                      <div
+                        className={`px-2 py-0.5 rounded-full border font-bold ${getDifficultyColor(bq.difficulty || 'medium')}`}
+                      >
+                        {getDifficultyLabel(bq.difficulty || 'medium')}
                       </div>
                     </div>
-                  );
-                })
-              ) : (
-                <EmptyState
-                  compact
-                  icon={<HelpCircle className="w-8 h-8" />}
-                  title="سوال همخوانی داری در بانک یافت نشد"
-                  description="فیلترها را بردارید یا کلمه جستجو را کوتاه کنید."
-                />
-              )}
-            </div>
+
+                    {/* Text */}
+                    <h4 className="font-extrabold text-[var(--color-text-primary)] text-caption line-clamp-1">
+                      {bq.title}
+                    </h4>
+                    <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed line-clamp-2">
+                      {bq.text}
+                    </p>
+
+                    {hasImg && (
+                      <div className="text-micro text-[var(--color-accent)] bg-[var(--color-accent-soft)]/30 rounded-lg px-2 py-0.5 w-fit border border-[var(--color-accent-soft)] font-semibold">
+                        دارای تصویر ضمیمه مرتبط
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Select and apply button */}
+                  <div className="border-t border-[var(--color-glass-light-stroke)] pt-2.5 flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
+                    <span>بارم استاندارد: {toPersianDigits(bq.points)} نمره</span>
+                    <Button size="sm" onClick={() => handleExecuteReplacement(bq)}>
+                      تایید و جایگزینی این سوال
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <EmptyState
+              compact
+              icon={<HelpCircle className="w-8 h-8" />}
+              title="سوال همخوانی داری در بانک یافت نشد"
+              description="فیلترها را بردارید یا کلمه جستجو را کوتاه کنید."
+            />
+          )}
+        </div>
       </Modal>
 
       {/* MODAL 2: MEGA ADD/EDIT MANUAL QUESTION PANEL — library side drawer */}
       <Modal
         isOpen={editingQuestion !== null}
         onClose={() => setEditingQuestion(null)}
-        title={
-          isAddingNew
-            ? 'طرح سوال تازه برای برگه آزمون'
-            : 'ویرایش جزئیات فنی و بارم سوال'
-        }
+        title={isAddingNew ? 'طرح سوال تازه برای برگه آزمون' : 'ویرایش جزئیات فنی و بارم سوال'}
         icon={<Sliders className="w-5 h-5" />}
         variant="side"
         triggerRef={drawerTriggerRef}
@@ -1587,445 +1575,415 @@ export default function ExamPreview({
           </>
         }
       >
-                  {/* Type selector */}
-                  <div className="space-y-1 glx p-3 rounded-2xl border">
-                    <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                      نوع قالب‌بندی سوال:
-                    </label>
-                    <Dropdown
-                      value={editingQuestion.type}
-                      onChange={(v) => {
-                        const nextVal = v as QuestionType;
-                        setEditingQuestion({
-                          ...editingQuestion,
-                          type: nextVal,
-                          // populate default structures if missing
-                          options: ['single_choice', 'multiple_choice', 'image_based'].includes(
-                            nextVal,
-                          )
-                            ? editingQuestion.options || [
-                                { id: 'o1', text: 'گزینه الف', isCorrect: true },
-                                { id: 'o2', text: 'گزینه ب', isCorrect: false },
-                              ]
-                            : undefined,
-                          rubrics: nextVal === 'long_answer' ? [] : undefined,
-                          parts: nextVal === 'reading_comprehension' ? [] : undefined,
-                        });
-                      }}
-                      options={[
-                        { value: 'single_choice', label: 'چهارگزینه‌ای یا کتبی تستی' },
-                        { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
-                        { value: 'true_false', label: 'درست / نادرست' },
-                        { value: 'short_answer', label: 'پاسخ کوتاه (نیم‌تشریحی)' },
-                        { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
-                        { value: 'fill_blank', label: 'پر کردن جاهای خالی' },
-                        { value: 'matching', label: 'وصل‌کردنی ارتباطی' },
-                        { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
-                        { value: 'image_based', label: 'سوال تصویری یا تحلیلی' },
-                      ]}
+        {/* Type selector */}
+        <div className="space-y-1 pane p-3 rounded-2xl">
+          <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            نوع قالب‌بندی سوال:
+          </label>
+          <Dropdown
+            value={editingQuestion.type}
+            onChange={(v) => {
+              const nextVal = v as QuestionType;
+              setEditingQuestion({
+                ...editingQuestion,
+                type: nextVal,
+                // populate default structures if missing
+                options: ['single_choice', 'multiple_choice', 'image_based'].includes(nextVal)
+                  ? editingQuestion.options || [
+                      { id: 'o1', text: 'گزینه الف', isCorrect: true },
+                      { id: 'o2', text: 'گزینه ب', isCorrect: false },
+                    ]
+                  : undefined,
+                rubrics: nextVal === 'long_answer' ? [] : undefined,
+                parts: nextVal === 'reading_comprehension' ? [] : undefined,
+              });
+            }}
+            options={[
+              { value: 'single_choice', label: 'چهارگزینه‌ای یا کتبی تستی' },
+              { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
+              { value: 'true_false', label: 'درست / نادرست' },
+              { value: 'short_answer', label: 'پاسخ کوتاه (نیم‌تشریحی)' },
+              { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
+              { value: 'fill_blank', label: 'پر کردن جاهای خالی' },
+              { value: 'matching', label: 'وصل‌کردنی ارتباطی' },
+              { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
+              { value: 'image_based', label: 'سوال تصویری یا تحلیلی' },
+            ]}
+          />
+        </div>
+
+        {/* Title & Points row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="md:col-span-2 pane p-3.5 rounded-2xl">
+            <Input
+              label="عنوان خلاصه سوال:"
+              size="sm"
+              type="text"
+              value={editingQuestion.title || ''}
+              onChange={(e) => setEditingQuestion({ ...editingQuestion, title: e.target.value })}
+              placeholder="مثال: سوال مضاف‌الیه ادبیات"
+            />
+          </div>
+
+          <div className="pane p-3.5 rounded-2xl text-center">
+            <Input
+              label="بارم (امتیاز عددی):"
+              size="sm"
+              type="number"
+              step="0.25"
+              min="0"
+              value={editingQuestion.points || 0}
+              onChange={(e) =>
+                setEditingQuestion({ ...editingQuestion, points: Number(e.target.value) })
+              }
+              className="text-center font-bold font-mono"
+            />
+          </div>
+        </div>
+
+        {/* Question Text Prompt */}
+        <div className="pane p-4 rounded-2xl">
+          <Textarea
+            label="متن اصلی صورت سوال:"
+            size="sm"
+            rows={4}
+            value={editingQuestion.text || ''}
+            onChange={(e) => setEditingQuestion({ ...editingQuestion, text: e.target.value })}
+            placeholder="صورت سوال علمی، پیوند‌ها و نمادها را در اینجا تایپ کنید..."
+          />
+        </div>
+
+        {/* Image URL / media upload simulation */}
+        <div className="space-y-2 pane p-3.5 rounded-2xl">
+          <span className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            تصویر یا نمودار پیوست سوال:
+          </span>
+          <div className="flex gap-2">
+            <Input
+              wrapperClassName="flex-1"
+              size="sm"
+              type="text"
+              value={editingQuestion.imageUrl || ''}
+              onChange={(e) => setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })}
+              placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
+            />
+            {editingQuestion.imageUrl && (
+              <button
+                type="button"
+                onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: undefined })}
+                className="px-2 py-1 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro transition-all cursor-pointer font-bold shrink-0"
+              >
+                حذف
+              </button>
+            )}
+          </div>
+          {/* Simulative quick presets to populate mock images safely */}
+          <div className="flex flex-wrap gap-1 mt-1 justify-start">
+            <span className="text-micro text-[var(--color-text-tertiary)] font-semibold self-center ml-1">
+              چند پیوست پیش‌فرض:
+            </span>
+            {[
+              {
+                label: 'سلول گیاهی',
+                url: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=500&auto=format&fit=crop&q=60',
+              },
+              {
+                label: 'نمودار اهرم‌ها',
+                url: 'https://images.unsplash.com/photo-1632571401005-458e9d244591?w=500&auto=format&fit=crop&q=60',
+              },
+            ].map((preset, pIdx) => (
+              <button
+                key={pIdx}
+                type="button"
+                onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: preset.url })}
+                className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-md border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] transition-all text-micro font-bold"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Specific template setups according to chosen type! */}
+
+        {/* A. Choice Options edit area */}
+        {['single_choice', 'multiple_choice', 'image_based'].includes(
+          editingQuestion.type || '',
+        ) && (
+          <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
+            <div className="flex justify-between items-center border-b border-[var(--color-accent-soft)]/60 pb-1.5">
+              <span className="text-micro text-[var(--color-accent)] font-extrabold">
+                گزینه‌های پاسخ و تخصیص کلید:
+              </span>
+              <button
+                type="button"
+                onClick={addNewOptionInDrawer}
+                className="btn-glass btn-glass--primary px-2.5 py-1 rounded-lg transition-all font-bold text-micro flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>افزودن گزینه جدید</span>
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {(editingQuestion.options || []).map((opt, oIdx) => (
+                <div key={opt.id} className="flex gap-2 items-center pane p-2 rounded-xl">
+                  {/* Correct trigger */}
+                  <button
+                    type="button"
+                    onClick={() => toggleOptionCorrectInDrawer(opt.id)}
+                    className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
+                      opt.isCorrect
+                        ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
+                        : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
+                    }`}
+                    title={
+                      opt.isCorrect ? 'کلید پاسخ صحیح (غیرفعال‌سازی)' : 'تبدیل به کلید پاسخ صحیح'
+                    }
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Input */}
+                  <input
+                    type="text"
+                    value={opt.text}
+                    onChange={(e) => updateOptionTextInDrawer(opt.id, e.target.value)}
+                    className="w-full bg-transparent border-none py-1 px-1.5 text-caption focus:ring-0 focus:outline-hidden"
+                    placeholder={`متن گزینه ${toPersianDigits(oIdx + 1)} را بنویسید...`}
+                  />
+
+                  {/* Image Option helper */}
+                  <input
+                    type="text"
+                    value={opt.imageUrl || ''}
+                    onChange={(e) => {
+                      const updatedOpts = (editingQuestion.options || []).map((o) =>
+                        o.id === opt.id ? { ...o, imageUrl: e.target.value } : o,
+                      );
+                      setEditingQuestion({ ...editingQuestion, options: updatedOpts });
+                    }}
+                    className="glx field border text-micro w-28 px-1 rounded-md"
+                    placeholder="آدرس تصویر گزینه"
+                  />
+
+                  {/* Remove Option */}
+                  <button
+                    type="button"
+                    onClick={() => removeOptionInDrawer(opt.id)}
+                    className="p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
+                    title="حذف این گزینه"
+                  >
+                    <Trash className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* B. True False setup */}
+        {editingQuestion.type === 'true_false' && (
+          <div className="space-y-2 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
+            <span className="text-micro text-[var(--color-accent)] font-extrabold block">
+              مشخص‌سازی کلید پاسخ درست:
+            </span>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setEditingQuestion({ ...editingQuestion, correctAnswer: true })}
+                className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
+                  editingQuestion.correctAnswer === true
+                    ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
+                    : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                صحیح
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingQuestion({ ...editingQuestion, correctAnswer: false })}
+                className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
+                  editingQuestion.correctAnswer === false
+                    ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
+                    : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                }`}
+              >
+                غلط
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* C. Fill Blanks input tag builders */}
+        {editingQuestion.type === 'fill_blank' && (
+          <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
+            <span className="text-micro text-[var(--color-accent)] font-extrabold block">
+              کلید واژه‌های صحیح برای پرکردن جاهای خالی (به ترتیب):
+            </span>
+            <div className="space-y-2">
+              {(editingQuestion.correctFillBlanks || ['']).map((word, wIdx) => (
+                <div key={wIdx} className="flex gap-2 items-center pane p-2 rounded-xl">
+                  <span className="text-[var(--color-text-tertiary)] font-bold font-mono">
+                    جای خالی ({toPersianDigits(wIdx + 1)}):
+                  </span>
+                  <input
+                    type="text"
+                    value={word}
+                    onChange={(e) => {
+                      const nextWords = [...(editingQuestion.correctFillBlanks || [])];
+                      nextWords[wIdx] = e.target.value;
+                      setEditingQuestion({
+                        ...editingQuestion,
+                        correctFillBlanks: nextWords,
+                      });
+                    }}
+                    className="w-full bg-transparent border-none text-caption focus:ring-0"
+                    placeholder="کلمه معتبر..."
+                  />
+                  <button
+                    type="button"
+                    aria-label={`حذف پاسخ معتبر شماره ${toPersianDigits(wIdx + 1)}`}
+                    title="حذف پاسخ"
+                    onClick={() => {
+                      const nextWords = (editingQuestion.correctFillBlanks || []).filter(
+                        (_, i) => i !== wIdx,
+                      );
+                      setEditingQuestion({
+                        ...editingQuestion,
+                        correctFillBlanks: nextWords,
+                      });
+                    }}
+                    className="p-1 hover:brightness-105 text-[var(--color-danger)] rounded-lg"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const nextWords = [...(editingQuestion.correctFillBlanks || []), ''];
+                setEditingQuestion({ ...editingQuestion, correctFillBlanks: nextWords });
+              }}
+              className="w-full btn-glass btn-glass--quiet text-[var(--color-accent)] text-micro py-1.5 rounded-xl border-[var(--color-accent)]/20 font-bold hover:bg-[var(--color-accent-soft)] transition-all flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>افزودن جای خالی گمشده دیگر</span>
+            </button>
+          </div>
+        )}
+
+        {/* D. Rubrics Metrics setup (Descriptive Long Answer) */}
+        {editingQuestion.type === 'long_answer' && (
+          <div className="space-y-3 bg-[var(--color-danger-soft)]/40 p-4 rounded-2xl border border-[var(--color-danger)]/10">
+            <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-1.5">
+              <span className="text-micro text-[var(--color-danger)] font-extrabold">
+                معیارهای واگذاری بارم تصحیح:
+              </span>
+              <button
+                type="button"
+                onClick={addNewRubricInDrawer}
+                className="btn-glass btn-glass--danger px-2.5 py-1 rounded-lg transition-all font-bold text-micro flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>افزودن معیار بارم</span>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {(editingQuestion.rubrics || []).map((rub) => (
+                <div
+                  key={rub.id}
+                  className="pane p-3 rounded-xl border-[var(--color-danger)]/10 space-y-2"
+                >
+                  <div className="flex gap-2 justify-between">
+                    <input
+                      type="text"
+                      value={rub.title}
+                      onChange={(e) => updateRubricInDrawer(rub.id, { title: e.target.value })}
+                      className="w-full glx field border-none px-2 py-1 rounded-md text-[var(--color-text-primary)] font-bold font-sans"
+                      placeholder="نام معیار (مثال: رسم درست نمودار)"
                     />
-                  </div>
-
-                  {/* Title & Points row */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="md:col-span-2 glx p-3.5 rounded-2xl border">
-                      <Input
-                        label="عنوان خلاصه سوال:"
-                        size="sm"
-                        type="text"
-                        value={editingQuestion.title || ''}
-                        onChange={(e) =>
-                          setEditingQuestion({ ...editingQuestion, title: e.target.value })
-                        }
-                        placeholder="مثال: سوال مضاف‌الیه ادبیات"
-                      />
-                    </div>
-
-                    <div className="glx p-3.5 rounded-2xl border text-center">
-                      <Input
-                        label="بارم (امتیاز عددی):"
-                        size="sm"
-                        type="number"
-                        step="0.25"
-                        min="0"
-                        value={editingQuestion.points || 0}
-                        onChange={(e) =>
-                          setEditingQuestion({ ...editingQuestion, points: Number(e.target.value) })
-                        }
-                        className="text-center font-bold font-mono"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Question Text Prompt */}
-                  <div className="glx p-4 rounded-2xl border">
-                    <Textarea
-                      label="متن اصلی صورت سوال:"
-                      size="sm"
-                      rows={4}
-                      value={editingQuestion.text || ''}
+                    <input
+                      type="number"
+                      step="0.25"
+                      value={rub.maxPoints}
                       onChange={(e) =>
-                        setEditingQuestion({ ...editingQuestion, text: e.target.value })
+                        updateRubricInDrawer(rub.id, {
+                          maxPoints: Number(e.target.value),
+                        })
                       }
-                      placeholder="صورت سوال علمی، پیوند‌ها و نمادها را در اینجا تایپ کنید..."
+                      className="w-20 glx field border-none px-2 py-1 rounded-md font-bold font-mono text-center"
+                      placeholder="بارم"
                     />
                   </div>
+                  <input
+                    type="text"
+                    value={rub.description}
+                    onChange={(e) => updateRubricInDrawer(rub.id, { description: e.target.value })}
+                    className="w-full glx field border-none px-2 py-1 rounded-md"
+                    placeholder="شرح کوتاه برای دبیـر تصحیح‌کننده..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeRubricInDrawer(rub.id)}
+                    className="text-[var(--color-danger)] font-bold hover:bg-[var(--color-danger-soft)]/40 px-2 py-1 rounded-md block text-micro transition-all"
+                  >
+                    پاک کردن این گزینه معیار
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                  {/* Image URL / media upload simulation */}
-                  <div className="space-y-2 glx p-3.5 rounded-2xl border">
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-bold block">
-                      تصویر یا نمودار پیوست سوال:
-                    </span>
-                    <div className="flex gap-2">
-                      <Input
-                        wrapperClassName="flex-1"
-                        size="sm"
-                        type="text"
-                        value={editingQuestion.imageUrl || ''}
-                        onChange={(e) =>
-                          setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })
-                        }
-                        placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
-                      />
-                      {editingQuestion.imageUrl && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingQuestion({ ...editingQuestion, imageUrl: undefined })
-                          }
-                          className="px-2 py-1 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro transition-all cursor-pointer font-bold shrink-0"
-                        >
-                          حذف
-                        </button>
-                      )}
-                    </div>
-                    {/* Simulative quick presets to populate mock images safely */}
-                    <div className="flex flex-wrap gap-1 mt-1 justify-start">
-                      <span className="text-micro text-[var(--color-text-tertiary)] font-semibold self-center ml-1">
-                        چند پیوست پیش‌فرض:
-                      </span>
-                      {[
-                        {
-                          label: 'سلول گیاهی',
-                          url: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=500&auto=format&fit=crop&q=60',
-                        },
-                        {
-                          label: 'نمودار اهرم‌ها',
-                          url: 'https://images.unsplash.com/photo-1632571401005-458e9d244591?w=500&auto=format&fit=crop&q=60',
-                        },
-                      ].map((preset, pIdx) => (
-                        <button
-                          key={pIdx}
-                          type="button"
-                          onClick={() =>
-                            setEditingQuestion({ ...editingQuestion, imageUrl: preset.url })
-                          }
-                          className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-md border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] transition-all text-micro font-bold"
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
+        {/* E. Subquestions parts list (Reading comprehension) */}
+        {editingQuestion.type === 'reading_comprehension' && (
+          <div className="space-y-3 bg-[var(--color-info-soft)]/30/40 p-4 rounded-2xl border border-[var(--color-info)]/20">
+            <div className="flex justify-between items-center border-b border-[var(--color-info)]/20 pb-1.5">
+              <span className="text-micro text-[var(--color-info)] font-extrabold">
+                زیرسوالات درک مطلب (مینی‌سوال‌ها):
+              </span>
+              <button
+                type="button"
+                onClick={addNewSubquestionPartInDrawer}
+                className="bg-[var(--color-info-soft)]/80 text-[var(--color-text-on-solid)] px-2.5 py-1 rounded-xl font-bold text-micro"
+              >
+                افزودن زیرسوال جدید
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {(editingQuestion.parts || []).map((part, pIdx) => (
+                <div
+                  key={part.id}
+                  className="pane p-3 rounded-xl border-[var(--color-info)]/20 space-y-2"
+                >
+                  <div className="flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
+                    <span>زیرسوال شماره {toPersianDigits(pIdx + 1)}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeSubquestionPartInDrawer(part.id)}
+                      className="text-[var(--color-danger)]"
+                    >
+                      حذف
+                    </button>
                   </div>
-
-                  {/* Specific template setups according to chosen type! */}
-
-                  {/* A. Choice Options edit area */}
-                  {['single_choice', 'multiple_choice', 'image_based'].includes(
-                    editingQuestion.type || '',
-                  ) && (
-                    <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
-                      <div className="flex justify-between items-center border-b border-[var(--color-accent-soft)]/60 pb-1.5">
-                        <span className="text-micro text-[var(--color-accent)] font-extrabold">
-                          گزینه‌های پاسخ و تخصیص کلید:
-                        </span>
-                        <button
-                          type="button"
-                          onClick={addNewOptionInDrawer}
-                          className="bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] px-2.5 py-1 rounded-lg hover:bg-[var(--color-glass-light-fill)] transition-all font-bold text-micro flex items-center gap-1.5"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>افزودن گزینه جدید</span>
-                        </button>
-                      </div>
-
-                      <div className="space-y-2.5">
-                        {(editingQuestion.options || []).map((opt, oIdx) => (
-                          <div
-                            key={opt.id}
-                            className="flex gap-2 items-center glx p-2 rounded-xl border"
-                          >
-                            {/* Correct trigger */}
-                            <button
-                              type="button"
-                              onClick={() => toggleOptionCorrectInDrawer(opt.id)}
-                              className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
-                                opt.isCorrect
-                                  ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
-                                  : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
-                              }`}
-                              title={
-                                opt.isCorrect
-                                  ? 'کلید پاسخ صحیح (غیرفعال‌سازی)'
-                                  : 'تبدیل به کلید پاسخ صحیح'
-                              }
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-
-                            {/* Input */}
-                            <input
-                              type="text"
-                              value={opt.text}
-                              onChange={(e) => updateOptionTextInDrawer(opt.id, e.target.value)}
-                              className="w-full bg-transparent border-none py-1 px-1.5 text-caption focus:ring-0 focus:outline-hidden"
-                              placeholder={`متن گزینه ${toPersianDigits(oIdx + 1)} را بنویسید...`}
-                            />
-
-                            {/* Image Option helper */}
-                            <input
-                              type="text"
-                              value={opt.imageUrl || ''}
-                              onChange={(e) => {
-                                const updatedOpts = (editingQuestion.options || []).map((o) =>
-                                  o.id === opt.id ? { ...o, imageUrl: e.target.value } : o,
-                                );
-                                setEditingQuestion({ ...editingQuestion, options: updatedOpts });
-                              }}
-                              className="glx border text-micro w-28 px-1 rounded-md"
-                              placeholder="آدرس تصویر گزینه"
-                            />
-
-                            {/* Remove Option */}
-                            <button
-                              type="button"
-                              onClick={() => removeOptionInDrawer(opt.id)}
-                              className="p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
-                              title="حذف این گزینه"
-                            >
-                              <Trash className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* B. True False setup */}
-                  {editingQuestion.type === 'true_false' && (
-                    <div className="space-y-2 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
-                      <span className="text-micro text-[var(--color-accent)] font-extrabold block">
-                        مشخص‌سازی کلید پاسخ درست:
-                      </span>
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingQuestion({ ...editingQuestion, correctAnswer: true })
-                          }
-                          className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
-                            editingQuestion.correctAnswer === true
-                              ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
-                              : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
-                          }`}
-                        >
-                          صحیح
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingQuestion({ ...editingQuestion, correctAnswer: false })
-                          }
-                          className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
-                            editingQuestion.correctAnswer === false
-                              ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
-                              : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
-                          }`}
-                        >
-                          غلط
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* C. Fill Blanks input tag builders */}
-                  {editingQuestion.type === 'fill_blank' && (
-                    <div className="space-y-3 bg-[var(--color-accent-soft)]/40 p-4 rounded-2xl border border-[var(--color-accent-soft)]/50">
-                      <span className="text-micro text-[var(--color-accent)] font-extrabold block">
-                        کلید واژه‌های صحیح برای پرکردن جاهای خالی (به ترتیب):
-                      </span>
-                      <div className="space-y-2">
-                        {(editingQuestion.correctFillBlanks || ['']).map((word, wIdx) => (
-                          <div
-                            key={wIdx}
-                            className="flex gap-2 items-center glx p-2 rounded-xl border"
-                          >
-                            <span className="text-[var(--color-text-tertiary)] font-bold font-mono">
-                              جای خالی ({toPersianDigits(wIdx + 1)}):
-                            </span>
-                            <input
-                              type="text"
-                              value={word}
-                              onChange={(e) => {
-                                const nextWords = [...(editingQuestion.correctFillBlanks || [])];
-                                nextWords[wIdx] = e.target.value;
-                                setEditingQuestion({
-                                  ...editingQuestion,
-                                  correctFillBlanks: nextWords,
-                                });
-                              }}
-                              className="w-full bg-transparent border-none text-caption focus:ring-0"
-                              placeholder="کلمه معتبر..."
-                            />
-                            <button
-                              type="button"
-                              aria-label={`حذف پاسخ معتبر شماره ${toPersianDigits(wIdx + 1)}`}
-                              title="حذف پاسخ"
-                              onClick={() => {
-                                const nextWords = (editingQuestion.correctFillBlanks || []).filter(
-                                  (_, i) => i !== wIdx,
-                                );
-                                setEditingQuestion({
-                                  ...editingQuestion,
-                                  correctFillBlanks: nextWords,
-                                });
-                              }}
-                              className="p-1 hover:brightness-105 text-[var(--color-danger)] rounded-lg"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextWords = [...(editingQuestion.correctFillBlanks || []), ''];
-                          setEditingQuestion({ ...editingQuestion, correctFillBlanks: nextWords });
-                        }}
-                        className="w-full glx text-[var(--color-accent)] text-micro py-1.5 rounded-xl border border-[var(--color-accent)]/20 font-bold hover:bg-[var(--color-accent-soft)] transition-all flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>افزودن جای خالی گمشده دیگر</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* D. Rubrics Metrics setup (Descriptive Long Answer) */}
-                  {editingQuestion.type === 'long_answer' && (
-                    <div className="space-y-3 bg-[var(--color-danger-soft)]/40 p-4 rounded-2xl border border-[var(--color-danger)]/10">
-                      <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-1.5">
-                        <span className="text-micro text-[var(--color-danger)] font-extrabold">
-                          معیارهای واگذاری بارم تصحیح:
-                        </span>
-                        <button
-                          type="button"
-                          onClick={addNewRubricInDrawer}
-                          className="bg-[var(--color-danger-solid)] text-[var(--color-text-on-solid)] px-2.5 py-1 rounded-lg hover:bg-[var(--color-glass-light-fill)] transition-all font-bold text-micro flex items-center gap-1"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>افزودن معیار بارم</span>
-                        </button>
-                      </div>
-
-                      <div className="space-y-3">
-                        {(editingQuestion.rubrics || []).map((rub) => (
-                          <div
-                            key={rub.id}
-                            className="glx p-3 rounded-xl border border-[var(--color-danger)]/10 space-y-2"
-                          >
-                            <div className="flex gap-2 justify-between">
-                              <input
-                                type="text"
-                                value={rub.title}
-                                onChange={(e) =>
-                                  updateRubricInDrawer(rub.id, { title: e.target.value })
-                                }
-                                className="w-full glx border-none px-2 py-1 rounded-md text-[var(--color-text-primary)] font-bold font-sans"
-                                placeholder="نام معیار (مثال: رسم درست نمودار)"
-                              />
-                              <input
-                                type="number"
-                                step="0.25"
-                                value={rub.maxPoints}
-                                onChange={(e) =>
-                                  updateRubricInDrawer(rub.id, {
-                                    maxPoints: Number(e.target.value),
-                                  })
-                                }
-                                className="w-20 glx border-none px-2 py-1 rounded-md font-bold font-mono text-center"
-                                placeholder="بارم"
-                              />
-                            </div>
-                            <input
-                              type="text"
-                              value={rub.description}
-                              onChange={(e) =>
-                                updateRubricInDrawer(rub.id, { description: e.target.value })
-                              }
-                              className="w-full glx border-none px-2 py-1 rounded-md"
-                              placeholder="شرح کوتاه برای دبیـر تصحیح‌کننده..."
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeRubricInDrawer(rub.id)}
-                              className="text-[var(--color-danger)] font-bold hover:bg-[var(--color-danger-soft)]/40 px-2 py-1 rounded-md block text-micro transition-all"
-                            >
-                              پاک کردن این گزینه معیار
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* E. Subquestions parts list (Reading comprehension) */}
-                  {editingQuestion.type === 'reading_comprehension' && (
-                    <div className="space-y-3 bg-[var(--color-info-soft)]/30/40 p-4 rounded-2xl border border-[var(--color-info)]/20">
-                      <div className="flex justify-between items-center border-b border-[var(--color-info)]/20 pb-1.5">
-                        <span className="text-micro text-[var(--color-info)] font-extrabold">
-                          زیرسوالات درک مطلب (مینی‌سوال‌ها):
-                        </span>
-                        <button
-                          type="button"
-                          onClick={addNewSubquestionPartInDrawer}
-                          className="bg-[var(--color-info-soft)]/80 text-[var(--color-text-on-solid)] px-2.5 py-1 rounded-xl font-bold text-micro"
-                        >
-                          افزودن زیرسوال جدید
-                        </button>
-                      </div>
-
-                      <div className="space-y-3">
-                        {(editingQuestion.parts || []).map((part, pIdx) => (
-                          <div
-                            key={part.id}
-                            className="glx p-3 rounded-xl border border-[var(--color-info)]/20 space-y-2"
-                          >
-                            <div className="flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
-                              <span>زیرسوال شماره {toPersianDigits(pIdx + 1)}</span>
-                              <button
-                                type="button"
-                                onClick={() => removeSubquestionPartInDrawer(part.id)}
-                                className="text-[var(--color-danger)]"
-                              >
-                                حذف
-                              </button>
-                            </div>
-                            <input
-                              type="text"
-                              value={part.text}
-                              onChange={(e) =>
-                                updateSubquestionTextInDrawer(part.id, e.target.value)
-                              }
-                              className="w-full glx border-none p-1.5 rounded-md font-semibold text-[var(--color-text-primary)]"
-                              placeholder="نمام متن مینی‌سوال..."
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <input
+                    type="text"
+                    value={part.text}
+                    onChange={(e) => updateSubquestionTextInDrawer(part.id, e.target.value)}
+                    className="w-full glx field border-none p-1.5 rounded-md font-semibold text-[var(--color-text-primary)]"
+                    placeholder="نمام متن مینی‌سوال..."
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Modal>
 
       {toastElement}

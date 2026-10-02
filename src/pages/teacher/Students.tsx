@@ -65,8 +65,7 @@ export default function Students() {
     () =>
       rawStudents.map((s, idx) => ({
         ...s,
-        status:
-          s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active'),
+        status: s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active'),
       })),
     [rawStudents],
   );
@@ -428,7 +427,7 @@ export default function Students() {
 
       {/* Primary Tab Headers */}
       <div
-        className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 glx glass-edge p-6 rounded-2xl"
+        className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 lens p-6 rounded-2xl"
         id="students-control-board"
       >
         <PageHeader
@@ -464,7 +463,7 @@ export default function Students() {
 
       {/* Multi-Filter Panel: Search, Grade, Class Group, and Status! */}
       <div
-        className="relative glx glass-edge p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center"
+        className="relative lens p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center"
         id="multi-filter-wrapper"
       >
         {/* Real-time search by name/nationalId */}
@@ -479,7 +478,7 @@ export default function Students() {
         {/* Selective Filters */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Grade filter */}
-          <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
+          <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
             <Filter className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
               پایه تحصیلی:
@@ -499,7 +498,7 @@ export default function Students() {
           </div>
 
           {/* Class Group filter */}
-          <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
+          <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
             <GraduationCap className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
               گروه کلاسی:
@@ -517,7 +516,7 @@ export default function Students() {
           </div>
 
           {/* Status filter */}
-          <div className="flex items-center gap-1.5 glx border px-3 py-1.5 rounded-xl">
+          <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
             <Activity className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
               وضعیت دانش‌آموز:
@@ -621,7 +620,7 @@ export default function Students() {
       </div>
 
       {/* Main Student Representation Area (Responsive Table vs Mobile Cards) */}
-      <div className="glx rounded-2xl overflow-hidden" id="students-grid-box">
+      <div className="lens rounded-2xl overflow-hidden" id="students-grid-box">
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
           <table className="w-full text-caption" id="students-desk-table">
@@ -797,7 +796,7 @@ export default function Students() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="glx border p-4.5 rounded-2xl flex flex-col gap-3 text-right text-caption"
+                    className="pane p-4.5 rounded-2xl flex flex-col gap-3 text-right text-caption"
                     id={`stud-card-${student.id}`}
                   >
                     <div className="flex justify-between items-start">
@@ -866,7 +865,7 @@ export default function Students() {
                       <button
                         type="button"
                         onClick={() => openEditModal(student)}
-                        className="px-3 py-1.5 glx-inset text-[var(--color-text-secondary)] rounded-xl font-bold text-micro"
+                        className="px-3 py-1.5 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl font-bold text-micro"
                       >
                         ویرایش
                       </button>
@@ -999,9 +998,7 @@ export default function Students() {
                 <button
                   key={s.val}
                   type="button"
-                  onClick={() =>
-                    setFormStatus(s.val as 'active' | 'suspended' | 'examining')
-                  }
+                  onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
                   className={`py-2 text-micro rounded-xl border font-bold transition-all cursor-pointer ${
                     formStatus === s.val
                       ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)] shadow-sm'
@@ -1063,7 +1060,7 @@ export default function Students() {
           triggerRef={logsTriggerRef}
         >
           <div className="space-y-5">
-            <div className="flex justify-between items-center glx p-4.5 rounded-2xl border">
+            <div className="flex justify-between items-center pane p-4.5 rounded-2xl">
               <div>
                 <p className="font-bold text-[var(--color-text-primary)] text-caption">
                   {activeLogStudent.name}
@@ -1092,7 +1089,7 @@ export default function Students() {
                     return (
                       <div
                         key={sub.id || index}
-                        className="p-3.5 glx border rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
+                        className="p-3.5 pane rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
                       >
                         <div>
                           <h5 className="font-bold text-[var(--color-text-secondary)] text-micro">

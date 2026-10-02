@@ -305,7 +305,7 @@ export default function SecureExamPortal({
             <button
               type="submit"
               disabled={loading || nationalId.length !== 10}
-              className="w-full rounded-xl bg-[var(--color-accent-solid)] disabled:bg-[var(--color-accent-soft)]/40 text-[var(--color-text-on-solid)] py-3 text-label font-black flex items-center justify-center gap-2"
+              className="w-full rounded-xl btn-glass btn-glass--primary py-3 text-label font-black flex items-center justify-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -339,7 +339,7 @@ export default function SecureExamPortal({
               type="button"
               onClick={handleLoadPayload}
               disabled={loading}
-              className="rounded-xl bg-[var(--color-accent-solid)] disabled:bg-[var(--color-accent-soft)]/40 text-[var(--color-text-on-solid)] px-6 py-3 text-label font-black inline-flex items-center gap-2"
+              className="rounded-xl btn-glass btn-glass--primary px-6 py-3 text-label font-black inline-flex items-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -406,7 +406,7 @@ export default function SecureExamPortal({
                   type="button"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="rounded-xl bg-[var(--color-success-solid)] disabled:bg-[var(--color-success-solid)] text-[var(--color-text-on-solid)] px-5 py-2.5 font-black inline-flex items-center gap-2 shadow-sm hover:bg-[var(--color-success-solid)]/90 cursor-pointer"
+                  className="rounded-xl btn-glass btn-glass--success px-5 py-2.5 font-black inline-flex items-center gap-2 cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   ارسال نهایی پاسخ‌ها

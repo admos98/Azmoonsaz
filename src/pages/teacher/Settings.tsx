@@ -25,7 +25,14 @@ import {
   Feather,
   Square,
 } from 'lucide-react';
-import { Card, Badge, Button, PageHeader, Toggle, ConfirmDialog } from '../../components/UIComponents';
+import {
+  Card,
+  Badge,
+  Button,
+  PageHeader,
+  Toggle,
+  ConfirmDialog,
+} from '../../components/UIComponents';
 import PreferenceSelector from '../../components/PreferenceSelector';
 import { useGlassTierPreference, type GlassTier } from '../../components/GlassTierApplier';
 import { useTheme, type ThemePreference } from '../../contexts/ThemeContext';
@@ -222,7 +229,7 @@ export default function Settings() {
               لبه‌های پنل، پس‌زمینه را مثل عدسی خم می‌کنند
             </p>
           </div>
-          <div className="glx glass-edge absolute start-6 top-1/2 h-16 w-44 -translate-y-1/2 rounded-xl">
+          <div className="pane absolute start-6 top-1/2 h-16 w-44 -translate-y-1/2 rounded-xl">
             <p className="grid h-full place-items-center text-caption font-bold text-[var(--color-text-primary)]">
               پنل شیشه‌ای زنده
             </p>

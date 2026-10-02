@@ -92,19 +92,20 @@ function TestBackdrop({ label }: { label: string }) {
 }
 
 const MATERIALS: Array<{ name: string; job: string; cls: string }> = [
-  { name: 'glx', job: 'quiet content surface — cards, panels, topbar', cls: 'glx glass-edge' },
   {
-    name: 'glx-strong',
-    job: 'modal / hero — the primary floating material',
-    cls: 'glx-strong glass-edge',
+    name: 'lens',
+    job: 'full material — bend + reflective rim + dim, top-level panels',
+    cls: 'lens',
   },
+  {
+    name: 'pane',
+    job: 'nested panel — rim, no bend, blur 2× lens',
+    cls: 'pane',
+  },
+  { name: 'frost', job: 'quiet box — static rim, no bend', cls: 'frost' },
+  { name: 'field', job: 'inputs & dropdowns — fill, no rim, no bend', cls: 'glx-strong field' },
   { name: 'glx-dark', job: 'brand field — ink surface with gold warmth', cls: 'glx-dark' },
   { name: 'glx-inset', job: 'concave — inputs, wells, nested controls', cls: 'glx-inset' },
-  {
-    name: 'glx-clear',
-    job: 'barely-there — over already-quiet content',
-    cls: 'glx-clear glass-edge',
-  },
 ];
 
 const ELEVATIONS = [
@@ -180,7 +181,7 @@ export default function FixtureGallery() {
           </div>
 
           {/* theme + motion controls */}
-          <div className="glx rounded-2xl p-4">
+          <div className="lens rounded-2xl p-4">
             <div className="flex flex-wrap gap-6">
               <div className="space-y-2">
                 <p className="text-label font-bold text-[var(--color-text-secondary)]">پوسته</p>
@@ -472,7 +473,7 @@ export default function FixtureGallery() {
 
       {toast ? (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-          <div className="glx-strong rounded-2xl px-4 py-3">
+          <div className="pane rounded-2xl px-4 py-3">
             <p className="text-caption text-[var(--color-text-primary)]">
               تغییرات با موفقیت ذخیره شد.
             </p>
