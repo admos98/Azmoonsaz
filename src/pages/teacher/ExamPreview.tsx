@@ -596,9 +596,7 @@ export default function ExamPreview({
               type="button"
               onClick={() => setViewMode('teacher')}
               className={`flex-1 lg:flex-none px-4 py-2 rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                viewMode === 'teacher'
-                  ? 'glx text-[var(--color-accent)] shadow-sm'
-                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+                viewMode === 'teacher' ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'
               }`}
             >
               <Settings2 className="w-4 h-4" />
@@ -608,9 +606,7 @@ export default function ExamPreview({
               type="button"
               onClick={() => setViewMode('student')}
               className={`flex-1 lg:flex-none px-4 py-2 rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                viewMode === 'student'
-                  ? 'glx text-[var(--color-accent)] shadow-sm'
-                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+                viewMode === 'student' ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'
               }`}
             >
               <Eye className="w-4 h-4" />
@@ -926,8 +922,8 @@ export default function ExamPreview({
                                       viewMode === 'teacher' && isCorrectOption
                                         ? 'bg-[var(--color-success-soft)]/70 border-[var(--color-success)]/30 text-[var(--color-success)] font-semibold shadow-3xs'
                                         : currentSelected && viewMode === 'student'
-                                          ? 'bg-[var(--color-accent-soft)] border-[var(--color-accent)]/20 text-[var(--color-accent)] font-semibold shadow-3xs'
-                                          : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)]'
+                                          ? 'btn-glass btn-glass--accent font-semibold'
+                                          : 'btn-glass btn-glass--bare'
                                     }`}
                                   >
                                     <div className="flex items-start gap-2.5">
@@ -937,8 +933,8 @@ export default function ExamPreview({
                                             className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
                                               (viewMode === 'teacher' && isCorrectOption) ||
                                               (viewMode === 'student' && currentSelected)
-                                                ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)]'
-                                                : 'border-[var(--color-glass-light-stroke)] glx'
+                                                ? 'btn-glass btn-glass--accent'
+                                                : 'btn-glass btn-glass--bare'
                                             }`}
                                           >
                                             <Check className="w-3 h-3" />
@@ -948,8 +944,8 @@ export default function ExamPreview({
                                             className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                                               (viewMode === 'teacher' && isCorrectOption) ||
                                               (viewMode === 'student' && currentSelected)
-                                                ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)]'
-                                                : 'border-[var(--color-glass-light-stroke)] glx'
+                                                ? 'btn-glass btn-glass--accent'
+                                                : 'btn-glass btn-glass--bare'
                                             }`}
                                           >
                                             <div className="w-1.5 h-1.5 rounded-full  bg-[var(--color-surface)]" />
@@ -1008,8 +1004,8 @@ export default function ExamPreview({
                                     viewMode === 'teacher' && isCorrect
                                       ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] shadow-3xs'
                                       : viewMode === 'student' && isSelected
-                                        ? 'bg-[var(--color-accent-soft)] border-[var(--color-accent)]/20 text-[var(--color-accent)] shadow-3xs'
-                                        : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)]'
+                                        ? 'btn-glass btn-glass--accent'
+                                        : 'btn-glass btn-glass--bare'
                                   }`}
                                 >
                                   <span>{item.label}</span>
@@ -1213,8 +1209,8 @@ export default function ExamPreview({
                                                 key={opt.id}
                                                 className={`p-2 rounded-lg border ${
                                                   viewMode === 'teacher' && isCorrect
-                                                    ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/20 text-[var(--color-success)] font-bold'
-                                                    : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                                                    ? 'btn-glass btn-glass--success font-bold'
+                                                    : 'btn-glass btn-glass--bare'
                                                 }`}
                                               >
                                                 <span>{opt.text}</span>
@@ -1248,8 +1244,8 @@ export default function ExamPreview({
                                           className={`px-2 py-0.5 rounded-md border text-center ${
                                             (opt.isCorrect || p.correctAnswer === opt.id) &&
                                             viewMode === 'teacher'
-                                              ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] font-bold font-mono'
-                                              : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                                              ? 'btn-glass btn-glass--success font-bold font-mono'
+                                              : 'btn-glass btn-glass--bare'
                                           }`}
                                         >
                                           {opt.text}
@@ -1733,9 +1729,7 @@ export default function ExamPreview({
                     type="button"
                     onClick={() => toggleOptionCorrectInDrawer(opt.id)}
                     className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
-                      opt.isCorrect
-                        ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
-                        : 'border-[var(--color-glass-light-stroke)] glx hover:brightness-105'
+                      opt.isCorrect ? 'btn-glass btn-glass--success' : 'btn-glass btn-glass--bare'
                     }`}
                     title={
                       opt.isCorrect ? 'کلید پاسخ صحیح (غیرفعال‌سازی)' : 'تبدیل به کلید پاسخ صحیح'
@@ -1794,8 +1788,8 @@ export default function ExamPreview({
                 onClick={() => setEditingQuestion({ ...editingQuestion, correctAnswer: true })}
                 className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
                   editingQuestion.correctAnswer === true
-                    ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
-                    : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                    ? 'btn-glass btn-glass--success'
+                    : 'btn-glass btn-glass--bare'
                 }`}
               >
                 صحیح
@@ -1805,8 +1799,8 @@ export default function ExamPreview({
                 onClick={() => setEditingQuestion({ ...editingQuestion, correctAnswer: false })}
                 className={`flex-1 p-2.5 rounded-xl font-bold border transition-all cursor-pointer text-center ${
                   editingQuestion.correctAnswer === false
-                    ? 'bg-[var(--color-success-solid)] border-[var(--color-success)]/20 text-[var(--color-text-on-solid)] shadow-xs'
-                    : 'glx border border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                    ? 'btn-glass btn-glass--success'
+                    : 'btn-glass btn-glass--bare'
                 }`}
               >
                 غلط

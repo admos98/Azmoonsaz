@@ -14,8 +14,6 @@ import { authService } from './services/api';
 import { getSupabasePublicClient } from './lib/supabasePublic';
 import { teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
-import { useEdgeLight } from './hooks/useEdgeLight';
-import { useMotionPreference } from './contexts/MotionContext';
 import { requestAppNavigation } from './hooks/useUnsavedChanges';
 import {
   loadDashboard,
@@ -34,16 +32,6 @@ function WorkspacePreferenceApplier() {
   useEffect(() => {
     document.documentElement.dataset.density = density;
   }, [density]);
-  return null;
-}
-
-/** Drives the glass rim. Rendered null, like WorkspacePreferenceApplier — it
- *  only exists to install its delegated pointer listener. Uses the RESOLVED
- *  motion value, not the raw preference: a "system" user whose OS requests
- *  reduced motion must also get a static rim. */
-function EdgeLightDriver() {
-  const { resolvedMotion } = useMotionPreference();
-  useEdgeLight(resolvedMotion !== 'reduce');
   return null;
 }
 
@@ -228,7 +216,9 @@ export default function App() {
       case 'profile':
         return (
           <TeacherProfile
-            initialTab={currentTab === 'profile' ? undefined : (currentTab as 'students' | 'classes')}
+            initialTab={
+              currentTab === 'profile' ? undefined : (currentTab as 'students' | 'classes')
+            }
             onNavigate={navigateTeacher}
           />
         );
@@ -332,7 +322,6 @@ export default function App() {
   return (
     <TeacherProvider initialTeacher={bootTeacher}>
       <WorkspacePreferenceApplier />
-      <EdgeLightDriver />
       {/* id="app-teacher-shell" is the anchor for the page-plate ::before
           (fixed, z-0). The shell itself must stay transparent so the plate
           reads; leaving the bg-[--color-page-bg] utility here would re-paint

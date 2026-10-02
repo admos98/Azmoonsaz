@@ -223,9 +223,9 @@ export default function StudentImportWizard({
             CSV، XLSX یا XLS · حداکثر ۱۰ مگابایت
           </span>
           {showFieldGuidance && (
-            <span className="relative max-w-xl rounded-xl bg-[var(--color-surface-secondary)] p-3 pl-10 text-micro leading-6 text-[var(--color-text-tertiary)]">
-              ستون‌های الزامی: نام، کد ملی، کلاس و پایه. نام کلاس باید با یکی از کلاس‌های
-              ثبت‌شده یکسان باشد؛ تلفن و ایمیل اختیاری‌اند.
+            <span className="relative max-w-xl rounded-xl frost p-3 pl-10 text-micro leading-6 text-[var(--color-text-tertiary)]">
+              ستون‌های الزامی: نام، کد ملی، کلاس و پایه. نام کلاس باید با یکی از کلاس‌های ثبت‌شده
+              یکسان باشد؛ تلفن و ایمیل اختیاری‌اند.
               <button
                 type="button"
                 aria-label="دیگر این راهنما نمایش داده نشود"
@@ -263,9 +263,7 @@ export default function StudentImportWizard({
         <div role="status" className="grid min-h-64 place-items-center text-center">
           <div>
             <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-ink)]" />
-            <p>
-              {step === 'parsing' ? 'در حال خواندن فایل…' : 'در حال ثبت دانش‌آموزان…'}
-            </p>
+            <p>{step === 'parsing' ? 'در حال خواندن فایل…' : 'در حال ثبت دانش‌آموزان…'}</p>
           </div>
         </div>
       )}
@@ -279,7 +277,7 @@ export default function StudentImportWizard({
           <p className="text-caption text-[var(--color-text-secondary)]">{fileName}</p>
           <div className="max-h-72 overflow-auto rounded-2xl border border-[var(--color-glass-light-stroke)]">
             <table className="w-full text-caption">
-              <thead className="sticky top-0 bg-[var(--color-surface)]">
+              <thead className="sticky top-0 chrome-blur">
                 <tr>
                   <th className="p-3">ردیف</th>
                   <th className="p-3">نام</th>
@@ -292,10 +290,7 @@ export default function StudentImportWizard({
                 {rows.map((row) => {
                   const issue = validation.issues.find((item) => item.row === row.row);
                   return (
-                    <tr
-                      key={row.row}
-                      className="border-t border-[var(--color-glass-light-stroke)]"
-                    >
+                    <tr key={row.row} className="border-t border-[var(--color-glass-light-stroke)]">
                       <td className="p-3">{row.row}</td>
                       <td className="p-3">{row.name || '—'}</td>
                       <td className="p-3" dir="ltr">

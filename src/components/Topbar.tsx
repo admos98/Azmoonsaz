@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Search, Bell } from 'lucide-react';
+import { Search, Bell, X } from 'lucide-react';
 import { useTeacher, useTeacherCollections } from '../contexts/TeacherContext';
 import { formatPersianDate, formatPersianNumber } from '../services/persianHelpers';
 import { TheMark } from './TheMark';
@@ -49,7 +49,11 @@ function TheMarkHamburger({
   const x = (size - pillWidth * baseScale) / 2;
   const rx = pillHeight / 2.5; // rounded corners
   const stretch = 0.74 / 0.65; // pill width -> full X-arm length
-  const morph = 'transform 0.5s cubic-bezier(0.25, 1, 0.35, 1)';
+  // opening morphs at 0.5s; CLOSING must beat the menu's 0.22s shrink-to-
+  // hamburger, or the X keeps unwinding after the panels are already gone
+  const morph = isOpen
+    ? 'transform 0.5s cubic-bezier(0.25, 1, 0.35, 1)'
+    : 'transform 0.2s cubic-bezier(0.25, 1, 0.35, 1)';
   const armAt = (i: number, angle: number) => ({
     transformBox: 'fill-box' as const,
     transformOrigin: 'center',
@@ -371,7 +375,7 @@ export default function Topbar({
                 openNotifications();
               }
             }}
-            className="drop relative z-[60] grid h-10 w-10 place-items-center rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+            className="btn-glass relative z-[60] grid h-10 w-10 place-items-center rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
             aria-label="اعلان‌ها"
             aria-expanded={showNotifications}
             aria-haspopup="true"
@@ -394,13 +398,12 @@ export default function Topbar({
             collapsed 40px pill is too small for the avatar to read. Desktop
             (lg+) gets the full panel-material pill. */}
         <div className="relative hidden lg:flex items-center">
-          {/* The lens bend lives on this pill's own backdrop-filter; during the
-              300ms width transition Chromium resamples it per frame — a 200×40
-              element, a third of a second, imperceptible cost. */}
+          {/* Rest = a perfect circle button that HOLDS the name panel behind
+              it; on hover the panel slides out from behind the circle (width
+              grows from under it) and merges back on leave. The circle never
+              moves, never resizes. */}
           <div
-            className={`drop relative h-10 rounded-full overflow-hidden cursor-pointer transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              avatarExpanded ? 'w-[200px]' : 'w-10'
-            }`}
+            className="relative h-10 w-10 cursor-pointer"
             onMouseEnter={() => {
               // Clear any pending collapse — stacked mouseleave timers used to
               // re-close the pill right after a re-enter (hover flicker).
@@ -416,43 +419,47 @@ export default function Topbar({
               }, 200);
             }}
           >
-            {/* Pic — pinned to the pill's static (left) edge: 1px border + 3px = the
-                exact gap that centers it in the collapsed 40px pill, and since the
-                pill grows rightward (left edge fixed) it never moves when expanded. */}
+            {/* Name panel — pane glass that emerges from behind the circle */}
+            <div
+              className={`absolute top-0 left-[14px] h-10 rounded-full overflow-hidden pane transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                avatarExpanded ? 'w-[200px]' : 'w-0'
+              }`}
+            >
+              <div
+                className="absolute inset-y-0 left-[36px] flex items-center whitespace-nowrap"
+                style={{ direction: 'rtl', textAlign: 'right' }}
+              >
+                <p className="text-caption font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
+                  {teacher?.name || '...'}
+                </p>
+              </div>
+            </div>
+
+            {/* The circle — fixed location, perfectly centered content */}
             <button
               type="button"
-              className="absolute left-[3px] top-[3px] w-8 h-8 rounded-full bg-[var(--color-accent-solid)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden"
+              className="btn-glass absolute left-0 top-0 z-10 grid h-10 w-10 place-items-center rounded-full cursor-pointer overflow-hidden"
               onClick={() => {
                 if (!avatarExpanded && showNotifications) closeNotifications();
                 setAvatarExpanded(!avatarExpanded);
               }}
               aria-label={teacher?.name || 'پروفایل'}
             >
-              {teacher?.avatarUrl ? (
-                <img
-                  loading="eager"
-                  decoding="async"
-                  src={teacher.avatarUrl}
-                  alt={teacher.name}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-caption">{teacher?.name?.[0] || '?'}</span>
-              )}
+              <span className="w-8 h-8 rounded-full bg-[var(--color-accent-solid)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden">
+                {teacher?.avatarUrl ? (
+                  <img
+                    loading="eager"
+                    decoding="async"
+                    src={teacher.avatarUrl}
+                    alt={teacher.name}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-caption">{teacher?.name?.[0] || '?'}</span>
+                )}
+              </span>
             </button>
-
-            {/* Name panel — absolute, fade only (no width/layout change, zero pic movement) */}
-            <div
-              className={`absolute left-[42px] top-1/2 -translate-y-1/2 transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                avatarExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              }`}
-              style={{ direction: 'rtl', textAlign: 'right' }}
-            >
-              <p className="text-caption font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
-                {teacher?.name || '...'}
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -474,7 +481,7 @@ export default function Topbar({
           }}
           onMouseEnter={() => setHamburgerHover(true)}
           onMouseLeave={() => setHamburgerHover(false)}
-          className="drop relative z-[70] p-2 transition-colors duration-300 cursor-pointer flex items-center justify-center w-11 h-11"
+          className="btn-glass btn-glass--bare btn-glass--still relative z-[70] p-2 transition-colors duration-300 cursor-pointer flex items-center justify-center w-11 h-11 rounded-full"
           aria-label="منوی اصلی"
           aria-expanded={showHamburgerMenu}
           aria-haspopup="true"
@@ -487,23 +494,37 @@ export default function Topbar({
             the pill opens the palette, which is the actual search field (the
             old in-pill input typed into a void). Same `drop` droplet
             material as the bell / menu icon buttons, no kbd hint. */}
-        <button
-          type="button"
-          ref={searchRef}
-          className={`drop relative h-11 flex items-center gap-2 overflow-hidden rounded-full transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer ${
-            showSearch ? 'w-[220px] px-4 justify-start' : 'w-11 justify-center p-0'
-          }`}
-          onClick={() => setCommandPaletteOpen(true)}
+        <div
+          className="relative h-11 w-11"
           onMouseEnter={() => !showHamburgerMenu && setShowSearch(true)}
           onMouseLeave={() => !showHamburgerMenu && setShowSearch(false)}
-          aria-label="جستجو — باز کردن پالت فرمان‌ها"
-          aria-expanded={showSearch}
         >
-          <Search className="w-4.5 h-4.5 shrink-0" />
-          {showSearch && (
-            <span className="text-caption md:text-label whitespace-nowrap">جستجو…</span>
-          )}
-        </button>
+          {/* Label panel — pane glass that slides out from behind the circle
+              and merges back into it on leave. The circle never moves. */}
+          <div
+            className={`absolute top-0 right-[14px] h-11 rounded-full overflow-hidden pane transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              showSearch ? 'w-[176px]' : 'w-0'
+            }`}
+          >
+            <span
+              className={`absolute inset-y-0 right-[46px] flex items-center whitespace-nowrap text-caption text-[var(--color-text-secondary)] transition-opacity duration-200 delay-150 ${
+                showSearch ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              جستجو…
+            </span>
+          </div>
+          <button
+            type="button"
+            ref={searchRef}
+            className="btn-glass absolute right-0 top-0 z-10 grid h-11 w-11 place-items-center rounded-full cursor-pointer text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            onClick={() => setCommandPaletteOpen(true)}
+            aria-label="جستجو — باز کردن پالت فرمان‌ها"
+            aria-expanded={showSearch}
+          >
+            <Search className="w-4.5 h-4.5 shrink-0" />
+          </button>
+        </div>
       </div>
 
       <CommandPalette
@@ -574,7 +595,7 @@ export default function Topbar({
                   onTabChange('profile');
                   closeMenu();
                 }}
-                className="p-3 min-w-[240px] w-full text-right cursor-pointer"
+                className="btn-glass btn-glass--bare p-3 min-w-[240px] w-full text-right cursor-pointer"
               >
                 <span className="flex items-center gap-3">
                   <span className="w-8 h-8 rounded-full bg-[var(--color-accent-solid)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center overflow-hidden">
@@ -621,8 +642,8 @@ export default function Topbar({
                   type="button"
                   className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
                     currentTab === 'dashboard'
-                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
+                      ? 'btn-glass btn-glass--gold'
+                      : 'btn-glass btn-glass--bare'
                   }`}
                   onClick={() => {
                     onTabChange('dashboard');
@@ -633,7 +654,7 @@ export default function Topbar({
                 </button>
                 <button
                   type="button"
-                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${currentTab === 'profile' ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'}`}
+                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${currentTab === 'profile' ? 'btn-glass btn-glass--gold' : 'btn-glass btn-glass--bare'}`}
                   onClick={() => {
                     onTabChange('profile');
                     closeMenu();
@@ -660,8 +681,8 @@ export default function Topbar({
                   type="button"
                   className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
                     currentTab.startsWith('exams')
-                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
+                      ? 'btn-glass btn-glass--gold'
+                      : 'btn-glass btn-glass--bare'
                   }`}
                   onClick={() => {
                     onTabChange('exams');
@@ -674,8 +695,8 @@ export default function Topbar({
                   type="button"
                   className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
                     currentTab === 'settings'
-                      ? 'bg-[var(--color-gold)]/20 text-[var(--color-text-primary)] shadow-inner'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gold)]/8 hover:text-[var(--color-text-primary)]'
+                      ? 'btn-glass btn-glass--gold'
+                      : 'btn-glass btn-glass--bare'
                   }`}
                   onClick={() => {
                     onTabChange('settings');
@@ -686,7 +707,7 @@ export default function Topbar({
                 </button>
                 <button
                   type="button"
-                  className="w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger-solid)]/10 cursor-pointer transition-all duration-300"
+                  className="w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold btn-glass btn-glass--danger cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onLogout();
                     closeMenu();
@@ -723,11 +744,21 @@ export default function Topbar({
                 <span className="text-caption font-bold text-[var(--color-text-primary)]">
                   اعلان‌ها
                 </span>
-                {unreadCount > 0 && (
-                  <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
-                    {formatPersianNumber(unreadCount.toString())} جدید
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
+                      {formatPersianNumber(unreadCount.toString())} جدید
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={closeNotifications}
+                    aria-label="بستن"
+                    className="btn-glass btn-glass--danger grid h-8 w-8 place-items-center rounded-full cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="max-h-60 overflow-y-auto text-caption divide-y divide-[var(--color-glass-light-stroke)]">
@@ -743,7 +774,7 @@ export default function Topbar({
                   notifications.map((n) => (
                     <div
                       key={n.id}
-                      className="p-3 hover:bg-[var(--color-accent-soft)]/30 transition-colors cursor-pointer rounded-md mx-2 my-1"
+                      className="btn-glass btn-glass--bare p-3 transition-colors cursor-pointer rounded-md mx-2 my-1"
                       role="button"
                       tabIndex={0}
                       aria-label={`${n.title}${readNotificationIds.includes(n.id) ? '، خوانده‌شده' : '، خوانده‌نشده'}`}

@@ -293,7 +293,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         {/* Equal operational panels */}
         <div className="contents">
           {/* 4. Upcoming and Active Exams Section */}
-          <div className="lens p-6 rounded-2xl" id="section-upcoming-exams">
+          <div className="lens p-6 rounded-3xl" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="text-label font-bold text-[var(--color-text-primary)]">
@@ -384,7 +384,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           </div>
 
           {/* 5. Recent Submissions Section */}
-          <div className="lens rounded-2xl overflow-hidden" id="section-recent-submissions">
+          <div className="lens rounded-3xl overflow-hidden" id="section-recent-submissions">
             <div className="p-6 border-b border-[var(--color-glass-light-stroke)] flex justify-between items-center">
               <div>
                 <h3 className="text-label font-bold text-[var(--color-text-primary)]">

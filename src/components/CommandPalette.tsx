@@ -279,7 +279,7 @@ export default function CommandPalette({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-glass-light-stroke)] transition-colors"
+                className="btn-glass btn-glass--danger grid h-9 w-9 shrink-0 place-items-center rounded-full cursor-pointer"
                 aria-label="بستن"
               >
                 <X className="h-4 w-4" />
@@ -302,7 +302,7 @@ export default function CommandPalette({
                       }}
                       onFocus={() => preloadTeacherPage(command.id)}
                       onClick={() => run(command)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right transition-colors ${isActive ? 'bg-[var(--color-accent-soft)]/70 text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-glass-light-stroke)]/50'}`}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right transition-colors ${isActive ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'}`}
                     >
                       <span
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${isActive ? 'border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]/60 text-[var(--color-accent)]' : 'border-transparent text-[var(--color-text-tertiary)]'}`}

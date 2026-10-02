@@ -521,7 +521,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                         onChange(opt.value);
                         setOpen(false);
                       }}
-                      className={`w-full text-right px-3.5 py-2.5 text-label font-bold transition-all ${value === opt.value ? 'bg-[var(--color-accent-soft)]/60 text-[var(--color-accent)]' : 'text-[var(--color-text-primary)] hover:bg-[var(--color-surface-secondary)]/70'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      className={`w-full text-right px-3.5 py-2.5 text-label font-bold transition-all ${value === opt.value ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       {opt.label}
                     </button>
@@ -794,7 +794,7 @@ export const Modal = ({
                   type="button"
                   onClick={onClose}
                   aria-label="بستن پنجره"
-                  className="p-1 rounded-lg text-[var(--color-text-tertiary)] hover:glx-inset hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                  className="btn-glass btn-glass--danger grid h-9 w-9 shrink-0 place-items-center rounded-full cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1415,11 +1415,13 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000, action
     return () => clearTimeout(timer);
   }, [duration, onClose]);
 
+  // family rule: a toast is a floating PANEL -> pane (rim + 2x blur), with the
+  // semantic colour carried by icon + text (colored glass, never a solid slab)
   const styles: Record<ToastProps['type'] & {}, string> = {
-    success: 'bg-[var(--color-success-solid)] text-[var(--color-text-on-solid)]',
-    error: 'bg-[var(--color-danger-solid)] text-[var(--color-text-on-solid)]',
-    warning: 'bg-[var(--color-warning-solid)] text-[var(--color-text-on-solid)]',
-    info: 'bg-[var(--color-ink)] text-[var(--color-text-on-solid)]',
+    success: 'text-[var(--color-success)]',
+    error: 'text-[var(--color-danger)]',
+    warning: 'text-[var(--color-warning)]',
+    info: 'text-[var(--color-text-primary)]',
   };
 
   const icons: Record<ToastProps['type'] & {}, React.ReactNode> = {
@@ -1431,7 +1433,7 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000, action
 
   return (
     <div
-      className={`pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-xl px-4 py-3 text-label font-bold shadow-lg transition-all duration-300 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+      className={`pointer-events-auto pane flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-xl px-4 py-3 text-label font-bold transition-all duration-300 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
       role={type === 'error' || type === 'warning' ? 'alert' : 'status'}
       aria-live={type === 'error' || type === 'warning' ? 'assertive' : 'polite'}
       aria-atomic="true"
@@ -1452,7 +1454,7 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000, action
           type="button"
           onClick={onClose}
           aria-label="بستن پیام"
-          className="mr-2 cursor-pointer"
+          className="btn-glass btn-glass--danger mr-2 grid h-7 w-7 shrink-0 place-items-center rounded-full cursor-pointer"
         >
           <X className="w-3.5 h-3.5" aria-hidden="true" />
         </button>

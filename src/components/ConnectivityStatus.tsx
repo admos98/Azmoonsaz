@@ -64,7 +64,7 @@ export default function ConnectivityStatus() {
         <button
           type="button"
           onClick={() => setState('online')}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl hover:bg-[var(--color-surface-secondary)]"
+          className="btn-glass btn-glass--bare grid h-11 w-11 shrink-0 place-items-center rounded-xl"
           aria-label="بستن پیام اتصال"
         >
           <X className="h-4 w-4" aria-hidden="true" />

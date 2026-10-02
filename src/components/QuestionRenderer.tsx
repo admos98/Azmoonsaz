@@ -158,8 +158,8 @@ export default function QuestionRenderer({
                   key={opt.id}
                   className={`p-3.5 rounded-xl border text-caption flex flex-col justify-between transition-all ${
                     showCorrectAnswers && isCorrect
-                      ? 'bg-[var(--color-success-soft)]/80 border-[var(--color-success)]/30 text-[var(--color-success)] font-medium shadow-2xs'
-                      : 'glx border text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)]'
+                      ? 'btn-glass btn-glass--success font-medium'
+                      : 'btn-glass btn-glass--bare'
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
@@ -217,8 +217,8 @@ export default function QuestionRenderer({
                 key={String(item.val)}
                 className={`flex-1 p-3.5 rounded-xl border text-center font-bold text-caption flex items-center justify-center gap-2 ${
                   showCorrectAnswers && isSelected
-                    ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] shadow-3xs'
-                    : 'glx border text-[var(--color-text-secondary)]'
+                    ? 'btn-glass btn-glass--success'
+                    : 'btn-glass btn-glass--bare'
                 }`}
               >
                 <span>{item.label}</span>
@@ -460,8 +460,8 @@ export default function QuestionRenderer({
                               key={opt.id}
                               className={`p-2.5 rounded-lg border ${
                                 showCorrectAnswers && isCorrect
-                                  ? 'bg-[var(--color-success-soft)]/60 border-[var(--color-success)]/20 text-[var(--color-success)] font-bold'
-                                  : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                                  ? 'btn-glass btn-glass--success font-bold'
+                                  : 'btn-glass btn-glass--bare'
                               }`}
                             >
                               {oIdx + 1}. {opt.text}
@@ -513,8 +513,8 @@ export default function QuestionRenderer({
                               key={opt.id}
                               className={`px-2.5 py-1 rounded-md border text-center ${
                                 isCorrect && showCorrectAnswers
-                                  ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)] font-bold font-mono'
-                                  : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                                  ? 'btn-glass btn-glass--success font-bold font-mono'
+                                  : 'btn-glass btn-glass--bare'
                               }`}
                             >
                               {opt.text}

@@ -236,7 +236,7 @@ export default function SecureExamPortal({
       dir="rtl"
       className="min-h-screen bg-[var(--color-on-dark-subtle)] text-[var(--color-text-primary)] flex flex-col"
     >
-      <header className="border-b border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]">
+      <header className="lens border-b border-[var(--color-glass-light-stroke)]">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-2xl bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] flex items-center justify-center">
@@ -272,7 +272,7 @@ export default function SecureExamPortal({
         {phase === 'login' && (
           <form
             onSubmit={handleStartSession}
-            className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-6 md:p-8 max-w-xl mx-auto space-y-5"
+            className="lens rounded-3xl p-6 md:p-8 max-w-xl mx-auto space-y-5"
           >
             <div className="text-center space-y-2">
               <Lock className="w-12 h-12 mx-auto text-[var(--color-accent)]" />
@@ -318,7 +318,7 @@ export default function SecureExamPortal({
         )}
 
         {phase === 'ready' && exam && student && (
-          <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-6 md:p-8 max-w-2xl mx-auto space-y-5 text-center">
+          <div className="lens rounded-3xl p-6 md:p-8 max-w-2xl mx-auto space-y-5 text-center">
             <CheckCircle2 className="w-14 h-14 text-[var(--color-success)] mx-auto" />
             <h2 className="font-black text-[var(--color-text-primary)]">سلام، {student.name}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-caption">
@@ -353,7 +353,7 @@ export default function SecureExamPortal({
 
         {phase === 'take' && exam && (
           <div className="space-y-5">
-            <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-10 shadow-xs">
+            <div className="pane rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-10">
               <div>
                 <h2 className="font-black text-[var(--color-text-primary)]">{exam.title}</h2>
                 <p
@@ -415,10 +415,7 @@ export default function SecureExamPortal({
             </div>
 
             {questions.map((question, index) => (
-              <section
-                key={question.id}
-                className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-5 md:p-6 space-y-4"
-              >
+              <section key={question.id} className="lens rounded-3xl p-5 md:p-6 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-glass-light-stroke)] pb-3">
                   <h3 className="font-black text-[var(--color-text-primary)] text-label">
                     سوال {toPersianDigits(index + 1)}: {question.title}
@@ -467,7 +464,7 @@ export default function SecureExamPortal({
                             className="w-10 h-10 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] ml-2"
                           />
                         )}
-                        <span className="font-mono text-micro text-[var(--color-text-tertiary)] font-bold bg-[var(--color-surface)] px-2 py-0.5 rounded-md border">
+                        <span className="font-mono text-micro text-[var(--color-text-tertiary)] font-bold frost px-2 py-0.5 rounded-md">
                           {option.id}
                         </span>
                       </button>
@@ -480,7 +477,7 @@ export default function SecureExamPortal({
         )}
 
         {phase === 'submitted' && (
-          <div className="bg-[var(--color-surface)] rounded-3xl border border-[var(--color-glass-light-stroke)] shadow-sm p-8 max-w-xl mx-auto text-center space-y-4">
+          <div className="lens rounded-3xl p-6 md:p-8 max-w-xl mx-auto text-center space-y-4">
             <CheckCircle2 className="w-16 h-16 text-[var(--color-success)] mx-auto" />
             <h2 className="font-black text-[var(--color-text-primary)] text-heading-3">
               پاسخ شما با موفقیت در سامانه ثبت نهایی شد.

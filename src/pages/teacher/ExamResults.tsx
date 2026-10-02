@@ -677,7 +677,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
             {/* Structured Submissions Tables */}
             <div
-              className="lens rounded-3xl p-4 md:p-6 overflow-hidden space-y-4"
+              className="lens rounded-3xl p-6 overflow-hidden space-y-4"
               id="section-structured-submissions"
             >
               <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-2">

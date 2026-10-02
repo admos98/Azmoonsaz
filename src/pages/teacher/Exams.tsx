@@ -234,7 +234,7 @@ export default function Exams({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="lens rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
+                className="lens rounded-3xl p-6 transition-all duration-300 flex flex-col justify-between space-y-4 relative overflow-hidden"
                 id={`exam-box-${ex.id}`}
               >
                 {/* Visual Status Indicator Strip on Top */}
@@ -254,7 +254,7 @@ export default function Exams({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <StatusBadge status={ex.status} />
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-mono font-bold select-all glx px-2 py-0.5 rounded-md border">
+                    <span className="text-micro text-[var(--color-text-tertiary)] font-mono font-bold select-all frost px-2 py-0.5 rounded-md">
                       کد ورود: {ex.examCode}
                     </span>
                   </div>

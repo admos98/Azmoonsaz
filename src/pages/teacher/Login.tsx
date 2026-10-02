@@ -127,7 +127,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             <p className="text-label text-[var(--color-text-secondary)] mt-1">پنل مدیریت اساتید</p>
           </div>
 
-          {/* Card — glx glass surface */}
+          {/* Card — lens glass surface */}
           <div className="lens rounded-3xl p-8">
             {/* View: Enter Email */}
             {view === 'email' && (

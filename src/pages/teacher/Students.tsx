@@ -620,11 +620,11 @@ export default function Students() {
       </div>
 
       {/* Main Student Representation Area (Responsive Table vs Mobile Cards) */}
-      <div className="lens rounded-2xl overflow-hidden" id="students-grid-box">
+      <div className="lens rounded-3xl overflow-hidden" id="students-grid-box">
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
           <table className="w-full text-caption" id="students-desk-table">
-            <thead className="glx border-b text-[var(--color-text-primary)]">
+            <thead className="border-b text-[var(--color-text-primary)]">
               <tr>
                 <th className="p-4 font-bold text-right">نام و نام خانوادگی</th>
                 <th className="p-4 font-bold text-right">کد ملی (ماسک زنده)</th>
@@ -669,7 +669,7 @@ export default function Students() {
 
                         {/* Masked National ID: ۱۲۳****۸۹۰ */}
                         <td className="p-4">
-                          <span className="font-mono glx px-2 py-1 rounded-md border select-all font-semibold text-[var(--color-text-secondary)] text-micro hover:text-[var(--color-accent)] transition-colors">
+                          <span className="font-mono frost px-2 py-1 rounded-md select-all font-semibold text-[var(--color-text-secondary)] text-micro hover:text-[var(--color-accent)] transition-colors">
                             {maskNationalIdPersian(student.nationalId)}
                           </span>
                         </td>
@@ -1001,8 +1001,8 @@ export default function Students() {
                   onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
                   className={`py-2 text-micro rounded-xl border font-bold transition-all cursor-pointer ${
                     formStatus === s.val
-                      ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)] shadow-sm'
-                      : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
+                      ? 'btn-glass btn-glass--accent'
+                      : 'btn-glass btn-glass--bare'
                   }`}
                 >
                   {s.label}

@@ -37,7 +37,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
           className="min-h-screen flex items-center justify-center bg-[var(--color-glass-light-fill)] p-8"
           dir="rtl"
         >
-          <div className="max-w-md w-full  bg-[var(--color-surface)] rounded-xl shadow-lg border border-[var(--color-danger)]/20 p-8 text-center">
+          <div className="max-w-md w-full lens rounded-3xl p-8 text-center">
             <div className="text-4xl mb-4">⚠️</div>
             <h2 className="text-heading-2 font-bold text-[var(--color-text-primary)] mb-2">
               خطایی رخ داد
@@ -56,7 +56,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             <button
               type="button"
               onClick={this.handleReset}
-              className="px-6 py-2 bg-[var(--color-info-soft)] text-[var(--color-text-on-solid)] rounded-lg hover:bg-[var(--color-info-soft)] transition-colors font-medium"
+              className="btn-glass btn-glass--primary px-6 py-2 rounded-xl font-medium cursor-pointer"
             >
               تلاش مجدد
             </button>

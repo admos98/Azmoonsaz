@@ -400,7 +400,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
   return (
     <div className="space-y-6 text-right" dir="rtl" id="exam-settings-subview">
       {/* 1. Header and navigation row */}
-      <div className="lens px-6 py-5 rounded-3xl">
+      <div className="lens p-6 rounded-3xl">
         <PageHeader
           level={2}
           title="تنظیمات و انتشار آزمون"
@@ -610,9 +610,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                       <div className="flex items-center gap-2">
                         <div
                           className={`w-4 h-4 rounded-md border flex items-center justify-center ${
-                            isChecked
-                              ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)]'
-                              : 'border-[var(--color-glass-light-stroke)] glx'
+                            isChecked ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'
                           }`}
                         >
                           {isChecked && <Check className="w-3 h-3" />}
@@ -688,8 +686,8 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                                 <div
                                   className={`w-3.5 h-3.5 rounded-md border flex items-center justify-center ${
                                     isChecked
-                                      ? 'bg-[var(--color-accent-solid)] border-[var(--color-accent)]/20 text-[var(--color-text-on-solid)]'
-                                      : 'border-[var(--color-glass-light-stroke)] glx'
+                                      ? 'btn-glass btn-glass--accent'
+                                      : 'btn-glass btn-glass--bare'
                                   }`}
                                 >
                                   {isChecked && <Check className="w-2.5 h-2.5" />}
@@ -908,9 +906,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
               {/* Beast Mode high security system */}
               <div
                 className={`p-4.5 rounded-2xl border transition-all ${
-                  beastMode
-                    ? 'bg-[var(--color-danger-soft)]/40 border-[var(--color-danger)]/20 text-[var(--color-danger)] shadow-sm'
-                    : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)]'
+                  beastMode ? 'btn-glass btn-glass--danger' : 'btn-glass btn-glass--bare'
                 }`}
               >
                 <div className="flex items-start gap-4">
@@ -1095,7 +1091,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
         {/* Left Column (1/3 width) - Final Review, Validation Alerts & Publishing Link Panel */}
         <div className="col-span-1 space-y-5">
           {/* SECTION 6: پنل مرور نهایی */}
-          <div className="lens p-5 rounded-3xl space-y-4">
+          <div className="lens p-6 rounded-3xl space-y-4">
             <h3 className="text-caption font-black text-[var(--color-text-primary)] pb-2.5 border-b border-[var(--color-glass-light-stroke)] flex items-center gap-1.5">
               <Compass className="w-5 h-5 text-[var(--color-accent)]" />
               <span>مرور نهایی برگه</span>
@@ -1224,7 +1220,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
           </div>
 
           {/* SECTION 7: بررسی عیوب و اعتبارسنجی قبل انتشار */}
-          <div className="lens p-5 rounded-3xl space-y-3.5">
+          <div className="lens p-6 rounded-3xl space-y-3.5">
             <h4 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-1.5 pb-2 border-b border-[var(--color-glass-light-stroke)]">
               <ShieldAlert className="w-4.5 h-4.5 text-[var(--color-text-tertiary)]" />
               <span>پایش عیوب طراحی (اعتبارسنجی)</span>
@@ -1261,7 +1257,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
           </div>
 
           {/* SECTION 8: عملیات انتشار و ساخت لینک */}
-          <div className="lens p-5 rounded-3xl border-[var(--color-accent)]/20/80 space-y-4">
+          <div className="lens p-6 rounded-3xl border-[var(--color-accent)]/20/80 space-y-4">
             <h3 className="text-caption font-black text-[var(--color-text-primary)] pb-2 border-b border-[var(--color-accent)]/10/50 flex items-center gap-1.5">
               <Play className="w-4.5 h-4.5 text-[var(--color-accent)]" />
               <span>انتشار نهایی برگه آزمون</span>

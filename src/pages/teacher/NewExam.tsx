@@ -143,7 +143,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   };
 
   return (
-    <div className="lens rounded-2xl overflow-hidden" id="new-exam-wizard-wrapper">
+    <div className="lens rounded-3xl overflow-hidden" id="new-exam-wizard-wrapper">
       {/* Header and Back Button */}
       <div className="px-6 py-5 pane border-b border-[var(--color-glass-light-stroke)] flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -278,8 +278,8 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
                     onClick={() => handleClassToggle(cg.id)}
                     className={`px-3 py-1.5 rounded-xl border text-caption font-bold transition-all cursor-pointer ${
                       selectedClasses.includes(cg.id)
-                        ? 'bg-[var(--color-accent-soft)] border-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                        : 'glx border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)]'
+                        ? 'btn-glass btn-glass--accent'
+                        : 'btn-glass btn-glass--bare'
                     }`}
                   >
                     {cg.name} ({cg.grade})
@@ -332,9 +332,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
                     key={q.id}
                     onClick={() => handleQuestionToggle(q.id)}
                     className={`p-4 rounded-xl border text-right transition-all cursor-pointer flex gap-4 items-center ${
-                      checked
-                        ? 'bg-[var(--color-accent-soft)]/40 border-[var(--color-accent)]/20'
-                        : 'glx border border-[var(--color-glass-light-stroke)] hover:border-[var(--color-glass-light-stroke)]'
+                      checked ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'
                     }`}
                   >
                     <input
@@ -405,14 +403,14 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
                 <button
                   type="button"
                   onClick={() => setMode('official')}
-                  className={`p-2 rounded-xl border text-center cursor-pointer ${mode === 'official' ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/30 text-[var(--color-accent)]' : 'glx text-[var(--color-text-secondary)]'}`}
+                  className={`p-2 rounded-xl border text-center cursor-pointer ${mode === 'official' ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'}`}
                 >
                   رسمی (نهایی)
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('practice')}
-                  className={`p-2 rounded-xl border text-center cursor-pointer ${mode === 'practice' ? 'border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/30 text-[var(--color-accent)]' : 'glx text-[var(--color-text-secondary)]'}`}
+                  className={`p-2 rounded-xl border text-center cursor-pointer ${mode === 'practice' ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'}`}
                 >
                   تمرینی (مستمر)
                 </button>

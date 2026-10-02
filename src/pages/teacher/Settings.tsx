@@ -203,7 +203,7 @@ export default function Settings() {
             is clicked: over the flat page background, stripping blur changes
             almost nothing (blur of a flat colour is the same colour) — which is
             why the selector used to feel dead. The stage puts a saturated,
-            high-detail backdrop under a REAL .glx panel, so blur (lite/off
+            high-detail backdrop under a REAL a REAL lens panel, so blur (lite/off
             strip it), the lens bend (full only) and the rim light can all be
             judged at a glance, in the current theme. The field is built from
             brand-coloured light BLOBS instead of the old harsh stripes: still

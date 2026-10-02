@@ -712,9 +712,7 @@ export default function Questions() {
               type="button"
               onClick={() => setViewMode('card')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'card'
-                  ? 'glx text-[var(--color-accent)] shadow-xs'
-                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                viewMode === 'card' ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'
               }`}
               title="نمایش کارتی بخر"
             >
@@ -724,9 +722,7 @@ export default function Questions() {
               type="button"
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'table'
-                  ? 'glx text-[var(--color-accent)] shadow-xs'
-                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                viewMode === 'table' ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'
               }`}
               title="نمایش جدولی منظم"
             >
@@ -750,7 +746,7 @@ export default function Questions() {
       </div>
 
       {/* COMPREHENSIVE MULTI-FILTER PANEL */}
-      <div className="lens p-5 rounded-3xl space-y-4" id="filters-container">
+      <div className="lens p-6 rounded-3xl space-y-4" id="filters-container">
         <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-2.5 mb-2">
           <Sliders className="w-4 h-4 text-[var(--color-accent)]" />
           <h4 className="text-caption font-bold text-[var(--color-text-secondary)]">
@@ -1020,7 +1016,7 @@ export default function Questions() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
-                      className="lens rounded-3xl p-5 border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
+                      className="lens rounded-3xl p-6 border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
                       id={`card-q-${q.id}`}
                     >
                       <div className="space-y-3.5">
@@ -1144,7 +1140,7 @@ export default function Questions() {
                     className="w-full text-caption text-[var(--color-text-secondary)]"
                     id="questions-table"
                   >
-                    <thead className="glx border-b text-[var(--color-text-tertiary)]">
+                    <thead className="border-b text-[var(--color-text-tertiary)]">
                       <tr>
                         <th className="p-4 font-bold text-right">خلاصه متن سوال</th>
                         <th className="p-4 font-bold text-right">پایه</th>
@@ -1725,8 +1721,8 @@ export default function Questions() {
                   <label
                     className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
                       formCorrectTrueFalse === true
-                        ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]'
-                        : 'glx border-[var(--color-glass-light-stroke)]'
+                        ? 'btn-glass btn-glass--success'
+                        : 'btn-glass btn-glass--bare'
                     }`}
                   >
                     <input
@@ -1742,8 +1738,8 @@ export default function Questions() {
                   <label
                     className={`flex-1 p-3 rounded-xl border text-center font-bold cursor-pointer transition-all ${
                       formCorrectTrueFalse === false
-                        ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/30 text-[var(--color-success)]'
-                        : 'glx border-[var(--color-glass-light-stroke)]'
+                        ? 'btn-glass btn-glass--success'
+                        : 'btn-glass btn-glass--bare'
                     }`}
                   >
                     <input
@@ -1812,7 +1808,7 @@ export default function Questions() {
 
             {/* Matching matchingPairs builder */}
             {formType === 'matching' && (
-              <div className="glx p-4.5 rounded-2xl border space-y-3">
+              <div className="pane p-4.5 rounded-2xl space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="font-bold text-[var(--color-text-primary)] text-micro">
                     پلاس لغات تطبیقی وصل‌کردنی
@@ -2045,7 +2041,7 @@ export default function Questions() {
 
             {/* Reading comprehension & Cloze parts dynamic details */}
             {(formType === 'reading_comprehension' || formType === 'cloze') && (
-              <div className="glx p-4.5 rounded-2xl border space-y-3">
+              <div className="pane p-4.5 rounded-2xl space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="font-bold text-[var(--color-text-primary)] text-micro">
                     بخش‌ها و زیرسوالات تابعه ({formParts.length} مینی‌سوال)

@@ -87,12 +87,9 @@ describe('glass material contract (pixel-audit gates)', () => {
 
   it('grain is RETIRED — Apple glass is perfectly smooth (user: "i hate the grain … apple never uses grain")', () => {
     expect(css).not.toMatch(/--glass-grain/);
-    // grain used to ride the feathered fill layer; the glint was retired too
-    const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
-    expect(after).not.toMatch(/var\(--glass-grain\)/);
-    // the diagonal `112deg` glint was also retired — it painted a stripe
+    // the diagonal `112deg` glint was retired too — it painted a stripe
     // inside every panel (~+16 lum, measured in crop image_277b16.png)
-    expect(after).not.toMatch(/linear-gradient\(\s*112deg/);
+    expect(css).not.toMatch(/linear-gradient\(\s*112deg/);
   });
 
   it('light: saturation stays iOS-subtle (1.4–1.6; 1.7 read as candy next to the page)', () => {
@@ -122,27 +119,14 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(token('--glass-sh-a', ":root[data-theme='dark']")!)).toBe(0);
   });
 
-  it('rim crisp ring scales with panel size but stays hairline (max 2px; 2.2px+ read as a border)', () => {
-    // --glass-edge-t is a % of the panel's inline size: chip ~1px, card ~1.9px,
-    // hero/topbar clamps to the 2px cap — visible weight ladder, still hairline
-    // relative to the surface (2px on a 1300px panel = 0.15% of its width).
-    const max = token('--glass-edge-max');
-    expect(parseFloat(max!)).toBeLessThanOrEqual(2);
-    const darkMax = token('--glass-edge-max', ":root[data-theme='dark']");
-    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(2);
-    // both themes carry a relative thickness, not a fixed px
-    expect(parseFloat(token('--glass-edge-t')!)).toBeGreaterThan(0.2);
-    expect(parseFloat(token('--glass-edge-t', ":root[data-theme='dark']")!)).toBeGreaterThan(0.2);
-  });
-
-  it('rim luminance ramp: crisp ring + soft fade that melts into the panel', () => {
+  it('rim luminance ramp: soft fade that melts into the panel (ring machinery retired)', () => {
     // the soft fade rides the unmasked element shadow (masked layers would
-    // clip it exactly where it must show)
-    expect(css).toMatch(
-      /inset 0 0 1[46]px -6px rgb\(var\(--glass-edge-color\) \/ var\(--glass-edge-fade\)\)/,
-    );
-    const fade = token('--glass-edge-fade');
-    expect(parseFloat(fade!)).toBeGreaterThan(0);
+    // clip it exactly where it must show); the painted ring (.glass-edge) is
+    // retired — rims come from the lens filter's saturate pass
+    expect(css).not.toMatch(/\.glass-edge/);
+    expect(css).toMatch(/inset 0 0 1[46]px -6px rgb\(255 255 255 \/ var\(--glass-rim-fade\)\)/);
+    expect(parseFloat(token('--glass-rim-fade')!)).toBeGreaterThan(0);
+    expect(parseFloat(token('--glass-rim-fade', ":root[data-theme='dark']")!)).toBeGreaterThan(0);
   });
 
   it('dark: glass DIMS the backdrop like smoked glass (p-tint luminance <= 30) — the old 52-49-66 @ 0.56 was the gray putty the user photographed', () => {
@@ -184,62 +168,19 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(parseFloat(v!)).toBeLessThanOrEqual(0.44);
   });
 
-  it('rim is additive light (plus-lighter) so the specular never flattens', () => {
-    expect(css).toMatch(/\.glass-edge::before\s*\{[^}]*mix-blend-mode:\s*plus-lighter/s);
-  });
-
-  it('rim shows the REFRACTED BACKGROUND + ONE dominant corner catch + an INK shadow line', () => {
-    // the fixed per-edge tint ring (the "static line with static colour") is gone
-    expect(token('--glass-edge-base')).toBe('0.42');
-    expect(token('--glass-edge-base', ":root[data-theme='dark']")).toBe('0.24');
-    // the single top-centre searchlight is retired
-    expect(css).not.toMatch(/140% 90% at 50% 0%/);
-    // ONE tight dominant corner catch on the ring (Apple: a single light source)
-    expect(css).toMatch(/26% 34% at 92% 0%/);
-    // + the ink hairline (total internal reflection) on the shadowed side —
-    // the white band needs its dark counterpart to read as glass
-    expect(css).toMatch(/var\(--glass-edge-ink\) \/ var\(--glass-edge-ink-a\)/);
-    expect(token('--glass-edge-ink-a', ':root')).toBe('0.18');
-    expect(token('--glass-edge-ink-a', ":root[data-theme='dark']")).toBe('0.06');
-    // + the WIDE soft half of the single light glows INSIDE the fill (::after);
-    // the echo-corner token is RETIRED (two painted sources read as decoration)
-    const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
-    expect(after).toMatch(/var\(--glass-corner-a\)/);
-    expect(token('--glass-corner-b', ':root')).toBeNull();
-    // corner light colour is a token (warm in light, cool in dark), not static white
-    expect(token('--glass-edge-corner')).toBe('255 248 231');
-    expect(token('--glass-edge-corner', ":root[data-theme='dark']")).toBe('236 242 255');
-    // no fixed tint tokens, no resting linear rim, anywhere
+  it('painted rim machinery stays retired — rims come from the lens filter', () => {
+    // no per-edge tint ring, no searchlight, no corner/ink paint tokens
     expect(css).not.toMatch(/--glass-edge-tint-/);
     expect(css).not.toMatch(/glass-edge-mid-f|glass-edge-bot-f/);
-    const before = css.match(/\.glass-edge::before\s*\{[^}]*\}/s)![0];
-    expect(before).not.toMatch(/linear-gradient\(\s*to bottom/);
-    // a blurred line reads as a gray hairline, not light — the rim never blurs.
-    // Scoped to the rim block: other layers (the hero watermark) legitimately
-    // carry their own small blur.
-    const rimBlock = css.match(/\.glass-edge::before\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(rimBlock).not.toMatch(/filter:\s*blur/);
+    expect(css).not.toMatch(/140% 90% at 50% 0%/);
+    // static glint + fill-feather tokens died with the ::after layer
+    expect(css).not.toMatch(/--glass-glint-a/);
+    expect(css).not.toMatch(/--glass-fill-fade|--glass-fill-edge/);
   });
 
-  it('the rim band stays crisp and stays CLEAR on sides/bottom', () => {
-    const max = token('--glass-edge-max');
-    expect(parseFloat(max!)).toBeLessThanOrEqual(2.5);
-    const darkMax = token('--glass-edge-max', ":root[data-theme='dark']");
-    expect(parseFloat(darkMax!)).toBeLessThanOrEqual(2.5);
-    // uniform band mask (no directional feather) — sides show the lens output
-    expect(css).toMatch(
-      /\.glass-edge::before\s*\{[^}]*mask:\s*linear-gradient\(#000 0 0\) content-box,\s*linear-gradient\(#000 0 0\)/s,
-    );
-  });
-
-  it('panel fill feathers out at the rim so the edge shows bent background', () => {
-    const after = css.match(/\.glass-edge::after\s*\{[^}]*\}/s)![0];
-    expect(after).toMatch(/z-index:\s*-1/); // above filtered backdrop, below content
-    expect(after).toMatch(/mask-composite:\s*intersect/); // 2D feather
-    expect(after).not.toMatch(/backdrop-filter/); // paint only — one filter per panel
-    expect(token('--glass-fill-fade')).not.toBeNull();
-    // the element body is clear so the feather actually reveals the page
-    expect(css).toMatch(/\.glass-edge\s*\{\s*background:\s*transparent;/);
+  it('glx-strong keeps its modal fill boost through derived alphas', () => {
+    // (the ::after fill-feather left with .glass-edge: one fill, one filter,
+    // on the element itself)
     // glx-strong keeps its modal fill boost through derived alphas — and the
     // boost is a TOKEN so dark can take more: at 0.18 a white heading behind
     // a dark menu transmitted as a blurred band (+83 lum over the floor).
@@ -252,8 +193,6 @@ describe('glass material contract (pixel-audit gates)', () => {
     // dark strong-tier body blur: the 22px experiment still let the band
     // through (+44); 26px cuts it to +35. Light keeps the 12-20px chrome band.
     expect(token('--glass-p-blur', ":root[data-theme='dark']")).toBe('26px');
-    // dark feather floor — the rim band must not hand bright backdrop back
-    expect(token('--glass-fill-edge', ":root[data-theme='dark']")).toBe('0.7');
     // dark hero slab fix: no opaque pane paint, no menu-density boost — the
     // plate bloom must compose through (measured +41 lum at the bloom zone)
     expect(token('--color-hero-pane', ":root[data-theme='dark']")).toBe('transparent');
@@ -267,10 +206,6 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--glass-p-ba', ":root[data-theme='dark']")).toBe('0');
     // off tier restores a visible border for solid panels
     expect(token('--glass-p-ba', ":root[data-glass='off']")).toBe('0.35');
-    // and disables the feather (a solid fill must not have a soft fringe)
-    expect(css).toMatch(
-      /:root\[data-glass='off'\] \.glass-edge::after\s*\{[^}]*mask-image:\s*none/s,
-    );
   });
 
   it('inner bloom — light spills inside under the top rim (paint-only)', () => {
@@ -384,9 +319,6 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(
       /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens\)\s*\{[^}]*backdrop-filter:\s*none/s,
     );
-    expect(css).toMatch(
-      /:is\(\.glx, \.glx-strong, \.glx-dark, \.lens\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens\)\.glass-edge::before\s*\{[^}]*content:\s*none/s,
-    );
     // the SANCTIONED nested materials never get de-nested
     const denest = cssRaw.slice(cssRaw.indexOf('De-nest'), cssRaw.indexOf('Ink glass'));
     expect(denest).toContain(':is(.glx, .glx-strong, .glx-dark, .lens)');
@@ -448,20 +380,6 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(html).not.toMatch(/<filter id="lg-lens"[^>]*width="1[24]0%"/);
     // exactly one definition — a duplicate id silently shadows the first
     expect(html.match(/id="lg-lens"/g)!.length).toBe(1);
-  });
-
-  it('the fill survives at the border — the feather floors, it does not erase', () => {
-    // The ::after mask used to bottom out at rgb(0 0 0 / 0), fully erasing the
-    // outermost 7-10px of fill on all four sides. Light panels then read as
-    // transparent with a ring floating on them. The outermost stop floors at
-    // --glass-fill-edge so the edge stays part of the material.
-    const after = css.match(/\.glass-edge::after\s*\{[\s\S]*?\n\}/s)![0];
-    const mask = after.match(/-webkit-mask-image:[\s\S]*?;/s)![0];
-    expect(mask).toMatch(/rgb\(0 0 0 \/ var\(--glass-fill-edge\)\)/);
-    // and the floor is a real value in both themes, not zero
-    const edge = token('--glass-fill-edge');
-    expect(edge).not.toBeNull();
-    expect(parseFloat(edge!)).toBeGreaterThan(0);
   });
 
   it('glx surfaces carry the text micro-shadow ambient', () => {
@@ -569,11 +487,46 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(btn).toMatch(/backdrop-filter: blur\(var\(--btn-blur\)\) saturate\(1\.4\)/);
     expect(btn).toMatch(/color: var\(--color-text-primary\)/);
     expect(btn).not.toMatch(/url\(/);
-    expect(css).toMatch(/\.btn-glass:hover\s*\{[^}]*brightness/);
+    expect(css).toMatch(/\.btn-glass:hover,\s*\.btn-glass:focus-visible\s*\{[^}]*brightness/s);
     expect(css).toMatch(/\.btn-glass:disabled\s*\{[^}]*opacity/);
-    for (const v of ['primary', 'danger', 'success', 'gold', 'quiet', 'bare']) {
+    for (const v of ['primary', 'danger', 'success', 'gold', 'quiet', 'bare', 'accent']) {
       expect(css).toMatch(new RegExp(`\\.btn-glass--${v} \\{`));
     }
+
+    // ── the normal button physics (polish pass 1, user spec) ──
+    // registered custom properties so the angle TWEENS instead of snapping
+    expect(css).toMatch(/@property --btn-light-angle\s*{\s*syntax:\s*'<angle>'/);
+    expect(css).toMatch(/@property --btn-tint\s*{\s*syntax:\s*'<color>'/);
+    // hover: the light makes one full 360° circuit per 3s — size never changes
+    expect(css).toMatch(
+      /\.btn-glass:hover,\s*\.btn-glass:focus-visible\s*\{[^}]*animation:\s*btn-light-round 3s linear infinite/s,
+    );
+    expect(css).toMatch(/@keyframes btn-light-round\s*{\s*from\s*{\s*--btn-light-angle:\s*-55deg/s);
+    expect(css).toMatch(/--btn-light-angle:\s*305deg/); // -55 + 360 = seamless loop
+    // reduced motion (OS or in-app) parks the circuit
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*{[^}]*animation:\s*none/s);
+    expect(css).toMatch(/:root\[data-motion='reduce'\][^{]*\{\s*animation:\s*none/s);
+    // push: the tint turns up (resting 16% -> 34%)
+    expect(token('--btn-tint-mix')).toBe('16%');
+    expect(css).toMatch(/\.btn-glass:active\s*{\s*--btn-tint-mix:\s*34%/);
+    // transparent buttons materialize on THE MARK gold (docs/brand-the-mark.md)
+    expect(css).toMatch(/\.btn-glass--bare:hover,\s*\.btn-glass--bare:focus-visible/);
+    expect(css).toMatch(/--btn-tint:\s*var\(--color-gold\)/);
+    expect(css).toMatch(/\.btn-glass--bare:active\s*{\s*--btn-tint-mix:\s*26%/);
+    // primary CTA = brand Ink (the Mark's solid-fill colour), not the accent
+    expect(css).toMatch(/\.btn-glass--primary\s*{\s*--btn-tint:\s*var\(--color-ink\)[^}]*/s);
+    expect(css).toMatch(/\.btn-glass--primary\s*{[^}]*--btn-tint-mix:\s*24%/);
+    // selected chips keep the accent's own glass
+    expect(css).toMatch(/\.btn-glass--accent\s*{\s*--btn-tint:\s*var\(--color-accent-solid\)/);
+    // the burger: bare + STILL — no hover materialize, only rest + morph
+    expect(css).toMatch(/\.btn-glass--still:hover/);
+    expect(css).toMatch(/\.btn-glass--still:hover,[^{]*\{[^}]*animation:\s*none/s);
+    expect(component('src/components/Topbar.tsx')).toMatch(
+      /btn-glass btn-glass--bare btn-glass--still relative z-\[70\]/,
+    );
+    // the body fades in via the sheen multiplier (bare rests at 0)
+    expect(css).toMatch(/--btn-sheen-a:\s*0;/);
+    expect(css).toMatch(/rgb\(255 255 255 \/ calc\(0\.1 \* var\(--btn-sheen-a\)\)\)/);
 
     // ── the gates: blur first (CSS), bend last (filter), theme picks dim ──
     const gateBody = `\\[data-lens='on'\\]:not\\(\\[data-glass='lite'\\]\\):not\\(\\[data-glass='off'\\]\\)`;
