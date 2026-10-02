@@ -15,6 +15,7 @@ import { getSupabasePublicClient } from './lib/supabasePublic';
 import { teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
 import { requestAppNavigation } from './hooks/useUnsavedChanges';
+import { mountGlassEngine } from './glass/glassController';
 import {
   loadDashboard,
   loadExams,
@@ -82,6 +83,12 @@ export default function App() {
   const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>(
     'list',
   );
+
+  useEffect(() => {
+    // mount the per-panel liquid-glass engine once, after first paint
+    const id = requestAnimationFrame(() => mountGlassEngine());
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   useEffect(() => {
     let active = true;

@@ -459,10 +459,11 @@
   --pref-row-sheen: rgba(255, 255, 255, 0.12);
 
   /* ── Material family (dark) — the kube tune, EXCEPT dim:
-     the one number that changes is --lens-dim (0.05–0.08 band → 0.06).
-     Blur, fill and physics params inherit the light values. drop has no
-     dim at all (it lives only in the lens/pane filters). */
-  --lens-dim: 0.06;
+     the one number that changes is --lens-dim (user: 0.07 for dark,
+     inside the allowed 0.05–0.08 band). Blur, fill and physics params
+     inherit the light values. drop has no dim at all (it lives only
+     in the lens/pane filters). */
+  --lens-dim: 0.07;
 }
 
 /* Compatibility layer for older utility-coded surfaces while they are migrated
@@ -712,14 +713,12 @@ select::-webkit-calendar-picker-indicator {
 /* ─── De-nest — glass inside glass is not glass ───────────────────────────
    A parent with backdrop-filter is a BACKDROP ROOT: a nested glass child can
    only sample the parent's own flat fill, so its filter does nothing but
-   burn GPU — and the two translucent fills stack (dark: 0.62 + 0.62 ≈ 0.86
-   opaque milk). iOS never nests glass in glass; inner rows are flat subtle
-   fills with no rim. This rule flattens EVERY glass descendant of a glass
-   surface in one stroke (all 269+ surfaces, no markup changes).
-   Same-specificity prefix as the lens rules — this block sits AFTER them, so
-   on a tie the de-nest wins. */
+   burn GPU. The rule flattens glass descendants of glass — but top-level
+   panels (hero, menus, modals, the big section panels) are marked .lg-root
+   by the runtime engine the moment they get their own filter, so the rule
+   skips them and only flattens true nesting. */
 :root:not([data-glass='lite']):not([data-glass='off'])
-  :is(.glx, .glx-strong, .glx-dark, .lens)
+  :is(.glx, .glx-strong, .glx-dark, .lens:not(.lg-root))
   :is(.glx, .glx-strong, .glx-dark, .lens) {
   backdrop-filter: none;
   /* flat, quiet fill — a row resting on glass, not glass on glass */
@@ -1392,6 +1391,10 @@ button {
   background: rgb(var(--dim-tint) / var(--glass-fill));
   backdrop-filter: blur(var(--lens-blur));
 }
+/* menus in dark read heavier: a bit more blur on any panel marked menu */
+:root[data-theme='dark'] .lens.lens--menu {
+  backdrop-filter: blur(calc(var(--lens-blur) * 3));
+}
 
 @utility pane {
   background: rgb(var(--dim-tint) / var(--glass-fill));
@@ -1425,25 +1428,9 @@ button {
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
 }
 
-/* The full chain runs once the boot probe allows url() (Chromium >= 138);
-   blur already happened in the utility above, the filter does the rest.
-   The theme gate picks the dim — the ONLY thing that differs per theme.
-   drop has NO dark variant: it carries no dim. */
-:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .lens {
-  backdrop-filter: blur(var(--lens-blur)) url('#lens');
-}
-:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .pane {
-  backdrop-filter: blur(var(--pane-blur)) url('#pane');
-}
-:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .drop {
-  backdrop-filter: blur(var(--drop-blur)) url('#drop');
-}
-:root[data-theme='dark'][data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .lens {
-  backdrop-filter: blur(var(--lens-blur)) url('#lens-dark');
-}
-:root[data-theme='dark'][data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .pane {
-  backdrop-filter: blur(var(--pane-blur)) url('#pane-dark');
-}
+/* runtime engine: per-panel filters replace the static fallback once the
+   boot gate allows url() — the plain blur on the utility above is the
+   no-engine path; .lg-root marks a top-level panel (never de-nested). */
 
 /* Registered custom properties — the button's moving parts. An unregistered
    custom property SNAPS between values; a registered <angle>/<color>/<percentage>
