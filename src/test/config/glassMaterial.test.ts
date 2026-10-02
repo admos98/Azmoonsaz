@@ -219,9 +219,21 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/inset 0 1px 0 rgb\(255 255 255 \/ var\(--glass-bloom-line-a\)\)/);
   });
 
-  it('lens displacement matches Apple exactly (scale=28 → max ±14px = their measured ceiling)', () => {
-    expect(html).toMatch(/scale="28"/);
-    expect(html).not.toMatch(/scale="34"/); // ±17px overshot Apple's 8-14px band
+  it('lens displacement is computed by the engine from the physics tokens (no static filter ships)', () => {
+    // index.html carries NO filter markup at all: a static one either used an
+    // external feImage href (never loads inside backdrop-filter → uniform
+    // whole-panel shift) or a single pre-baked map stretched over every size
+    // (whole-panel displacement). See docs/liquid-glass-engine-audit.md C1-C3.
+    const htmlCode = html.replace(/<!--[\s\S]*?-->/g, ''); // comments may mention the primitives
+    expect(htmlCode).not.toMatch(/feDisplacementMap/);
+    expect(htmlCode).not.toMatch(/feImage/);
+    expect(htmlCode).not.toMatch(/<filter/);
+    // the engine's scale formula = the playground's (2 · maxAbs · refraction ·
+    // scale-ratio ≈ 40.3px at the token defaults → ±20.1px peak pull, inside
+    // Apple's measured 8–14px band ceiling at the approved 43.67 token)
+    expect(readFileSync(join(root, 'src/glass/lensEngine.ts'), 'utf8')).toMatch(
+      /2 \* maxAbs \* p\.refraction \* p\.scaleRatio/,
+    );
   });
 
   it('the per-panel runtime engine owns the family filters — no static defs', () => {
@@ -292,14 +304,20 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).not.toMatch(/data-lens\]['^ ]*[a-z-]+:\s*[^;]*(transition|animation)/);
   });
 
-  it('the bend rides the panel chains, BLUR FIRST and lens LAST, gated on Chromium >= 138', () => {
-    // .field rides the gates: inputs/dropdowns keep their fill, never bend
+  it('the bend rides the panel chains, BLUR FIRST, url() added inline by the engine, gated on Chromium >= 138', () => {
+    // .field rides the gates: inputs/dropdowns keep their fill, never bend.
+    // The CSS gates carry ONLY blur+saturate (GPU-composited); the url(#…)
+    // refraction is composed INLINE by glassController once the panel's map
+    // exists — a static url() here referenced a dead filter (external feImage
+    // hrefs never render inside backdrop-filter) and flashed on navigation.
     expect(css).toMatch(
-      /:root\[data-lens='on'\]:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+\.glx:not\(\.field\)\s*\{[^}]*backdrop-filter:\s*blur\(var\(--glass-bg-blur\)\)\s+saturate\(var\(--glass-bg-sat\)\)\s+url\('#lg-lens'\)/,
+      /:root\[data-lens='on'\]:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+\.glx:not\(\.field\)\s*\{[^}]*backdrop-filter:\s*blur\(var\(--glass-bg-blur\)\)\s+saturate\(var\(--glass-bg-sat\)\);/,
     );
     expect(css).toMatch(
-      /:root\[data-lens='on'\]:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+\.glx-strong:not\(\.field\)\s*\{[^}]*backdrop-filter:\s*blur\(var\(--glass-p-blur\)\)\s+saturate\(var\(--glass-p-sat\)\)\s+url\('#lg-lens'\)/,
+      /:root\[data-lens='on'\]:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+\.glx-strong:not\(\.field\)\s*\{[^}]*backdrop-filter:\s*blur\(var\(--glass-p-blur\)\)\s+saturate\(var\(--glass-p-sat\)\);/,
     );
+    // no static lens reference anywhere in CSS — the engine owns url()
+    expect(css).not.toMatch(/url\('#lg-lens'\)|url\("#lg-lens"\)/);
     // the lens is purely ADDITIVE: the base utilities keep plain blur so a
     // paint-time url() failure can never strip blur again
     expect(css).toMatch(
@@ -316,12 +334,12 @@ describe('glass material contract (pixel-audit gates)', () => {
     // into a wash — the de-nest rule strips filter + rim on REAL nesting.
     // Top-level panels tagged .lg-root by the engine keep their own filter.
     expect(css).toMatch(
-      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens:not\(\.lg-root\)\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens\)\s*\{[^}]*backdrop-filter:\s*none/s,
+      /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens, \.pane, \.drop\):not\(\.lg-root\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens, \.pane, \.drop\)\s*\{[^}]*backdrop-filter:\s*none/s,
     );
     // the SANCTIONED nested materials never get de-nested
     const denest = cssRaw.slice(cssRaw.indexOf('De-nest'), cssRaw.indexOf('Ink glass'));
-    expect(denest).toContain(':is(.glx, .glx-strong, .glx-dark, .lens)');
-    expect(denest).not.toMatch(/[.]pane|[.]frost|[.]field|[.]drop/);
+    expect(denest).toContain(':is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)');
+    expect(denest).not.toMatch(/[.]frost|[.]field/);
     // and no material paints a rim in markup: Card maps light→lens, strong→pane
     // (rims come from the filters) and edgeClass is permanently empty
     const ui = component('src/components/UIComponents.tsx');
@@ -357,28 +375,25 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(boot).toMatch(/login-education-light\.avif/);
   });
 
-  it('refraction filter #lg-lens is defined ONCE, single generated-PNG map, box-clipped', () => {
-    expect(html).toMatch(/id="lg-lens"/);
-    expect(html).toMatch(/feDisplacementMap/);
-    expect(html).toMatch(/feImage/);
-    // The previous two data-URI SVG gradients rendered right-edge-only on
-    // Chromium (percentage stops resolving asymmetrically under
-    // preserveAspectRatio=none). The map is now /public/lens-map.png —
-    // generated by tools, 4-fold symmetric, (128,128) neutral interior — with
-    // no in-SVG gradient left to quirk. Data-URI gradient URLs are banned.
-    expect(html).not.toMatch(/data:image\/svg\+xml,%3ClinearGradient/);
-    expect(html).not.toMatch(/%23808080/); // grayscale plateau trick — banned
-    // Filter region must MATCH the element box. The old -20%/140% region made
-    // the map a square 40% larger than the panel, so the displacement was
-    // sampled on square geometry while the element clipped it to a rounded
-    // rect — the result was a straight-edged blur sitting inside a curved
-    // panel. Box-clipped geometry is what keeps the bend and the blur on the
-    // same curve as the rim.
-    expect(html).toMatch(/<filter id="lg-lens" x="0" y="0" width="100%" height="100%"/);
-    expect(html).not.toMatch(/<filter id="lg-lens" x="-/);
-    expect(html).not.toMatch(/<filter id="lg-lens"[^>]*width="1[24]0%"/);
-    // exactly one definition — a duplicate id silently shadows the first
-    expect(html.match(/id="lg-lens"/g)!.length).toBe(1);
+  it('the render contract lives in lensEngine: explicit region, absolute feImage px, no in-chain blur', () => {
+    // index.html carries NO filter markup (see the displacement test above).
+    const engine = readFileSync(join(root, 'src/glass/lensEngine.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '') // comments may name the primitives
+      .replace(/\/\/.*$/gm, '');
+    // 1) explicit region — with the default -10%..120% region a percentage
+    //    feImage subregion resolves against the REGION and the maps never
+    //    paint where designed (whole-panel scale/2 shift). Audit C1.
+    expect(engine).toMatch(
+      /<filter id="\$\{esc\(id\)\}" x="0" y="0" width="100%" height="100%"/,
+    );
+    // 2) absolute feImage sizes = the element's CSS px (playground contract)
+    expect(engine).toMatch(/width="\$\{esc\(W\)\}" height="\$\{esc\(H\)\}"/);
+    // 3) NO blur primitive in the chain — blur stays in the CSS chain (GPU);
+    //    the SVG chain only bends/saturates/rims the already-blurred backdrop
+    expect(engine).not.toMatch(/feGaussianBlur/);
+    // 4) the specular rim construction (backdrop-derived, never painted)
+    expect(engine).toMatch(/feComposite in="saturated_dimmed" in2="specular_layer"/);
+    expect(engine).toMatch(/feFuncA type="linear" slope="\$\{esc\(p\.specOpacity\)\}"/);
   });
 
   it('glx surfaces carry the text micro-shadow ambient', () => {

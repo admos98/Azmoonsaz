@@ -97,11 +97,14 @@ if (ringRule && ringRule[0].includes('backdrop-filter')) {
   violations.push('[nested-ring-filter] src/index.css — .glass-edge::after carries a backdrop-filter. One filter per panel, on the panel itself. Painted light on the ring is fine; filtering is not.');
 }
 
-// Rule 6 — exactly one #lg-lens definition in index.html.
+// Rule 6 — index.html ships NO static filter markup. The old static #lg-lens
+// used an external feImage href (never loads inside a backdrop-filter chain —
+// it rendered as a uniform whole-panel shift) and a single pre-baked map
+// stretched over every panel size. The runtime engine owns filter creation.
 const html = readFileSync(join(root, 'index.html'), 'utf8');
-const lensDefs = html.match(/id="lg-lens"/g) || [];
-if (lensDefs.length !== 1) {
-  violations.push(`[lens-filter-unique] index.html — expected exactly one id="lg-lens", found ${lensDefs.length}. A duplicate id shadows the first for every url() reference.`);
+const htmlCode = html.replace(/<!--[\s\S]*?-->/g, ''); // comments may document the history
+if (/<filter|feImage|feDisplacementMap|id="lg-lens"/.test(htmlCode)) {
+  violations.push('[no-static-filter] index.html — filter markup must not ship statically. The runtime engine (src/glass/glassController.ts) builds shared per-geometry data-URI filters; a static one rendered as a whole-panel shift. See docs/liquid-glass-engine-audit.md.');
 }
 
 if (violations.length) {
@@ -109,4 +112,4 @@ if (violations.length) {
   console.error(violations.map((v) => `  - ${v}`).join('\n'));
   process.exit(1);
 }
-console.log('Glass discipline check passed: bend owned by index.css panel chains, no settle machinery, no inline backdrop-filter, inset material blur-free, single #lg-lens.');
+console.log('Glass discipline check passed: bend owned by index.css panel chains, no settle machinery, no inline backdrop-filter, inset material blur-free, no static filter markup.');

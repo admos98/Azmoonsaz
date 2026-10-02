@@ -3,21 +3,38 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Liquid-glass map engine — EXACT port of the playground's physics
- * (public/playground/playground.js: refract2D / computeProfile /
- * buildDisplacementMap / buildSpecularMap, convex_squircle only — the app's
- * single surface). One difference from the playground only by construction:
- * maps are generated AT RUNTIME per panel size, so a 326x64 hero and a
- * 1240x800 section get their own edge-weighted field instead of one
- * pre-baked PNG being stretched (the squash + misplaced-band bug).
+ * (playground.js: refract2D / computeProfile / buildDisplacementMap /
+ * buildSpecularMap, convex_squircle only — the app's single surface). Maps are
+ * generated AT RUNTIME per panel size, so a 326x64 hero and a 1240x800 section
+ * get their own edge-weighted field instead of one pre-baked PNG being
+ * stretched (the squash + misplaced-band bug).
+ *
+ * Render contract (proven in docs/liquid-glass-engine-audit.md — DO NOT
+ * "simplify" any of these back):
+ *  1. <filter> carries an EXPLICIT region (x=0 y=0 100% 100%). With the
+ *     default region (-10%..120%) a percentage feImage subregion resolves
+ *     against the region and the maps never paint where designed — the
+ *     whole panel shifts by scale/2.
+ *  2. feImage sizes are ABSOLUTE element px (the playground's contract).
+ *     External file hrefs never load inside backdrop-filter chains; only
+ *     data URIs do (the maps arrive as data URIs from imageDataToURL).
+ *  3. NO feGaussianBlur in the chain. Backdrop blur lives in the CSS chain
+ *     (blur() saturate() url(#id)) — GPU-composited — and the SVG chain only
+ *     bends the already-blurred backdrop, in the playground's order.
  *
  * DOM-free: unit-testable. Strings that end up in SVG go through esc().
  */
 
 const IOR = 1.5; // glass refractive index (kube.io default)
 const SAMPLES = 256;
-/** 2x floor so a 100% (1x) display still gets smooth diagonals. */
-const mapDPR = () => Math.max(2, Math.min(window.devicePixelRatio || 1, 2));
-const DPR = mapDPR(); // resolved once per session — matches the playground's `let DPR = mapDPR()`
+
+/** Maps are smooth gradients: clamp the build resolution to [1, 2] device px
+ *  per CSS px. Never force 2 on a 1x display (4x pixels for nothing), never
+ *  exceed 2 (unbounded cost on 3x phones). Resolved per build, not per
+ *  session, so browser zoom re-resolves correctly. */
+export function mapDPR(dpr: number = window.devicePixelRatio || 1): number {
+  return Math.min(2, Math.max(1, dpr));
+}
 
 export interface LensParams {
   bezel: number; // px — ring width
@@ -29,7 +46,6 @@ export interface LensParams {
   specAngle: number; // deg
   dim: number; // rgb-dim wash 0..1 (per theme)
   dimTint: [number, number, number]; // 0..255
-  blur: number; // css px
 }
 
 /** generate[pan] one panel's filter — never cache across a param change. */
@@ -83,21 +99,22 @@ function borderSDF(x: number, y: number, w: number, h: number, p: number): [numb
 }
 
 /** Displacement map (R = Δx, G = Δy, 128 neutral, B unused, A 255). Built at
- *  the panel's REAL css size × DPR so the 14px ring stays physical at any
- *  aspect — the exact routine the playground runs per tuning. */
+ *  the panel's REAL css size × dpr so the ring stays physical at any aspect —
+ *  the exact routine the playground runs per tuning. */
 export function buildDisplacementMap(
   wCss: number,
   hCss: number,
   radiusCss: number,
   bezelCss: number,
   profile: Float64Array,
+  dpr: number = mapDPR(),
 ): { img: ImageData; maxAbs: number; W: number; H: number } {
-  const W = Math.max(2, Math.round(wCss * DPR));
-  const H = Math.max(2, Math.round(hCss * DPR));
+  const W = Math.max(2, Math.round(wCss * dpr));
+  const H = Math.max(2, Math.round(hCss * dpr));
   const img = new ImageData(W, H);
   new Uint32Array(img.data.buffer).fill(0xff008080); // 128,128,0,255
-  const p = Math.min(radiusCss * DPR, Math.min(W, H) / 2 - 1);
-  const bez = Math.max(0.75, bezelCss * DPR);
+  const p = Math.min(radiusCss * dpr, Math.min(W, H) / 2 - 1);
+  const bez = Math.max(0.75, bezelCss * dpr);
   const gOut = (p + 1) ** 2;
   const gIn = p * p;
   const gLo = (p - bez) ** 2;
@@ -138,15 +155,16 @@ export function buildSpecularMap(
   hCss: number,
   radiusCss: number,
   angleDeg: number,
+  dpr: number = mapDPR(),
 ): ImageData {
-  const W = Math.max(2, Math.round(wCss * DPR));
-  const H = Math.max(2, Math.round(hCss * DPR));
+  const W = Math.max(2, Math.round(wCss * dpr));
+  const H = Math.max(2, Math.round(hCss * dpr));
   const img = new ImageData(W, H);
-  const p = Math.min(radiusCss * DPR, Math.min(W, H) / 2 - 1);
+  const p = Math.min(radiusCss * dpr, Math.min(W, H) / 2 - 1);
   const gOut = (p + 1) ** 2;
   const L = (angleDeg * Math.PI) / 180;
-  const ring = 2 * DPR;
-  const peak = 1 * DPR;
+  const ring = 2 * dpr;
+  const peak = 1 * dpr;
   const d8 = img.data;
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
@@ -188,9 +206,14 @@ export function dimParams(p: LensParams): Array<[number, number]> {
   ];
 }
 
+/** One shared canvas for URL encoding — a fresh canvas per map was GC churn
+ *  during rebuild storms. */
+let urlCanvas: HTMLCanvasElement | null = null;
+
 /** ImageData → data URL (the playground's toURL, canvas path). */
 export function imageDataToURL(img: ImageData): string {
-  const c = document.createElement('canvas');
+  if (!urlCanvas) urlCanvas = document.createElement('canvas');
+  const c = urlCanvas;
   c.width = img.width;
   c.height = img.height;
   c.getContext('2d')!.putImageData(img, 0, 0);
@@ -202,17 +225,17 @@ export function currentDPR(): number {
 }
 
 /* ── Filter builder — the playground's renderFilter() ordering, per panel ──
-   blur is done ONCE per feImage source (not per-pixel): blur the small maps
-   up-front, NEVER blur the live backdrop (that's the cost fix). The
-   backdrop blur stays in the CSS chain before url(). A per-box region clips
-   the filter to the element so the map is sampled on the panel's own
-   rounded geometry. */
+   The backdrop blur is NOT in here: it arrives pre-applied via the CSS chain
+   (`backdrop-filter: blur() saturate() url(#id)`), so this chain receives the
+   already-blurred backdrop as SourceGraphic and only bends/saturates/rims it.
+   Region + absolute feImage sizes are the render contract (see header). */
 
 const esc = (s: string | number) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** A fresh <filter> markup string for one panel (lens = with displacement,
- *  pane = rim only, drop = disc, dim applied only when withDim). */
+ *  pane = rim only, drop = disc, dim applied only when withDim). W/H are the
+ *  element's CSS px — feImage sizes must match them EXACTLY. */
 export function buildFilterMarkup(
   id: string,
   dispURL: string | null,
@@ -220,6 +243,8 @@ export function buildFilterMarkup(
   maxAbs: number,
   p: LensParams,
   withDim: boolean,
+  W: number,
+  H: number,
 ): string {
   const [r, g, b] = dimParams(p);
   const dim = withDim
@@ -233,20 +258,19 @@ export function buildFilterMarkup(
       <feFuncB type="linear" slope="1" intercept="0"/>`;
   const displace = dispURL != null
     ? `
-      <feImage href="${esc(dispURL)}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="displacement_map"/>
-      <feDisplacementMap in="blurred_source" in2="displacement_map"
+      <feImage href="${esc(dispURL)}" x="0" y="0" width="${esc(W)}" height="${esc(H)}" result="displacement_map"/>
+      <feDisplacementMap in="SourceGraphic" in2="displacement_map"
                scale="${esc(effectiveScale(maxAbs, p).toFixed(3))}"
                xChannelSelector="R" yChannelSelector="G" result="displaced"/>`
     : `
-      <feOffset in="blurred_source" dx="0" dy="0" result="displaced"/>`;
-  return `<filter id="${esc(id)}" colorInterpolationFilters="sRGB">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="${esc(p.blur)}" result="blurred_source"/>${displace}
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="displaced"/>`;
+  return `<filter id="${esc(id)}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">${displace}
       <feColorMatrix in="displaced" type="saturate" values="${esc(p.specSaturation)}" result="displaced_saturated"/>
       <feComponentTransfer in="displaced" result="rgb_dimmed">${dim}
       </feComponentTransfer>
       <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">${dim}
       </feComponentTransfer>
-      <feImage href="${esc(specURL)}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
+      <feImage href="${esc(specURL)}" x="0" y="0" width="${esc(W)}" height="${esc(H)}" result="specular_layer"/>
       <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
       <feComponentTransfer in="specular_layer" result="specular_faded">
         <feFuncA type="linear" slope="${esc(p.specOpacity)}"/>

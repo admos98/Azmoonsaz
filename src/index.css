@@ -270,11 +270,15 @@
   --drop-blur: 0.5px; /* a notch under lens — a small droplet stays crisp */
 
   /* ── lens/pane/drop physics params (kube.io chain) — SOURCE OF TRUTH:
-     tools/gen-glass-maps.py parses these; --lens-max-displacement is the
-     #lens feDisplacementMap scale in index.html (43.67 = approved
-     playground number → ±21.8px peak pull) and --drop-max-displacement
-     the #drop scale (5px on a 44px disc — a stronger lens RELATIVE to
-     its diameter). Change here → rerun the generator → filters follow. */
+     the runtime engine (src/glass/glassController.ts) computes the
+     feDisplacementMap scale from bezel/thickness/refraction/scale-ratio
+     directly (≈ 40.3px at these defaults → ±20.1px peak pull). These tokens
+     remain the declared targets (--lens-max-displacement = the approved
+     playground ceiling, ±21.8px) and feed tools/gen-glass-maps.py. The old
+     static index.html filter is gone: external feImage hrefs never render
+     inside backdrop-filter (engine audit C2), and one pre-baked map
+     stretched over every panel size displaced the whole panel (C3).
+     Change here → the engine picks it up on its next sync pass. */
   --lens-surface: convex_squircle;
   --lens-bezel: 14px;
   --lens-thickness: 72px;
@@ -674,52 +678,46 @@ select::-webkit-calendar-picker-indicator {
    panel's centre is pure blur. Two rules make that happen here:
 
    1. The displacement rides the PANEL's own backdrop-filter, never a nested
-      ring. `backdrop-filter: url(#lg-lens)` on the panel displaces the page
-      behind it (SourceGraphic = the backdrop). A ring inside the panel would
-      instead receive the panel's own fill and text as its backdrop — that was
-      the build-3 regression: the panel bent ITSELF, its own glyphs warped at
-      the rim, and the ring's sharper blur/saturation tinted the corners away
-      from the centre (measured Δ200; iOS keeps one filter output).
+      ring. A ring inside the panel would receive the panel's own fill and
+      text as its backdrop — that was the build-3 regression: the panel bent
+      ITSELF, its own glyphs warped at the rim.
 
-   2. The #lg-lens map (index.html) is EDGE-WEIGHTED — 50% grey, i.e. zero
-      displacement, across the interior, ramping only in the outer ~4% — so
-      blur() and saturate() stay uniform edge-to-edge (centre colour ≡ corner
-      colour) and the geometric bend is confined to the rim.
+   2. The runtime engine (src/glass/glassController.ts) builds each panel an
+      EDGE-WEIGHTED map — 50% grey, i.e. zero displacement, across the
+      interior — so blur() and saturate() stay uniform edge-to-edge and the
+      geometric bend is confined to the rim.
 
-   ONE backdrop-filter per panel, no filter ever animates. The chain is gated
-   on html[data-lens='on'] (boot probe: Chromium >= 138 — the only engines
-   that render SVG refs inside backdrop-filter; older engines pass the syntax
-   probe then drop the whole declaration at paint, which is how blur used to
-   die on otherwise-capable machines). Everyone else keeps the plain
-   blur+saturate base declared in the utilities above. lite/off tiers strip
-   the whole property further down (unlayered tier rules always win). */
+   THE CSS GATES CARRY ONLY blur() + saturate() now. The url(#…) reference is
+   added INLINE by the engine once the panel's map exists. A static url() here
+   would either reference a dead filter (external feImage hrefs never load
+   inside backdrop-filter — the map rendered as a uniform whole-panel shift)
+   or flash on every navigation before the engine mounts. On non-Chromium
+   engines (data-lens off) and pre-engine frames the panels simply show the
+   GPU-composited blur+saturate base below — the pre-lens look, deliberately
+   clean. lite/off tiers strip the whole property further down (unlayered
+   tier rules always win). Full evidence: docs/liquid-glass-engine-audit.md. */
 
-/* The bend runs LAST: blur() and saturate() first, then the edge-weighted
-   displacement over the already-soft backdrop. The old order (lens first,
-   blur second) let the 18px blur smear the bend away — measured edge/interior
-   structure 1.8x (invisible) vs 31x reordered. The map is 50% grey across the
-   interior, so the displacement is identity in the middle: centre colour ≡
-   corner colour except at the rim. */
+/* Blur first, bend last — the playground's order, with the blur GPU-side. */
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx:not(.field) {
-  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat)) url('#lg-lens');
+  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
 }
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-strong:not(.field) {
-  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat)) url('#lg-lens');
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
 }
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-dark {
-  backdrop-filter: blur(10px) saturate(1.4) url('#lg-lens');
+  backdrop-filter: blur(10px) saturate(1.4);
 }
 
 /* ─── De-nest — glass inside glass is not glass ───────────────────────────
    A parent with backdrop-filter is a BACKDROP ROOT: a nested glass child can
    only sample the parent's own flat fill, so its filter does nothing but
    burn GPU. The rule flattens glass descendants of glass — but top-level
-   panels (hero, menus, modals, the big section panels) are marked .lg-root
-   by the runtime engine the moment they get their own filter, so the rule
-   skips them and only flattens true nesting. */
+   panels (hero, menus, modals, the big section panels, any family) are
+   marked .lg-root by the runtime engine the moment they get their own
+   filter, so the rule skips them and only flattens true nesting. */
 :root:not([data-glass='lite']):not([data-glass='off'])
-  :is(.glx, .glx-strong, .glx-dark, .lens:not(.lg-root))
-  :is(.glx, .glx-strong, .glx-dark, .lens) {
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop) {
   backdrop-filter: none;
   /* flat, quiet fill — a row resting on glass, not glass on glass */
   --glass-p-fa1: 0.05;
