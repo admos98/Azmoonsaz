@@ -1,34 +1,35 @@
 #!/usr/bin/env python3
-"""Panel lens displacement map — the Type A/B shared glass material.
+"""Glass family maps — lens / pane / drop displacement + specular rasters.
 
 Physics port of the playground's kube.io replica (public/playground/
-playground.js buildDisplacementMap/computeProfile), same math end to end:
+playground.js buildDisplacementMap/computeProfile/buildSpecularMap), same
+math end to end:
 
   convex-squircle surface  ->  surface normal  ->  Snell refraction
   (n1=1, n2=1.5)  ->  per-distance profile (monotone head, box-smoothed)
-  ->  rounded-rect border field  ->  normalized R/G displacement map
+  ->  rounded-rect / disc border field  ->  normalized R/G displacement map
 
-SOURCE OF TRUTH IS src/index.css: the geometry (--panel-lens-size, -radius,
--bezel, -thickness) is PARSED from the tokens, so the map can only ever be
-built from the approved tune (bezel 14, thickness 72, radius 21, 326x64).
-The raster is 2x that (652x128) so the vector field stays smooth when
-feImage stretches it box-clipped onto a panel.
+SOURCE OF TRUTH IS src/index.css: geometry (--lens-size/-radius/-bezel/
+-thickness for the rect family, --drop-* for the disc) is PARSED from the
+tokens, so a map can only ever be built from the approved tune. Rasters
+are 2x canonical (lens 652x128, drop 88x88) so the vector field stays
+smooth when feImage stretches it box-clipped onto an element.
 
 The border starts at the PEAK and decays smoothly inward (monotone head +
 two box-smooth passes — the fix for the "bad corner" tearing).
 
-Feeding the PNG to <feDisplacementMap scale="43.67"> gives +/-21.8px
-peak pull at the border. 43.67 is the approved playground export number
-(2 * maxAbs * refraction * ratio AT EXPORT TIME — before the head-smoothing
-fix; the smoothed profile normalizes to maxAbs 40.35 now, which only
-affects the internal normalization, not the pull). The script verifies
-index.html carries the token's scale.
+Feeding lens-map.png to <feDisplacementMap scale="43.67"> gives +/-21.8px
+peak pull at the border (approved playground number; the head-smoothed
+profile normalizes to maxAbs 40.35 — normalization only, not the pull).
+drop-map.png rides scale="5" (+/-2.5px on a 44px disc — a stronger lens
+RELATIVE to its diameter). The script verifies both scales in index.html.
 
-Also emits public/panel-specular-map.png — the playground's
-buildSpecularMap port (cos^2 x bump, light from --panel-lens-spec-angle),
-which the filter composites as the rim highlight.
+Also emits lens-spec.png and drop-spec.png — the playground's
+buildSpecularMap port (cos^2 x bump, light from --lens-spec-angle), which
+the lens/pane/drop filters composite as the reflective rim.
 
-Stdlib only — writes RGBA8 PNG without Pillow. Run: python tools/gen-panel-lens.py
+Stdlib only — writes RGBA8 PNG without Pillow.
+Run: python tools/gen-glass-maps.py
 """
 
 from __future__ import annotations
@@ -43,7 +44,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CSS_PATH = ROOT / "src" / "index.css"
 HTML_PATH = ROOT / "index.html"
-OUT = ROOT / "public" / "panel-lens-map.png"
+LENS_OUT = ROOT / "public" / "lens-map.png"
+LENS_SPEC_OUT = ROOT / "public" / "lens-spec.png"
+DROP_OUT = ROOT / "public" / "drop-map.png"
+DROP_SPEC_OUT = ROOT / "public" / "drop-spec.png"
 
 MAP_SCALE = 2  # raster 2x the canonical size (smooth field under stretch)
 IOR = 1.5
@@ -53,24 +57,36 @@ SAMPLES = 256
 def css_token(css: str, name: str) -> str:
     m = re.search(re.escape(name) + r":\s*([^;]+);", css)
     if not m:
-        sys.exit(f"gen-panel-lens: token {name} not found in {CSS_PATH}")
+        sys.exit(f"gen-glass-maps: token {name} not found in {CSS_PATH}")
     return m.group(1).strip()
 
 
 def load_tune() -> dict:
     """Read the approved geometry from the CSS tokens (single source)."""
     css = CSS_PATH.read_text(encoding="utf-8")
-    w_s, h_s = css_token(css, "--panel-lens-size").split()
     px = lambda v: float(v.removesuffix("px"))  # noqa: E731
-    return {
-        "w": px(w_s),
-        "h": px(h_s),
-        "radius": px(css_token(css, "--panel-lens-radius")),
-        "bezel": px(css_token(css, "--panel-lens-bezel")),
-        "thickness": px(css_token(css, "--panel-lens-thickness")),
-        "max_disp": css_token(css, "--panel-lens-max-displacement").removesuffix("px"),
-        "angle": float(css_token(css, "--panel-lens-spec-angle").removesuffix("deg")),
+    lw_s, lh_s = css_token(css, "--lens-size").split()
+    dw_s, dh_s = css_token(css, "--drop-size").split()
+    shared = {
+        "bezel": px(css_token(css, "--lens-bezel")),
+        "thickness": px(css_token(css, "--lens-thickness")),
+        "angle": float(css_token(css, "--lens-spec-angle").removesuffix("deg")),
     }
+    lens = {
+        "w": px(lw_s),
+        "h": px(lh_s),
+        "radius": px(css_token(css, "--lens-radius")),
+        "max_disp": css_token(css, "--lens-max-displacement").removesuffix("px"),
+        **shared,
+    }
+    drop = {
+        "w": px(dw_s),
+        "h": px(dh_s),
+        "radius": px(css_token(css, "--drop-radius")),
+        "max_disp": css_token(css, "--drop-max-displacement").removesuffix("px"),
+        **shared,
+    }
+    return {"lens": lens, "drop": drop}
 
 
 def surface(s: float) -> float:
@@ -122,7 +138,9 @@ def compute_profile(bezel_px: float, thickness_px: float, samples: int = SAMPLES
 
 
 def border_sdf(x: float, y: float, w: int, h: int, p: float):
-    """Signed component distances from the inner inset rect edge."""
+    """Signed component distances from the inner inset rect edge.
+    p = min(radius, min(w,h)/2 - 1) — at p = half the short side the inset
+    degenerates to a point and the field becomes a DISC (the drop map)."""
     l = x - p if x < p else (x - (w - p) if x >= w - p else 0.0)
     m = y - p if y < p else (y - (h - p) if y >= h - p else 0.0)
     return l, m
@@ -197,15 +215,12 @@ def build(tune: dict) -> tuple[bytes, int, int, float]:
     return bytes(buf), w, h, max_abs
 
 
-SPEC_OUT = ROOT / "public" / "panel-specular-map.png"
-
-
 def build_specular(tune: dict) -> bytes:
     """Specular rim map — exact port of the playground's buildSpecularMap:
     white-ish grey whose alpha = cos^2(normal - light) x parabolic bump,
     bump peaked MAP_SCALE px inside the border, zero AT the border. Light
-    angle from --panel-lens-spec-angle (playground: -55deg). RGBA8,
-    transparent elsewhere; stretched onto the element by feImage."""
+    angle from --lens-spec-angle (playground: -55deg). RGBA8, transparent
+    elsewhere; stretched onto the element by feImage."""
     w = int(tune["w"] * MAP_SCALE)
     h = int(tune["h"] * MAP_SCALE)
     p = min(tune["radius"] * MAP_SCALE, min(w, h) / 2 - 1)
@@ -246,26 +261,32 @@ def build_specular(tune: dict) -> bytes:
     return bytes(buf)
 
 
-def main() -> None:
-    tune = load_tune()
+def emit(name: str, out: Path, tune: dict) -> None:
     rgba, w, h, max_abs = build(tune)
-    write_png(OUT, w, h, rgba)
+    write_png(out, w, h, rgba)
     print(
-        f"wrote {OUT}  {w}x{h} (2x of {tune['w']}x{tune['h']})  "
-        f"bezel={tune['bezel']} thickness={tune['thickness']} radius={tune['radius']}  "
-        f"profile maxAbs={max_abs:.2f}px"
+        f"wrote {out}  {w}x{h} (2x of {tune['w']}x{tune['h']})  "
+        f"radius={tune['radius']}  profile maxAbs={max_abs:.2f}px"
     )
-    write_png(SPEC_OUT, w, h, build_specular(tune))
-    print(f"wrote {SPEC_OUT}  {w}x{h}  light angle {tune['angle']}deg")
-    # the filter must carry the same max displacement as the token
+    spec_out = Path(str(out).replace("-map.png", "-spec.png"))
+    write_png(spec_out, w, h, build_specular(tune))
+    print(f"wrote {spec_out}  {w}x{h}  light angle {tune['angle']}deg")
+
+
+def main() -> None:
+    tunes = load_tune()
+    emit("lens", LENS_OUT, tunes["lens"])
+    emit("drop", DROP_OUT, tunes["drop"])
+    # both filters must carry the same max displacement as their tokens
     html = HTML_PATH.read_text(encoding="utf-8")
-    want = f'scale="{tune["max_disp"]}"'
-    if want not in html:
-        sys.exit(
-            f"gen-panel-lens: index.html is missing {want} "
-            f"(--panel-lens-max-displacement = {tune['max_disp']}px)"
-        )
-    print(f"filter scale verified: {want}")
+    for name in ("lens", "drop"):
+        want = f'scale="{tunes[name]["max_disp"]}"'
+        if want not in html:
+            sys.exit(
+                f"gen-glass-maps: index.html is missing {want} "
+                f"(--{name}-max-displacement = {tunes[name]['max_disp']}px)"
+            )
+        print(f"filter scale verified: {want}")
 
 
 if __name__ == "__main__":

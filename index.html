@@ -41,71 +41,123 @@
           <feImage href="/lens-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/>
           <feDisplacementMap in="SourceGraphic" in2="map" scale="28" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
-        <!-- panel-lens — Type A/B material, the FULL kube.io chain,
-             byte-for-byte the playground's renderFilter() (light theme):
+        <!-- ── The material family filters ────────────────────────────────────────
+       Every chain is the playground's renderFilter() (public/playground),
+       physics parsed from the --lens-*/--drop-* tokens in src/index.css
+       (bezel 14, thickness 72, radius 21, 326x64 raster at 2x for the rect
+       family; 44x44 disc for drop; convex squircle, n1=1 -> n2=1.5, smoothed
+       profile, border at peak decaying inward). Blur is NOT here — it runs
+       in the CSS chain before url() so each material holds its own number.
 
-               displaced  -> saturate ring (feColorMatrix values=5)
-                           -> RGB dim (per-channel linear, --panel-lens-dim)
-             spec layer   -> feComposite 'in' (ring-shaped saturation)
-                           -> feFuncA slope (--panel-lens-spec-opacity)
-                           -> two feBlend 'normal' composites
+       #lens        displacement 43.67 (+-21.8px peak) -> saturate ring 5
+                    -> RGB dim (--lens-dim 0.15) -> specular (-55deg, 0.34)
+                    -> 2x feBlend                        [light theme]
+       #lens-dark   identical, dim 0.06                  [dark theme]
+       #pane        NO displacement: saturate ring -> dim -> specular
+                    -> feBlend  (reflective rim without the bend)
+       #pane-dark   identical, dim 0.06
+       #drop        44px disc, displacement 5 (+-2.5px), saturate ring,
+                    NO dim -> specular -> feBlend        [both themes]
 
-             Geometry and params PARSE from the --panel-lens-* tokens in
-             src/index.css (bezel 14, thickness 72, radius 21, 326x64 at
-             2x). scale 43.67 = --panel-lens-max-displacement -> +-21.8px
-             peak pull (approved playground number; head-smoothed profile
-             normalizes to 40.35 internally — normalization only).
-             Blur stays in the CSS chain (blur() == feGaussianBlur, same
-             op, same position: BEFORE displacement) so A/B keep their own
-             blur tokens with one shared filter.
-             Box-clipped: the % feImage resolves against the region, so
-             the region MUST equal the element box (same contract as
-             #lg-lens). EXACTLY ONE #panel-lens and ONE #panel-lens-dark. -->
-        <filter id="panel-lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-          <feImage href="/panel-lens-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="displacement_map"/>
-          <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="43.67" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
-          <feColorMatrix in="displaced" type="saturate" values="5" result="displaced_saturated"/>
-          <feComponentTransfer in="displaced" result="rgb_dimmed">
-            <feFuncR type="linear" slope="0.8500" intercept="0.0606"/>
-            <feFuncG type="linear" slope="0.8421" intercept="0.0619"/>
-            <feFuncB type="linear" slope="0.7789" intercept="0.0971"/>
-          </feComponentTransfer>
-          <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">
-            <feFuncR type="linear" slope="0.8500" intercept="0.0606"/>
-            <feFuncG type="linear" slope="0.8421" intercept="0.0619"/>
-            <feFuncB type="linear" slope="0.7789" intercept="0.0971"/>
-          </feComponentTransfer>
-          <feImage href="/panel-specular-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
-          <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
-          <feComponentTransfer in="specular_layer" result="specular_faded">
-            <feFuncA type="linear" slope="0.34"/>
-          </feComponentTransfer>
-          <feBlend in="specular_saturated" in2="rgb_dimmed" mode="normal" result="withSaturation"/>
-          <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
-        </filter>
-        <!-- dark theme: identical chain, dim from --panel-lens-dim (0.06) -->
-        <filter id="panel-lens-dark" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-          <feImage href="/panel-lens-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="displacement_map"/>
-          <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="43.67" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
-          <feColorMatrix in="displaced" type="saturate" values="5" result="displaced_saturated"/>
-          <feComponentTransfer in="displaced" result="rgb_dimmed">
-            <feFuncR type="linear" slope="0.9400" intercept="0.0242"/>
-            <feFuncG type="linear" slope="0.9368" intercept="0.0248"/>
-            <feFuncB type="linear" slope="0.9116" intercept="0.0388"/>
-          </feComponentTransfer>
-          <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">
-            <feFuncR type="linear" slope="0.9400" intercept="0.0242"/>
-            <feFuncG type="linear" slope="0.9368" intercept="0.0248"/>
-            <feFuncB type="linear" slope="0.9116" intercept="0.0388"/>
-          </feComponentTransfer>
-          <feImage href="/panel-specular-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
-          <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
-          <feComponentTransfer in="specular_layer" result="specular_faded">
-            <feFuncA type="linear" slope="0.34"/>
-          </feComponentTransfer>
-          <feBlend in="specular_saturated" in2="rgb_dimmed" mode="normal" result="withSaturation"/>
-          <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
-        </filter>
+       Box-clipped (x=0 y=0 100%x100%): the % feImage resolves against the
+       region, so the region MUST equal the element box. EXACTLY ONE of
+       each per page. -->
+    <filter id="lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage href="/lens-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="displacement_map"/>
+      <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="43.67" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feColorMatrix in="displaced" type="saturate" values="5" result="displaced_saturated"/>
+      <feComponentTransfer in="displaced" result="rgb_dimmed">
+        <feFuncR type="linear" slope="0.8500" intercept="0.0606"/>
+        <feFuncG type="linear" slope="0.8421" intercept="0.0619"/>
+        <feFuncB type="linear" slope="0.7789" intercept="0.0971"/>
+      </feComponentTransfer>
+      <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">
+        <feFuncR type="linear" slope="0.8500" intercept="0.0606"/>
+        <feFuncG type="linear" slope="0.8421" intercept="0.0619"/>
+        <feFuncB type="linear" slope="0.7789" intercept="0.0971"/>
+      </feComponentTransfer>
+      <feImage href="/lens-spec.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
+      <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.34"/>
+      </feComponentTransfer>
+      <feBlend in="specular_saturated" in2="rgb_dimmed" mode="normal" result="withSaturation"/>
+      <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
+    </filter>
+    <filter id="lens-dark" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage href="/lens-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="displacement_map"/>
+      <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="43.67" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feColorMatrix in="displaced" type="saturate" values="5" result="displaced_saturated"/>
+      <feComponentTransfer in="displaced" result="rgb_dimmed">
+        <feFuncR type="linear" slope="0.9400" intercept="0.0242"/>
+        <feFuncG type="linear" slope="0.9368" intercept="0.0248"/>
+        <feFuncB type="linear" slope="0.9116" intercept="0.0388"/>
+      </feComponentTransfer>
+      <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">
+        <feFuncR type="linear" slope="0.9400" intercept="0.0242"/>
+        <feFuncG type="linear" slope="0.9368" intercept="0.0248"/>
+        <feFuncB type="linear" slope="0.9116" intercept="0.0388"/>
+      </feComponentTransfer>
+      <feImage href="/lens-spec.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
+      <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.34"/>
+      </feComponentTransfer>
+      <feBlend in="specular_saturated" in2="rgb_dimmed" mode="normal" result="withSaturation"/>
+      <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
+    </filter>
+    <filter id="pane" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="saturate" values="5" result="base_saturated"/>
+      <feComponentTransfer in="SourceGraphic" result="rgb_dimmed">
+        <feFuncR type="linear" slope="0.8500" intercept="0.0606"/>
+        <feFuncG type="linear" slope="0.8421" intercept="0.0619"/>
+        <feFuncB type="linear" slope="0.7789" intercept="0.0971"/>
+      </feComponentTransfer>
+      <feComponentTransfer in="base_saturated" result="saturated_dimmed">
+        <feFuncR type="linear" slope="0.8500" intercept="0.0606"/>
+        <feFuncG type="linear" slope="0.8421" intercept="0.0619"/>
+        <feFuncB type="linear" slope="0.7789" intercept="0.0971"/>
+      </feComponentTransfer>
+      <feImage href="/lens-spec.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
+      <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.34"/>
+      </feComponentTransfer>
+      <feBlend in="specular_saturated" in2="rgb_dimmed" mode="normal" result="withSaturation"/>
+      <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
+    </filter>
+    <filter id="pane-dark" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="saturate" values="5" result="base_saturated"/>
+      <feComponentTransfer in="SourceGraphic" result="rgb_dimmed">
+        <feFuncR type="linear" slope="0.9400" intercept="0.0242"/>
+        <feFuncG type="linear" slope="0.9368" intercept="0.0248"/>
+        <feFuncB type="linear" slope="0.9116" intercept="0.0388"/>
+      </feComponentTransfer>
+      <feComponentTransfer in="base_saturated" result="saturated_dimmed">
+        <feFuncR type="linear" slope="0.9400" intercept="0.0242"/>
+        <feFuncG type="linear" slope="0.9368" intercept="0.0248"/>
+        <feFuncB type="linear" slope="0.9116" intercept="0.0388"/>
+      </feComponentTransfer>
+      <feImage href="/lens-spec.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
+      <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.34"/>
+      </feComponentTransfer>
+      <feBlend in="specular_saturated" in2="rgb_dimmed" mode="normal" result="withSaturation"/>
+      <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
+    </filter>
+    <filter id="drop" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feImage href="/drop-map.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="displacement_map"/>
+      <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="5" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feColorMatrix in="displaced" type="saturate" values="5" result="displaced_saturated"/>
+      <feImage href="/drop-spec.png" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="specular_layer"/>
+      <feComposite in="displaced_saturated" in2="specular_layer" operator="in" result="specular_saturated"/>
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.34"/>
+      </feComponentTransfer>
+      <feBlend in="specular_saturated" in2="displaced" mode="normal" result="withSaturation"/>
+      <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
+    </filter>
       </defs>
     </svg>
     <script type="module" src="/src/main.tsx"></script>

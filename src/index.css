@@ -171,7 +171,7 @@
      dimming the whole screen and glassing an in-page card are different jobs,
      and the screen one is what should stay subtle. */
   --glass-bg-blur: 8px;
-  --glass-veil-blur: 6px;
+  --glass-veil-blur: 4px;
   /* iOS materials read at ~1.4–1.5× saturation: richer colour, still the
      SAME hues as the raw backdrop. 1.7 read as candy next to the page. */
   --glass-bg-sat: 1.5;
@@ -301,43 +301,64 @@
   --glass-text-ambient: 255 255 255;
   --glass-text-ambient-a: 0.5;
 
-  /* ── Panel Type A/B — shared material tokens ─────────────────────────────
-     The panel material IS the playground's kube.io chain, replicated in
-     #panel-lens / #panel-lens-dark (index.html): displacement -> saturate
-     ring -> RGB dim -> specular blend. Rim, saturation, dim and specular
-     all live IN that filter — nothing painted on top (no .glass-edge
-     pairing, no bloom, no CSS saturate: exactly what the playground
-     renders). Blur stays in the CSS chain (blur() == feGaussianBlur,
-     same op before displacement) so A/B keep separate blur numbers.
+  /* ── The material family — the design language ──────────────────────────
+     Six named materials, one library, single source of truth:
+
+       lens      full kube.io material: bend + reflective rim + dim + blur 1×
+                 (menus, notifications, palette, modals, hero, page sections)
+       pane      nested panel: reflective rim, NO bend, blur 2×
+       frost     quiet box: static painted rim, no bend, blur 2×
+       field     inputs & dropdowns: no rim, no bend, keeps its own base fill
+       drop      circular droplet behind icon buttons: bend + reflective rim,
+                 NO dim, blur 0.5px
+       btn-glass kube-style glass button: glass + faint semantic tint
+                 (colored glass, not plastic); no refraction — labels crisp
+
+     lens/pane/drop rim, saturation and dim are FILTER OUTPUT (#lens,
+     #pane, #drop in index.html — playground renderFilter() chains),
+     nothing painted on top. Blur stays in the CSS chain (blur() ==
+     feGaussianBlur, runs before displacement) so each material holds its
+     own blur number.
 
      LIGHT = the kube.io replica tune, 1:1 from the playground export
      (surface convex_squircle, bezel 14, thickness 72, radius 21,
      refraction 0.5, blur 1.0, specular 0.34/5/-55deg, rgb-dim 0.15).
-     The dark theme changes exactly ONE number: --panel-lens-dim. */
-  --panel-lens-dim: 0.15; /* rgb-dim — per-channel wash IN the filter */
-  --panel-dim-tint: 103 100 112; /* dim wash target (mid-grey) + fill colour */
-  --panel-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
-  --panel-a-blur: 1px; /* Blur Level 1.0px (kube tune) */
-  --panel-b-blur: 20px; /* menu: heavier blur, reads as an object */
+     The dark theme changes exactly ONE number: --lens-dim. */
+  --lens-dim: 0.15; /* rgb-dim — per-channel wash IN the lens/pane filters */
+  --dim-tint: 103 100 112; /* dim wash target (mid-grey) + fallback fill */
+  --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
+  --lens-blur: 1px; /* Blur Level 1.0px (kube tune) */
+  --pane-blur: calc(var(--lens-blur) * 2); /* nested: twice the lens blur */
+  --frost-blur: calc(var(--lens-blur) * 2);
+  --field-blur: calc(var(--lens-blur) * 2);
+  --drop-blur: 0.5px; /* a notch under lens — a small droplet stays crisp */
 
-  /* ── the panel-lens physics params (kube.io chain) — SOURCE OF TRUTH:
-     tools/gen-panel-lens.py parses these; --panel-lens-max-displacement is
-     the feDisplacementMap scale in index.html. 43.67 is the approved
-     playground number (= 2·maxAbs·refraction·ratio at export time; the
-     head-smoothed profile now normalizes to 40.35 — normalization only)
-     → ±21.8px peak pull at the border. Change here → rerun the generator
-     → the filter follows. */
-  --panel-lens-surface: convex_squircle;
-  --panel-lens-bezel: 14px;
-  --panel-lens-thickness: 72px;
-  --panel-lens-refraction-level: 0.5;
-  --panel-lens-scale-ratio: 1;
-  --panel-lens-spec-opacity: 0.34;
-  --panel-lens-spec-saturation: 5;
-  --panel-lens-spec-angle: -55deg;
-  --panel-lens-radius: 21px;
-  --panel-lens-size: 326px 64px;
-  --panel-lens-max-displacement: 43.67px;
+  /* ── lens/pane/drop physics params (kube.io chain) — SOURCE OF TRUTH:
+     tools/gen-glass-maps.py parses these; --lens-max-displacement is the
+     #lens feDisplacementMap scale in index.html (43.67 = approved
+     playground number → ±21.8px peak pull) and --drop-max-displacement
+     the #drop scale (5px on a 44px disc — a stronger lens RELATIVE to
+     its diameter). Change here → rerun the generator → filters follow. */
+  --lens-surface: convex_squircle;
+  --lens-bezel: 14px;
+  --lens-thickness: 72px;
+  --lens-refraction-level: 0.5;
+  --lens-scale-ratio: 1;
+  --lens-spec-opacity: 0.34;
+  --lens-spec-saturation: 5;
+  --lens-spec-angle: -55deg;
+  --lens-radius: 21px;
+  --lens-size: 326px 64px;
+  --lens-max-displacement: 43.67px;
+  --drop-size: 44px 44px;
+  --drop-radius: 22px; /* perfect circle */
+  --drop-max-displacement: 5px;
+
+  /* ── kube-style glass button ── */
+  --btn-blur: 6px;
+  --btn-tint-mix: 16%; /* faint semantic tint — colored GLASS, not paint */
+  --btn-edge-a: 0.22; /* outer hairline rim */
+  --btn-lift-a: 0.45; /* lit top edge */
 
   /* Inner bloom — iOS rims spill light just inside the panel: a hairline of
      light under the top rim that melts downward. Paint-only (inset shadows,
@@ -526,12 +547,11 @@
   --pref-row-sel-border: rgba(248, 197, 66, 0.5);
   --pref-row-sheen: rgba(255, 255, 255, 0.12);
 
-  /* ── Panel Type A/B tokens (dark) — the kube tune, EXCEPT dim:
-     the one number that changes is --panel-lens-dim (0.05–0.08 band →
-     0.06). Blur, fill and lens params inherit the light values. */
-  --panel-lens-dim: 0.06;
-  --panel-a-blur: 1px;
-  --panel-b-blur: 26px;
+  /* ── Material family (dark) — the kube tune, EXCEPT dim:
+     the one number that changes is --lens-dim (0.05–0.08 band → 0.06).
+     Blur, fill and physics params inherit the light values. drop has no
+     dim at all (it lives only in the lens/pane filters). */
+  --lens-dim: 0.06;
 }
 
 /* Compatibility layer for older utility-coded surfaces while they are migrated
@@ -879,8 +899,11 @@ select::-webkit-calendar-picker-indicator {
   .glx,
   .glx-strong,
   .glx-dark,
-  .panel-a,
-  .panel-b {
+  .lens,
+  .pane,
+  .frost,
+  .field,
+  .drop {
     corner-shape: squircle;
   }
 }
@@ -998,10 +1021,10 @@ select::-webkit-calendar-picker-indicator {
    structure 1.8x (invisible) vs 31x reordered. The map is 50% grey across the
    interior, so the displacement is identity in the middle: centre colour ≡
    corner colour except at the rim. */
-:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx {
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx:not(.field) {
   backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat)) url('#lg-lens');
 }
-:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-strong {
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-strong:not(.field) {
   backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat)) url('#lg-lens');
 }
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx-dark {
@@ -1018,8 +1041,8 @@ select::-webkit-calendar-picker-indicator {
    Same-specificity prefix as the lens rules — this block sits AFTER them, so
    on a tie the de-nest wins. */
 :root:not([data-glass='lite']):not([data-glass='off'])
-  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b)
-  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b) {
+  :is(.glx, .glx-strong, .glx-dark, .lens)
+  :is(.glx, .glx-strong, .glx-dark, .lens) {
   backdrop-filter: none;
   /* flat, quiet fill — a row resting on glass, not glass on glass */
   --glass-p-fa1: 0.05;
@@ -1034,13 +1057,13 @@ select::-webkit-calendar-picker-indicator {
 }
 /* nested rims die too: a row on glass gets no ring, no feather */
 :root:not([data-glass='lite']):not([data-glass='off'])
-  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b)
-  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b).glass-edge::before {
+  :is(.glx, .glx-strong, .glx-dark, .lens)
+  :is(.glx, .glx-strong, .glx-dark, .lens).glass-edge::before {
   content: none;
 }
 :root:not([data-glass='lite']):not([data-glass='off'])
-  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b)
-  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b).glass-edge::after {
+  :is(.glx, .glx-strong, .glx-dark, .lens)
+  :is(.glx, .glx-strong, .glx-dark, .lens).glass-edge::after {
   background: linear-gradient(
     var(--glass-p-angle),
     rgb(var(--glass-p-tint) / 0.05),
@@ -1140,10 +1163,10 @@ select::-webkit-calendar-picker-indicator {
   --glass-p-a2: 0.44;
   /* transparent panels lose their filter first — the CSS fill carries
      contrast (the in-filter dim/gloss is gone with backdrop-filter) */
-  --panel-fill: 0.32;
+  --glass-fill: 0.32;
 }
 :root[data-glass='lite']
-  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b, .veil-blur, .chrome-blur) {
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
 
@@ -1151,7 +1174,7 @@ select::-webkit-calendar-picker-indicator {
   --glass-p-a1: 0.97;
   --glass-p-a2: 0.97;
   /* off = solid silhouette: transparent panels go solid with the tier */
-  --panel-fill: 0.85;
+  --glass-fill: 0.85;
   --ui-inset-fill: rgba(250, 248, 245, 1);
   /* solid panels need their silhouette back */
   --glass-p-ba: 0.35;
@@ -1162,7 +1185,7 @@ select::-webkit-calendar-picker-indicator {
   --glass-p-ba: 0.4;
 }
 :root[data-glass='off']
-  :is(.glx, .glx-strong, .glx-dark, .panel-a, .panel-b, .veil-blur, .chrome-blur) {
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
 :root[data-glass='off'] .glass-edge::after {
@@ -1700,52 +1723,136 @@ button {
   gap: 0.5rem;
 }
 
-/* ─── Panel Type A/B — the playground material, replicated ────────────────
-   ZERO DIFFERENCE from public/playground (the rule): the panel IS the
-   kube.io filter chain, nothing painted on top.
+/* ─── The material family — the design language ──────────────────────────
+   Six materials, every surface in the app is one of them:
 
-     #panel-lens        displacement -> saturate ring (5) -> RGB dim
-                         -> specular layer (-55deg, 0.34) -> feBlend
-                         [light: dim 0.15]
-     #panel-lens-dark   identical chain, dim 0.06                    [dark]
+     lens      bend + reflective rim + dim + blur 1×  (#lens / #lens-dark)
+     pane      reflective rim, NO bend, blur 2×       (#pane / #pane-dark)
+     frost     static painted rim, no bend, blur 2×   (pure CSS — everywhere)
+     field     no rim, no bend, keeps its host fill   (pure CSS — everywhere)
+     drop      circular: bend + reflective rim, no dim, blur 0.5px (#drop)
+     btn-glass glass + faint semantic tint, no refraction (below)
 
-   Rim, saturation and dim are FILTER OUTPUT — exactly like the playground's
-   bare #glass — so these utilities paint NO rim (no .glass-edge pairing),
-   NO bloom, NO text-shadow, NO CSS saturate. What stays in CSS:
-
-     · blur — blur() is the feGaussianBlur equivalent and runs BEFORE the
-       url() just like the playground blurs before displacing; keeping it
-       here lets A and B hold separate blur numbers with one filter.
-     · --panel-fill — the playground's glassBg: 0 on capable devices
-       (default), the CSS fill that stands in for the whole filter when
-       the lite/off tiers strip backdrop-filter (tier swap = token swap).
-
-   panel-a — notification banner: 1px blur (the kube Blur Level).
-   panel-b — menu panel: heavier blur, same material. */
-@utility panel-a {
-  background: rgb(var(--panel-dim-tint) / var(--panel-fill));
+   rim/sat/dim for lens/pane/drop are FILTER OUTPUT (playground chain,
+   ZERO DIFFERENCE from public/playground) — these utilities paint no rim,
+   no bloom, no text-shadow, no CSS saturate. Blur stays in the CSS chain
+   (blur() == feGaussianBlur, runs before the url). --glass-fill is the
+   playground's glassBg: 0 on capable devices, the CSS fill that stands in
+   when lite/off strip backdrop-filter. field composes ON a host fill
+   class (glx-strong/glx-inset/glx) and never bends — the glx gates
+   exclude .field for that reason. */
+@utility lens {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
   border: 0; /* silhouette comes from the filter rim, not a border */
-  backdrop-filter: blur(var(--panel-a-blur));
+  backdrop-filter: blur(var(--lens-blur));
 }
 
-@utility panel-b {
-  background: rgb(var(--panel-dim-tint) / var(--panel-fill));
+@utility pane {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
   border: 0;
-  backdrop-filter: blur(var(--panel-b-blur));
+  backdrop-filter: blur(var(--pane-blur));
+}
+
+@utility frost {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  border: 0;
+  backdrop-filter: blur(var(--frost-blur));
+  /* static rim — painted once, never samples the backdrop (quiet boxes;
+     the reflective rim lives only in the lens/pane/drop filters) */
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.13),
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 10px 24px -20px rgb(255 255 255 / var(--glass-bloom-a));
+}
+
+@utility field {
+  /* the host class keeps the base fill; field only adds the frosted
+     blur — no rim, no bend: inputs/dropdowns read as tinted glass */
+  backdrop-filter: blur(var(--field-blur));
+}
+
+@utility drop {
+  border-radius: 9999px;
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--drop-blur));
+}
+/* where the bend can't run (probe off), the droplet keeps a static ring */
+:root:not([data-lens='on']) .drop {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
 }
 
 /* The full chain runs once the boot probe allows url() (Chromium >= 138);
    blur already happened in the utility above, the filter does the rest.
-   The theme gate picks the dim — the ONLY thing that differs per theme. */
-:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-a {
-  backdrop-filter: blur(var(--panel-a-blur)) url('#panel-lens');
+   The theme gate picks the dim — the ONLY thing that differs per theme.
+   drop has NO dark variant: it carries no dim. */
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .lens {
+  backdrop-filter: blur(var(--lens-blur)) url('#lens');
 }
-:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-b {
-  backdrop-filter: blur(var(--panel-b-blur)) url('#panel-lens');
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .pane {
+  backdrop-filter: blur(var(--pane-blur)) url('#pane');
 }
-:root[data-theme='dark'][data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-a {
-  backdrop-filter: blur(var(--panel-a-blur)) url('#panel-lens-dark');
+:root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .drop {
+  backdrop-filter: blur(var(--drop-blur)) url('#drop');
 }
-:root[data-theme='dark'][data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .panel-b {
-  backdrop-filter: blur(var(--panel-b-blur)) url('#panel-lens-dark');
+:root[data-theme='dark'][data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .lens {
+  backdrop-filter: blur(var(--lens-blur)) url('#lens-dark');
+}
+:root[data-theme='dark'][data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .pane {
+  backdrop-filter: blur(var(--pane-blur)) url('#pane-dark');
+}
+
+/* ─── kube-style glass button — glass + faint semantic tint ──────────────
+   Colored GLASS, not plastic: a translucent tint layer under a lit top
+   edge, hairline rim, soft lift. NO refraction — the bend lives on panels,
+   never behind content, so labels and icons stay razor-crisp. Variants
+   tint from the semantic color tokens at --btn-tint-mix (16% = a wash,
+   the color of the glass, not paint on it). Text stays theme ink: the
+   glass is pale in both themes, so theme ink always reads. */
+@utility btn-glass {
+  --btn-tint: transparent;
+  background:
+    linear-gradient(var(--glass-p-angle), rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.03)),
+    color-mix(in srgb, var(--btn-tint) var(--btn-tint-mix), transparent);
+  border: 1px solid rgb(255 255 255 / var(--btn-edge-a));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--btn-lift-a)),
+    inset 0 -8px 14px -10px rgb(255 255 255 / 0.35),
+    0 1px 2px rgb(0 0 0 / 0.1);
+  color: var(--color-text-primary);
+  backdrop-filter: blur(var(--btn-blur)) saturate(1.4);
+}
+.btn-glass:hover {
+  filter: brightness(1.06);
+}
+.btn-glass:active {
+  filter: brightness(0.96);
+  transform: translateY(0.5px);
+}
+.btn-glass:disabled {
+  opacity: 0.45;
+  filter: none;
+}
+.btn-glass--primary {
+  --btn-tint: var(--color-accent-solid);
+}
+.btn-glass--danger {
+  --btn-tint: var(--color-danger-solid);
+}
+.btn-glass--success {
+  --btn-tint: var(--color-success-solid);
+}
+.btn-glass--gold {
+  --btn-tint: var(--color-gold);
+}
+/* neutral glass (secondary / outline): no tint, quieter rim */
+.btn-glass--quiet {
+  --btn-tint-mix: 0%;
+  --btn-edge-a: 0.16;
+}
+/* pure ghost: no body — toolbars and rows that only need press feedback */
+.btn-glass--bare {
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
