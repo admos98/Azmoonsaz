@@ -28,6 +28,8 @@ import {
   computeProfile,
   imageDataToURL,
   mapCornerExp,
+  mapDPR,
+  mapScaleFor,
   type LensParams,
 } from './lensEngine';
 
@@ -71,13 +73,13 @@ function defaultParamsFromRoot(): LensParams {
   const cs = getComputedStyle(document.documentElement);
   return {
     bezel: cssNum(cs, '--lens-bezel', 14),
-    thickness: cssNum(cs, '--lens-thickness', 72),
-    refraction: cssNum(cs, '--lens-refraction-level', 0.5),
+    thickness: cssNum(cs, '--lens-thickness', 66),
+    refraction: cssNum(cs, '--lens-refraction-level', 0.7),
     scaleRatio: cssNum(cs, '--lens-scale-ratio', 1),
-    specOpacity: cssNum(cs, '--lens-spec-opacity', 0.34),
-    specSaturation: cssNum(cs, '--lens-spec-saturation', 5),
-    specAngle: cssNum(cs, '--lens-spec-angle', -55),
-    specPeak: cssNum(cs, '--lens-spec-peak', 2),
+    specOpacity: cssNum(cs, '--lens-spec-opacity', 0.2),
+    specSaturation: cssNum(cs, '--lens-spec-saturation', 4),
+    specAngle: cssNum(cs, '--lens-spec-angle', -60),
+    specPeak: cssNum(cs, '--lens-spec-peak', 1),
     cornerExp: cssNum(cs, '--corner-exp', 3),
     dim: cssNum(cs, '--lens-dim', 0.15),
     dimTint: [103, 100, 112],
@@ -88,30 +90,31 @@ function defaultParamsFromRoot(): LensParams {
  *  a 200x400 panel is one 80k px loop, sub-frame. Cards/rows of the same
  *  size share the single cached entry. */
 function ensureBucket(kind: 'lens' | 'pane' | 'drop', w: number, h: number, radius: number): BucketEntry {
-  // quantized key: two panels within 8px share one map (stretch is invisible
-  // at 1px blur) — keeps the table bounded during resize tweens
-  const qw = Math.max(2, Math.round(w / 8) * 8);
-  const qh = Math.max(2, Math.round(h / 8) * 8);
-  const key = `${kind}|${qw}x${qh}|${Math.round(radius)}`;
+  // key on exact size — every panel gets the rim and corners at its own
+  // geometry (playground contract). Tween-storm on resize is already killed
+  // by the quantized idempotent key in sync().
+  const key = `${kind}|${w}x${h}|${Math.round(radius)}`;
   const hit = MAP_TABLE.get(key);
   if (hit) return hit;
   const p = defaultParams ?? (defaultParams = defaultParamsFromRoot());
   const cornerExp = mapCornerExp(p.cornerExp, CORNER_SHAPE_SUPPORTED);
   const prof = computeProfile(p.bezel, p.thickness);
-  // build at the quantized size, capped long side — gradient maps upscale fine
-  const cap = Math.min(1, 512 / Math.max(qw, qh, 1));
-  const bw = Math.max(2, Math.round(qw * cap));
-  const bh = Math.max(2, Math.round(qh * cap));
-  const r = radius >= 9999 ? Math.min(bw, bh) / 2 : Math.min(radius * cap, Math.min(bw, bh) / 2 - 1);
+  const r = radius >= 9999 ? Math.min(w, h) / 2 : Math.min(radius, Math.min(w, h) / 2 - 1);
+  // Map resolution contract (playground parity): build the maps at the
+  // display DPR (1..2 device px per CSS px), capped by MAX_MAP_SIDE. feImage
+  // then paints them at W×H CSS px, so the rim lands exactly on the border at
+  // full density. Building at scale 1 made every rim a 1x bitmap upscaled by
+  // the browser on a 2x display — the soft, "low quality" ring.
+  const scale = mapDPR() * mapScaleFor(w, h);
   let dispURL: string | null = null;
   let maxAbs = 1;
   if (kind !== 'pane') {
-    const dm = buildDisplacementMap(bw, bh, r, p.bezel * cap, prof, 1, cornerExp);
+    const dm = buildDisplacementMap(w, h, r, p.bezel, prof, scale, cornerExp);
     maxAbs = dm.maxAbs;
     dispURL = imageDataToURL(dm.img);
   }
   const specURL = imageDataToURL(
-    buildSpecularMap(bw, bh, r, p.specAngle, 1, p.specPeak * cap, cornerExp),
+    buildSpecularMap(w, h, r, p.specAngle, scale, p.specPeak, cornerExp),
   );
   const entry: BucketEntry = { dispURL, specURL, maxAbs };
   MAP_TABLE.set(key, entry);
@@ -197,10 +200,8 @@ function sync(el: HTMLElement): void {
   const chainBase = chainOf(el, cs);
   const withDim = kind !== 'drop' && p.dim > 0;
 
-  // idempotent: same panel + same quantized size + same params = nothing to do
-  const qw = Math.round(w / 8) * 8;
-  const qh = Math.round(h / 8) * 8;
-  const quickKey = `${kind}|${qw}x${qh}|${Math.round(radius)}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
+  // idempotent: same panel + same size + same params = nothing to do
+  const quickKey = `${kind}|${w}x${h}|${Math.round(radius)}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
   if (el.dataset.lastQuickKey === quickKey) return;
   el.dataset.lastQuickKey = quickKey;
 
@@ -222,13 +223,13 @@ function sync(el: HTMLElement): void {
 function readParams(cs: CSSStyleDeclaration): LensParams {
   return {
     bezel: cssNum(cs, '--lens-bezel', 14),
-    thickness: cssNum(cs, '--lens-thickness', 72),
-    refraction: cssNum(cs, '--lens-refraction-level', 0.5),
+    thickness: cssNum(cs, '--lens-thickness', 66),
+    refraction: cssNum(cs, '--lens-refraction-level', 0.7),
     scaleRatio: cssNum(cs, '--lens-scale-ratio', 1),
-    specOpacity: cssNum(cs, '--lens-spec-opacity', 0.34),
-    specSaturation: cssNum(cs, '--lens-spec-saturation', 5),
-    specAngle: cssNum(cs, '--lens-spec-angle', -55),
-    specPeak: cssNum(cs, '--lens-spec-peak', 2),
+    specOpacity: cssNum(cs, '--lens-spec-opacity', 0.2),
+    specSaturation: cssNum(cs, '--lens-spec-saturation', 4),
+    specAngle: cssNum(cs, '--lens-spec-angle', -60),
+    specPeak: cssNum(cs, '--lens-spec-peak', 1),
     cornerExp: cssNum(cs, '--corner-exp', 3),
     dim: cssNum(cs, '--lens-dim', 0.15),
     dimTint: [103, 100, 112],
@@ -284,29 +285,27 @@ export function mountGlassEngine(): void {
   resizeObserver = new ResizeObserver((entries) => {
     for (const e of entries) {
       const el = e.target as HTMLElement;
-      // Rebuild only once the size SETTLES — a tween's in-between sizes
-      // would each key a new exact-size map (per-frame thrash). rAF-coalesce.
+      // Rebuild only once the size STOPS changing. A tween reports a new
+      // size every frame; we sync only when two consecutive rAF samples
+      // agree, so a 200ms width animation costs one map, not 12.
       el.dataset.pendingSize = `${el.offsetWidth}x${el.offsetHeight}`;
-      if (!el.dataset.settleRaf) {
-        el.dataset.settleRaf = '1';
-        requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (el.dataset.settleRaf) continue;
+      el.dataset.settleRaf = '1';
+      const tick = () => {
+        const cur = el.dataset.pendingSize;
+        if (cur === el.dataset.settleCheck) {
           el.dataset.settleRaf = '';
-          const w = el.offsetWidth;
-          const h = el.offsetHeight;
-          // Quantize: rebuild only when the size moves by >=8px or crosses a
-          // radius boundary on the quantized grid — animating pills/menus
-          // stay on their current map (invisible stretch at 1px blur) and
-          // snap to exact once they stop.
-          const qw = Math.round(w / 8) * 8;
-          const qh = Math.round(h / 8) * 8;
-          const key = `${qw}x${qh}|${radiusOf(el, getComputedStyle(el), 21)}`;
-          if (el.dataset.lastBucket !== key) {
-            el.dataset.lastBucket = key;
-            el.dataset.lastSize = `${w}x${h}`;
+          el.dataset.settleCheck = '';
+          if (el.dataset.lastSize !== cur) {
+            el.dataset.lastSize = cur;
             try { sync(el); } catch { /* keep plain chain */ }
           }
-        }));
-      }
+          return;
+        }
+        el.dataset.settleCheck = cur;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
     }
   });
   attrObserver = new MutationObserver(() => scheduleSweep());

@@ -435,14 +435,14 @@ describe('glass material contract (pixel-audit gates)', () => {
     // physics params parsed by tools/gen-glass-maps.py
     expect(token('--lens-surface')).toBe('convex_squircle');
     expect(token('--lens-bezel')).toBe('14px');
-    expect(token('--lens-thickness')).toBe('72px');
-    expect(token('--lens-refraction-level')).toBe('0.5');
+    expect(token('--lens-thickness')).toBe('66px');
+    expect(token('--lens-refraction-level')).toBe('0.7');
     expect(token('--lens-scale-ratio')).toBe('1');
-    expect(token('--lens-spec-opacity')).toBe('0.34');
-    expect(token('--lens-spec-saturation')).toBe('5');
-    expect(token('--lens-spec-angle')).toBe('-55deg');
-    // rim thickness = 2×peak CSS px (user tune: +2px over the kube.io 1px)
-    expect(token('--lens-spec-peak')).toBe('2px');
+    expect(token('--lens-spec-opacity')).toBe('0.2');
+    expect(token('--lens-spec-saturation')).toBe('4');
+    expect(token('--lens-spec-angle')).toBe('-60deg');
+    // rim thickness = 2×peak CSS px — playground parity (kube.io 1px)
+    expect(token('--lens-spec-peak')).toBe('1px');
     expect(token('--corner-exp')).toBe('2');
     expect(token('--lens-radius')).toBe('21px');
     expect(token('--lens-size')).toBe('326px 64px');

@@ -307,16 +307,16 @@
      Change here → the engine picks it up on its next sync pass. */
   --lens-surface: convex_squircle;
   --lens-bezel: 14px;
-  --lens-thickness: 72px;
-  --lens-refraction-level: 0.5;
+  --lens-thickness: 66px;
+  --lens-refraction-level: 0.7;
   --lens-scale-ratio: 1;
-  --lens-spec-opacity: 0.34;
-  --lens-spec-saturation: 5;
-  --lens-spec-angle: -55deg;
+  --lens-spec-opacity: 0.2;
+  --lens-spec-saturation: 4;
+  --lens-spec-angle: -60deg;
   /* Rim thickness — the specular ring's half-width in CSS px (the rim paints
      2×peak wide: the white glint AND the saturated backdrop reflection the
      ring masks). Was 1px/2px total; the app tune widens it +2px. */
-  --lens-spec-peak: 2px;
+  --lens-spec-peak: 1px;
   --lens-radius: 21px;
   --lens-size: 326px 64px;
   --lens-max-displacement: 43.67px;
