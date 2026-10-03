@@ -4,7 +4,7 @@
  *
  * Liquid-glass filter builder — the playground's renderFilter() ordering.
  *
- * The map MATH lives in mapMath.ts (DOM-free, shared with mapWorker.ts so
+ * The map MATH lives in mapMath.ts (DOM-free, shared across the engine so
  * maps build + PNG-encode OFF the main thread). This module keeps the parts
  * that own document policy:
  *   - mapDPR/currentDPR — the display-conditional map resolution;

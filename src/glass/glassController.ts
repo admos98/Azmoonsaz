@@ -2,39 +2,23 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Liquid-glass controller — the playground's per-panel rebuild loop, sized to
- * the app. Reads physics from the CSS tokens (single source of truth —
- * --lens-* / --corner-* in src/index.css), keeps ONE SHARED <filter> per
- * unique geometry signature (cards in a grid reuse one graph), and wires each
- * panel's backdrop-filter to `blur() saturate() url(#own-id)` inline.
+ * Liquid-glass controller — FIXED-LADDER EDITION (2026-10-04).
  *
- * Covers EVERY glass family: .lens/.pane/.drop AND .glx/.glx-strong/.glx-dark
- * — previously the card classes stayed on a static stretched-map fallback
- * that Chromium cannot render (external feImage hrefs never load inside
- * backdrop-filter chains; see docs/liquid-glass-engine-audit.md C2/C5).
+ * One decision, no scheduler: displacement + specular maps are built ONCE at
+ * boot from a small static ladder (radius class × aspect class), then every
+ * panel just points its inline backdrop-filter at `blur() saturate()
+ * url(#shared)` where #shared is a cached <filter> keyed by
+ * (kind, map bucket, W×H, dim-mode). No workers, no LRU cache, no lazy
+ * IntersectionObserver builds, no per-panel rebuild storms.
  *
- * Perf contract (audit C6–C9, extended 2026-10):
- *  - no feGaussianBlur in the SVG chain — blur stays in the CSS chain (GPU);
- *  - map BUILDING + PNG ENCODING run in a small worker pool (mapWorker.ts) —
- *    the main thread never blocks on toDataURL (was 30-80ms per big panel);
- *  - maps come back as blob: object URLs (verified inside feImage +
- *    backdrop-filter; CSP img-src allows blob:) — no base64 inflation;
- *  - MAP DATA is cached (LRU) by geometry+physics signature. Theme flips and
- *    specular-strength tweaks only rebuild the cheap <filter> markup, never
- *    the maps;
- *  - viewport-lazy: panels farther than 600px off-screen keep the plain CSS
- *    chain and build their maps only when they approach the viewport;
- *  - maps build at min(display DPR, 1) capped to 1024px on the long side —
- *    gradient fields survive bilinear upscaling losslessly, the interior is
- *    flat-neutral, and the specular ring is defined in CSS px;
- *  - ResizeObserver rebuilds are rAF-coalesced + 120ms trailing-debounced;
- *  - MutationObserver sweeps are rAF-coalesced (max one pass per frame);
- *  - pruneDead is a single DOM pass, not one querySelectorAll per filter.
+ * Why the ladder: maps are smooth gradient rings; a map built for a 256px
+ * panel is mathematically identical (bilinear upscale, flat-neutral interior,
+ * CSS-px specular ring) to one built at 1024px. The only real axes of
+ * variation are CORNER RADIUS and ASPECT — so bucket exactly those two and
+ * everything else is a shared cache hit.
  *
- * Graceful degradation: if Workers/OffscreenCanvas are unavailable (or the
- * worker script fails to load), maps build synchronously on the main thread
- * as data URIs — same visuals, old cost profile. No-ops when the boot gate
- * says no lensing (data-lens/data-glass) — panels keep the plain CSS chain.
+ * The playground's physics survive intact: same mapMath, same curvature
+ * exponent (n = 2^k, Chromium-verified), same specular arc, same bezel ring.
  */
 
 import {
@@ -44,269 +28,58 @@ import {
   computeProfile,
   imageDataToURL,
   mapCornerExp,
-  mapScaleFor,
   type LensParams,
 } from './lensEngine';
-import type { MapRequest } from './mapWorker';
+
+/* ───────────────────── Ladder ───────────────────── */
+
+/** Radius classes that actually ship in this app. 9999 = pill/drop (exact
+ *  circle). Custom radii snap to the nearest class; a mismatch > 8px sets
+ *  data-lens-snap on the element so DevTools explains it. */
+const RADIUS_RUNGS = [8, 14, 21, 28, 64, 9999] as const;
+
+/** Aspect classes — keeps the bezel ramp proportional under feImage stretch. */
+type Aspect = 'wide' | 'tall' | 'square';
+
+/** Canvas sizes per aspect class. Small on purpose: smooth gradients survive
+ *  bilinear upscaling exactly (flat-neutral interior, smooth ring ramp). */
+const ASPECT_SIZE: Record<Aspect, { w: number; h: number }> = {
+  wide: { w: 256, h: 160 },
+  tall: { w: 160, h: 256 },
+  square: { w: 200, h: 200 },
+};
+
+/* ───────────────────── Static map table ───────────────────── */
+
+interface BucketEntry {
+  dispURL: string | null; // null for 'pane' (rim-only by design)
+  specURL: string;
+  maxAbs: number;
+}
+
+/** `${kind}|${radius}|${aspect}` -> built maps. Built ONCE at boot. */
+const MAP_TABLE = new Map<string, BucketEntry>();
+
+/** `${kind}|${radius}|${aspect}|${w}x${h}|${dimBit}|${specOpacity}|${specSat}|${dim}` -> filter id */
+const FILTERS = new Map<string, string>();
+
+const byEl = new WeakMap<Element, string>();
 
 let mounted = false;
 let resizeObserver: ResizeObserver | null = null;
 let attrObserver: MutationObserver | null = null;
 let domObserver: MutationObserver | null = null;
-let intersectionObserver: IntersectionObserver | null = null;
 let container: SVGDefsElement | null = null;
-/** el -> its shared filter id (so a resync can re-target the same slot). */
-const byEl = new WeakMap<Element, string>();
-/** filter signature -> shared filter id. Cards in a grid, rows, buttons —
- *  identical geometry + params share ONE <filter> (one graph, one decode). */
-const bySig = new Map<string, string>();
 let seq = 0;
 
-/* ── per-frame cost budget (the "simple HTML page" contract) ──
-   Measured A/B (tools/probe-tier.mjs, scroll fps, software raster): full live
-   url() chains 22.5 | blur+saturate only 57.5 | no backdrop-filter 55.5. The
-   reference-filter chain is ~2.5x the ENTIRE page per frame; plain blur is
-   free. So live refraction is reserved for FLOATING CHROME (menus, dropdowns,
-   modals, hover panes, sticky topbar) and small surfaces — the elements that
-   read as physical glass objects. In-flow scrolling content (cards, sections,
-   hero) gets the GPU tier: blur+saturate chain (compositor path) + a painted
-   superellipse rim (CSS inset shadows on .lg-gpu, index.css). Identical
-   geometry, identical material read, no per-frame filter work. */
-const GPU_TIER_MAX_SIDE = 96; // small circles/pills stay live — trivially cheap
+let defaultParams: LensParams | null = null;
 
-/** Does this browser paint corner-shape? Computed once; drives the corner
- *  exponent the MAPS use so the rim follows the corners CSS actually paints
- *  (without support CSS degrades to circles → k=1 keeps the maps honest). */
-const CORNER_SHAPE_SUPPORTED =
-  typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
-    ? CSS.supports('corner-shape', 'superellipse(2)')
-    : false;
+const GLASS_SELECTOR = '.lens, .pane, .drop, .glx, .glx-strong, .glx-dark';
 
-/* ── worker pool: map building + PNG encode, off the main thread ── */
-const workers: Worker[] = [];
-let workerIdx = 0;
-let workerBroken = false;
-let reqSeq = 0;
-/** reqId -> the exact request (also the recipe for the sync fallback). */
-const inFlight = new Map<number, MapRequest>();
+/* ───────────────────── boot: build the ladder once ───────────────────── */
 
-function pickWorker(): Worker | null {
-  if (workerBroken) return null;
-  if (workers.length) return workers[workerIdx++ % workers.length];
-  try {
-    const count = Math.min(2, Math.max(1, (navigator.hardwareConcurrency || 2) - 1));
-    for (let i = 0; i < count; i++) {
-      const w = new Worker(new URL('./mapWorker.ts', import.meta.url), { type: 'module' });
-      w.onmessage = onMapResponse;
-      w.onerror = () => markWorkersBroken();
-      workers.push(w);
-    }
-    return workers[workerIdx++ % workers.length];
-  } catch {
-    workerBroken = true;
-    return null;
-  }
-}
-
-function markWorkersBroken(): void {
-  if (workerBroken) return;
-  workerBroken = true;
-  for (const w of workers) w.terminate();
-  workers.length = 0;
-  // finish every pending map synchronously so panels don't wait forever
-  for (const entry of [...mapCache.values()]) {
-    if (entry.state === 'pending' && entry.req) buildSync(entry);
-  }
-}
-
-/* ── map cache (LRU) — keyed by everything that changes MAP PIXELS ──
-   Deliberately NOT keyed by dim/specOpacity/specSaturation: those only shape
-   the cheap <filter> markup, so a theme flip re-dresses every panel without
-   rebuilding a single map. */
-interface MapEntry {
-  state: 'pending' | 'ready' | 'failed';
-  dispURL: string | null;
-  specURL: string;
-  maxAbs: number;
-  /** URLs are ours (blob:) — must be revoked when evicted/cleared. */
-  owned: boolean;
-  /** Elements waiting for this map; re-synced (fresh params) on arrival. */
-  waiters: Set<HTMLElement>;
-  /** The request recipe — kept for the sync fallback after worker failure. */
-  req: MapRequest | null;
-}
-const MAP_CACHE_CAP = 64;
-const mapCache = new Map<string, MapEntry>();
-
-function touchCache(mapSig: string): void {
-  const e = mapCache.get(mapSig);
-  if (e) {
-    mapCache.delete(mapSig);
-    mapCache.set(mapSig, e);
-  }
-}
-
-/** Revoke blob URLs only when no live <filter> still references them. */
-function revokeIfUnused(urls: Array<string | null>): void {
-  if (!container) return;
-  const live = new Set<string>();
-  for (const node of container.children) {
-    for (const img of node.querySelectorAll('feImage')) {
-      const href = img.getAttribute('href');
-      if (href) live.add(href);
-    }
-  }
-  for (const u of urls) {
-    if (u && u.startsWith('blob:') && !live.has(u)) URL.revokeObjectURL(u);
-  }
-}
-
-function evictCache(): void {
-  while (mapCache.size > MAP_CACHE_CAP) {
-    const oldestKey = mapCache.keys().next().value as string | undefined;
-    if (oldestKey === undefined) break;
-    const entry = mapCache.get(oldestKey)!;
-    mapCache.delete(oldestKey);
-    if (entry.owned) revokeIfUnused([entry.dispURL, entry.specURL]);
-  }
-}
-
-function buildSync(entry: MapEntry): void {
-  const q = entry.req;
-  if (!q) {
-    entry.state = 'failed';
-    return;
-  }
-  try {
-    const prof = computeProfile(q.bezel, q.thickness);
-    let dispURL: string | null = null;
-    let maxAbs = 1;
-    if (q.kind !== 'pane') {
-      const radius = q.kind === 'drop' ? Math.min(q.w, q.h) / 2 : q.radius;
-      const dm = buildDisplacementMap(q.w, q.h, radius, q.bezel, prof, q.scale, q.cornerExp);
-      maxAbs = dm.maxAbs;
-      dispURL = imageDataToURL(dm.img);
-    }
-    const specURL = imageDataToURL(
-      buildSpecularMap(q.w, q.h, q.radius, q.specAngle, q.scale, q.specPeak, q.cornerExp),
-    );
-    entry.dispURL = dispURL;
-    entry.specURL = specURL;
-    entry.maxAbs = maxAbs;
-    entry.state = 'ready';
-    entry.owned = false; // data URIs — nothing to revoke
-  } catch {
-    entry.state = 'failed';
-  }
-  wakeWaiters(entry);
-}
-
-function wakeWaiters(entry: MapEntry): void {
-  const waiting = [...entry.waiters];
-  entry.waiters.clear();
-  for (const el of waiting) {
-    if (el.isConnected) sync(el); // re-sync: cache hit path attaches the filter
-  }
-}
-
-function onMapResponse(e: MessageEvent): void {
-  const resp = e.data as {
-    reqId: number;
-    dispBlob: Blob | null;
-    specBlob: Blob | null;
-    maxAbs: number;
-    error?: string;
-  };
-  const req = inFlight.get(resp.reqId);
-  if (!req) return;
-  inFlight.delete(resp.reqId);
-  const mapSig = mapSigOf(req);
-  const entry = mapCache.get(mapSig);
-  if (!entry || entry.state !== 'pending') return; // evicted / superseded
-  if (resp.error || !resp.specBlob) {
-    entry.state = 'failed';
-  } else {
-    entry.dispURL = resp.dispBlob ? URL.createObjectURL(resp.dispBlob) : null;
-    entry.specURL = URL.createObjectURL(resp.specBlob);
-    entry.maxAbs = resp.maxAbs;
-    entry.owned = true;
-    entry.state = 'ready';
-  }
-  wakeWaiters(entry);
-}
-
-function mapSigOf(q: MapRequest): string {
-  return [
-    q.kind,
-    q.w,
-    q.h,
-    q.radius,
-    q.bezel,
-    q.thickness,
-    q.refraction,
-    q.scaleRatio,
-    q.scale,
-    q.specAngle,
-    q.specPeak,
-    q.cornerExp,
-  ].join('|');
-}
-
-/* ── rAF-coalesced scheduling ── */
-let sweepQueued = false;
-function scheduleSweep(): void {
-  if (sweepQueued || !mounted) return;
-  sweepQueued = true;
-  requestAnimationFrame(() => {
-    sweepQueued = false;
-    resyncGlass();
-  });
-}
-
-/* ── resize debounce: rebuild maps only after the storm settles ──
-   Small elements (hover pills, drops) rebuild in ~2-5ms worker-side — a long
-   debounce only delays their reveal; big panels keep the settling window. */
-const resized = new Set<HTMLElement>();
-let resizeTimer = 0;
-function queueResize(el: HTMLElement): void {
-  if (!mounted) return;
-  resized.add(el);
-  clearTimeout(resizeTimer);
-  const small = el.offsetWidth * el.offsetHeight < 40_000;
-  resizeTimer = window.setTimeout(
-    () => {
-      for (const e of resized) {
-        try {
-          sync(e);
-        } catch {
-          /* a panel that fails to build keeps its plain CSS chain */
-        }
-      }
-      resized.clear();
-    },
-    small ? 30 : 120,
-  );
-}
-
-/* ── viewport gate: panels build maps only as they approach the screen ── */
-const nearViewport = new WeakSet<HTMLElement>();
-const ioTracked = new WeakSet<HTMLElement>();
-
-function cssNum(cs: CSSStyleDeclaration, name: string, fallback: number): number {
-  const n = parseFloat(cs.getPropertyValue(name).trim());
-  return Number.isFinite(n) ? n : fallback;
-}
-
-/** First length of a border-radius shorthand ("14px", "28px 28px", "50%"). */
-function radiusOf(el: HTMLElement, cs: CSSStyleDeclaration, fallback: number): number {
-  const raw = (cs.borderRadius || '').trim().split(/[\s/]+/)[0];
-  const n = parseFloat(raw);
-  if (!Number.isFinite(n)) return fallback;
-  if (raw.endsWith('%')) return (n / 100) * Math.min(el.offsetWidth, el.offsetHeight);
-  return n;
-}
-
-function readParams(cs: CSSStyleDeclaration): LensParams {
+function defaultParamsFromRoot(): LensParams {
+  const cs = getComputedStyle(document.documentElement);
   return {
     bezel: cssNum(cs, '--lens-bezel', 14),
     thickness: cssNum(cs, '--lens-thickness', 72),
@@ -322,8 +95,86 @@ function readParams(cs: CSSStyleDeclaration): LensParams {
   };
 }
 
-/** Family blur + saturate for the inline CSS chain. Blur is per family —
- *  the SVG chain no longer contains a feGaussianBlur. */
+function buildLadder(): void {
+  const p = defaultParams ?? (defaultParams = defaultParamsFromRoot());
+  const cornerExp = mapCornerExp(p.cornerExp, CORNER_SHAPE_SUPPORTED);
+  const prof = computeProfile(p.bezel, p.thickness);
+  for (const r of RADIUS_RUNGS) {
+    for (const aspect of ['wide', 'tall', 'square'] as Aspect[]) {
+      const { w, h } = ASPECT_SIZE[aspect];
+      const radius = r >= 9999 ? Math.min(w, h) / 2 : Math.min(r, Math.min(w, h) / 2 - 1);
+      for (const kind of ['lens', 'pane', 'drop'] as const) {
+        const key = `${kind}|${r}|${aspect}`;
+        if (MAP_TABLE.has(key)) continue;
+        let dispURL: string | null = null;
+        let maxAbs = 1;
+        if (kind !== 'pane') {
+          const dm = buildDisplacementMap(w, h, radius, p.bezel, prof, 1, cornerExp);
+          maxAbs = dm.maxAbs;
+          dispURL = imageDataToURL(dm.img);
+        }
+        const specURL = imageDataToURL(
+          buildSpecularMap(w, h, radius, p.specAngle, 1, p.specPeak, cornerExp),
+        );
+        MAP_TABLE.set(key, { dispURL, specURL, maxAbs });
+      }
+    }
+  }
+}
+
+/* ───────────────────── helpers ───────────────────── */
+
+const CORNER_SHAPE_SUPPORTED =
+  typeof CSS !== 'undefined' &&
+  CSS.supports?.('corner-shape', 'superellipse(3)') === true;
+
+function cssNum(cs: CSSStyleDeclaration, name: string, fallback: number): number {
+  const v = parseFloat(cs.getPropertyValue(name));
+  return Number.isFinite(v) ? v : fallback;
+}
+
+function radiusOf(el: HTMLElement, cs: CSSStyleDeclaration, fallback: number): number {
+  const raw = (cs.borderRadius || '').trim().split(/[\s/]+/)[0];
+  const n = parseFloat(raw);
+  if (!Number.isFinite(n)) return fallback;
+  if (raw.endsWith('%')) return (n / 100) * Math.min(el.offsetWidth, el.offsetHeight);
+  return n;
+}
+
+/** Snap an element's radius to its ladder rung; flag big mismatches. */
+function radiusClass(el: HTMLElement, cs: CSSStyleDeclaration): number {
+  const r = radiusOf(el, cs, cssNum(cs, '--lens-radius', 21));
+  const pill = el.offsetWidth > 0 && r >= Math.min(el.offsetWidth, el.offsetHeight) / 2 - 1;
+  if (pill) return 9999;
+  let best = RADIUS_RUNGS[0] as number;
+  let bestD = Infinity;
+  for (const rung of RADIUS_RUNGS) {
+    if (rung >= 9999) continue;
+    const d = Math.abs(rung - r);
+    if (d < bestD) {
+      bestD = d;
+      best = rung;
+    }
+  }
+  if (bestD > 8 && el.dataset) el.dataset.lensSnap = `${Math.round(r)}->${best}`;
+  return best;
+}
+
+function aspectClass(w: number, h: number): Aspect {
+  if (w >= h * 1.5) return 'wide';
+  if (h >= w * 1.5) return 'tall';
+  return 'square';
+}
+
+function kindOf(el: Element): 'lens' | 'pane' | 'drop' | null {
+  if (el.classList.contains('lens')) return 'lens';
+  if (el.classList.contains('pane')) return 'pane';
+  if (el.classList.contains('drop')) return 'drop';
+  if (el.classList.contains('glx-strong') || el.classList.contains('glx-dark') || el.classList.contains('glx'))
+    return 'lens';
+  return null;
+}
+
 function chainOf(el: Element, cs: CSSStyleDeclaration): string {
   const lensBlur = cssNum(cs, '--lens-blur', 1);
   const sat = (v: number) => (v === 1 ? '' : ` saturate(${v})`);
@@ -355,162 +206,63 @@ function ensuredContainer(): SVGDefsElement {
   return container;
 }
 
-const GLASS_SELECTOR = '.lens, .pane, .drop, .glx, .glx-strong, .glx-dark';
-
-/** True when the element lives inside fixed/sticky chrome (dropdown panels are
- *  position:relative children of fixed containers). Walks offsetParent — the
- *  positioned-ancestor chain — so a plain in-flow card costs one or two hops. */
-function hasFixedAncestor(el: HTMLElement): boolean {
-  let node = el.offsetParent as HTMLElement | null;
-  while (node && node !== document.body) {
-    const p = getComputedStyle(node).position;
-    if (p === 'fixed' || p === 'sticky') return true;
-    node = node.offsetParent as HTMLElement | null;
-  }
-  return false;
-}
-
-function kindOf(el: Element): 'lens' | 'pane' | 'drop' | null {
-  if (el.classList.contains('lens')) return 'lens';
-  if (el.classList.contains('pane')) return 'pane';
-  if (el.classList.contains('drop')) return 'drop';
-  // card families ride the same per-panel engine (bend + specular rim)
-  if (el.classList.contains('glx-strong') || el.classList.contains('glx-dark') || el.classList.contains('glx'))
-    return 'lens';
-  return null;
-}
-
-function sync(el: HTMLElement): void {
-  const kind = kindOf(el);
-  if (!kind) return;
-  // boot gate: engine only runs where backdrop-filter:url() actually paints
-  const root = document.documentElement;
-  if (root.dataset.lens !== 'on' || root.dataset.glass === 'lite' || root.dataset.glass === 'off') return;
-  const w = el.offsetWidth;
-  const h = el.offsetHeight;
-  if (w < 2 || h < 2) return; // hidden / not laid out — RO will re-sync on reveal
-  const cs = getComputedStyle(el); // ONE style read per element per pass
-  const p = readParams(cs);
-  const radius = radiusOf(el, cs, cssNum(cs, '--lens-radius', 21));
-  const scale = mapScaleFor(w, h);
-  const chainBase = chainOf(el, cs); // blur/saturate — no url() yet
-
-  // GPU TIER — in-flow, larger-than-chrome surfaces never get a live filter:
-  // scrolling would re-run the reference chain every frame for every card
-  // (the measured 22.5 vs 57.5 fps cliff). They keep blur+saturate (free) and
-  // a painted rim (CSS). Floating chrome and small pills keep the real lens.
-  // "Floating" = the element is fixed/sticky ITSELF, or sits inside a fixed
-  // ancestor (the menu/notif panels are position:relative children of a fixed
-  // container — reading only the element's own position misfiles them as
-  // in-flow). offsetParent walks positioned ancestors only, so this is cheap.
-  const pos = cs.position;
-  const floating =
-    pos === 'fixed' || pos === 'sticky' || hasFixedAncestor(el);
-  const small = w <= GPU_TIER_MAX_SIDE && h <= GPU_TIER_MAX_SIDE;
-  if (!floating && !small) {
-    el.classList.add('lg-gpu'); // painted superellipse rim (index.css)
-    el.classList.remove('lg-root');
-    byEl.delete(el);
-    applyChain(el, chainBase);
-    return;
-  }
-  el.classList.remove('lg-gpu');
-  // a panel that requested a filter is a backdrop root by definition — the
-  // de-nest rule keys on this class to keep glass inside it flat
-  if (!el.classList.contains('lg-root')) el.classList.add('lg-root');
-
-  const req: MapRequest = {
-    reqId: 0, // assigned when actually dispatched to a worker
-    kind,
-    w,
-    h,
-    radius,
-    bezel: p.bezel,
-    thickness: p.thickness,
-    refraction: p.refraction,
-    scaleRatio: p.scaleRatio,
-    specAngle: p.specAngle,
-    specPeak: p.specPeak,
-    cornerExp: mapCornerExp(p.cornerExp, CORNER_SHAPE_SUPPORTED),
-    scale,
-  };
-  const mapSig = mapSigOf(req);
-
-  // VIEWPORT GATE — a panel farther than one screen of scroll keeps the plain
-  // CSS chain (same geometry, no rim yet); the worker builds its maps the
-  // moment the IntersectionObserver sees it approach, long before it paints.
-  if (!nearViewport.has(el)) {
-    applyChain(el, chainBase);
-    return;
-  }
-
-  // filter signature = map identity + markup-only params
-  const withDim = kind !== 'drop' && p.dim > 0;
-  const filterSig = [mapSig, withDim, p.specOpacity, p.specSaturation, p.dim].join('|');
-
-  let entry = mapCache.get(mapSig);
-  if (!entry) {
-    entry = { state: 'pending', dispURL: null, specURL: '', maxAbs: 1, owned: false, waiters: new Set(), req };
-    mapCache.set(mapSig, entry);
-    evictCache();
-    const worker = pickWorker();
-    if (worker) {
-      req.reqId = ++reqSeq;
-      inFlight.set(req.reqId, req);
-      worker.postMessage(req);
-    } else {
-      buildSync(entry); // rare fallback path — ready synchronously
-    }
-  } else {
-    touchCache(mapSig);
-  }
-
-  if (entry.state === 'ready') {
-    attachFilter(el, filterSig, entry, chainBase, p, withDim, w, h);
-  } else if (entry.state === 'pending') {
-    entry.waiters.add(el);
-    applyChain(el, chainBase); // plain blur until the worker answers
-  } else {
-    applyChain(el, chainBase); // failed build — keep the graceful CSS chain
-  }
-}
-
-/** Shared-filter lookup, else one fresh <filter> for this signature. */
-function attachFilter(
-  el: HTMLElement,
-  filterSig: string,
-  entry: MapEntry,
-  chainBase: string,
-  p: LensParams,
-  withDim: boolean,
-  w: number,
-  h: number,
-): void {
-  if (entry.state !== 'ready') return;
-  const shared = bySig.get(filterSig);
-  if (shared && document.getElementById(shared)) {
-    byEl.set(el, shared);
-    applyChain(el, `${chainBase} url(#${shared})`);
-    return;
-  }
-  // build a FRESH filter for this signature — never mutate an existing node:
-  // other elements may still reference it until their own sync retargets.
-  const id = `lg-${++seq}`;
-  const markup = buildFilterMarkup(id, entry.dispURL, entry.specURL, entry.maxAbs, p, withDim, w, h);
-  ensuredContainer().insertAdjacentHTML('beforeend', markup);
-  bySig.set(filterSig, id);
-  byEl.set(el, id);
-  applyChain(el, `${chainBase} url(#${id})`);
-}
-
-/** Set the inline chain only when it actually changed — a blind write on
- *  every sweep invalidates style for every glass element for nothing. */
 function applyChain(el: HTMLElement, chain: string): void {
   if (el.style.backdropFilter !== chain) el.style.backdropFilter = chain;
 }
 
-/** Drop filters whose owning elements are all gone (unmounted routes) — one
- *  DOM pass, not one querySelectorAll per filter. */
+/* ───────────────────── sync ───────────────────── */
+
+function sync(el: HTMLElement): void {
+  const kind = kindOf(el);
+  if (!kind) return;
+  const root = document.documentElement;
+  if (root.dataset.lens !== 'on' || root.dataset.glass === 'lite' || root.dataset.glass === 'off') return;
+  const w = el.offsetWidth;
+  const h = el.offsetHeight;
+  if (w < 2 || h < 2) return;
+  const cs = getComputedStyle(el);
+  const p = readParams(cs);
+  const r = radiusClass(el, cs);
+  const aspect = aspectClass(w, h);
+  const chainBase = chainOf(el, cs);
+  const withDim = kind !== 'drop' && p.dim > 0;
+
+  const mapKey = `${kind}|${r}|${aspect}`;
+  const entry = MAP_TABLE.get(mapKey);
+  if (!entry) {
+    applyChain(el, chainBase);
+    return;
+  }
+
+  const filterKey = `${mapKey}|${w}x${h}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
+  let id = FILTERS.get(filterKey);
+  if (!id || !document.getElementById(id)) {
+    id = `lg-${++seq}`;
+    const markup = buildFilterMarkup(id, entry.dispURL, entry.specURL, entry.maxAbs, p, withDim, w, h);
+    ensuredContainer().insertAdjacentHTML('beforeend', markup);
+    FILTERS.set(filterKey, id);
+  }
+  byEl.set(el, id);
+  applyChain(el, `${chainBase} url(#${id})`);
+}
+
+function readParams(cs: CSSStyleDeclaration): LensParams {
+  return {
+    bezel: cssNum(cs, '--lens-bezel', 14),
+    thickness: cssNum(cs, '--lens-thickness', 72),
+    refraction: cssNum(cs, '--lens-refraction-level', 0.5),
+    scaleRatio: cssNum(cs, '--lens-scale-ratio', 1),
+    specOpacity: cssNum(cs, '--lens-spec-opacity', 0.34),
+    specSaturation: cssNum(cs, '--lens-spec-saturation', 5),
+    specAngle: cssNum(cs, '--lens-spec-angle', -55),
+    specPeak: cssNum(cs, '--lens-spec-peak', 2),
+    cornerExp: cssNum(cs, '--corner-exp', 3),
+    dim: cssNum(cs, '--lens-dim', 0.15),
+    dimTint: [103, 100, 112],
+  };
+}
+
+/** Drop filters whose panels unmounted. One DOM pass. */
 function pruneDead(liveIds: Set<string>): void {
   if (!container) return;
   for (const node of Array.from(container.children)) {
@@ -518,31 +270,34 @@ function pruneDead(liveIds: Set<string>): void {
     if (!id || !id.startsWith('lg-')) continue;
     if (!liveIds.has(id)) {
       node.remove();
-      for (const [sig, owned] of bySig) {
-        if (owned === id) bySig.delete(sig);
+      for (const [key, owned] of FILTERS) {
+        if (owned === id) FILTERS.delete(key);
       }
     }
   }
 }
 
-/** One pass: measure + (re)build every currently-mounted glass element, then
- *  sweep dead filters. OBSERVES with the ResizeObserver too — this pass is how
- *  elements discovered AFTER boot (lazy routes, w-0 hover panes) join the
- *  engine: without this observe, a pane that grows from 0px never re-syncs
- *  and stays an invisible blur (the "hover panels are gone" bug). */
+let sweepQueued = false;
+function scheduleSweep(): void {
+  if (sweepQueued || !mounted) return;
+  sweepQueued = true;
+  requestAnimationFrame(() => {
+    sweepQueued = false;
+    resyncGlass();
+  });
+}
+
+/** One pass: measure + attach cached filters, sweep dead ones, observe new
+ *  panels with the ResizeObserver (covers w-0 hover panes growing later). */
 export function resyncGlass(): void {
   if (!mounted) return;
   const liveIds = new Set<string>();
   document.querySelectorAll<HTMLElement>(GLASS_SELECTOR).forEach((el) => {
-    if (intersectionObserver && !ioTracked.has(el)) {
-      ioTracked.add(el);
-      intersectionObserver.observe(el);
-    }
-    resizeObserver?.observe(el); // idempotent — re-observe is a no-op
+    resizeObserver?.observe(el);
     try {
       sync(el);
     } catch {
-      /* a panel that fails to build keeps its plain CSS chain */
+      /* keep plain CSS chain */
     }
     const id = byEl.get(el);
     if (id) liveIds.add(id);
@@ -553,41 +308,26 @@ export function resyncGlass(): void {
 export function mountGlassEngine(): void {
   if (mounted) return;
   mounted = true;
-  intersectionObserver = new IntersectionObserver(
-    (entries) => {
-      let woke = false;
-      for (const e of entries) {
-        const el = e.target as HTMLElement;
-        if (e.isIntersecting) {
-          if (!nearViewport.has(el)) {
-            nearViewport.add(el);
-            woke = true; // newly-arrived panel — build its maps now
-          }
-        } else {
-          nearViewport.delete(el);
-        }
-      }
-      if (woke) scheduleSweep();
-    },
-    // one screen of lead: the worker finishes long before the panel scrolls in
-    { rootMargin: '600px 600px 600px 600px' },
-  );
+  buildLadder();
   resizeObserver = new ResizeObserver((entries) => {
-    for (const e of entries) queueResize(e.target as HTMLElement);
+    for (const e of entries) {
+      const el = e.target as HTMLElement;
+      // only a bucket change re-syncs — the map never rebuilds
+      const cs = getComputedStyle(el);
+      const r = radiusClass(el, cs);
+      const bucket = `${r}|${aspectClass(el.offsetWidth, el.offsetHeight)}`;
+      if (el.dataset.bucket !== bucket) {
+        el.dataset.bucket = bucket;
+        sync(el);
+      }
+    }
   });
-  attrObserver = new MutationObserver(() => {
-    // theme flips change the dim tokens → every filter signature changes,
-    // but the MAP cache keys exclude dim — filters re-dress, maps survive.
-    scheduleSweep();
-  });
+  attrObserver = new MutationObserver(() => scheduleSweep());
   attrObserver.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme'],
   });
   domObserver = new MutationObserver((mutations) => {
-    // fires on every DOM change; only sweep when something with a glass class
-    // actually entered the tree — otherwise React renders would keep
-    // re-measuring every panel.
     for (const m of mutations) {
       if (!m.addedNodes.length) continue;
       for (const n of m.addedNodes) {
@@ -605,15 +345,11 @@ export function mountGlassEngine(): void {
   });
   domObserver.observe(document.body, { childList: true, subtree: true });
   document.querySelectorAll<HTMLElement>(GLASS_SELECTOR).forEach((el) => {
-    if (intersectionObserver) {
-      ioTracked.add(el);
-      intersectionObserver.observe(el);
-    }
     resizeObserver!.observe(el);
     try {
       sync(el);
     } catch {
-      /* keep plain CSS chain */
+      /* plain chain */
     }
   });
 }
@@ -626,29 +362,18 @@ export function unmountGlassEngine(): void {
   attrObserver = null;
   domObserver?.disconnect();
   domObserver = null;
-  intersectionObserver?.disconnect();
-  intersectionObserver = null;
-  clearTimeout(resizeTimer);
-  resized.clear();
-  bySig.clear();
-  for (const entry of mapCache.values()) {
-    if (entry.owned) {
-      for (const u of [entry.dispURL, entry.specURL]) {
-        if (u && u.startsWith('blob:')) URL.revokeObjectURL(u);
-      }
-    }
-  }
-  mapCache.clear();
-  inFlight.clear();
-  for (const w of workers) w.terminate();
-  workers.length = 0;
+  FILTERS.clear();
+  MAP_TABLE.clear();
+  container?.remove();
+  container = null;
+  defaultParams = null;
 }
 
-// re-export so a future Settings tuner can live-import the pieces
+// Re-export so the tuner / tests can reach the pieces directly.
 export {
   buildDisplacementMap,
   buildSpecularMap,
   computeProfile,
-  mapScaleFor,
+  mapCornerExp,
 } from './lensEngine';
 export type { LensParams } from './lensEngine';
