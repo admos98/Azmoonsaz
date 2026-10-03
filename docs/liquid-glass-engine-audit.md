@@ -145,3 +145,79 @@ exactly when React is busiest.
 - `scripts/analyze_lens_map.py` — lens-map.png pixel forensics.
 - Live dev server probe: 10 runtime filters, all feImages `100%`, scroll ≈ 16 fps
   headless (SwiftShader) before the fix.
+
+## 2026-10 addendum — load-time + curve unification (user round 3)
+
+The user confirmed the engine parity fix landed ("much better"), then reported:
+rims still too thin, the app still LOADS slow, corner curves inconsistent, and
+duplicate close buttons. Findings and fixes, all measured:
+
+### L1 — Main-thread map building blocked first paint
+`canvas.toDataURL` PNG encoding ran on the main thread (30–80 ms per big panel)
+inside a single synchronous boot burst — TBT 230 ms, worst task 280 ms on
+/dev/fixtures.
+**Fix**: `src/glass/mapWorker.ts` builds both maps and PNG-encodes them on an
+OffscreenCanvas inside a 2-worker pool; the controller receives PNG **Blobs**
+and wires them as `blob:` object URLs. Verified empirically: `feImage` resolves
+`blob:` URLs inside `backdrop-filter` chains (stripes displacement probe), and
+CSP `img-src` already allows `blob:`. The synchronous path (`imageDataToURL`,
+data URIs) is kept as the no-Worker fallback. Result: **TBT 0 ms, worst task 0 ms**.
+
+### L2 — Maps were 4–16× larger than the physics requires
+Maps are smooth gradient fields: the interior is flat-neutral (128) and the
+ring is a monotone ramp, so bilinear upscaling is loss-free for them. Maps now
+build at 1 map-px per CSS px, capped to 1024 px on the long side
+(`mapScaleFor`, `MAX_MAP_SIDE`) — the ring's on-screen geometry is defined in
+CSS px and is unchanged.
+
+### L3 — Everything built at boot whether visible or not
+New `IntersectionObserver` gate (600 px lead): far panels keep the plain CSS
+chain (`blur() saturate()`), maps build as panels approach the viewport, and
+built filters are reused on scroll-back (signature cache hit). Off-screen
+panels drop back to the plain chain so invalidations never re-raster a hidden
+filter.
+
+### L4 — Theme flips rebuilt every MAP for a markup-only change
+`--lens-dim`/spec opacity/saturation only shape the `<filter>` markup, but the
+old signature keyed the map build too. Now map-data is cached (LRU 64) by
+**map signature** (geometry + physics + specAngle + specPeak + cornerExp +
+scale); markup params re-dress cached maps for free. Verified: theme flip
+reuses 23/23 feImage URLs, builds 0 maps.
+
+### V1 — Rim thickness (+2 px, user spec)
+`--lens-spec-peak: 2px` (was hardcoded 1 px): the specular ring paints
+2×peak = 4 CSS px (white glint AND the saturated backdrop reflection the ring
+masks), tuned from the playground's 2 px total.
+
+### V2 — Apple signature curve, everywhere, engine-matched
+The Task-5 state painted glass families with `corner-shape: squircle` (scoped)
+while the maps drew CIRCULAR corners — the visible "panel curve ≠ rim curve"
+drift. Now:
+- one token `--corner-exp: 3` + `--corner-shape: superellipse(var(--corner-exp))`
+  applied in `@layer base` to every box; circles/pills exempt
+  (`[class*='-full']`, `.drop`, inline 9999px/50% → `corner-shape: round`);
+- the old scoped `squircle` block is removed (it used a different exponent than
+  the rim maps assumed);
+- both map SDFs measure distance on the SAME superellipse (`borderSDF` with
+  exponent k, exact-circle degeneration for pills), so the refracted rim hugs
+  the painted corner. Non-±-3 exponents take a generic `Math.pow` path.
+
+### V3 — Duplicate close buttons (user spec: X present → no bottom close)
+Removed the bottom "بستن" strip in the Topbar notifications panel and the
+"بستن" button in StudentImportWizard's done step. Functional
+cancel/save/confirm pairs are untouched.
+
+### Measured (same harness, same machine, SwiftShader)
+| metric | before | after |
+|---|---|---|
+| scroll fps (3-run median) | 17.3 | 51.3 |
+| load TBT / worst task | 230 / 280 ms | 0 / 0 ms |
+| FCP | 948 ms | 676 ms |
+| theme-flip map rebuilds | all | 0 |
+Superellipse corner-shape costs ≈12% fps under SOFTWARE rendering (54→48);
+on GPU-accelerated compositing (the user's hardware) it is a shader mask.
+
+### Regression tooling
+`tools/perf-probe.mjs` (load timeline), `tools/ab-perf.mjs` (A/B fps),
+`tools/verify-fn.mjs` (lazy build, theme-flip reuse, circle exemption,
+console cleanliness), `tools/visual-shot.mjs` (matched corner/edge captures).

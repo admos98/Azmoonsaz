@@ -323,9 +323,7 @@ export default function StudentImportWizard({
                 ثبت {importResult.failed.toLocaleString('fa-IR')} ردیف انجام نشد.
               </p>
             )}
-            <Button onClick={resetAndClose} className="mt-5">
-              بستن
-            </Button>
+            {/* The modal's X closes (resetAndClose) — no duplicate close button. */}
           </div>
         </div>
       )}

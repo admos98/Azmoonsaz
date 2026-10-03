@@ -206,7 +206,8 @@
   --glass-p-tint: 255 255 255;
   --glass-p-blur: 16px;
   --glass-p-sat: 1.5;
-  --glass-p-radius: 28px;
+  /* Panel radius: overlays use rounded-3xl (32px) — the token below was a
+     dead 28px drift and is gone; the radius ramp in @theme is the source. */
   --glass-p-bw: 1px;
   /* Hairline under the rim — RETIRED (alpha 0). A fixed-colour border is the
      "static line with static colour" the pixel audit measured (rim↔bg corr ~0
@@ -269,6 +270,18 @@
   --field-blur: calc(var(--lens-blur) * 2);
   --drop-blur: 0.5px; /* a notch under lens — a small droplet stays crisp */
 
+  /* ── Apple signature curve — continuous (superellipse) corners ────────
+     A plain border-radius draws a circular arc with a tangent break where
+     the arc meets the straight edge. Apple's corners keep CURVATURE
+     CONTINUITY (a superellipse). --corner-exp is the single knob, shared
+     with the lens engine — glassController reads it so the refracted rim
+     follows the SAME curve the panel is painted with (circular maps on
+     superellipse corners = the rim visibly drifting off the panel corner).
+     k=2 would be the old round corner; k=3 is the iOS-panel tune.
+     Browsers without corner-shape degrade to round automatically. */
+  --corner-exp: 3;
+  --corner-shape: superellipse(var(--corner-exp));
+
   /* ── lens/pane/drop physics params (kube.io chain) — SOURCE OF TRUTH:
      the runtime engine (src/glass/glassController.ts) computes the
      feDisplacementMap scale from bezel/thickness/refraction/scale-ratio
@@ -287,6 +300,10 @@
   --lens-spec-opacity: 0.34;
   --lens-spec-saturation: 5;
   --lens-spec-angle: -55deg;
+  /* Rim thickness — the specular ring's half-width in CSS px (the rim paints
+     2×peak wide: the white glint AND the saturated backdrop reflection the
+     ring masks). Was 1px/2px total; the app tune widens it +2px. */
+  --lens-spec-peak: 2px;
   --lens-radius: 21px;
   --lens-size: 326px 64px;
   --lens-max-displacement: 43.67px;
@@ -494,6 +511,24 @@
     border-color: transparent;
     scroll-behavior: smooth;
   }
+  /* ── Apple signature curve, EVERYWHERE ──
+     corner-shape is inert where border-radius is 0, so the universal
+     selector costs nothing on flat boxes. Circles and pills keep their
+     perfect circle: [class*='-full'] catches every Tailwind full-radius
+     variant (rounded-full, rounded-t-full, rounded-s-full, …), and .drop is
+     the circular icon-button droplet. Over-matching is harmless. */
+  *,
+  *::before,
+  *::after {
+    corner-shape: var(--corner-shape);
+  }
+  [class*='-full'],
+  .drop,
+  [style*='border-radius: 50%'],
+  [style*='border-radius:50%'],
+  [style*='9999px'] {
+    corner-shape: round;
+  }
 }
 
 html {
@@ -594,23 +629,13 @@ select::-webkit-calendar-picker-indicator {
   opacity: 0;
 }
 
-/* Apple's continuous-curvature corner (n=4 superellipse). The arc-to-edge
-   tangent break in plain border-radius is the "generic" tell; squircle holds
-   curvature into the straight edge. The double-curve artifact that killed
-   this earlier traced to the right-only broken displacement map, not the
-   mask — with the fixed symmetric map it stays clean. */
-@supports (corner-shape: squircle) {
-  .glx,
-  .glx-strong,
-  .glx-dark,
-  .lens,
-  .pane,
-  .frost,
-  .field,
-  .drop {
-    corner-shape: squircle;
-  }
-}
+/* Apple's continuous-curvature corner is now GLOBAL (see the --corner-exp
+   tokens in :root + the @layer base rule): every box gets superellipse(k)
+   from ONE knob, and the lens engine reads the same --corner-exp so the
+   refracted rim follows the SAME curve the panel is painted with. The old
+   scoped `corner-shape: squircle` block lived here — it covered only the
+   glass families with a DIFFERENT exponent than the rim maps assumed, which
+   is exactly the "panel curve ≠ rim curve" drift the user reported. */
 
 /* Light glass — standard cards, topbar, dropdowns, section panels.
    Grounded over warm paper bg. */

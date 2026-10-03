@@ -814,15 +814,8 @@ export default function Topbar({
                 )}
               </div>
 
-              <div className="p-2 bg-[var(--color-glass-light-fill)] text-center border-t border-[var(--color-glass-light-stroke)]">
-                <button
-                  type="button"
-                  onClick={closeNotifications}
-                  className="text-micro text-[var(--color-accent)] font-semibold hover:underline cursor-pointer"
-                >
-                  بستن
-                </button>
-              </div>
+              {/* The X button in the header closes the panel — a bottom close
+                  button duplicated it (user spec: X present → no bottom close). */}
             </div>
           </div>
         </>

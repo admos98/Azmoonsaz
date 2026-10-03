@@ -441,6 +441,9 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--lens-spec-opacity')).toBe('0.34');
     expect(token('--lens-spec-saturation')).toBe('5');
     expect(token('--lens-spec-angle')).toBe('-55deg');
+    // rim thickness = 2×peak CSS px (user tune: +2px over the kube.io 1px)
+    expect(token('--lens-spec-peak')).toBe('2px');
+    expect(token('--corner-exp')).toBe('3');
     expect(token('--lens-radius')).toBe('21px');
     expect(token('--lens-size')).toBe('326px 64px');
     expect(token('--lens-max-displacement')).toBe('43.67px'); // +-21.8px peak
@@ -567,9 +570,22 @@ describe('glass material contract (pixel-audit gates)', () => {
         ),
       );
     }
+    // ── the Apple signature curve is ONE global system: a single exponent
+    //    token shared with the lens engine (rim maps follow the painted
+    //    corner), applied universally, circles exempt. The old scoped
+    //    `corner-shape: squircle` glass-only block is gone — its exponent
+    //    drifted from the rim maps' circular SDF (the "panel curve ≠ rim
+    //    curve" mismatch).
+    expect(css).toMatch(/--corner-exp:\s*3;/);
+    expect(css).toMatch(/--corner-shape:\s*superellipse\(var\(--corner-exp\)\);/);
     expect(css).toMatch(
-      /@supports \(corner-shape: squircle\)\s*\{[\s\S]*?\.lens,[\s\S]*?\.drop\s*\{\s*corner-shape: squircle;/,
+      /\*,\s*\n\s*\*::before,\s*\n\s*\*::after\s*\{\s*\n\s*corner-shape: var\(--corner-shape\);/,
     );
+    expect(css).toMatch(/\[class\*='-full'\],\s*\n\s*\.drop,[\s\S]*?\{\s*\n\s*corner-shape: round;/);
+    expect(css).not.toMatch(/corner-shape: squircle/);
+    // the engine reads the same exponent so the rim SDF matches the paint
+    const controller = readFileSync(join(root, 'src/glass/glassController.ts'), 'utf8');
+    expect(controller).toMatch(/--corner-exp/);
   });
 
   it('dark login token pin exists (white-on-white regression fix)', () => {
