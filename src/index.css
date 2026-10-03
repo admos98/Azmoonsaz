@@ -287,10 +287,12 @@
      PARAMETERIZATION NOTE (hit-tested in Chromium 153): `superellipse(k)`
      paints |x|^n+|y|^n=1 with n = 2^k — k=1 IS the circle (Chromium even
      serializes `round` back out as superellipse(1)); k=3 paints n=8. The
-     engine's mapMath raises to 2^k to match. k=3 is the iOS-panel tune.
+     engine's mapMath raises to 2^k to match. k=2 is Apple's squircle
+     (n=4): continuous curvature with no tangent break. k=3 renders n=8,
+     which reads as a near-rectangle with tiny rounds — visibly sharp.
      Browsers without corner-shape degrade to round automatically, and the
      engine drops its maps to k=1 so the rim degrades with the paint. */
-  --corner-exp: 3;
+  --corner-exp: 2;
   --corner-shape: superellipse(var(--corner-exp));
 
   /* ── lens/pane/drop physics params (kube.io chain) — SOURCE OF TRUTH:

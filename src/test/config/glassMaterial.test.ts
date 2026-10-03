@@ -443,7 +443,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--lens-spec-angle')).toBe('-55deg');
     // rim thickness = 2×peak CSS px (user tune: +2px over the kube.io 1px)
     expect(token('--lens-spec-peak')).toBe('2px');
-    expect(token('--corner-exp')).toBe('3');
+    expect(token('--corner-exp')).toBe('2');
     expect(token('--lens-radius')).toBe('21px');
     expect(token('--lens-size')).toBe('326px 64px');
     expect(token('--lens-max-displacement')).toBe('43.67px'); // +-21.8px peak
@@ -578,7 +578,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     //    panel circular corners against a superellipse rim map (double
     //    corners). Chromium paints superellipse(k) as |x|^n+|y|^n=1 with
     //    n = 2^k — mapMath raises to 2^k so the rim follows the paint.
-    expect(css).toMatch(/--corner-exp:\s*3;/);
+    expect(css).toMatch(/--corner-exp:\s*2;/);
     expect(css).toMatch(/--corner-shape:\s*superellipse\(var\(--corner-exp\)\);/);
     expect(css).toMatch(
       /\*,\s*\n\s*\*::before,\s*\n\s*\*::after\s*\{\s*\n\s*corner-shape: var\(--corner-shape\);/,

@@ -88,22 +88,30 @@ function defaultParamsFromRoot(): LensParams {
  *  a 200x400 panel is one 80k px loop, sub-frame. Cards/rows of the same
  *  size share the single cached entry. */
 function ensureBucket(kind: 'lens' | 'pane' | 'drop', w: number, h: number, radius: number): BucketEntry {
-  const key = `${kind}|${w}x${h}|${radius}`;
+  // quantized key: two panels within 8px share one map (stretch is invisible
+  // at 1px blur) — keeps the table bounded during resize tweens
+  const qw = Math.max(2, Math.round(w / 8) * 8);
+  const qh = Math.max(2, Math.round(h / 8) * 8);
+  const key = `${kind}|${qw}x${qh}|${Math.round(radius)}`;
   const hit = MAP_TABLE.get(key);
   if (hit) return hit;
   const p = defaultParams ?? (defaultParams = defaultParamsFromRoot());
   const cornerExp = mapCornerExp(p.cornerExp, CORNER_SHAPE_SUPPORTED);
   const prof = computeProfile(p.bezel, p.thickness);
-  const r = radius >= 9999 ? Math.min(w, h) / 2 : Math.min(radius, Math.min(w, h) / 2 - 1);
+  // build at the quantized size, capped long side — gradient maps upscale fine
+  const cap = Math.min(1, 512 / Math.max(qw, qh, 1));
+  const bw = Math.max(2, Math.round(qw * cap));
+  const bh = Math.max(2, Math.round(qh * cap));
+  const r = radius >= 9999 ? Math.min(bw, bh) / 2 : Math.min(radius * cap, Math.min(bw, bh) / 2 - 1);
   let dispURL: string | null = null;
   let maxAbs = 1;
   if (kind !== 'pane') {
-    const dm = buildDisplacementMap(w, h, r, p.bezel, prof, 1, cornerExp);
+    const dm = buildDisplacementMap(bw, bh, r, p.bezel * cap, prof, 1, cornerExp);
     maxAbs = dm.maxAbs;
     dispURL = imageDataToURL(dm.img);
   }
   const specURL = imageDataToURL(
-    buildSpecularMap(w, h, r, p.specAngle, 1, p.specPeak, cornerExp),
+    buildSpecularMap(bw, bh, r, p.specAngle, 1, p.specPeak * cap, cornerExp),
   );
   const entry: BucketEntry = { dispURL, specURL, maxAbs };
   MAP_TABLE.set(key, entry);
@@ -188,6 +196,13 @@ function sync(el: HTMLElement): void {
   const radius = radiusOf(el, cs, cssNum(cs, '--lens-radius', 21));
   const chainBase = chainOf(el, cs);
   const withDim = kind !== 'drop' && p.dim > 0;
+
+  // idempotent: same panel + same quantized size + same params = nothing to do
+  const qw = Math.round(w / 8) * 8;
+  const qh = Math.round(h / 8) * 8;
+  const quickKey = `${kind}|${qw}x${qh}|${Math.round(radius)}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
+  if (el.dataset.lastQuickKey === quickKey) return;
+  el.dataset.lastQuickKey = quickKey;
 
   const entry = ensureBucket(kind, w, h, radius);
 
@@ -276,8 +291,18 @@ export function mountGlassEngine(): void {
         el.dataset.settleRaf = '1';
         requestAnimationFrame(() => requestAnimationFrame(() => {
           el.dataset.settleRaf = '';
-          if (el.dataset.lastSize !== el.dataset.pendingSize) {
-            el.dataset.lastSize = el.dataset.pendingSize;
+          const w = el.offsetWidth;
+          const h = el.offsetHeight;
+          // Quantize: rebuild only when the size moves by >=8px or crosses a
+          // radius boundary on the quantized grid — animating pills/menus
+          // stay on their current map (invisible stretch at 1px blur) and
+          // snap to exact once they stop.
+          const qw = Math.round(w / 8) * 8;
+          const qh = Math.round(h / 8) * 8;
+          const key = `${qw}x${qh}|${radiusOf(el, getComputedStyle(el), 21)}`;
+          if (el.dataset.lastBucket !== key) {
+            el.dataset.lastBucket = key;
+            el.dataset.lastSize = `${w}x${h}`;
             try { sync(el); } catch { /* keep plain chain */ }
           }
         }));
