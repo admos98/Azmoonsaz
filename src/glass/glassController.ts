@@ -92,6 +92,35 @@ let seq = 0;
 
 let defaultParams: LensParams | null = null;
 
+/* Engine counters — the ?perf=1 oracle for the map pipeline. posted =
+   builds sent to the worker, hits = panels dressed from cache (sub-frame),
+   worker = panels dressed from worker maps, sync = panels that paid the
+   main-thread data-URI fallback. Read via glassStats(). */
+const stats = { posted: 0, hits: 0, worker: 0, sync: 0 };
+
+export interface GlassEngineStats {
+  posted: number;
+  hits: number;
+  worker: number;
+  sync: number;
+  maps: number;
+  inflight: number;
+  filters: number;
+}
+
+/** Snapshot of the map pipeline — consumed by the ?perf=1 report. */
+export function glassStats(): GlassEngineStats {
+  return {
+    posted: stats.posted,
+    hits: stats.hits,
+    worker: stats.worker,
+    sync: stats.sync,
+    maps: MAP_TABLE.size,
+    inflight: inflight.size,
+    filters: FILTERS.size,
+  };
+}
+
 const GLASS_SELECTOR = '.lens, .pane, .drop, .glx, .glx-strong, .glx-dark';
 
 /* ───────────────────── boot: params ───────────────────── */
@@ -334,6 +363,7 @@ function commit(t: PendingPanel): void {
   // Cache hit: dress immediately (string ops only — sub-frame).
   const hit = MAP_TABLE.get(mapKey);
   if (hit) {
+    stats.hits++;
     dressPanel(t, hit);
     return;
   }
@@ -345,6 +375,7 @@ function commit(t: PendingPanel): void {
   // No Worker (very old browser): sync data-URI fallback. Pixel-identical,
   // main-thread cost — the only path that still pays it.
   try {
+    stats.sync++;
     dressPanel(t, buildBucketSync(kind, w, h, radius));
   } catch {
     /* keep the plain CSS chain */
@@ -374,6 +405,7 @@ function worker(): Worker | null {
       mapWorker = null;
       for (const t of waiting) {
         try {
+          stats.sync++;
           dressPanel(t, buildBucketSync(t.kind, t.w, t.h, t.radius));
         } catch {
           /* keep the plain CSS chain */
@@ -418,6 +450,7 @@ function requestBucketAsync(t: PendingPanel, mapKey: string): boolean {
   try {
     inflight.set(mapKey, [t]);
     w.postMessage(req);
+    stats.posted++;
   } catch {
     inflight.delete(mapKey);
     return false;
@@ -435,6 +468,7 @@ function onWorkerMessage(e: MessageEvent): void {
   if (!res.ok || !res.specBlob || (needDisp && !res.dispBlob)) {
     for (const t of waiting) {
       try {
+        stats.sync++;
         dressPanel(t, buildBucketSync(t.kind, t.w, t.h, t.radius));
       } catch {
         /* keep the plain CSS chain */
@@ -451,6 +485,7 @@ function onWorkerMessage(e: MessageEvent): void {
   for (const t of waiting) {
     if (!t.el.isConnected) continue;
     try {
+      stats.worker++;
       dressPanel(t, entry);
     } catch {
       /* keep the plain CSS chain */

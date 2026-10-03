@@ -33,6 +33,8 @@
  * run stays well under ~150 KB, so it pastes into a chat message.
  */
 
+import { glassStats, type GlassEngineStats } from './glassController';
+
 /** A frame slower than this is below 60fps. */
 const JANK_MS = 16.7;
 /** A frame slower than this is a hard stutter. */
@@ -88,6 +90,8 @@ interface PerfReport {
   /** Whether the engine's map table grew over the run — the churn detector. */
   filterCountStart: number;
   filterCountEnd: number;
+  /** Map-pipeline oracle: posted/hit/worker/sync counts + table sizes. */
+  engine: GlassEngineStats;
 }
 
 declare global {
@@ -262,6 +266,7 @@ export function installPerfRecorder(): void {
       surfaces: collectSurfaces(),
       filterCountStart,
       filterCountEnd: countFilters(),
+      engine: glassStats(),
     };
     window.__perf!.report = report;
     return report;
@@ -368,11 +373,13 @@ function buildUi(ops: UiOps): void {
   let interval = 0;
 
   const show = (r: PerfReport) => {
+    const e = r.engine;
     out.textContent =
       `fps avg ${r.summary.avgFps}  p1 ${r.summary.p1Fps}\n` +
       `p95 ${r.summary.p95Ms}ms  worst ${r.summary.worstMs}ms\n` +
       `jank ${r.summary.jankFrames}  longtasks ${r.summary.longTasks.count}\n` +
-      `filters ${r.filterCountStart}->${r.filterCountEnd}`;
+      `filters ${r.filterCountStart}->${r.filterCountEnd}\n` +
+      `maps ${e.maps} infl ${e.inflight} post ${e.posted} hit ${e.hits} wrk ${e.worker} sync ${e.sync}`;
   };
 
   const bRec = mk('Record', () => {

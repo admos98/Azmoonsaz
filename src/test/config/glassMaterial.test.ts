@@ -336,10 +336,19 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(
       /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens, \.pane, \.drop\):not\(\.lg-root\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens, \.pane, \.drop\)\s*\{[^}]*backdrop-filter:\s*none/s,
     );
-    // the SANCTIONED nested materials never get de-nested
+    // the quiet materials (.field/.frost/.chrome-blur/.btn-glass) are flattened
+    // by a FILTER-ONLY rule: nested in a backdrop root they sample the parent's
+    // flat fill, so their blur renders nothing — but their fills/tints/rims are
+    // the visible design and must survive (no background/box-shadow override).
     const denest = cssRaw.slice(cssRaw.indexOf('De-nest'), cssRaw.indexOf('Ink glass'));
     expect(denest).toContain(':is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)');
-    expect(denest).not.toMatch(/[.]frost|[.]field/);
+    expect(denest).toMatch(
+      /:is\(\.field, \.frost, \.chrome-blur, \.btn-glass\)\s*\{[^}]*backdrop-filter:\s*none/s,
+    );
+    const quietRule = denest.match(
+      /:is\(\.field, \.frost, \.chrome-blur, \.btn-glass\)\s*\{[^}]+\}/,
+    )![0];
+    expect(quietRule).not.toMatch(/background|box-shadow/);
     // and no material paints a rim in markup: Card maps light→lens, strong→pane
     // (rims come from the filters) and edgeClass is permanently empty
     const ui = component('src/components/UIComponents.tsx');

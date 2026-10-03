@@ -779,6 +779,19 @@ select::-webkit-calendar-picker-indicator {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / calc(var(--glass-bloom-line-a) * 0.5));
   text-shadow: none;
 }
+/* Nested quiet materials — FILTER-ONLY strip.
+   .field/.frost/.chrome-blur/.btn-glass are never engine targets (no url()
+   attached) and nested inside a glass backdrop root they sample only the
+   parent's flat fill — blur of a flat fill is the same flat fill, so their
+   backdrop-filter burns a saveLayer per surface with zero rendered output.
+   Strip ONLY the filter: their fills, tints and rims are the visible design
+   and stay untouched (no background/box-shadow override here — that stacking
+   is exactly what the rule above fixes for the six families). */
+:root:not([data-glass='lite']):not([data-glass='off'])
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)
+  :is(.field, .frost, .chrome-blur, .btn-glass) {
+  backdrop-filter: none;
+}
 /* Ink glass — sidebar (dark field with warm gold tint) */
 @utility glx-dark {
   background: var(--color-ink-field);
