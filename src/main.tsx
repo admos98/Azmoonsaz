@@ -9,6 +9,14 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { MotionProvider } from './contexts/MotionContext';
 import './index.css';
 
+// Dev-only frame-timing recorder. NOTHING is installed without ?perf=1, so the
+// production bundle pays one URLSearchParams read and nothing else. Open
+//   https://azmoon-three.vercel.app/?perf=1
+// to get a Record/Stop/Copy panel that profiles the real session.
+if (new URLSearchParams(location.search).has('perf')) {
+  import('./glass/perfRecorder').then((m) => m.installPerfRecorder());
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
