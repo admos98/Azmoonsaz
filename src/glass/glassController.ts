@@ -43,6 +43,7 @@ import {
   buildSpecularMap,
   computeProfile,
   imageDataToURL,
+  mapCornerExp,
   mapScaleFor,
   type LensParams,
 } from './lensEngine';
@@ -60,6 +61,26 @@ const byEl = new WeakMap<Element, string>();
  *  identical geometry + params share ONE <filter> (one graph, one decode). */
 const bySig = new Map<string, string>();
 let seq = 0;
+
+/* ── per-frame cost budget (the "simple HTML page" contract) ──
+   Measured A/B (tools/probe-tier.mjs, scroll fps, software raster): full live
+   url() chains 22.5 | blur+saturate only 57.5 | no backdrop-filter 55.5. The
+   reference-filter chain is ~2.5x the ENTIRE page per frame; plain blur is
+   free. So live refraction is reserved for FLOATING CHROME (menus, dropdowns,
+   modals, hover panes, sticky topbar) and small surfaces — the elements that
+   read as physical glass objects. In-flow scrolling content (cards, sections,
+   hero) gets the GPU tier: blur+saturate chain (compositor path) + a painted
+   superellipse rim (CSS inset shadows on .lg-gpu, index.css). Identical
+   geometry, identical material read, no per-frame filter work. */
+const GPU_TIER_MAX_SIDE = 96; // small circles/pills stay live — trivially cheap
+
+/** Does this browser paint corner-shape? Computed once; drives the corner
+ *  exponent the MAPS use so the rim follows the corners CSS actually paints
+ *  (without support CSS degrades to circles → k=1 keeps the maps honest). */
+const CORNER_SHAPE_SUPPORTED =
+  typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
+    ? CSS.supports('corner-shape', 'superellipse(2)')
+    : false;
 
 /* ── worker pool: map building + PNG encode, off the main thread ── */
 const workers: Worker[] = [];
@@ -242,23 +263,29 @@ function scheduleSweep(): void {
   });
 }
 
-/* ── resize debounce: rebuild maps only after the storm settles ── */
+/* ── resize debounce: rebuild maps only after the storm settles ──
+   Small elements (hover pills, drops) rebuild in ~2-5ms worker-side — a long
+   debounce only delays their reveal; big panels keep the settling window. */
 const resized = new Set<HTMLElement>();
 let resizeTimer = 0;
 function queueResize(el: HTMLElement): void {
   if (!mounted) return;
   resized.add(el);
   clearTimeout(resizeTimer);
-  resizeTimer = window.setTimeout(() => {
-    for (const e of resized) {
-      try {
-        sync(e);
-      } catch {
-        /* a panel that fails to build keeps its plain CSS chain */
+  const small = el.offsetWidth * el.offsetHeight < 40_000;
+  resizeTimer = window.setTimeout(
+    () => {
+      for (const e of resized) {
+        try {
+          sync(e);
+        } catch {
+          /* a panel that fails to build keeps its plain CSS chain */
+        }
       }
-    }
-    resized.clear();
-  }, 120);
+      resized.clear();
+    },
+    small ? 30 : 120,
+  );
 }
 
 /* ── viewport gate: panels build maps only as they approach the screen ── */
@@ -305,8 +332,11 @@ function chainOf(el: Element, cs: CSSStyleDeclaration): string {
   if (el.classList.contains('glx-dark')) return 'blur(10px) saturate(1.4)';
   if (el.classList.contains('glx'))
     return `blur(${cssNum(cs, '--glass-bg-blur', 8).toFixed(2)}px)${sat(cssNum(cs, '--glass-bg-sat', 1.5))}`;
-  if (el.classList.contains('lens'))
-    return `blur(${(el.classList.contains('lens--menu') ? lensBlur * 3 : lensBlur).toFixed(2)}px)`;
+  if (el.classList.contains('lens')) {
+    if (el.classList.contains('lens--menu'))
+      return `blur(${cssNum(cs, '--lens-menu-blur', 8).toFixed(2)}px)`;
+    return `blur(${lensBlur.toFixed(2)}px)`;
+  }
   if (el.classList.contains('pane')) return `blur(${(lensBlur * 2).toFixed(2)}px)`;
   if (el.classList.contains('drop')) return `blur(${cssNum(cs, '--drop-blur', 0.5).toFixed(2)}px)`;
   return `blur(${lensBlur.toFixed(2)}px)`;
@@ -327,6 +357,19 @@ function ensuredContainer(): SVGDefsElement {
 
 const GLASS_SELECTOR = '.lens, .pane, .drop, .glx, .glx-strong, .glx-dark';
 
+/** True when the element lives inside fixed/sticky chrome (dropdown panels are
+ *  position:relative children of fixed containers). Walks offsetParent — the
+ *  positioned-ancestor chain — so a plain in-flow card costs one or two hops. */
+function hasFixedAncestor(el: HTMLElement): boolean {
+  let node = el.offsetParent as HTMLElement | null;
+  while (node && node !== document.body) {
+    const p = getComputedStyle(node).position;
+    if (p === 'fixed' || p === 'sticky') return true;
+    node = node.offsetParent as HTMLElement | null;
+  }
+  return false;
+}
+
 function kindOf(el: Element): 'lens' | 'pane' | 'drop' | null {
   if (el.classList.contains('lens')) return 'lens';
   if (el.classList.contains('pane')) return 'pane';
@@ -345,12 +388,33 @@ function sync(el: HTMLElement): void {
   if (root.dataset.lens !== 'on' || root.dataset.glass === 'lite' || root.dataset.glass === 'off') return;
   const w = el.offsetWidth;
   const h = el.offsetHeight;
-  if (w < 2 || h < 2) return; // hidden / not laid out — skip, keep CSS chain
+  if (w < 2 || h < 2) return; // hidden / not laid out — RO will re-sync on reveal
   const cs = getComputedStyle(el); // ONE style read per element per pass
   const p = readParams(cs);
   const radius = radiusOf(el, cs, cssNum(cs, '--lens-radius', 21));
   const scale = mapScaleFor(w, h);
   const chainBase = chainOf(el, cs); // blur/saturate — no url() yet
+
+  // GPU TIER — in-flow, larger-than-chrome surfaces never get a live filter:
+  // scrolling would re-run the reference chain every frame for every card
+  // (the measured 22.5 vs 57.5 fps cliff). They keep blur+saturate (free) and
+  // a painted rim (CSS). Floating chrome and small pills keep the real lens.
+  // "Floating" = the element is fixed/sticky ITSELF, or sits inside a fixed
+  // ancestor (the menu/notif panels are position:relative children of a fixed
+  // container — reading only the element's own position misfiles them as
+  // in-flow). offsetParent walks positioned ancestors only, so this is cheap.
+  const pos = cs.position;
+  const floating =
+    pos === 'fixed' || pos === 'sticky' || hasFixedAncestor(el);
+  const small = w <= GPU_TIER_MAX_SIDE && h <= GPU_TIER_MAX_SIDE;
+  if (!floating && !small) {
+    el.classList.add('lg-gpu'); // painted superellipse rim (index.css)
+    el.classList.remove('lg-root');
+    byEl.delete(el);
+    applyChain(el, chainBase);
+    return;
+  }
+  el.classList.remove('lg-gpu');
   // a panel that requested a filter is a backdrop root by definition — the
   // de-nest rule keys on this class to keep glass inside it flat
   if (!el.classList.contains('lg-root')) el.classList.add('lg-root');
@@ -367,7 +431,7 @@ function sync(el: HTMLElement): void {
     scaleRatio: p.scaleRatio,
     specAngle: p.specAngle,
     specPeak: p.specPeak,
-    cornerExp: p.cornerExp,
+    cornerExp: mapCornerExp(p.cornerExp, CORNER_SHAPE_SUPPORTED),
     scale,
   };
   const mapSig = mapSigOf(req);
@@ -462,7 +526,10 @@ function pruneDead(liveIds: Set<string>): void {
 }
 
 /** One pass: measure + (re)build every currently-mounted glass element, then
- *  sweep dead filters. */
+ *  sweep dead filters. OBSERVES with the ResizeObserver too — this pass is how
+ *  elements discovered AFTER boot (lazy routes, w-0 hover panes) join the
+ *  engine: without this observe, a pane that grows from 0px never re-syncs
+ *  and stays an invisible blur (the "hover panels are gone" bug). */
 export function resyncGlass(): void {
   if (!mounted) return;
   const liveIds = new Set<string>();
@@ -471,6 +538,7 @@ export function resyncGlass(): void {
       ioTracked.add(el);
       intersectionObserver.observe(el);
     }
+    resizeObserver?.observe(el); // idempotent — re-observe is a no-op
     try {
       sync(el);
     } catch {

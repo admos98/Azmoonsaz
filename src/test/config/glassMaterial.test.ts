@@ -572,20 +572,27 @@ describe('glass material contract (pixel-audit gates)', () => {
     }
     // ── the Apple signature curve is ONE global system: a single exponent
     //    token shared with the lens engine (rim maps follow the painted
-    //    corner), applied universally, circles exempt. The old scoped
-    //    `corner-shape: squircle` glass-only block is gone — its exponent
-    //    drifted from the rim maps' circular SDF (the "panel curve ≠ rim
-    //    curve" mismatch).
+    //    corner), applied universally, circles exempt. The exemption list
+    //    enumerates the exact Tailwind full-radius utilities — a greedy
+    //    [class*='-full'] also matched `w-full` and silently gave the notif
+    //    panel circular corners against a superellipse rim map (double
+    //    corners). Chromium paints superellipse(k) as |x|^n+|y|^n=1 with
+    //    n = 2^k — mapMath raises to 2^k so the rim follows the paint.
     expect(css).toMatch(/--corner-exp:\s*3;/);
     expect(css).toMatch(/--corner-shape:\s*superellipse\(var\(--corner-exp\)\);/);
     expect(css).toMatch(
       /\*,\s*\n\s*\*::before,\s*\n\s*\*::after\s*\{\s*\n\s*corner-shape: var\(--corner-shape\);/,
     );
-    expect(css).toMatch(/\[class\*='-full'\],\s*\n\s*\.drop,[\s\S]*?\{\s*\n\s*corner-shape: round;/);
+    expect(css).toMatch(
+      /\[class~='rounded-full'\],[\s\S]*?\{\s*\n\s*corner-shape: round;/,
+    );
+    expect(css).not.toMatch(/\[class\*='-full'\]/);
     expect(css).not.toMatch(/corner-shape: squircle/);
-    // the engine reads the same exponent so the rim SDF matches the paint
+    // the engine reads the same exponent and CHROMIUM'S 2^k parameterization
+    expect(readFileSync(join(root, 'src/glass/mapMath.ts'), 'utf8')).toMatch(/2\^k|2, k\)/);
     const controller = readFileSync(join(root, 'src/glass/glassController.ts'), 'utf8');
     expect(controller).toMatch(/--corner-exp/);
+    expect(controller).toMatch(/mapCornerExp/);
   });
 
   it('dark login token pin exists (white-on-white regression fix)', () => {

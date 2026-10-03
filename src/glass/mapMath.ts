@@ -24,11 +24,18 @@
  * Corner geometry — Apple's signature curve: CSS paints the panel with
  * corner-shape: superellipse(--corner-exp) (continuous curvature, no tangent
  * break where the arc meets the edge), so the refracted rim must follow the
- * SAME superellipse. The old maps used a circular SDF — the rim ring
- * departed from the panel corner exactly where the curve is most visible.
- * The SDF below measures distance-to-border on a superellipse of exponent k
- * (k=2 degenerates to the exact circle, which is what pills/circles/drops
- * keep — matching the CSS-side `corner-shape: round` exemption).
+ * SAME superellipse. PARAMETERIZATION (measured in Chromium 153 by hit-testing
+ * rendered corners — scripts/corner_probe2.html): CSS `superellipse(k)` paints
+ * |x|^n + |y|^n = 1 with n = 2^k — k=1 IS the circle (Chromium even serializes
+ * the `round` keyword back out as superellipse(1)), k=3 paints n=8. The old
+ * maps used n = k directly (a circle at k=2, a much-round n=3 curve at k=3),
+ * so the rim ring departed from the panel corner exactly where the curve is
+ * most visible — the user's "double corners" screenshots. borderSDF therefore
+ * raises to n = 2^k (fast repeated-squaring path for the default k=3 → n=8).
+ * Browsers WITHOUT corner-shape support paint circular corners — the engine
+ * passes k=1 (n=2, exact circle) so the maps degrade with the paint.
+ * Pills/circles/drops keep the exact circle regardless (circleMode), matching
+ * the CSS-side `corner-shape: round` exemption.
  */
 
 /** Glass refractive index (kube.io default). */
@@ -139,7 +146,7 @@ function borderSDF(
     }
     return sdfOut;
   }
-  if (circleMode || Math.abs(k - 2) < 1e-9) {
+  if (circleMode || k <= 1.0001) {
     const t = Math.sqrt(u * u + v * v);
     if (t < 1e-6) {
       sdfOut[0] = p;
@@ -154,22 +161,53 @@ function borderSDF(
     sdfOut[3] = Math.atan2(m, l);
     return sdfOut;
   }
-  // Superellipse(k) corner. u^(k-1) etc. — the shared (u^k+v^k) factors of
-  // the gradient cancel between the direction and the distance, leaving:
-  //   |grad S| = sqrt(u^(2k-2) + v^(2k-2)) / (u^k + v^k)^(1 - 1/k)
+  // Superellipse corner, Chromium parameterization: the painted curve is
+  // |x|^n + |y|^n = 1 with n = 2^k (k = --corner-exp). Gradient math (same
+  // shape as before, n in place of k):
+  //   S        = (u^n + v^n)^(1/n)
+  //   |grad S| = sqrt(u^(2n-2) + v^(2n-2)) / (u^n + v^n)^(1 - 1/n)
   //   rD       = (p - S) / |grad S|
-  //   normal   ∝ (u^(k-1)·sign(l), v^(k-1)·sign(m))
-  const k3 = Math.abs(k - 3) < 1e-9; // fast path: integer k = the app default
-  const uk = k3 ? u * u * u : Math.pow(u, k);
-  const vk = k3 ? v * v * v : Math.pow(v, k);
-  const sum = uk + vk;
-  const S = k3 ? Math.cbrt(sum) : Math.pow(sum, 1 / k);
-  const ukm1 = k3 ? u * u : Math.pow(u, k - 1);
-  const vkm1 = k3 ? v * v : Math.pow(v, k - 1);
+  //   normal   ∝ (u^(n-1)·sign(l), v^(n-1)·sign(m))
+  // Fast paths: n=8 (the app default, k=3) via repeated squaring; n=4 (k=2)
+  // likewise; anything else falls back to Math.pow.
+  const k3 = Math.abs(k - 3) < 1e-9; // n = 8 — the app default
+  const k2 = !k3 && Math.abs(k - 2) < 1e-9; // n = 4
+  let n: number, sum: number, S: number, ukm1: number, vkm1: number;
+  if (k3) {
+    const u2 = u * u;
+    const v2 = v * v;
+    const u8 = u2 * u2 * u2 * u2;
+    const v8 = v2 * v2 * v2 * v2;
+    sum = u8 + v8;
+    S = Math.pow(sum, 0.125);
+    ukm1 = u8 / u; // u^7
+    vkm1 = v8 / v; // v^7
+  } else if (k2) {
+    const u2 = u * u;
+    const v2 = v * v;
+    const u4 = u2 * u2;
+    const v4 = v2 * v2;
+    sum = u4 + v4;
+    S = Math.sqrt(Math.sqrt(sum));
+    ukm1 = u4 / u; // u^3
+    vkm1 = v4 / v; // v^3
+  } else {
+    n = Math.pow(2, k);
+    const un = Math.pow(u, n);
+    const vn = Math.pow(v, n);
+    sum = un + vn;
+    S = Math.pow(sum, 1 / n);
+    ukm1 = Math.pow(u, n - 1);
+    vkm1 = Math.pow(v, n - 1);
+  }
   const W = Math.sqrt(ukm1 * ukm1 + vkm1 * vkm1);
   const inv = W > 0 ? 1 / W : 0;
-  // (u^k+v^k)^(1-1/k) == S^2 at k=3 — the |grad S| correction factor
-  const corr = k3 ? S * S : Math.pow(sum, 1 - 1 / k);
+  // (u^n+v^n)^(1-1/n) == S^(n-1) — the |grad S| correction factor
+  const corr = k3
+    ? S * S * S * S * S * S * S // S^7
+    : k2
+      ? S * S * S // S^3
+      : Math.pow(S, n! - 1);
   sdfOut[0] = (p - S) * corr * inv;
   sdfOut[1] = -sl * ukm1 * inv;
   sdfOut[2] = -sm * vkm1 * inv;
@@ -181,6 +219,14 @@ function borderSDF(
  *  CSS keeps those `corner-shape: round`, the map must agree. */
 export function isCircleRadius(wCss: number, hCss: number, radiusCss: number): boolean {
   return radiusCss >= Math.min(wCss, hCss) / 2 - 0.75;
+}
+
+/** The corner exponent the MAPS must use for the corners CSS actually paints.
+ *  Chromium paints superellipse(k) as n = 2^k; browsers without corner-shape
+ *  support degrade every corner to a plain circle — k=1 (n=2) matches that
+ *  exactly. Probe: scripts/corner_probe2.html (hit-tested Chromium 153). */
+export function mapCornerExp(cssExp: number, cornerShapeSupported: boolean): number {
+  return cornerShapeSupported ? Math.min(6, Math.max(1, cssExp)) : 1;
 }
 
 /** Displacement map (R = Δx, G = Δy, 128 neutral, B unused, A 255). Built at

@@ -145,8 +145,29 @@ export default function Topbar({
   const [bellRect, setBellRect] = useState<DOMRect | null>(null);
   const [hamburgerRect, setHamburgerRect] = useState<DOMRect | null>(null);
   const [notifClosing, setNotifClosing] = useState(false);
+  const [topScrolled, setTopScrolled] = useState(false);
   const bellRef = useRef<HTMLButtonElement>(null);
   const avatarLeaveTimer = useRef<number | null>(null);
+
+  // Top veil — iOS nav-bar behavior: while content scrolls UNDER the floating
+  // topbar, a page-colored gradient fades in behind it so the icons never
+  // collide with passing text (the crop the user sent). At rest it is fully
+  // transparent, so the hero composition at scrollY=0 is untouched. One
+  // passive listener, rAF-gated, keyed on a boolean — no re-render churn.
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        setTopScrolled(window.scrollY > 24);
+      });
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // --- Notifications ---
   const notifRef = useRef<HTMLDivElement>(null);
@@ -355,14 +376,34 @@ export default function Topbar({
         showHamburgerMenu || menuClosing || showNotifications || notifClosing ? 'z-[65]' : 'z-30'
       } h-14 px-4 lg:px-8 flex items-center justify-between select-none flex-row-reverse bg-transparent`}
       id="topbar-wrapper"
+      data-scrolled={topScrolled ? 'on' : 'off'}
     >
-      {/* LEFT SIDE: Bell then Avatar */}
+      {/* iOS-style scroll veil — fades in behind the floating buttons once the
+          page scrolls (data-scrolled). Paint-only, no filter, no layout. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] topbar-veil"
+        style={{ opacity: topScrolled ? 1 : 0 }}
+      />
+
+      {/* LEFT SIDE: Avatar then Bell — the avatar's name panel PUSHES the bell
+          aside when it slides out from behind the circle (iOS neighbor-push;
+          the user: "the name panel should push the bell away"). RTL flex lays
+          the group right-to-left: bell first = rightmost, avatar to its left. */}
       <div
         className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`}
         id="topbar-left-group"
       >
-        {/* Bell */}
-        <div className="transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]">
+        {/* Bell — pushed aside while the name panel is open. The panel's right
+            edge lands 174px past the circle (200 pane − 40 circle − 14 inset −
+            12 gap → exact fit at gap-3). transform only: no layout, no
+            reflow; getBoundingClientRect (used for the dropdown anchor)
+            already includes transforms. */}
+        <div
+          className={`transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            avatarExpanded ? 'translate-x-[124px] lg:translate-x-[174px]' : 'translate-x-0'
+          }`}
+        >
           <button
             type="button"
             ref={bellRef}
@@ -393,15 +434,15 @@ export default function Topbar({
           </button>
         </div>
 
-        {/* Avatar pill — hidden on the phone. There is no hover to animate the
-            width, and a 200px pill on a 375px screen crowds the title; the
-            collapsed 40px pill is too small for the avatar to read. Desktop
-            (lg+) gets the full panel-material pill. */}
-        <div className="relative hidden lg:flex items-center">
+        {/* Avatar pill — now on EVERY viewport. On touch there is no hover:
+            the circle button taps open/closed, exactly like desktop click. */}
+        <div className="relative flex items-center">
           {/* Rest = a perfect circle button that HOLDS the name panel behind
               it; on hover the panel slides out from behind the circle (width
               grows from under it) and merges back on leave. The circle never
-              moves, never resizes. */}
+              moves, never resizes. The bell (previous sibling in the RTL row)
+              slides right by the panel's overhang so the name is never
+              overlapped. */}
           <div
             className="relative h-10 w-10 cursor-pointer"
             onMouseEnter={() => {
@@ -419,17 +460,19 @@ export default function Topbar({
               }, 200);
             }}
           >
-            {/* Name panel — pane glass that emerges from behind the circle */}
+            {/* Name panel — pane glass that emerges from behind the circle.
+                The text anchor sits just past the circle's edge (left 44px of
+                the 200px pane) so the name reads immediately, iOS-pill style. */}
             <div
               className={`absolute top-0 left-[14px] h-10 rounded-full overflow-hidden pane transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                avatarExpanded ? 'w-[200px]' : 'w-0'
+                avatarExpanded ? 'w-[150px] lg:w-[200px]' : 'w-0'
               }`}
             >
               <div
-                className="absolute inset-y-0 left-[36px] flex items-center whitespace-nowrap"
-                style={{ direction: 'rtl', textAlign: 'right' }}
+                className="absolute inset-y-0 left-[44px] right-[14px] flex items-center justify-start whitespace-nowrap"
+                style={{ direction: 'rtl' }}
               >
-                <p className="text-caption font-bold text-[var(--color-text-primary)] truncate max-w-[140px]">
+                <p className="text-body font-bold text-[var(--color-text-primary)] truncate">
                   {teacher?.name || '...'}
                 </p>
               </div>
@@ -444,6 +487,7 @@ export default function Topbar({
                 setAvatarExpanded(!avatarExpanded);
               }}
               aria-label={teacher?.name || 'پروفایل'}
+              aria-expanded={avatarExpanded}
             >
               <span className="w-8 h-8 rounded-full bg-[var(--color-accent-solid)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden">
                 {teacher?.avatarUrl ? (
@@ -551,7 +595,7 @@ export default function Topbar({
           >
             {/* Panel 1: App info + date */}
             <div
-              className="lens rounded-2xl overflow-hidden"
+              className="lens lens--menu rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(0),
                 animation: menuClosing
@@ -564,15 +608,15 @@ export default function Topbar({
                 <div className="flex items-center gap-3">
                   <TheMark variant="row" size={36} animated={false} />
                   <div>
-                    <p className="text-caption font-bold text-[var(--color-text-primary)]">
+                    <p className="text-body font-extrabold text-[var(--color-text-primary)]">
                       آزمون‌ساز
                     </p>
-                    <p className="text-micro text-[var(--color-text-secondary)]">
+                    <p className="text-caption text-[var(--color-text-secondary)]">
                       پنل مدیریت دبیران
                     </p>
                   </div>
                 </div>
-                <div className="mt-2 text-micro text-[var(--color-text-tertiary)]">
+                <div className="mt-2 text-caption text-[var(--color-text-secondary)]">
                   {formatPersianDate(new Date().toISOString())}
                 </div>
               </div>
@@ -580,7 +624,7 @@ export default function Topbar({
 
             {/* Panel 2: Teacher profile */}
             <div
-              className="lens rounded-2xl overflow-hidden"
+              className="lens lens--menu rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(1),
                 animation: menuClosing
@@ -609,16 +653,16 @@ export default function Topbar({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-micro text-[var(--color-accent)] font-bold">
+                      <span className="text-caption text-[var(--color-accent)] font-bold">
                         {teacher?.name?.[0] || '?'}
                       </span>
                     )}
                   </span>
                   <span className="flex-1 overflow-hidden block">
-                    <span className="text-caption font-bold text-[var(--color-text-primary)] truncate block">
+                    <span className="text-body font-bold text-[var(--color-text-primary)] truncate block">
                       {teacher?.name || '...'}
                     </span>
-                    <span className="text-micro text-[var(--color-text-secondary)] truncate block">
+                    <span className="text-caption text-[var(--color-text-secondary)] truncate block">
                       {teacher?.schoolName || ''}
                     </span>
                   </span>
@@ -628,7 +672,7 @@ export default function Topbar({
 
             {/* Panel 3: Management options */}
             <div
-              className="lens rounded-2xl overflow-hidden"
+              className="lens lens--menu rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(2),
                 animation: menuClosing
@@ -640,7 +684,7 @@ export default function Topbar({
               <div className="p-3 min-w-[240px]">
                 <button
                   type="button"
-                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
+                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-label font-semibold cursor-pointer transition-all duration-300 ${
                     currentTab === 'dashboard'
                       ? 'btn-glass btn-glass--gold'
                       : 'btn-glass btn-glass--bare'
@@ -654,7 +698,7 @@ export default function Topbar({
                 </button>
                 <button
                   type="button"
-                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${currentTab === 'profile' ? 'btn-glass btn-glass--gold' : 'btn-glass btn-glass--bare'}`}
+                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-label font-semibold cursor-pointer transition-all duration-300 ${currentTab === 'profile' ? 'btn-glass btn-glass--gold' : 'btn-glass btn-glass--bare'}`}
                   onClick={() => {
                     onTabChange('profile');
                     closeMenu();
@@ -667,7 +711,7 @@ export default function Topbar({
 
             {/* Panel 4: Exam panel + settings */}
             <div
-              className="lens rounded-2xl overflow-hidden"
+              className="lens lens--menu rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(3),
                 animation: menuClosing
@@ -679,7 +723,7 @@ export default function Topbar({
               <div className="p-3 min-w-[240px]">
                 <button
                   type="button"
-                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
+                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-label font-semibold cursor-pointer transition-all duration-300 ${
                     currentTab.startsWith('exams')
                       ? 'btn-glass btn-glass--gold'
                       : 'btn-glass btn-glass--bare'
@@ -693,7 +737,7 @@ export default function Topbar({
                 </button>
                 <button
                   type="button"
-                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold cursor-pointer transition-all duration-300 ${
+                  className={`w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-label font-semibold cursor-pointer transition-all duration-300 ${
                     currentTab === 'settings'
                       ? 'btn-glass btn-glass--gold'
                       : 'btn-glass btn-glass--bare'
@@ -707,7 +751,7 @@ export default function Topbar({
                 </button>
                 <button
                   type="button"
-                  className="w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-caption font-semibold btn-glass btn-glass--danger cursor-pointer transition-all duration-300"
+                  className="w-full text-right flex items-center gap-3 p-2.5 rounded-lg text-label font-semibold btn-glass btn-glass--danger cursor-pointer transition-all duration-300"
                   onClick={() => {
                     onLogout();
                     closeMenu();
@@ -729,7 +773,7 @@ export default function Topbar({
           <div className="fixed z-[60] @container" style={notificationStyle}>
             <div
               ref={notifRef}
-              className="relative w-full lens rounded-2xl overflow-hidden"
+              className="relative w-full lens lens--menu rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: bellRect
                   ? `${bellRect.width / 2}px ${-bellRect.height / 2 - 12}px`
@@ -741,20 +785,23 @@ export default function Topbar({
               id="notification-dropdown"
             >
               <div className="p-3 flex items-center justify-between border-b border-[var(--color-glass-light-stroke)]">
-                <span className="text-caption font-bold text-[var(--color-text-primary)]">
+                <span className="text-body font-bold text-[var(--color-text-primary)]">
                   اعلان‌ها
                 </span>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
-                    <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-caption bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-full font-bold">
                       {formatPersianNumber(unreadCount.toString())} جدید
                     </span>
                   )}
+                  {/* Quiet close — Apple's notification chrome: a neutral glass
+                      circle, not a danger button (the panel itself is the
+                      dismissal affordance; X is a secondary convenience). */}
                   <button
                     type="button"
                     onClick={closeNotifications}
                     aria-label="بستن"
-                    className="btn-glass btn-glass--danger grid h-8 w-8 place-items-center rounded-full cursor-pointer"
+                    className="btn-glass btn-glass--bare grid h-8 w-8 place-items-center rounded-full cursor-pointer text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -763,11 +810,11 @@ export default function Topbar({
 
               <div className="max-h-60 overflow-y-auto text-caption divide-y divide-[var(--color-glass-light-stroke)]">
                 {loadingNotifs ? (
-                  <div className="p-4 text-center text-[var(--color-text-tertiary)]">
+                  <div className="p-4 text-center text-[var(--color-text-secondary)]">
                     در حال بارگذاری...
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="p-6 text-center text-[var(--color-text-tertiary)]">
+                  <div className="p-6 text-center text-[var(--color-text-secondary)]">
                     هیچ اعلانی نیست.
                   </div>
                 ) : (
@@ -796,17 +843,17 @@ export default function Topbar({
                             aria-hidden="true"
                           />
                         )}
-                        <p className="font-semibold text-[var(--color-text-primary)]">{n.title}</p>
+                        <p className="text-body font-semibold text-[var(--color-text-primary)]">{n.title}</p>
                         <span
-                          className={`mr-auto rounded-full px-2 py-0.5 text-micro font-bold ${n.type === 'exam' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}
+                          className={`mr-auto rounded-full px-2 py-0.5 text-caption font-bold ${n.type === 'exam' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}
                         >
                           {n.type === 'exam' ? 'فوری' : 'اطلاع‌رسانی'}
                         </span>
                       </div>
-                      <p className="text-micro text-[var(--color-text-secondary)] mt-1">
+                      <p className="text-caption text-[var(--color-text-secondary)] mt-1">
                         {n.description}
                       </p>
-                      <span className="text-micro text-[var(--color-text-tertiary)] mt-2 block">
+                      <span className="text-caption text-[var(--color-text-secondary)] mt-2 block">
                         {n.timeAgo}
                       </span>
                     </div>

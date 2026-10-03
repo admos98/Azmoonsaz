@@ -262,6 +262,13 @@
      refraction 0.5, blur 1.0, specular 0.34/5/-55deg, rgb-dim 0.15).
      The dark theme changes exactly ONE number: --lens-dim. */
   --lens-dim: 0.15; /* rgb-dim — per-channel wash IN the lens/pane filters */
+  /* Floating menu material — hamburger/notif panels read against the DENSEST
+     content (hero type, busy cards). Apple's menus sit near 80% opacity:
+     deeper dim + heavier blur than resting panels, still glass. These only
+     re-dress the filter MARKUP (map cache is dim-blind) and the plain-chain
+     fallback below. */
+  --lens-menu-dim: 0.32;
+  --lens-menu-blur: 8px;
   --dim-tint: 103 100 112; /* dim wash target (mid-grey) + fallback fill */
   --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
   --lens-blur: 1px; /* Blur Level 1.0px (kube tune) */
@@ -270,15 +277,19 @@
   --field-blur: calc(var(--lens-blur) * 2);
   --drop-blur: 0.5px; /* a notch under lens — a small droplet stays crisp */
 
-  /* ── Apple signature curve — continuous (superellipse) corners ────────
+  /* ── Apple signature curve — continuous (superellipse) corners ──────────────
      A plain border-radius draws a circular arc with a tangent break where
      the arc meets the straight edge. Apple's corners keep CURVATURE
      CONTINUITY (a superellipse). --corner-exp is the single knob, shared
      with the lens engine — glassController reads it so the refracted rim
      follows the SAME curve the panel is painted with (circular maps on
      superellipse corners = the rim visibly drifting off the panel corner).
-     k=2 would be the old round corner; k=3 is the iOS-panel tune.
-     Browsers without corner-shape degrade to round automatically. */
+     PARAMETERIZATION NOTE (hit-tested in Chromium 153): `superellipse(k)`
+     paints |x|^n+|y|^n=1 with n = 2^k — k=1 IS the circle (Chromium even
+     serializes `round` back out as superellipse(1)); k=3 paints n=8. The
+     engine's mapMath raises to 2^k to match. k=3 is the iOS-panel tune.
+     Browsers without corner-shape degrade to round automatically, and the
+     engine drops its maps to k=1 so the rim degrades with the paint. */
   --corner-exp: 3;
   --corner-shape: superellipse(var(--corner-exp));
 
@@ -514,15 +525,25 @@
   /* ── Apple signature curve, EVERYWHERE ──
      corner-shape is inert where border-radius is 0, so the universal
      selector costs nothing on flat boxes. Circles and pills keep their
-     perfect circle: [class*='-full'] catches every Tailwind full-radius
-     variant (rounded-full, rounded-t-full, rounded-s-full, …), and .drop is
-     the circular icon-button droplet. Over-matching is harmless. */
+     perfect circle: ONLY the exact Tailwind full-radius utilities are
+     exempt. (A greedy [class*='-full'] also matched `w-full` — the notif
+     panel silently got circular corners while its rim map assumed the
+     superellipse: the double-corner arc on that one panel.) Over-matching
+     is harmless now: .drop is the circular icon-button droplet. */
   *,
   *::before,
   *::after {
     corner-shape: var(--corner-shape);
   }
-  [class*='-full'],
+  [class~='rounded-full'],
+  [class~='rounded-t-full'],
+  [class~='rounded-b-full'],
+  [class~='rounded-s-full'],
+  [class~='rounded-e-full'],
+  [class~='rounded-ss-full'],
+  [class~='rounded-se-full'],
+  [class~='rounded-es-full'],
+  [class~='rounded-ee-full'],
   .drop,
   [style*='border-radius: 50%'],
   [style*='border-radius:50%'],
@@ -722,6 +743,32 @@ select::-webkit-calendar-picker-indicator {
    clean. lite/off tiers strip the whole property further down (unlayered
    tier rules always win). Full evidence: docs/liquid-glass-engine-audit.md. */
 
+/* GPU tier — the engine's per-frame budget keeps live refraction on floating
+   chrome and small pills only; in-flow scrolling surfaces (cards, sections,
+   hero) carry class .lg-gpu: same material read, ZERO per-frame filter work.
+   The rim is painted with inset shadows — which follow the border curve,
+   INCLUDING corner-shape superellipse — so the rim hugs the same Apple curve
+   the lens panels bend. Layers, outside-in: hairline ring (the crisp edge the
+   refractive rim draws), directional light (bright top edge melting down, a
+   whisper of shade at the bottom — the specular arc's static twin), and the
+   bloom the family already had. */
+.lg-gpu {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
+    inset 0 1px 0 rgb(255 255 255 / calc(var(--glass-bloom-line-a) + 0.1)),
+    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 -1px 0 rgb(0 0 0 / 0.05),
+    inset 0 0 14px -6px rgb(255 255 255 / var(--glass-rim-fade));
+}
+:root[data-theme='dark'] .lg-gpu {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    inset 0 1px 0 rgb(255 255 255 / calc(var(--glass-bloom-line-a) + 0.08)),
+    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 -1px 0 rgb(0 0 0 / 0.22),
+    inset 0 0 14px -6px rgb(255 255 255 / var(--glass-rim-fade));
+}
+
 /* Blur first, bend last — the playground's order, with the blur GPU-side. */
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx:not(.field) {
   backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
@@ -848,7 +895,7 @@ select::-webkit-calendar-picker-indicator {
   --glass-fill: 0.32;
 }
 :root[data-glass='lite']
-  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur) {
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur, .topbar-veil) {
   backdrop-filter: none;
 }
 
@@ -867,7 +914,7 @@ select::-webkit-calendar-picker-indicator {
   --glass-p-ba: 0.4;
 }
 :root[data-glass='off']
-  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur) {
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur, .topbar-veil) {
   backdrop-filter: none;
 }
 /* forced-colors also strips backdrop-filter; give surfaces a solid border so
@@ -900,6 +947,33 @@ select::-webkit-calendar-picker-indicator {
    untracked blur is a blur the budget cannot see. */
 @utility chrome-blur {
   backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
+}
+
+/* ─── Topbar scroll veil — iOS nav-bar treatment ──────────────────────────
+   The topbar's buttons float over the page with NO panel behind them (by
+   design). The moment content scrolls under them, passing text collides with
+   the icons (the user's crop). A page-colored gradient fades in behind the
+   chrome once the page scrolls (Topbar sets data-scrolled / opacity) — the
+   iOS status-bar trick: chrome stays floating, but never fights content.
+   Paint-only: one gradient, opacity transition, no filter, no layout. */
+.topbar-veil {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--dim-tint) / 0.72) 0%,
+    rgb(var(--dim-tint) / 0.45) 42%,
+    rgb(var(--dim-tint) / 0) 100%
+  );
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  mask-image: linear-gradient(to bottom, black 0%, black 62%, transparent 100%);
+}
+:root[data-theme='dark'] .topbar-veil {
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.5) 0%,
+    rgb(0 0 0 / 0.3) 42%,
+    rgb(0 0 0 / 0) 100%
+  );
 }
 
 /* ─── The Mark gold pop ─── */
@@ -1414,9 +1488,18 @@ button {
   background: rgb(var(--dim-tint) / var(--glass-fill));
   backdrop-filter: blur(var(--lens-blur));
 }
-/* menus in dark read heavier: a bit more blur on any panel marked menu */
+/* Floating menu material (hamburger panels, notif): heavier frost + deeper
+   dim than resting panels — menus float over the DENSEST content and must
+   read as objects, not smears (user: "a bit more blur and dimming… still
+   feel glass"). Universal — not dark-only; the dark tune keeps a notch more
+   blur. The engine re-dresses the filter markup from these tokens (maps are
+   dim/blur-blind), and the plain-chain fallback matches until it attaches. */
+.lens.lens--menu {
+  --lens-dim: var(--lens-menu-dim);
+  backdrop-filter: blur(var(--lens-menu-blur));
+}
 :root[data-theme='dark'] .lens.lens--menu {
-  backdrop-filter: blur(calc(var(--lens-blur) * 3));
+  backdrop-filter: blur(calc(var(--lens-menu-blur) + 2px));
 }
 
 @utility pane {
@@ -1514,6 +1597,11 @@ button {
     0 1px 2px rgb(0 0 0 / 0.1);
   color: var(--color-text-primary);
   backdrop-filter: blur(var(--btn-blur)) saturate(1.4);
+  /* NO backdrop-filter transition: interpolating a filter list re-renders the
+     filter EVERY FRAME for the transition's duration — and the engine's
+     attach (plain chain -> +url(#id)) would trigger a useless 180ms
+     per-frame refilter on every button at boot. The light circuit animates
+     --btn-light-angle (a registered <angle>); it needs no filter tween. */
   transition:
     --btn-tint 180ms ease-out,
     --btn-tint-mix 180ms ease-out,
@@ -1521,7 +1609,6 @@ button {
     --btn-light-angle 180ms ease-out,
     border-color 180ms ease-out,
     box-shadow 180ms ease-out,
-    backdrop-filter 180ms ease-out,
     color 180ms ease-out,
     transform 80ms ease-out,
     filter 140ms ease-out;

@@ -35,11 +35,12 @@ import {
   buildSpecularMap,
   computeProfile,
   dimParams,
+  mapCornerExp,
   mapScaleFor,
   type LensParams,
 } from './mapMath';
 
-export { buildDisplacementMap, buildSpecularMap, computeProfile, dimParams, mapScaleFor };
+export { buildDisplacementMap, buildSpecularMap, computeProfile, dimParams, mapCornerExp, mapScaleFor };
 export type { LensParams };
 
 /** Maps are smooth gradients: clamp the display DPR to [1, 2] device px per

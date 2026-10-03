@@ -50,6 +50,8 @@ const SecureExamPortal = lazy(() => import('./pages/student/SecureExamPortal'));
 // Dev-only material laboratory (`/dev/fixtures`). Rendered before auth so the
 // visual baseline can be captured without a backend; never linked from nav.
 const FixtureGallery = lazy(() => import('./pages/dev/FixtureGallery'));
+// Dev-only topbar harness (`/dev/topbar`) — same gate, real Topbar + mock teacher.
+const TopbarHarness = lazy(() => import('./pages/dev/TopbarHarness'));
 
 /** Full-page boot state. Used for the auth handshake and as the Suspense
  *  fallback on route-level code boundaries. */
@@ -280,6 +282,7 @@ export default function App() {
   // inspected without a backend session. Compiled out of production builds:
   // the bypass-auth design must never ship.
   if (currentPath.startsWith('/dev/')) {
+    const DevPage = currentPath.startsWith('/dev/topbar') ? TopbarHarness : FixtureGallery;
     return (
       <Suspense
         fallback={
@@ -290,7 +293,7 @@ export default function App() {
           />
         }
       >
-        <FixtureGallery />
+        <DevPage />
       </Suspense>
     );
   }
