@@ -32,11 +32,12 @@
  *      once on entry; tracked elements live in a Set so pruning dead filters
  *      never walks the DOM tree either.
  *
- *   3. Time-budgeted map builds. The remaining genuine cost — a displacement
- *      map + a specular map + two PNG encodes per new size — is the only
- *      expensive step left, so it is spent against a small per-frame budget
- *      and the overflow carried to the next frame. A page mounting 18 panels
- *      can no longer block a single frame on 18 encodes.
+ *   3. Map builds + PNG encodes run in a Worker (mapWorker.ts). The pixel
+ *      loop (borderSDF pow/sqrt per px) + two deflate encodes per new size
+ *      were the remaining main-thread cost (~4.2s of long tasks over 66s in
+ *      the ?perf=1 report). Panels rest on their CSS blur base until the
+ *      maps arrive — one repaint, no flash — and the sync data-URI path
+ *      survives only as the no-Worker fallback.
  *
  * The playground's physics survive intact: same mapMath, same curvature
  * exponent (n = 2^k, Chromium-verified), same specular arc, same bezel ring.
@@ -53,6 +54,7 @@ import {
   mapScaleFor,
   type LensParams,
 } from './lensEngine';
+import type { MapBuildRequest, MapBuildResponse } from './mapWorker';
 
 /* ───────────────────── Ladder ───────────────────── */
 
@@ -92,9 +94,6 @@ let defaultParams: LensParams | null = null;
 
 const GLASS_SELECTOR = '.lens, .pane, .drop, .glx, .glx-strong, .glx-dark';
 
-/** ms of map-building allowed per frame before the rest is carried over. */
-const MAP_BUILD_BUDGET_MS = 6;
-
 /* ───────────────────── boot: params ───────────────────── */
 
 function defaultParamsFromRoot(): LensParams {
@@ -116,8 +115,12 @@ function defaultParamsFromRoot(): LensParams {
 
 /** Build one panel's exact-size map pair once; reuse thereafter. Cheap —
  *  a 200x400 panel is one 80k px loop, sub-frame. Cards/rows of the same
- *  size share the single cached entry. */
-function ensureBucket(kind: 'lens' | 'pane' | 'drop', w: number, h: number, radius: number): BucketEntry {
+ *  size share the single cached entry.
+ *
+ *  ASYNC path: posts to mapWorker, resolves with blob: URLs when the maps
+ *  arrive. The sync data-URI build below is the no-Worker fallback only —
+ *  pixels are identical (same mapMath, same inputs). */
+function buildBucketSync(kind: 'lens' | 'pane' | 'drop', w: number, h: number, radius: number): BucketEntry {
   // key on exact size — every panel gets the rim and corners at its own
   // geometry (playground contract). Tween-storm on resize is already killed
   // by the quantized idempotent key in sync().
@@ -257,8 +260,8 @@ function scheduleFlush(): void {
  *   panel. Panels whose quickKey is unchanged are dropped here, so a mutation
  *   touching one panel never re-measures the other 32.
  *
- *   PHASE B writes against a time budget, carrying overflow to the next frame.
- *   Map building is the only expensive step and it can no longer block a frame.
+ *   PHASE B dresses cache hits inline (string ops, sub-frame). Cache misses
+ *   post to the map worker and return — zero map math on this thread.
  */
 function flushSync(): void {
   flushQueued = false;
@@ -293,36 +296,22 @@ function flushSync(): void {
     todo.push({ el, kind, w, h, radius, p, chainBase, withDim, quickKey });
   }
 
-  /* PHASE B — WRITE, time-budgeted */
-  let carried = false;
-  if (todo.length) {
-    let spent = 0;
-    let i = 0;
-    for (; i < todo.length; i++) {
-      if (i > 0 && spent > MAP_BUILD_BUDGET_MS) break;
-      const t0 = performance.now();
-      try {
-        commit(todo[i]);
-      } catch {
-        /* keep the plain CSS chain */
-      }
-      spent += performance.now() - t0;
-    }
-    if (i < todo.length) {
-      for (; i < todo.length; i++) pendingSync.add(todo[i].el);
-      carried = true;
+  /* PHASE B — WRITE. Cache hits dress inline (string ops, sub-frame);
+     misses post to the map worker and return — zero map math on this thread. */
+  for (const t of todo) {
+    try {
+      commit(t);
+    } catch {
+      /* keep the plain CSS chain */
     }
   }
 
   pruneDead();
-  if (carried) scheduleFlush();
 }
 
-/** Apply one panel: cached maps + cached filter graph + inline chain. */
-function commit(t: PendingPanel): void {
+/** Dress one panel from a cached bucket: filter graph + inline chain. */
+function dressPanel(t: PendingPanel, entry: BucketEntry): void {
   const { el, kind, w, h, radius, p, chainBase, withDim, quickKey } = t;
-  const entry = ensureBucket(kind, w, h, radius);
-
   const mapKey = `${kind}|${w}x${h}|${Math.round(radius)}`;
   const filterKey = `${mapKey}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
   let id = FILTERS.get(filterKey);
@@ -335,6 +324,139 @@ function commit(t: PendingPanel): void {
   byEl.set(el, id);
   applyChain(el, `${chainBase} url(#${id})`);
   el.dataset.lastQuickKey = quickKey;
+}
+
+/** Apply one panel: cached maps + cached filter graph + inline chain. */
+function commit(t: PendingPanel): void {
+  const { kind, w, h, radius } = t;
+  const mapKey = `${kind}|${w}x${h}|${Math.round(radius)}`;
+
+  // Cache hit: dress immediately (string ops only — sub-frame).
+  const hit = MAP_TABLE.get(mapKey);
+  if (hit) {
+    dressPanel(t, hit);
+    return;
+  }
+
+  // Cache miss: build off the main thread. The panel keeps its CSS
+  // blur() + saturate() base until the maps arrive — one repaint, no flash.
+  if (requestBucketAsync(t, mapKey)) return;
+
+  // No Worker (very old browser): sync data-URI fallback. Pixel-identical,
+  // main-thread cost — the only path that still pays it.
+  try {
+    dressPanel(t, buildBucketSync(kind, w, h, radius));
+  } catch {
+    /* keep the plain CSS chain */
+  }
+}
+
+/* ───────────────────── map worker ───────────────────── */
+
+let mapWorker: Worker | null = null;
+let workerDead = false;
+
+/** Panels waiting on a map build, by map key. */
+const inflight = new Map<string, PendingPanel[]>();
+
+function worker(): Worker | null {
+  if (workerDead) return null;
+  if (mapWorker) return mapWorker;
+  try {
+    const w = new Worker(new URL('./mapWorker.ts', import.meta.url), { type: 'module' });
+    w.onmessage = onWorkerMessage;
+    // A dead worker must never leave panels lens-less forever: fall back to
+    // the sync build once, instead of janking or hanging.
+    w.onerror = () => {
+      workerDead = true;
+      const waiting = Array.from(inflight.values()).flat();
+      inflight.clear();
+      mapWorker = null;
+      for (const t of waiting) {
+        try {
+          dressPanel(t, buildBucketSync(t.kind, t.w, t.h, t.radius));
+        } catch {
+          /* keep the plain CSS chain */
+        }
+      }
+    };
+    mapWorker = w;
+    return w;
+  } catch {
+    workerDead = true;
+    return null;
+  }
+}
+
+/** Post one map build to the worker. Returns false when no Worker exists. */
+function requestBucketAsync(t: PendingPanel, mapKey: string): boolean {
+  const queued = inflight.get(mapKey);
+  if (queued) {
+    queued.push(t);
+    return true;
+  }
+  const w = worker();
+  if (!w) return false;
+  const p = defaultParams ?? (defaultParams = defaultParamsFromRoot());
+  const r =
+    t.radius >= 9999
+      ? Math.min(t.w, t.h) / 2
+      : Math.min(t.radius, Math.min(t.w, t.h) / 2 - 1);
+  const req: MapBuildRequest = {
+    key: mapKey,
+    kind: t.kind,
+    w: t.w,
+    h: t.h,
+    radius: r,
+    bezel: p.bezel,
+    thickness: p.thickness,
+    specAngle: p.specAngle,
+    specPeak: p.specPeak,
+    cornerExp: mapCornerExp(p.cornerExp, CORNER_SHAPE_SUPPORTED),
+    scale: mapDPR() * mapScaleFor(t.w, t.h),
+  };
+  try {
+    inflight.set(mapKey, [t]);
+    w.postMessage(req);
+  } catch {
+    inflight.delete(mapKey);
+    return false;
+  }
+  return true;
+}
+
+function onWorkerMessage(e: MessageEvent): void {
+  const res = e.data as MapBuildResponse;
+  const waiting = inflight.get(res.key);
+  if (!waiting) return;
+  inflight.delete(res.key);
+  // A failed build falls back to sync — rare, and only for these panels.
+  const needDisp = waiting[0]?.kind !== 'pane';
+  if (!res.ok || !res.specBlob || (needDisp && !res.dispBlob)) {
+    for (const t of waiting) {
+      try {
+        dressPanel(t, buildBucketSync(t.kind, t.w, t.h, t.radius));
+      } catch {
+        /* keep the plain CSS chain */
+      }
+    }
+    return;
+  }
+  const entry: BucketEntry = {
+    dispURL: res.dispBlob ? URL.createObjectURL(res.dispBlob) : null,
+    specURL: URL.createObjectURL(res.specBlob),
+    maxAbs: res.maxAbs,
+  };
+  MAP_TABLE.set(res.key, entry);
+  for (const t of waiting) {
+    if (!t.el.isConnected) continue;
+    try {
+      dressPanel(t, entry);
+    } catch {
+      /* keep the plain CSS chain */
+    }
+  }
+  pruneDead();
 }
 
 function readParams(cs: CSSStyleDeclaration): LensParams {
@@ -470,6 +592,14 @@ export function unmountGlassEngine(): void {
   attrObserver = null;
   domObserver?.disconnect();
   domObserver = null;
+  mapWorker?.terminate();
+  mapWorker = null;
+  workerDead = false;
+  inflight.clear();
+  for (const entry of MAP_TABLE.values()) {
+    if (entry.dispURL?.startsWith('blob:')) URL.revokeObjectURL(entry.dispURL);
+    if (entry.specURL.startsWith('blob:')) URL.revokeObjectURL(entry.specURL);
+  }
   FILTERS.clear();
   MAP_TABLE.clear();
   tracked.clear();
