@@ -872,7 +872,7 @@ select::-webkit-calendar-picker-indicator {
   --glass-fill: 0.32;
 }
 :root[data-glass='lite']
-  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur, .topbar-veil) {
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
 
@@ -891,7 +891,7 @@ select::-webkit-calendar-picker-indicator {
   --glass-p-ba: 0.4;
 }
 :root[data-glass='off']
-  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur, .topbar-veil) {
+  :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .frost, .field, .drop, .veil-blur, .chrome-blur) {
   backdrop-filter: none;
 }
 /* forced-colors also strips backdrop-filter; give surfaces a solid border so
@@ -926,33 +926,9 @@ select::-webkit-calendar-picker-indicator {
   backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
 }
 
-/* ─── Topbar scroll veil — iOS nav-bar treatment ──────────────────────────
-   The topbar's buttons float over the page with NO panel behind them (by
-   design). The moment content scrolls under them, passing text collides with
-   the icons (the user's crop). A page-colored gradient fades in behind the
-   chrome once the page scrolls (Topbar sets data-scrolled / opacity) — the
-   iOS status-bar trick: chrome stays floating, but never fights content.
-   Paint-only: one gradient, opacity transition, no filter, no layout. */
-.topbar-veil {
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--dim-tint) / 0.72) 0%,
-    rgb(var(--dim-tint) / 0.45) 42%,
-    rgb(var(--dim-tint) / 0) 100%
-  );
-  /* The scroll blur was removed for every surface — it was the last chrome
-     backdrop-filter, repainting the whole top strip on every scroll frame on
-     both engines. The gradient veil alone carries the separation. */
-  mask-image: linear-gradient(to bottom, black 0%, black 62%, transparent 100%);
-}
-:root[data-theme='dark'] .topbar-veil {
-  background: linear-gradient(
-    to bottom,
-    rgb(0 0 0 / 0.5) 0%,
-    rgb(0 0 0 / 0.3) 42%,
-    rgb(0 0 0 / 0) 100%
-  );
-}
+/* (topbar scroll veil removed — the gradient band never left the instruction
+    from the screenshot, so the div + the .topbar-veil rule are gone. The
+    floating buttons read clean over content now.) */
 
 /* ─── The Mark gold pop ─── */
 .goldpop {
@@ -1513,22 +1489,53 @@ button {
 }
 
 /* Same edge for the main materials on the engines the SVG bend can't reach
-   (Safari < 138, Firefox, older Chromium). A static rounded ring + bloom:
-   box-shadows follow border-radius natively, so there is no mask, no
-   corner artifact, no per-frame cost — unlike the previous masked pseudo
-   whose rectangular content-box cutout left faint 90° corner lines on the
-   hero. Where the bend runs (data-lens='on') this rule does not apply and
-   the filter graph paints the rim instead. */
+   (Safari < 138, Firefox, older Chromium). Two stacked rings: a thin
+   static light rim at the very edge, and just inside it a saturated live
+   rim. Box-shadows follow border-radius natively, so no mask, no corner
+   artifact, no per-frame cost. The inner rim is a ::after pseudo on a
+   1px-inset rounded ring — it re-samples the raw page backdrop with a
+   blur+saturation, painting the background colors back at the edge.
+   Where the bend runs (data-lens='on') none of this applies; the filter
+   graph paints the rim instead. */
 :root:not([data-lens='on']) .lens,
 :root:not([data-lens='on']) .pane,
 :root:not([data-lens='on']) .glx,
 :root:not([data-lens='on']) .glx-strong,
 :root:not([data-lens='on']) .glx-dark {
   box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.13),
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
     inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
     inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
     inset 0 0 14px -6px rgb(255 255 255 / var(--glass-rim-fade));
+}
+
+:root:not([data-lens='on']) .lens::after,
+:root:not([data-lens='on']) .pane::after,
+:root:not([data-lens='on']) .glx::after,
+:root:not([data-lens='on']) .glx-strong::after,
+:root:not([data-lens='on']) .glx-dark::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Saturated rim: re-sample the page backdrop, soften + saturate. */
+  backdrop-filter: blur(3px) saturate(1.6);
+  -webkit-backdrop-filter: blur(3px) saturate(1.6);
+  padding: 1.5px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* Panels hosting the rim pseudo need a positioning context. */
+:root:not([data-lens='on']) .lens,
+:root:not([data-lens='on']) .pane,
+:root:not([data-lens='on']) .glx,
+:root:not([data-lens='on']) .glx-strong,
+:root:not([data-lens='on']) .glx-dark {
+  position: relative;
 }
 
 /* runtime engine: per-panel filters replace the static fallback once the

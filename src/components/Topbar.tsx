@@ -378,14 +378,6 @@ export default function Topbar({
       id="topbar-wrapper"
       data-scrolled={topScrolled ? 'on' : 'off'}
     >
-      {/* iOS-style scroll veil — fades in behind the floating buttons once the
-          page scrolls (data-scrolled). Paint-only, no filter, no layout. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-16 transition-opacity duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] topbar-veil"
-        style={{ opacity: topScrolled ? 1 : 0 }}
-      />
-
       {/* LEFT SIDE: Avatar then Bell — the avatar's name panel PUSHES the bell
           aside when it slides out from behind the circle (iOS neighbor-push;
           the user: "the name panel should push the bell away"). RTL flex lays
