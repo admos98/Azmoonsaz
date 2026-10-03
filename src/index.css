@@ -267,8 +267,8 @@
      deeper dim + heavier blur than resting panels, still glass. These only
      re-dress the filter MARKUP (map cache is dim-blind) and the plain-chain
      fallback below. */
-  --lens-menu-dim: 0.32;
-  --lens-menu-blur: 8px;
+  --lens-menu-dim: 0.14;
+  --lens-menu-blur: 6px;
   --dim-tint: 103 100 112; /* dim wash target (mid-grey) + fallback fill */
   --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
   --lens-blur: 1px; /* Blur Level 1.0px (kube tune) */

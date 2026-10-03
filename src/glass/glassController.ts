@@ -33,34 +33,23 @@ import {
 
 /* ───────────────────── Ladder ───────────────────── */
 
-/** Radius classes that actually ship in this app. 9999 = pill/drop (exact
- *  circle). Custom radii snap to the nearest class; a mismatch > 8px sets
- *  data-lens-snap on the element so DevTools explains it. */
-const RADIUS_RUNGS = [8, 14, 21, 28, 64, 9999] as const;
-
-/** Aspect classes — keeps the bezel ramp proportional under feImage stretch. */
-type Aspect = 'wide' | 'tall' | 'square';
-
-/** Canvas sizes per aspect class. Small on purpose: smooth gradients survive
- *  bilinear upscaling exactly (flat-neutral interior, smooth ring ramp). */
-const ASPECT_SIZE: Record<Aspect, { w: number; h: number }> = {
-  wide: { w: 256, h: 160 },
-  tall: { w: 160, h: 256 },
-  square: { w: 200, h: 200 },
-};
-
-/* ───────────────────── Static map table ───────────────────── */
-
 interface BucketEntry {
   dispURL: string | null; // null for 'pane' (rim-only by design)
   specURL: string;
   maxAbs: number;
 }
 
-/** `${kind}|${radius}|${aspect}` -> built maps. Built ONCE at boot. */
+/** `${kind}|${w}x${h}|${radius}` -> exact-size maps. Built lazily on first
+ *  sight of a panel size and REUSED by every later panel of that size (card
+ *  grids, rows of same-height buttons share one map + one filter graph).
+ *
+ *  Why exact size: the ring's CSS-px position and the superellipse curvature
+ *  are computed against the panel's real rect; a stretched canned-aspect map
+ *  lands the bezel ramp at the wrong width on each axis and the corner
+ *  departs from the painted border (the "rim ≠ panel size" bug). */
 const MAP_TABLE = new Map<string, BucketEntry>();
 
-/** `${kind}|${radius}|${aspect}|${w}x${h}|${dimBit}|${specOpacity}|${specSat}|${dim}` -> filter id */
+/** `${kind}|${w}x${h}|${radius}|${withDim}|${specOpacity}|${specSat}|${dim}` -> filter id */
 const FILTERS = new Map<string, string>();
 
 const byEl = new WeakMap<Element, string>();
@@ -95,31 +84,30 @@ function defaultParamsFromRoot(): LensParams {
   };
 }
 
-function buildLadder(): void {
+/** Build one panel's exact-size map pair once; reuse thereafter. Cheap —
+ *  a 200x400 panel is one 80k px loop, sub-frame. Cards/rows of the same
+ *  size share the single cached entry. */
+function ensureBucket(kind: 'lens' | 'pane' | 'drop', w: number, h: number, radius: number): BucketEntry {
+  const key = `${kind}|${w}x${h}|${radius}`;
+  const hit = MAP_TABLE.get(key);
+  if (hit) return hit;
   const p = defaultParams ?? (defaultParams = defaultParamsFromRoot());
   const cornerExp = mapCornerExp(p.cornerExp, CORNER_SHAPE_SUPPORTED);
   const prof = computeProfile(p.bezel, p.thickness);
-  for (const r of RADIUS_RUNGS) {
-    for (const aspect of ['wide', 'tall', 'square'] as Aspect[]) {
-      const { w, h } = ASPECT_SIZE[aspect];
-      const radius = r >= 9999 ? Math.min(w, h) / 2 : Math.min(r, Math.min(w, h) / 2 - 1);
-      for (const kind of ['lens', 'pane', 'drop'] as const) {
-        const key = `${kind}|${r}|${aspect}`;
-        if (MAP_TABLE.has(key)) continue;
-        let dispURL: string | null = null;
-        let maxAbs = 1;
-        if (kind !== 'pane') {
-          const dm = buildDisplacementMap(w, h, radius, p.bezel, prof, 1, cornerExp);
-          maxAbs = dm.maxAbs;
-          dispURL = imageDataToURL(dm.img);
-        }
-        const specURL = imageDataToURL(
-          buildSpecularMap(w, h, radius, p.specAngle, 1, p.specPeak, cornerExp),
-        );
-        MAP_TABLE.set(key, { dispURL, specURL, maxAbs });
-      }
-    }
+  const r = radius >= 9999 ? Math.min(w, h) / 2 : Math.min(radius, Math.min(w, h) / 2 - 1);
+  let dispURL: string | null = null;
+  let maxAbs = 1;
+  if (kind !== 'pane') {
+    const dm = buildDisplacementMap(w, h, r, p.bezel, prof, 1, cornerExp);
+    maxAbs = dm.maxAbs;
+    dispURL = imageDataToURL(dm.img);
   }
+  const specURL = imageDataToURL(
+    buildSpecularMap(w, h, r, p.specAngle, 1, p.specPeak, cornerExp),
+  );
+  const entry: BucketEntry = { dispURL, specURL, maxAbs };
+  MAP_TABLE.set(key, entry);
+  return entry;
 }
 
 /* ───────────────────── helpers ───────────────────── */
@@ -139,31 +127,6 @@ function radiusOf(el: HTMLElement, cs: CSSStyleDeclaration, fallback: number): n
   if (!Number.isFinite(n)) return fallback;
   if (raw.endsWith('%')) return (n / 100) * Math.min(el.offsetWidth, el.offsetHeight);
   return n;
-}
-
-/** Snap an element's radius to its ladder rung; flag big mismatches. */
-function radiusClass(el: HTMLElement, cs: CSSStyleDeclaration): number {
-  const r = radiusOf(el, cs, cssNum(cs, '--lens-radius', 21));
-  const pill = el.offsetWidth > 0 && r >= Math.min(el.offsetWidth, el.offsetHeight) / 2 - 1;
-  if (pill) return 9999;
-  let best = RADIUS_RUNGS[0] as number;
-  let bestD = Infinity;
-  for (const rung of RADIUS_RUNGS) {
-    if (rung >= 9999) continue;
-    const d = Math.abs(rung - r);
-    if (d < bestD) {
-      bestD = d;
-      best = rung;
-    }
-  }
-  if (bestD > 8 && el.dataset) el.dataset.lensSnap = `${Math.round(r)}->${best}`;
-  return best;
-}
-
-function aspectClass(w: number, h: number): Aspect {
-  if (w >= h * 1.5) return 'wide';
-  if (h >= w * 1.5) return 'tall';
-  return 'square';
 }
 
 function kindOf(el: Element): 'lens' | 'pane' | 'drop' | null {
@@ -222,19 +185,14 @@ function sync(el: HTMLElement): void {
   if (w < 2 || h < 2) return;
   const cs = getComputedStyle(el);
   const p = readParams(cs);
-  const r = radiusClass(el, cs);
-  const aspect = aspectClass(w, h);
+  const radius = radiusOf(el, cs, cssNum(cs, '--lens-radius', 21));
   const chainBase = chainOf(el, cs);
   const withDim = kind !== 'drop' && p.dim > 0;
 
-  const mapKey = `${kind}|${r}|${aspect}`;
-  const entry = MAP_TABLE.get(mapKey);
-  if (!entry) {
-    applyChain(el, chainBase);
-    return;
-  }
+  const entry = ensureBucket(kind, w, h, radius);
 
-  const filterKey = `${mapKey}|${w}x${h}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
+  const mapKey = `${kind}|${w}x${h}|${Math.round(radius)}`;
+  const filterKey = `${mapKey}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
   let id = FILTERS.get(filterKey);
   if (!id || !document.getElementById(id)) {
     id = `lg-${++seq}`;
@@ -308,17 +266,21 @@ export function resyncGlass(): void {
 export function mountGlassEngine(): void {
   if (mounted) return;
   mounted = true;
-  buildLadder();
   resizeObserver = new ResizeObserver((entries) => {
     for (const e of entries) {
       const el = e.target as HTMLElement;
-      // only a bucket change re-syncs — the map never rebuilds
-      const cs = getComputedStyle(el);
-      const r = radiusClass(el, cs);
-      const bucket = `${r}|${aspectClass(el.offsetWidth, el.offsetHeight)}`;
-      if (el.dataset.bucket !== bucket) {
-        el.dataset.bucket = bucket;
-        sync(el);
+      // Rebuild only once the size SETTLES — a tween's in-between sizes
+      // would each key a new exact-size map (per-frame thrash). rAF-coalesce.
+      el.dataset.pendingSize = `${el.offsetWidth}x${el.offsetHeight}`;
+      if (!el.dataset.settleRaf) {
+        el.dataset.settleRaf = '1';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          el.dataset.settleRaf = '';
+          if (el.dataset.lastSize !== el.dataset.pendingSize) {
+            el.dataset.lastSize = el.dataset.pendingSize;
+            try { sync(el); } catch { /* keep plain chain */ }
+          }
+        }));
       }
     }
   });
