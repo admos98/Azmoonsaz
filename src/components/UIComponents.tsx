@@ -1065,6 +1065,9 @@ interface EmptyStateProps {
   action?: React.ReactNode;
   /** Compact variant for inline spots: table cells, pickers, modal bodies */
   compact?: boolean;
+  /** CTA directly under the title — for panels whose action would otherwise
+      clip at the viewport bottom (Round-1 1E) */
+  actionFirst?: boolean;
 }
 
 export const EmptyState = ({
@@ -1073,6 +1076,7 @@ export const EmptyState = ({
   description,
   action,
   compact = false,
+  actionFirst = false,
 }: EmptyStateProps) => {
   return (
     <div
@@ -1095,6 +1099,7 @@ export const EmptyState = ({
         >
           {title}
         </h4>
+        {actionFirst && action && <div className="pt-2">{action}</div>}
         <p
           className={`text-[var(--color-text-tertiary)] font-medium leading-relaxed ${
             compact ? 'text-micro md:text-caption' : 'text-caption'
@@ -1103,7 +1108,7 @@ export const EmptyState = ({
           {description}
         </p>
       </div>
-      {action && <div className={compact ? 'pt-1' : 'pt-2'}>{action}</div>}
+      {!actionFirst && action && <div className={compact ? 'pt-1' : 'pt-2'}>{action}</div>}
     </div>
   );
 };

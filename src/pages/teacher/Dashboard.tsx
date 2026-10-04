@@ -76,6 +76,18 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   // no name at all → «سلام، استاد عزیز», never a placeholder word.
   const greetingName = (teacher?.name ?? '').trim().split('@')[0];
 
+  // Designed zero (1E): Persian ۰ at heading-1 reads as a speck — i.e. as a
+  // bug, not an empty state. Zero renders a tertiary em-dash at heading-2;
+  // nonzero keeps the count. (Motif art in the value zone = backlog.)
+  const statValue = (n: number) =>
+    n === 0
+      ? {
+          value: '—' as const,
+          valueSize: 'md' as const,
+          valueClassName: 'text-[var(--color-text-tertiary)]',
+        }
+      : { value: formatPersianNumber(n), valueSize: 'lg' as const, valueClassName: undefined };
+
   // Helper resolvers for table
   const getStudentClassLabel = (studentId: string) => {
     const student = currentStudents.find((s) => s.id === studentId);
@@ -161,7 +173,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <StatCard
             id="stat-card-total-students"
             label="تعداد دانش‌آموزان"
-            value={formatPersianNumber(totalStudents)}
+            {...statValue(totalStudents)}
             unit="نفر"
             icon={<Users className="w-4 h-4" />}
             tone="accent"
@@ -171,7 +183,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <StatCard
             id="stat-card-total-questions"
             label="تعداد کل سوالات"
-            value={formatPersianNumber(localQuestions.length)}
+            {...statValue(localQuestions.length)}
             unit="سوال"
             footnote="منطبق با کتب درسی جدید"
             icon={<BookOpen className="w-4 h-4" />}
@@ -182,7 +194,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <StatCard
             id="stat-card-active-exams"
             label="آزمون‌های فعال در کلاس"
-            value={formatPersianNumber(activeExams)}
+            {...statValue(activeExams)}
             unit="آزمون"
             footnote={
               activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمونی در حال برگزاری نیست'
@@ -192,23 +204,29 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             tone="warning"
           />
 
-          {/* Card 4: Submissions Pending Grading */}
+          {/* Card 4: Submissions Pending Grading — inbox-zero semantics (1F):
+              green + «هیچ» when the queue is empty, red + count when there
+              is work; an alarm colour that is always on is one nobody reads */}
           <StatCard
             id="stat-card-pending-reviews"
             label="نیازمند تصحیح تشریحی"
-            value={formatPersianNumber(pendingGradings)}
+            {...statValue(pendingGradings)}
             unit="برگه"
-            footnote="پاسخ‌های تشریحی در انتظار نمره"
-            footnoteTone="danger"
+            footnote={
+              pendingGradings > 0
+                ? `${formatPersianNumber(pendingGradings)} پاسخ‌برگ در انتظار تصحیح`
+                : 'در انتظار تصحیح: هیچ'
+            }
+            footnoteTone={pendingGradings > 0 ? 'danger' : 'success'}
             icon={<CheckSquare className="w-4 h-4" />}
-            tone="danger"
+            tone={pendingGradings > 0 ? 'danger' : 'success'}
           />
 
           {/* Card 5: Scheduled Exams */}
           <StatCard
             id="stat-card-scheduled-exams"
             label="آزمون‌های زمان‌بندی‌شده"
-            value={formatPersianNumber(scheduledExams)}
+            {...statValue(scheduledExams)}
             unit="مورد"
             footnote="برنامه‌ریزی آغاز در روزهای آتی"
             icon={<CalendarDays className="w-4 h-4" />}
@@ -282,17 +300,34 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               </span>
             </button>
 
+            {/* Grading tile = traffic light (1F): red only when there is
+                work, calm green when the queue is empty — state-driven
+                colour is information; always-on alarm colour is noise */}
             <button
               type="button"
               id="qa-btn-correct-essays"
               onClick={() => onNavigate('results')}
-              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer"
+              className={`p-4 btn-glass ${
+                pendingGradings > 0 ? 'btn-glass--danger' : 'btn-glass--success'
+              } rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer`}
             >
-              <div className="p-2.5 glx-inset glx-inset-clear bg-[var(--color-danger)]/15 text-[var(--color-danger)] rounded-xl group-hover:scale-105 transition-transform">
+              <div
+                className={`p-2.5 glx-inset glx-inset-clear rounded-xl group-hover:scale-105 transition-transform ${
+                  pendingGradings > 0
+                    ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
+                    : 'bg-[var(--color-success-soft)] text-[var(--color-success)]'
+                }`}
+              >
                 <CheckSquare className="w-5 h-5" />
               </div>
-              <span className="text-caption font-bold text-[var(--color-danger)]">
-                تصحیح تشریحی
+              <span
+                className={`text-caption font-bold ${
+                  pendingGradings > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'
+                }`}
+              >
+                {pendingGradings > 0
+                  ? `${formatPersianNumber(pendingGradings)} پاسخ‌برگ در انتظار تصحیح`
+                  : 'تصحیح تشریحی — موردی در انتظار نیست'}
               </span>
             </button>
           </div>
@@ -385,6 +420,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   icon={<FileText className="w-8 h-8" />}
                   title="هیچ آزمونی برای نمایش یافت نشد!"
                   description="در حال حاضر هیچ آزمون فعالی تعریف نگردیده است. با فشردن دکمه طراح زیر، اولین سنجش تحصیلی هماهنگ خود را پایه‌ریزی کنید."
+                  actionFirst
                   action={
                     <Button onClick={() => onNavigate('exams/new')} variant="primary" size="sm">
                       همین الان آزمون نو بسازید
@@ -556,6 +592,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   icon={<Users className="w-8 h-8" />}
                   title="موردی برای تصحیح یافت نشد!"
                   description="هیچ دانش‌آموزی در کلاس جاری ثبت‌نام نشده یا پاسخی دریافت نگردیده است. شما می‌توانید فایل اکسل رسمی دانش‌آموزان را برای شروع بارگذاری کنید."
+                  actionFirst
                   action={
                     <Button
                       onClick={(e) => {

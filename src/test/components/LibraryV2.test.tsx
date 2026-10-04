@@ -280,4 +280,24 @@ describe('Micro controls — TextLink / IconButton / PillButton (F-6 primitives)
     expect(b2.className).toContain('text-caption');
     expect(b2.className).toContain('font-black');
   });
+
+  it('EmptyState actionFirst puts the CTA above the description (1E)', () => {
+    const { container } = render(
+      <EmptyState
+        title="هیچ آزمونی"
+        description="توضیحات"
+        actionFirst
+        action={<button type="button">بسازید</button>}
+      />,
+    );
+    const texts = container.querySelector('div.space-y-1')!;
+    const kids = [...texts.children].map((el) => el.tagName);
+    expect(kids).toEqual(['H4', 'DIV', 'P']); // title, action, description
+    // default order unchanged: description then action outside the text block
+    const d = render(
+      <EmptyState title="t" description="d" action={<button type="button">a</button>} />,
+    );
+    const block = d.container.querySelector('div.space-y-1')!;
+    expect([...block.children].map((el) => el.tagName)).toEqual(['H4', 'P']);
+  });
 });
