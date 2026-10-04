@@ -1494,6 +1494,23 @@ button {
 :root[data-theme='dark'] .lens.lens--menu {
   backdrop-filter: blur(calc(var(--lens-menu-blur) + 2px));
 }
+/* Light-only menu blur cut: 6px -> 5px on the densest panels. 1px is
+   imperceptible side-by-side on a 280px menu; blur cost scales with radius
+   so the hottest surface gets ~15% cheaper. Dark keeps 6+2 (dark pixels are
+   already cheap to raster). Scoped override — the shared token is untouched
+   so dark and the engine's chainOf() need no changes. */
+:root:not([data-theme='dark']) .lens.lens--menu {
+  backdrop-filter: blur(5px);
+}
+/* Floating menu containment: hover transitions inside the dropdowns used to
+   invalidate style/paint up the tree (Topbar -> header -> page). contain:
+   layout paint walls that off to the dropdown subtree — zero visual change,
+   pure invalidation scoping. Applied to the two floating containers
+   (hamburger wrapper, notif wrapper). NOT style containment (unneeded) and
+   NOT strict/size (would collapse the auto-sized panels). */
+@utility contain-menu {
+  contain: layout paint;
+}
 
 @utility pane {
   background: rgb(var(--dim-tint) / var(--glass-fill));

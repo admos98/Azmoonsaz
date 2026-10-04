@@ -583,7 +583,7 @@ export default function Topbar({
               (flex column, real heights). No estimated stacking, no drift. */}
           <div
             ref={hamburgerDropdownRef}
-            className="fixed z-[60] flex flex-col gap-3"
+            className="fixed z-[60] flex flex-col gap-3 contain-menu"
             style={hamburgerDropdownStyle}
           >
             {/* Panel 1: App info + date */}
@@ -763,7 +763,7 @@ export default function Topbar({
         <>
           {/* Click-away catcher — transparent (no dim, no halo; same rule as the menu). */}
           <div className="fixed inset-0 z-[55]" onClick={closeNotifications} />
-          <div className="fixed z-[60] @container" style={notificationStyle}>
+          <div className="fixed z-[60] @container contain-menu" style={notificationStyle}>
             <div
               ref={notifRef}
               className="relative w-full lens lens--menu rounded-2xl overflow-hidden"

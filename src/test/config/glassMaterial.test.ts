@@ -617,6 +617,21 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(readFileSync(join(root, 'src/glass/glassController.ts'), 'utf8')).toMatch(/mountGlassEngine/);
     expect(readFileSync(join(root, 'src/glass/lensEngine.ts'), 'utf8')).toMatch(/buildFilterMarkup/);
 
+    // ── options A+B: light menu blur cut + floating menu containment ──
+    // A: light-only 6px->5px on the densest panels (shared token untouched,
+    // dark keeps 6+2). 1px is side-by-side imperceptible on a 280px menu.
+    expect(css).toMatch(
+      /:root:not\(\[data-theme='dark'\]\) \.lens\.lens--menu\s*\{\s*backdrop-filter:\s*blur\(5px\);/s,
+    );
+    // B: contain: layout paint on both floating wrappers (invalidation stays
+    // in the dropdown subtree). NOT strict/size (would collapse auto panels).
+    expect(css).toMatch(/@utility contain-menu\s*\{[^}]*contain:\s*layout paint/s);
+    expect(component('src/components/Topbar.tsx')).toMatch(
+      /fixed z-\[60\] flex flex-col gap-3 contain-menu/,
+    );
+    expect(component('src/components/Topbar.tsx')).toMatch(
+      /fixed z-\[60\] @container contain-menu/,
+    );
     // ── the family rides every structural rule ──
     for (const tier of ['lite', 'off'] as const) {
       expect(css).toMatch(
