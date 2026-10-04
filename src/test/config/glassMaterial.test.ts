@@ -601,9 +601,14 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(
       /\[id\^='hamburger-panel-'\] \.btn-glass:hover,[\s\S]*?animation-iteration-count:\s*1/,
     );
-    // primary CTA = brand Ink (the Mark's solid-fill colour), not the accent
-    expect(css).toMatch(/\.btn-glass--primary\s*{\s*--btn-tint:\s*var\(--color-ink\)[^}]*/s);
-    expect(css).toMatch(/\.btn-glass--primary\s*{[^}]*--btn-tint-mix:\s*24%/);
+    // primary CTA = brand solid (1C): accent-solid slab + on-solid ink,
+    // wash/circuit retired, press physics shared with the family
+    expect(css).toMatch(/\.btn-glass--primary\s*{[^}]*background:\s*var\(--color-accent-solid\)/s);
+    expect(css).toMatch(/\.btn-glass--primary\s*{[^}]*color:\s*var\(--color-text-on-solid\)/s);
+    expect(css).toMatch(/\.btn-glass--primary\s*{[^}]*--btn-tint-mix:\s*0%/s);
+    expect(css).toMatch(
+      /\.btn-glass--primary:hover,\s*\.btn-glass--primary:focus-visible\s*{\s*animation:\s*none/s,
+    );
     // selected chips keep the accent's own glass
     expect(css).toMatch(/\.btn-glass--accent\s*{\s*--btn-tint:\s*var\(--color-accent-solid\)/);
     // the burger: bare + STILL — no hover materialize, only rest + morph

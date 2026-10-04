@@ -1198,7 +1198,9 @@ select::-webkit-calendar-picker-indicator {
   position: absolute;
   inset-inline: 0;
   bottom: calc(100% + 18px);
-  opacity: 0.1;
+  /* 0.1 sat below the object-recognition threshold — four pale donuts.
+     0.22 reads as a confident watermark (1D). */
+  opacity: 0.22;
   filter: blur(0.5px);
   pointer-events: none;
 }
@@ -1208,7 +1210,7 @@ select::-webkit-calendar-picker-indicator {
   height: auto;
 }
 :root[data-theme='dark'] .dashboard-hero-mark {
-  opacity: 0.16;
+  opacity: 0.2;
   /* NO invert: dark --color-ink is already LIGHT (#f5f6fa). The legacy
      flip-invert was written when ink was dark on this pane — applied now it
      turned the mark near-black on a near-black hero (measured spread 11 vs
@@ -1748,13 +1750,23 @@ button {
   filter: none;
   animation: none;
 }
-/* PRIMARY = brand Ink (The Mark doc: Ink carries solid fills — #221E4A;
-   the token is theme-aware, so dark mode gets the light material). It wears
-   a STRONGER wash than the 16% house default so the primary CTA separates
-   from neutral/quiet glass in BOTH themes without leaving glass territory. */
+/* PRIMARY = brand solid (The Mark doc: "Ink carries solid fills"). The old
+   24% wash didn't carry — a focal CTA needs a real body in both themes.
+   The solid REPLACES the glass stack by design: no tint layer, no sheen
+   gradient, no light circuit (its angle animation would have nothing to
+   paint — cancelled below rather than burning style-recalcs for 9s a hover).
+   Press keeps the shared translateY+brightness. Contrast: light
+   accent-solid + white = 12.49:1, dark = 6.66:1 — no new tokens. */
 .btn-glass--primary {
-  --btn-tint: var(--color-ink);
-  --btn-tint-mix: 24%;
+  --btn-tint: transparent;
+  --btn-tint-mix: 0%;
+  background: var(--color-accent-solid);
+  color: var(--color-text-on-solid);
+  border-color: transparent;
+}
+.btn-glass--primary:hover,
+.btn-glass--primary:focus-visible {
+  animation: none;
 }
 .btn-glass--danger {
   --btn-tint: var(--color-danger-solid);

@@ -49,6 +49,12 @@ function walk(dir, out = []) {
 
 const offenders = new Map();
 for (const file of walk(join(root, 'src'))) {
+  const rel = file.slice(root.length + 1).replaceAll('\\', '/');
+  // Tests never ship: their assertion regexes (/box-shadow|text-shadow/)
+  // collide with the file-wide comment-strip (a `*/` inside a pattern can
+  // close a phantom comment and shift what gets scanned — proven false
+  // positive, 2026-10-04). Production sources only.
+  if (rel.startsWith('src/test/')) continue;
   // Comments are stripped at FILE level: doc comments like "reads as
   // text-secondary" span lines, so per-line stripping never sees their end.
   const content = readFileSync(file, 'utf8')

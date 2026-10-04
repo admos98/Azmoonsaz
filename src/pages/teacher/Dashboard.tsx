@@ -71,6 +71,11 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
   const totalStudents = currentStudents.length;
   const pendingGradings = currentSubmissions.filter((s) => s.status === 'submitted').length;
 
+  // Greeting (1I): until onboarding captures a real name, teacher.name is
+  // the signup email — show the handle (split at @), never the raw address;
+  // no name at all → «سلام، استاد عزیز», never a placeholder word.
+  const greetingName = (teacher?.name ?? '').trim().split('@')[0];
+
   // Helper resolvers for table
   const getStudentClassLabel = (studentId: string) => {
     const student = currentStudents.find((s) => s.id === studentId);
@@ -106,7 +111,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
             <h2 className="text-heading-2 md:text-display font-black mt-3 leading-tight text-[var(--color-text-primary)]">
-              سلام، استاد {teacher?.name || 'گرمی'} عزیز
+              سلام، استاد {greetingName ? `${greetingName} ` : ''}عزیز
             </h2>
             <p className="text-caption md:text-label mt-2 max-w-2xl leading-relaxed text-[var(--color-text-secondary)]">
               {formatPersianNumber(activeExams)} آزمون فعال و {formatPersianNumber(pendingGradings)}{' '}
