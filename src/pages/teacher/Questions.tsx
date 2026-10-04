@@ -1016,7 +1016,7 @@ export default function Questions() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
-                      className="lens rounded-3xl p-6 border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
+                      className="lens rounded-3xl p-6 border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-4 relative overflow-hidden cv-card"
                       id={`card-q-${q.id}`}
                     >
                       <div className="space-y-3.5">
@@ -1134,7 +1134,7 @@ export default function Questions() {
               </div>
             ) : (
               /* TABLE ROW VIEW MODE */
-              <div className="lens rounded-3xl overflow-hidden" id="questions-table-view-box">
+              <div className="lens rounded-3xl overflow-hidden cv-card" id="questions-table-view-box">
                 <div className="overflow-x-auto text-right">
                   <table
                     className="w-full text-caption text-[var(--color-text-secondary)]"

@@ -628,8 +628,12 @@ function buildUi(ops: UiOps): void {
     ops.start();
     if (interval) clearInterval(interval);
     interval = window.setInterval(() => {
-      const t = performance.now();
-      out.textContent = `● recording\n${(t / 1000).toFixed(1)}s  filters ${document.querySelectorAll('filter[id^="lg-"]').length}`;
+      // nodeValue, not textContent: assigning textContent replaces the child
+      // text node (1 addedNode per tick = a permanent 4-nodes/bin floor in our
+      // own mutation census). A characterData write moves no nodes.
+      const t = `● recording\n${(performance.now() / 1000).toFixed(1)}s  filters ${document.querySelectorAll('filter[id^="lg-"]').length}`;
+      if (out.firstChild) out.firstChild.nodeValue = t;
+      else out.textContent = t;
     }, 250);
     setUi();
   });

@@ -758,14 +758,15 @@ select::-webkit-calendar-picker-indicator {
 }
 
 /* ─── De-nest — glass inside glass is not glass ───────────────────────────
-   A parent with backdrop-filter is a BACKDROP ROOT: a nested glass child
-   re-bends the parent's already-filtered image (bend of a bend) while a full
-   ~10-primitive SVG graph still runs per frame per surface. The rule flattens
-   glass descendants of glass to the quiet material. The runtime engine never
-   dresses nested elements in the first place (see isNestedGlass in
-   glassController.ts), so the :not(.lg-root) exception below is a manual
-   escape hatch, not a live path: a panel that must keep its own filter
-   despite DOM nesting opts in with .lg-root (nothing writes this today). */
+   A parent with backdrop-filter is a BACKDROP ROOT: a nested glass child can
+   only sample the parent's own flat fill, so its filter bends a flat field
+   (no visible refraction) while a full ~10-primitive SVG graph still runs
+   per frame per surface. The rule flattens glass descendants of glass to the
+   quiet material. The runtime engine never dresses nested elements in the
+   first place (see isNestedGlass in glassController.ts), so the
+   :not(.lg-root) exception below is a manual escape hatch, not a live path:
+   a panel that must keep its own filter despite DOM nesting opts in with
+   .lg-root (nothing writes this today). */
 :root:not([data-glass='lite']):not([data-glass='off'])
   :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)
   :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop) {
@@ -793,6 +794,20 @@ select::-webkit-calendar-picker-indicator {
   :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)
   :is(.field, .frost, .chrome-blur, .btn-glass) {
   backdrop-filter: none;
+}
+/* Below-fold skipping — content-visibility for refracting cards.
+   A .lens card skipped by the browser costs ZERO filter passes (not rendered
+   = no backdrop re-sample on scroll, no per-frame graph), while
+   contain-intrinsic-size: auto holds its scroll footprint (auto remembers the
+   real size after first paint; the px value is only the pre-first-render
+   estimate). Zero visual change: in-view cards render exactly as before.
+   Applied per card (not per list) so each card skips independently as it
+   leaves the viewport. Safe with framer-motion layout/enter animations: those
+   run at mount/filter-change while cards are in view; skipped cards have
+   nothing to animate. */
+@utility cv-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
 }
 /* Ink glass — sidebar (dark field with warm gold tint) */
 @utility glx-dark {
@@ -1633,11 +1648,15 @@ button {
     filter 140ms ease-out;
 }
 /* the light circuit: -55deg -> 305deg is exactly one full turn, so the loop
-   restarts on the same frame it finished (seamless). Size untouched. */
+   restarts on the same frame it finished (seamless). Size untouched.
+   THREE turns, not infinite: a parked cursor (or stuck touch-hover) would
+   otherwise drive compositor frames forever, re-running every url() surface
+   at 60fps. The end state IS the rest state (305 ≡ -55), so when the circuit
+   stops nobody can tell — and re-hover replays it. */
 .btn-glass:hover,
 .btn-glass:focus-visible {
   filter: brightness(1.06);
-  animation: btn-light-round 3s linear infinite;
+  animation: btn-light-round 3s linear 3;
 }
 @keyframes btn-light-round {
   from {
@@ -1665,6 +1684,15 @@ button {
   .btn-glass:hover {
     animation: none;
   }
+}
+/* pulse discipline: Tailwind's animate-pulse loops opacity forever, and one
+   looping opacity anywhere on the page keeps the compositor requesting
+   frames — which re-runs every url() surface at 60fps even when the user sits
+   still. THREE blinks, then rest: opacity returns to 1 = the static look, so
+   the badge/icon reads identical at rest and the page goes back to zero
+   frames. Loaders use animate-spin (transient, untouched). */
+.animate-pulse {
+  animation-iteration-count: 3;
 }
 /* push: the tint becomes more prominent (the variant's resting mix -> 34%) */
 .btn-glass:active {

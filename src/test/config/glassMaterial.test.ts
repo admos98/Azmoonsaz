@@ -525,15 +525,27 @@ describe('glass material contract (pixel-audit gates)', () => {
     // registered custom properties so the angle TWEENS instead of snapping
     expect(css).toMatch(/@property --btn-light-angle\s*{\s*syntax:\s*'<angle>'/);
     expect(css).toMatch(/@property --btn-tint\s*{\s*syntax:\s*'<color>'/);
-    // hover: the light makes one full 360° circuit per 3s — size never changes
+    // hover: the light makes one full 360° circuit per 3s — size never changes.
+    // THREE turns, not infinite: a parked cursor (or stuck touch-hover) would
+    // otherwise drive compositor frames forever, re-running every url()
+    // surface at 60fps. The end state IS the rest state (305 = -55 + 360),
+    // so the stop is invisible and re-hover replays the sweep.
     expect(css).toMatch(
-      /\.btn-glass:hover,\s*\.btn-glass:focus-visible\s*\{[^}]*animation:\s*btn-light-round 3s linear infinite/s,
+      /\.btn-glass:hover,\s*\.btn-glass:focus-visible\s*\{[^}]*animation:\s*btn-light-round 3s linear 3/s,
     );
     expect(css).toMatch(/@keyframes btn-light-round\s*{\s*from\s*{\s*--btn-light-angle:\s*-55deg/s);
     expect(css).toMatch(/--btn-light-angle:\s*305deg/); // -55 + 360 = seamless loop
     // reduced motion (OS or in-app) parks the circuit
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*{[^}]*animation:\s*none/s);
     expect(css).toMatch(/:root\[data-motion='reduce'\][^{]*\{\s*animation:\s*none/s);
+    // pulse discipline: animate-pulse must NEVER loop forever — one looping
+    // opacity anywhere keeps the compositor requesting frames (every url()
+    // surface re-runs at 60fps while the user sits still). Blink, then rest.
+    expect(css).toMatch(/\.animate-pulse\s*\{\s*animation-iteration-count:\s*3/s);
+    // below-fold skipping: refracting cards skip rendering off-screen at zero
+    // filter cost, holding their scroll footprint (intrinsic-size auto).
+    expect(css).toMatch(/@utility cv-card\s*\{[^}]*content-visibility:\s*auto/s);
+    expect(css).toMatch(/contain-intrinsic-size:\s*auto/);
     // push: the tint turns up (resting 16% -> 34%)
     expect(token('--btn-tint-mix')).toBe('16%');
     expect(css).toMatch(/\.btn-glass:active\s*{\s*--btn-tint-mix:\s*34%/);

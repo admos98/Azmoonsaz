@@ -138,7 +138,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
       </div>
 
       <div
-        className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch"
+        className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch cv-card"
         id="dashboard-widget-pair"
       >
         {/* 2. Stats Grid (5 Cards) */}
