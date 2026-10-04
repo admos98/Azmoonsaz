@@ -282,12 +282,11 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(questions).toMatch(/requestAnimationFrame\(\(\) => setPreviewReady\(true\)\)/);
     expect(questions).toMatch(/previewReady \? \(/);
     expect(questions).not.toMatch(/import QuestionRenderer from/);
-    // avatar name panel grows rightward from the physical screen-left circle
-    // (logical props mirrored it off-screen); the bell slides clear while
-    // open; text hugs the circle instead of riding the far edge
-    expect(topbar).toMatch(/left-\[14px\]/);
-    expect(topbar).toMatch(/justify-end whitespace-nowrap/);
-    expect(topbar).toMatch(/translate-x-\[124px\]/);
+    // avatar name panel is desktop-only (no hover on touch — mobile gets a
+    // bigger avatar instead); bell push scoped to md+ for the same reason
+    expect(topbar).toMatch(/hidden md:block \$/);
+    expect(topbar).toMatch(/md:translate-x-\[124px\]/);
+    expect(topbar).toMatch(/relative h-11 w-11 md:h-10 md:w-10 cursor-pointer/);
     // hero buttons share one cross-axis baseline (icon vs text drift on mobile)
     expect(css).toMatch(/\.dashboard-hero-actions\s*\{[^}]*align-items:\s*stretch/s);
     expect(css).toMatch(/\.dashboard-hero-actions > button\s*\{[^}]*justify-content:\s*center/s);

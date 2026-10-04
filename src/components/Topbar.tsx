@@ -386,15 +386,14 @@ export default function Topbar({
         className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`}
         id="topbar-left-group"
       >
-        {/* Bell — the name panel grows RIGHTWARD from the circle, under the
-            bell's zone, so the bell slides right clear of it while open
-            (transform only: no layout, no reflow; getBoundingClientRect for
-            the dropdown anchor already includes transforms). Physical px, not
-            logical: the avatar sits at the physical screen-left edge, so
-            logical props mirrored the panel off-screen (regression). */}
+        {/* Bell — desktop: the name panel grows rightward under the bell zone,
+            so the bell slides right clear of it while open (md: prefix —
+            on touch there is no hover panel, the bell never moves).
+            Transform only: no layout, no reflow; getBoundingClientRect for
+            the dropdown anchor already includes transforms. */}
         <div
           className={`transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            avatarExpanded ? 'translate-x-[124px] lg:translate-x-[174px]' : 'translate-x-0'
+            avatarExpanded ? 'md:translate-x-[124px] lg:translate-x-[174px]' : 'translate-x-0'
           }`}
         >
           <button
@@ -409,7 +408,7 @@ export default function Topbar({
                 openNotifications();
               }
             }}
-            className="btn-glass relative z-[60] grid h-10 w-10 place-items-center rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
+            className="btn-glass relative z-[60] grid h-11 w-11 md:h-10 md:w-10 place-items-center rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
             aria-label="اعلان‌ها"
             aria-expanded={showNotifications}
             aria-haspopup="true"
@@ -431,13 +430,12 @@ export default function Topbar({
             the circle button taps open/closed, exactly like desktop click. */}
         <div className="relative flex items-center">
           {/* Rest = a perfect circle button that HOLDS the name panel behind
-              it; on hover the panel slides out from behind the circle (width
-              grows from under it) and merges back on leave. The circle never
-              moves, never resizes. The bell (previous sibling in the RTL row)
-              slides right by the panel's overhang so the name is never
-              overlapped. */}
+              it; on hover (desktop) the panel slides out from behind the
+              circle and merges back on leave. The circle never moves, never
+              resizes. No hover on touch: the panel is desktop-only (hidden
+              below md) and the avatar renders bigger instead. */}
           <div
-            className="relative h-10 w-10 cursor-pointer"
+            className="relative h-11 w-11 md:h-10 md:w-10 cursor-pointer"
             onMouseEnter={() => {
               // Clear any pending collapse — stacked mouseleave timers used to
               // re-close the pill right after a re-enter (hover flicker).
@@ -453,14 +451,12 @@ export default function Topbar({
               }, 200);
             }}
           >
-            {/* Name panel — pane glass that emerges from behind the circle and
-                grows RIGHTWARD under the bell zone (the bell slides clear, see
-                above). Physical left/right: the avatar is anchored at the
-                physical screen-left edge, and logical inset-inline-start
-                mirrored the panel off-screen on desktop. The text hugs the
-                circle (justify-end in RTL = physical left = circle side). */}
+            {/* Name panel — DESKTOP ONLY (hidden below md): no hover on touch,
+                so mobile gets a bigger avatar instead of a broken panel.
+                Grows rightward from the physical screen-left circle, under
+                the bell zone; text hugs the circle (justify-end in RTL). */}
             <div
-              className={`absolute top-0 left-[14px] h-10 rounded-full overflow-hidden pane transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute top-0 left-[14px] h-10 rounded-full overflow-hidden pane transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hidden md:block ${
                 avatarExpanded ? 'w-[150px] lg:w-[200px]' : 'w-0'
               }`}
             >
@@ -477,7 +473,7 @@ export default function Topbar({
             {/* The circle — fixed location, perfectly centered content */}
             <button
               type="button"
-              className="btn-glass absolute left-0 top-0 z-10 grid h-10 w-10 place-items-center rounded-full cursor-pointer overflow-hidden"
+              className="btn-glass absolute left-0 top-0 z-10 grid h-full w-full place-items-center rounded-full cursor-pointer overflow-hidden"
               onClick={() => {
                 if (!avatarExpanded && showNotifications) closeNotifications();
                 setAvatarExpanded(!avatarExpanded);
@@ -485,7 +481,7 @@ export default function Topbar({
               aria-label={teacher?.name || 'پروفایل'}
               aria-expanded={avatarExpanded}
             >
-              <span className="w-8 h-8 rounded-full bg-[var(--color-accent-solid)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden">
+              <span className="w-9 h-9 md:w-8 md:h-8 rounded-full bg-[var(--color-accent-solid)]/10 border border-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold overflow-hidden">
                 {teacher?.avatarUrl ? (
                   <img
                     loading="eager"
