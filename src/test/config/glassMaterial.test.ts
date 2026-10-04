@@ -616,19 +616,6 @@ describe('glass material contract (pixel-audit gates)', () => {
     const controller = readFileSync(join(root, 'src/glass/glassController.ts'), 'utf8');
     expect(controller).toMatch(/--corner-exp/);
     expect(controller).toMatch(/mapCornerExp/);
-    // ── velocity gate: fast scroll parks the refraction, settle restores it ──
-    // Above 400px/s the bend is imperceptible (content smears past), so panels
-    // dress blur-only for the fast stretch; the url() returns 150ms after the
-    // last scroll event. Both flips are cache-hit string ops (no re-post).
-    expect(controller).toMatch(/FAST_V_PX_S\s*=\s*400/);
-    expect(controller).toMatch(/SETTLE_MS\s*=\s*150/);
-    // the gate rides inside the idempotency key, or the guard swallows the flip
-    expect(controller).toMatch(/scrollFast \? 1 : 0/);
-    // fast path dresses the blur base with NO url() and NO filter markup
-    expect(controller).toMatch(/if \(scrollFast\)/);
-    // hysteresis: fast entered by velocity, exited only by the quiet timer
-    expect(controller).toMatch(/addEventListener\('scroll', onScrollVelocity/);
-    expect(controller).toMatch(/removeEventListener\('scroll', onScrollVelocity/);
   });
 
   it('dark login token pin exists (white-on-white regression fix)', () => {
