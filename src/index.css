@@ -272,7 +272,13 @@
      deeper dim + heavier blur than resting panels, still glass. These only
      re-dress the filter MARKUP (map cache is dim-blind) and the plain-chain
      fallback below. */
-  --lens-menu-dim: 0.14;
+  /* Menu material — deeper dim + heavier blur than resting panels, still
+     glass. Round-1 1H: light 0.14 -> 0.2 — with the menu open you should
+     PERCEIVE something behind it without being able to READ it (the hero
+     h1 was legible through the panel and competed with menu labels).
+     Colour, contour and shape still bleed; glyphs drop under the reading
+     threshold. Dark keeps 0.14 via its override below. */
+  --lens-menu-dim: 0.2;
   --lens-menu-blur: 6px;
   --dim-tint: 103 100 112; /* dim wash target (mid-grey) + fallback fill */
   --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
@@ -440,6 +446,10 @@
   /* Focus ring: gold on dark (5.64:1 on page-bg). Light theme keeps ink
      — see the base token comment. */
   --color-focus-ring: rgba(245, 179, 1, 0.72);
+
+  /* Menu bleed pinned at the original amplitude (1H): dark menus already
+     passed the perceive-but-don't-read test — only light moves. */
+  --lens-menu-dim: 0.14;
 
   --glass-scrim-a: 0.35;
   --glass-scrim-color: 0 0 0;

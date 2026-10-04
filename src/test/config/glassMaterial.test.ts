@@ -657,6 +657,15 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(component('src/components/Topbar.tsx')).toMatch(
       /fixed z-\[60\] @container contain-menu/,
     );
+    // ── 1H menu bleed: perceive but don't read ──
+    // light menus dim the backdrop harder (the hero h1 was legible through
+    // the panel and competed with menu labels); colour/contour/shape still
+    // bleed — only glyphs drop below the reading threshold. Dark keeps its
+    // original amplitude: it already passed the test.
+    expect(token('--lens-menu-dim')).toBe('0.2');
+    expect(token('--lens-menu-dim', darkScope)).toBe('0.14');
+    // the hamburger header no longer repeats the hero's date (1H)
+    expect(component('src/components/Topbar.tsx')).not.toMatch(/formatPersianDate/);
     // ── the family rides every structural rule ──
     for (const tier of ['lite', 'off'] as const) {
       expect(css).toMatch(

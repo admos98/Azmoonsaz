@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Search, Bell, X } from 'lucide-react';
 import { useTeacher, useTeacherCollections } from '../contexts/TeacherContext';
-import { formatPersianDate, formatPersianNumber } from '../services/persianHelpers';
+import { formatPersianNumber } from '../services/persianHelpers';
 import { TheMark } from './TheMark';
 import { usePersistentPreference } from '../hooks/usePersistentPreference';
 import CommandPalette from './CommandPalette';
@@ -608,9 +608,8 @@ export default function Topbar({
                     </p>
                   </div>
                 </div>
-                <div className="mt-2 text-caption text-[var(--color-text-secondary)]">
-                  {formatPersianDate(new Date().toISOString())}
-                </div>
+                {/* date dropped (1H): the hero already owns ۱۲ مهر ۱۴۰۵ —
+                    showing it twice on one screen is noise, not info */}
               </div>
             </div>
 
@@ -835,7 +834,9 @@ export default function Topbar({
                             aria-hidden="true"
                           />
                         )}
-                        <p className="text-body font-semibold text-[var(--color-text-primary)]">{n.title}</p>
+                        <p className="text-body font-semibold text-[var(--color-text-primary)]">
+                          {n.title}
+                        </p>
                         <span
                           className={`mr-auto rounded-full px-2 py-0.5 text-caption font-bold ${n.type === 'exam' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'}`}
                         >
