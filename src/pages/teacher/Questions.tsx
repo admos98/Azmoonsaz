@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   HelpCircle,
@@ -23,7 +23,14 @@ import {
   CloudLightning,
 } from 'lucide-react';
 import { Question, QuestionType, QuestionPart, RubricCriterion } from '../../types';
-import QuestionRenderer from '../../components/QuestionRenderer';
+/* The drawer preview renderer is code-split: it is the heaviest tree in the
+   add/edit modal (full question render + nested panels), and mounting it in
+   the same commit as the modal open animation janked the open. The chunk
+   preloads at page idle (below) so first open never waits on network; the
+   drawer mounts the preview one frame past open (previewReady) with a
+   skeleton meanwhile. End state identical — only the open choreography. */
+const QuestionRenderer = lazy(() => import('../../components/QuestionRenderer'));
+const preloadQuestionRenderer = () => import('../../components/QuestionRenderer');
 import { questionService } from '../../services/api';
 import {
   Button,
@@ -106,6 +113,34 @@ export default function Questions() {
   const [showAddEditDrawer, setShowAddEditDrawer] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'add' | 'edit'>('add');
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
+  /* Preview mounts one frame past drawer open (see drawer-live-visual): the
+     open animation's first frame commits the light form tree only, then the
+     heavy renderer tree builds while the panel grows (transform-only,
+     compositor-side). Reset on close so every open replays the choreography. */
+  const [previewReady, setPreviewReady] = useState(false);
+  useEffect(() => {
+    if (!showAddEditDrawer) return;
+    const raf = requestAnimationFrame(() => setPreviewReady(true));
+    return () => cancelAnimationFrame(raf);
+  }, [showAddEditDrawer]);
+  /* Idle-preload the split renderer chunk: by the time a drawer opens the
+     code is already cached, so Suspense never flashes on first open.
+     requestIdleCallback where available, setTimeout fallback elsewhere. */
+  useEffect(() => {
+    const preload = () => void preloadQuestionRenderer();
+    const ric = (
+      window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+        cancelIdleCallback?: (id: number) => void;
+      }
+    ).requestIdleCallback;
+    if (ric) {
+      const id = ric(preload, { timeout: 3000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(preload, 1500);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // Panel origins — each overlay grows out of (and collapses back into) the
   // button that opened it. The library Modal owns panel/halo refs and origin
@@ -466,6 +501,7 @@ export default function Questions() {
   const openCreateDrawer = () => {
     setDrawerMode('add');
     resetFormValues();
+    setPreviewReady(false);
     setShowAddEditDrawer(true);
   };
 
@@ -516,6 +552,7 @@ export default function Questions() {
       setFormParts(q.parts);
     }
 
+    setPreviewReady(false);
     setShowAddEditDrawer(true);
   };
 
@@ -1134,7 +1171,10 @@ export default function Questions() {
               </div>
             ) : (
               /* TABLE ROW VIEW MODE */
-              <div className="lens rounded-3xl overflow-hidden cv-card" id="questions-table-view-box">
+              <div
+                className="lens rounded-3xl overflow-hidden cv-card"
+                id="questions-table-view-box"
+              >
                 <div className="overflow-x-auto text-right">
                   <table
                     className="w-full text-caption text-[var(--color-text-secondary)]"
@@ -1341,43 +1381,62 @@ export default function Questions() {
               <span className="text-micro">محیط پیش‌نمایش لحظه‌ای دبیر:</span>
             </div>
 
-            {/* Construct temporary dummy question to feed to high-fidelity QuestionRenderer in real-time! */}
-            <QuestionRenderer
-              question={{
-                id: 'dummy-drawer',
-                type: formType,
-                title: formTitle || 'بدون عنوان',
-                text: formText || 'لطفاً متن صورت سوال را بنویسید...',
-                points: formPoints,
-                category: formSubject,
-                grade: formGrade,
-                section: formSection,
-                difficulty: formDifficulty,
-                options:
-                  formType === 'single_choice' ||
-                  formType === 'multiple_choice' ||
-                  formType === 'image_based'
-                    ? formOptions
-                    : undefined,
-                correctAnswer: formType === 'true_false' ? formCorrectTrueFalse : undefined, // choices mapping takes formOptions isCorrect in renderer
-                correctFillBlanks: formType === 'fill_blank' ? formFillBlanks : undefined,
-                matchingPairs: formType === 'matching' ? formMatchingPairs : undefined,
-                orderingItems: formType === 'ordering' ? formOrderingItems : undefined,
-                imageUrl: formImageUrl || undefined,
-                explanation: formExplanation || undefined,
-                sampleAnswer: formSampleAnswer || undefined,
-                rubrics: formType === 'long_answer' ? formRubrics : undefined,
-                parts:
-                  formType === 'cloze' || formType === 'reading_comprehension'
-                    ? formParts
-                    : undefined,
-                tags: formTagsString
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter(Boolean),
-              }}
-              showCorrectAnswers={true}
-            />
+            {/* Live preview — mounts one frame past drawer open (previewReady):
+                the open commit carries the light form tree only; this heavy
+                tree builds while the panel grows. Skeleton meanwhile (and
+                Suspense until the idle-preloaded chunk resolves). */}
+            {previewReady ? (
+              <Suspense
+                fallback={
+                  <div className="space-y-3" role="status" aria-label="در حال بارگذاری پیش‌نمایش">
+                    <div className="h-8 rounded-xl bg-[var(--color-surface-secondary)] skeleton" />
+                    <div className="h-40 rounded-2xl bg-[var(--color-surface-secondary)] skeleton" />
+                  </div>
+                }
+              >
+                <QuestionRenderer
+                  question={{
+                    id: 'dummy-drawer',
+                    type: formType,
+                    title: formTitle || 'بدون عنوان',
+                    text: formText || 'لطفاً متن صورت سوال را بنویسید...',
+                    points: formPoints,
+                    category: formSubject,
+                    grade: formGrade,
+                    section: formSection,
+                    difficulty: formDifficulty,
+                    options:
+                      formType === 'single_choice' ||
+                      formType === 'multiple_choice' ||
+                      formType === 'image_based'
+                        ? formOptions
+                        : undefined,
+                    correctAnswer: formType === 'true_false' ? formCorrectTrueFalse : undefined, // choices mapping takes formOptions isCorrect in renderer
+                    correctFillBlanks: formType === 'fill_blank' ? formFillBlanks : undefined,
+                    matchingPairs: formType === 'matching' ? formMatchingPairs : undefined,
+                    orderingItems: formType === 'ordering' ? formOrderingItems : undefined,
+                    imageUrl: formImageUrl || undefined,
+                    explanation: formExplanation || undefined,
+                    sampleAnswer: formSampleAnswer || undefined,
+                    rubrics: formType === 'long_answer' ? formRubrics : undefined,
+                    parts:
+                      formType === 'cloze' || formType === 'reading_comprehension'
+                        ? formParts
+                        : undefined,
+                    tags: formTagsString
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  }}
+                  showCorrectAnswers={true}
+                />
+              </Suspense>
+            ) : (
+              <div className="space-y-3" role="status" aria-label="در حال بارگذاری پیش‌نمایش">
+                <div className="h-8 rounded-xl bg-[var(--color-surface-secondary)] skeleton" />
+                <div className="h-40 rounded-2xl bg-[var(--color-surface-secondary)] skeleton" />
+              </div>
+            )}
 
             <div className="glx0 border border-[var(--color-glass-light-stroke)] p-3.5 rounded-2xl text-micro leading-relaxed text-[var(--color-text-tertiary)] flex items-start gap-1.5 shadow-xs">
               <Info className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-tertiary)] mt-0.5" />

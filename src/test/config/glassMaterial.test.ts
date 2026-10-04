@@ -271,6 +271,17 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('menus and notif center cast NOTHING: halo + veil layers are gone', () => {
     const topbar = component('src/components/Topbar.tsx');
     expect(topbar).not.toMatch(/area-blur|bgfx/);
+    // question drawer preview is code-split + deferred past open: the open
+    // commit carries the light form tree only, the heavy renderer mounts one
+    // frame later (previewReady) with a skeleton meanwhile, chunk preloaded
+    // at page idle. End state identical — open choreography only.
+    const questions = component('src/pages/teacher/Questions.tsx');
+    expect(questions).toMatch(
+      /const QuestionRenderer = lazy\(\(\) => import\('\.\.\/\.\.\/components\/QuestionRenderer'\)\)/,
+    );
+    expect(questions).toMatch(/requestAnimationFrame\(\(\) => setPreviewReady\(true\)\)/);
+    expect(questions).toMatch(/previewReady \? \(/);
+    expect(questions).not.toMatch(/import QuestionRenderer from/);
     // avatar name panel grows rightward from the physical screen-left circle
     // (logical props mirrored it off-screen); the bell slides clear while
     // open; text hugs the circle instead of riding the far edge
