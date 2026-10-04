@@ -209,6 +209,30 @@ function kindOf(el: Element): 'lens' | 'pane' | 'drop' | null {
   return null;
 }
 
+/**
+ * True when the element sits inside another glass surface. A parent with
+ * backdrop-filter is a BACKDROP ROOT: the child can only sample the parent's
+ * own flat fill, so a url() bend attached here bends a flat field (no visible
+ * refraction) while the full ~10-primitive SVG graph still runs per frame per
+ * surface. The engine never dresses these — their CSS quiet material owns
+ * them, at zero filter cost.
+ */
+function isNestedGlass(el: Element): boolean {
+  return !!el.parentElement?.closest?.(GLASS_SELECTOR);
+}
+
+/**
+ * Strip a dressed panel back to its CSS material. Runs when a dressed element
+ * BECOMES nested (a DOM move can nest an already-dressed panel) so a stale
+ * inline url() — which beats the stylesheet de-nest rule — can never survive.
+ * Guarded: no DOM write when there is nothing to clear.
+ */
+function undressNested(el: HTMLElement): void {
+  if (el.style.backdropFilter) el.style.backdropFilter = '';
+  delete el.dataset.lastQuickKey;
+  byEl.delete(el);
+}
+
 function chainOf(el: Element, cs: CSSStyleDeclaration): string {
   const lensBlur = cssNum(cs, '--lens-blur', 1);
   const sat = (v: number) => (v === 1 ? '' : ` saturate(${v})`);
@@ -286,8 +310,10 @@ function scheduleFlush(): void {
  *
  *   PHASE A reads every panel's box and computed style with ZERO writes in
  *   between, so the whole batch costs ONE forced layout instead of one per
- *   panel. Panels whose quickKey is unchanged are dropped here, so a mutation
- *   touching one panel never re-measures the other 32.
+ *   panel — except nested panels, which are undressed here (a guarded style
+ *   clear, no layout) before any measurement. Panels whose quickKey is
+ *   unchanged are dropped here, so a mutation touching one panel never
+ *   re-measures the other 32.
  *
  *   PHASE B dresses cache hits inline (string ops, sub-frame). Cache misses
  *   post to the map worker and return — zero map math on this thread.
@@ -312,6 +338,15 @@ function flushSync(): void {
     }
     const kind = kindOf(el);
     if (!kind) continue;
+    // Nested glass samples only the parent's flat fill — the url() bend is
+    // invisible there, so never dress it. Strip any stale inline chain first:
+    // inline style beats the stylesheet de-nest rule, so a panel that BECAME
+    // nested (DOM move) would otherwise keep burning a filter forever.
+    // Checked BEFORE getComputedStyle: a DOM walk, zero forced layout.
+    if (isNestedGlass(el)) {
+      undressNested(el);
+      continue;
+    }
     const w = el.offsetWidth;
     const h = el.offsetHeight;
     if (w < 2 || h < 2) continue;
@@ -341,6 +376,14 @@ function flushSync(): void {
 /** Dress one panel from a cached bucket: filter graph + inline chain. */
 function dressPanel(t: PendingPanel, entry: BucketEntry): void {
   const { el, kind, w, h, radius, p, chainBase, withDim, quickKey } = t;
+  // Race guard: the panel may have BECOME nested while its maps were building
+  // off-thread (a DOM move nests it; the requeue undresses it; then the worker
+  // message lands). Dressing here would resurrect a stale inline url() over
+  // the stylesheet de-nest rule — undress instead.
+  if (isNestedGlass(el)) {
+    undressNested(el);
+    return;
+  }
   const mapKey = `${kind}|${w}x${h}|${Math.round(radius)}`;
   const filterKey = `${mapKey}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
   let id = FILTERS.get(filterKey);

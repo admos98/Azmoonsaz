@@ -332,7 +332,9 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('glass never nests: glass descendants of a glass surface are flattened — except .lg-root panels', () => {
     // backdrop root scoping made nested filters useless and stacked fills
     // into a wash — the de-nest rule strips filter + rim on REAL nesting.
-    // Top-level panels tagged .lg-root by the engine keep their own filter.
+    // The engine never dresses nested elements (isNestedGlass skips them
+    // before any map is built); .lg-root is a manual escape hatch, not a
+    // live path — nothing writes it today.
     expect(css).toMatch(
       /:root:not\(\[data-glass='lite'\]\):not\(\[data-glass='off'\]\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens, \.pane, \.drop\):not\(\.lg-root\)\s+:is\(\.glx, \.glx-strong, \.glx-dark, \.lens, \.pane, \.drop\)\s*\{[^}]*backdrop-filter:\s*none/s,
     );

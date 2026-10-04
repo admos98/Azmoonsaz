@@ -758,12 +758,14 @@ select::-webkit-calendar-picker-indicator {
 }
 
 /* ─── De-nest — glass inside glass is not glass ───────────────────────────
-   A parent with backdrop-filter is a BACKDROP ROOT: a nested glass child can
-   only sample the parent's own flat fill, so its filter does nothing but
-   burn GPU. The rule flattens glass descendants of glass — but top-level
-   panels (hero, menus, modals, the big section panels, any family) are
-   marked .lg-root by the runtime engine the moment they get their own
-   filter, so the rule skips them and only flattens true nesting. */
+   A parent with backdrop-filter is a BACKDROP ROOT: a nested glass child
+   re-bends the parent's already-filtered image (bend of a bend) while a full
+   ~10-primitive SVG graph still runs per frame per surface. The rule flattens
+   glass descendants of glass to the quiet material. The runtime engine never
+   dresses nested elements in the first place (see isNestedGlass in
+   glassController.ts), so the :not(.lg-root) exception below is a manual
+   escape hatch, not a live path: a panel that must keep its own filter
+   despite DOM nesting opts in with .lg-root (nothing writes this today). */
 :root:not([data-glass='lite']):not([data-glass='off'])
   :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)
   :is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop) {
@@ -1654,6 +1656,15 @@ button {
 :root[data-motion='reduce'] .btn-glass:hover,
 :root[data-motion='reduce'] .btn-glass:focus-visible {
   animation: none;
+}
+/* touch: a tap HOLDS :hover after the finger lifts, so the infinite circuit
+   would loop forever on phones/tablets — one stuck button keeps the
+   compositor dirty and forces every url() surface to re-render each frame.
+   No-hover devices get the brightness bump only; desktop hover is untouched. */
+@media (hover: none) {
+  .btn-glass:hover {
+    animation: none;
+  }
 }
 /* push: the tint becomes more prominent (the variant's resting mix -> 34%) */
 .btn-glass:active {
