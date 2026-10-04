@@ -369,7 +369,9 @@ describe('glass material contract (pixel-audit gates)', () => {
     // flat fill, so their blur renders nothing — but their fills/tints/rims are
     // the visible design and must survive (no background/box-shadow override).
     const denest = cssRaw.slice(cssRaw.indexOf('De-nest'), cssRaw.indexOf('Ink glass'));
-    expect(denest).toContain(':is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)');
+    expect(denest).toContain(
+      ':is(.glx, .glx-strong, .glx-dark, .lens, .pane, .drop):not(.lg-root)',
+    );
     expect(denest).toMatch(
       /:is\(\.field, \.frost, \.chrome-blur, \.btn-glass\)\s*\{[^}]*backdrop-filter:\s*none/s,
     );
@@ -420,9 +422,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     // 1) explicit region — with the default -10%..120% region a percentage
     //    feImage subregion resolves against the REGION and the maps never
     //    paint where designed (whole-panel scale/2 shift). Audit C1.
-    expect(engine).toMatch(
-      /<filter id="\$\{esc\(id\)\}" x="0" y="0" width="100%" height="100%"/,
-    );
+    expect(engine).toMatch(/<filter id="\$\{esc\(id\)\}" x="0" y="0" width="100%" height="100%"/);
     // 2) absolute feImage sizes = the element's CSS px (playground contract)
     expect(engine).toMatch(/width="\$\{esc\(W\)\}" height="\$\{esc\(H\)\}"/);
     // 3) NO blur primitive in the chain — blur stays in the CSS chain (GPU);
@@ -455,7 +455,9 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('the material family: six named surfaces, one design language', () => {
     const darkScope = ":root[data-theme='dark']";
     // ── tokens: the kube.io replica tune, 1:1 (playground export) ──
-    expect(token('--lens-dim')).toBe('0.10'); // rgb-dim IN the lens/pane filters (user: light panels too dark at 0.15)
+    // parseFloat: prettier normalizes CSS numbers (0.10 -> 0.1); the pin is
+    // the dim VALUE, not its spelling
+    expect(parseFloat(token('--lens-dim'))).toBe(0.1); // rgb-dim IN the lens/pane filters (user: light panels too dark at 0.15)
     expect(token('--lens-dim', darkScope)).toBe('0.07'); // the ONE dark change (user: dark menu/dim band)
     expect(token('--glass-fill')).toBe('0'); // glassBg: transparent, like the playground
     expect(token('--glass-fill', ":root[data-glass='lite']")).toBe('0.32');
@@ -581,7 +583,9 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/\.btn-glass--bare:active\s*{\s*--btn-tint-mix:\s*26%/);
     // hamburger menu items carry brand ink at rest (tertiary-on-menu-glass
     // read grey-on-grey); scoped to hamburger panels, bare stays quiet elsewhere
-    expect(css).toMatch(/\[id\^='hamburger-panel-'\] \.btn-glass--bare\s*{\s*color:\s*var\(--color-ink\)/);
+    expect(css).toMatch(
+      /\[id\^='hamburger-panel-'\] \.btn-glass--bare\s*{\s*color:\s*var\(--color-ink\)/,
+    );
     // bare hover is faster (120ms) and subtler (8% wash) — a tint breath
     expect(css).toMatch(/\.btn-glass--bare:hover,[\s\S]*?--btn-tint-mix:\s*8%/);
     // modal X reads dismiss: red glass rest, near-solid red + white glyph hover
@@ -594,7 +598,9 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(component('src/components/CommandPalette.tsx')).toMatch(/btn-glass--danger modal-close/);
     // menu hover runs ONE light turn (parked cursor drove 9s of full url()
     // re-runs per hover on the densest panels); page buttons keep 3 turns
-    expect(css).toMatch(/\[id\^='hamburger-panel-'\] \.btn-glass:hover,[\s\S]*?animation-iteration-count:\s*1/);
+    expect(css).toMatch(
+      /\[id\^='hamburger-panel-'\] \.btn-glass:hover,[\s\S]*?animation-iteration-count:\s*1/,
+    );
     // primary CTA = brand Ink (the Mark's solid-fill colour), not the accent
     expect(css).toMatch(/\.btn-glass--primary\s*{\s*--btn-tint:\s*var\(--color-ink\)[^}]*/s);
     expect(css).toMatch(/\.btn-glass--primary\s*{[^}]*--btn-tint-mix:\s*24%/);
@@ -624,8 +630,12 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/@utility pane\s*\{[^}]*backdrop-filter:\s*blur\(var\(--pane-blur\)\)/);
     expect(css).toMatch(/@utility drop\s*\{[^}]*backdrop-filter:\s*blur\(var\(--drop-blur\)\)/);
     // engine owns the runtime url() hookup, gated on data-lens
-    expect(readFileSync(join(root, 'src/glass/glassController.ts'), 'utf8')).toMatch(/mountGlassEngine/);
-    expect(readFileSync(join(root, 'src/glass/lensEngine.ts'), 'utf8')).toMatch(/buildFilterMarkup/);
+    expect(readFileSync(join(root, 'src/glass/glassController.ts'), 'utf8')).toMatch(
+      /mountGlassEngine/,
+    );
+    expect(readFileSync(join(root, 'src/glass/lensEngine.ts'), 'utf8')).toMatch(
+      /buildFilterMarkup/,
+    );
 
     // ── options A+B: light menu blur cut + floating menu containment ──
     // A: light-only 6px->5px on the densest panels (shared token untouched,
@@ -663,9 +673,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(
       /\*,\s*\n\s*\*::before,\s*\n\s*\*::after\s*\{\s*\n\s*corner-shape: var\(--corner-shape\);/,
     );
-    expect(css).toMatch(
-      /\[class~='rounded-full'\],[\s\S]*?\{\s*\n\s*corner-shape: round;/,
-    );
+    expect(css).toMatch(/\[class~='rounded-full'\],[\s\S]*?\{\s*\n\s*corner-shape: round;/);
     expect(css).not.toMatch(/\[class\*='-full'\]/);
     expect(css).not.toMatch(/corner-shape: squircle/);
     // the engine reads the same exponent and CHROMIUM'S 2^k parameterization
@@ -679,5 +687,46 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(
       /:root\[data-theme='dark'\] \.login-shell\s*\{[^}]*--color-ink:\s*#1a1a2e/s,
     );
+  });
+
+  it('audit fixes: focus-ring split, wired form errors, stable type weights', () => {
+    // F-1: light focus ring = ink (gold at 72% composited to 1.43:1 on warm
+    // white — fails the 3:1 non-text minimum); dark keeps gold. The RATIOS
+    // are asserted by tools/check-contrast.mjs in the check gate; the test
+    // pins the split and the library consuming the token (Button/Toggle used
+    // to hardcode --color-accent and bypass the shared ring entirely).
+    expect(css).toMatch(/--color-focus-ring: #343242;/);
+    expect(css).toMatch(
+      /:root\[data-theme='dark'\]\s*\{[\s\S]*?--color-focus-ring: rgba\(245, 179, 1, 0\.72\)/,
+    );
+    const ui = component('src/components/UIComponents.tsx');
+    expect(ui).not.toMatch(/focus-visible:outline-\[var\(--color-accent\)\]/);
+    // 4 = FOCUS_RING const definition + Button + Toggle (both hardcoded
+    // accent before) + DataTable (already on the token); the three new
+    // primitives consume the const instead of repeating the literal
+    expect(ui.match(/focus-visible:outline-\[var\(--color-focus-ring\)\]/g)!.length).toBe(4);
+    // F-4: aria wiring — index.css styles [aria-invalid='true'] but nothing
+    // ever set it; errors were invisible to screen readers. Three field
+    // components now associate the error/helper <p> by id.
+    expect(ui.match(/aria-invalid=\{error \? true : undefined\}/g)!.length).toBe(3);
+    expect(ui.match(/aria-describedby=/g)!.length).toBe(3);
+    // 6 = 3 id assignments on the error <p> + 3 aria-describedby references
+    expect(ui.match(/\$\{(?:inputId|fieldId|dropdownId)\}-error/g)!.length).toBe(6);
+    // F-5: 650 snapped to 700 in any fallback during font-swap (weight shift);
+    // display weight gets its own token so the "reserved for display" clamp
+    // rule is executable in one place; label differentiates from caption
+    // (both were 600, 1px apart — one role with two names).
+    expect(css).not.toMatch(/font-weight: 650/);
+    expect(css).toMatch(/@utility text-micro\s*\{[^}]*font-weight: 700/s);
+    expect(css).toMatch(/--font-weight-display: 800/);
+    expect(css).toMatch(
+      /@utility text-display\s*\{[^}]*font-weight: var\(--font-weight-display\)/s,
+    );
+    expect(css).toMatch(/@utility text-label\s*\{[^}]*font-weight: 700/s);
+    // F-3: the press-physics comment must describe the three real tiers
+    // (global :where scale / .btn-glass sink / --still opt-out), not claim
+    // "ONE physics" while three exist. cssRaw: comments are stripped from `css`.
+    expect(cssRaw).toMatch(/Press physics — three deliberate tiers/);
+    expect(cssRaw).not.toMatch(/ONE press physics/);
   });
 });

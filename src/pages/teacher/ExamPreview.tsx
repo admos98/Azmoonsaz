@@ -40,10 +40,13 @@ import {
   ConfirmDialog,
   Dropdown,
   EmptyState,
+  IconButton,
   Input,
   Modal,
+  PillButton,
   SearchInput,
   Textarea,
+  TextLink,
 } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
@@ -568,15 +571,20 @@ export default function ExamPreview({
       {/* Upper header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pane p-6 rounded-3xl">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
+          <IconButton
             id="btn-back-to-exams-list"
-            onClick={handleBack}
-            className="p-2 hover:brightness-105 rounded-xl text-[var(--color-text-tertiary)] cursor-pointer border border-[var(--color-glass-light-stroke)] transition-all font-bold"
+            label="رجوع به بانک لیست آزمون‌ها"
             title="رجوع به بانک لیست آزمون‌ها"
+            size="md"
+            radius="xl"
+            tone="tertiary"
+            surface="bright"
+            border
+            onClick={handleBack}
+            className="font-bold"
           >
             <ArrowRight className="w-5 h-5" />
-          </button>
+          </IconButton>
           <div>
             <h2 className="text-label md:text-body font-extrabold text-[var(--color-text-primary)] flex items-center gap-2">
               <FileText className="w-5 h-5 text-[var(--color-accent)]" />
@@ -811,16 +819,18 @@ export default function ExamPreview({
 
                   {/* Manual Question Button per Section */}
                   {viewMode === 'teacher' && (
-                    <button
-                      type="button"
+                    <PillButton
+                      fill="accent-soft"
+                      size="lg"
+                      radius="xl"
                       onClick={(e) =>
                         triggerAddManualQuestion(section.id, e.currentTarget as HTMLElement)
                       }
-                      className="px-3.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl text-micro font-bold border border-[var(--color-accent-soft)] flex items-center gap-1.5 cursor-pointer transition-all self-end md:self-center"
+                      className="hover:bg-[var(--color-accent-soft)] flex items-center gap-1.5 transition-all self-end md:self-center"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       <span>افزودن سوال دستی به این بخش</span>
-                    </button>
+                    </PillButton>
                   )}
                 </div>
 
@@ -1304,14 +1314,16 @@ export default function ExamPreview({
                                 <RefreshCw className="w-3.5 h-3.5 text-[var(--color-warning)]" />
                                 <span>جایگزینی از بانک سوالات</span>
                               </button>
-                              <button
-                                type="button"
+                              <PillButton
+                                fill="danger-soft"
+                                size="none"
+                                radius="lg"
                                 onClick={() => setConfirmDeleteId(q.id)}
-                                className="p-2 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg border border-[var(--color-danger)]/10 cursor-pointer text-micro font-bold flex items-center gap-1 transition-all"
+                                className="p-2 hover:bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/10 flex items-center gap-1 transition-all"
                               >
-                                <Trash2 className="w-3.5 h-3.5 text-[var(--color-danger)]" />
+                                <Trash2 className="w-3.5 h-3.5" />
                                 <span>حذف سوال</span>
-                              </button>
+                              </PillButton>
                             </div>
                           </div>
                         )}
@@ -1351,8 +1363,11 @@ export default function ExamPreview({
         </button>
 
         <div className="flex gap-2.5 w-full sm:w-auto">
-          <button
-            type="button"
+          <PillButton
+            fill="accent-soft"
+            size="xl"
+            radius="xl"
+            text="caption"
             onClick={() => {
               if (onSave) {
                 onSave(localExam);
@@ -1361,13 +1376,16 @@ export default function ExamPreview({
                 showToast('پیش‌نویس جدید آزمون با موفقیت در فضای ابری ذخیره شد.', 'success');
               }
             }}
-            className="flex-1 sm:flex-none px-5 py-2.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-bold rounded-xl text-caption transition-all border border-[var(--color-accent-soft)] cursor-pointer text-center"
+            className="flex-1 sm:flex-none hover:bg-[var(--color-accent-soft)] transition-all border border-[var(--color-accent-soft)] text-center"
           >
             ذخیره پیش‌نویس موقت
-          </button>
+          </PillButton>
 
-          <button
-            type="button"
+          <PillButton
+            fill="accent-solid"
+            size="xl"
+            radius="xl"
+            text="caption"
             onClick={() => {
               if (onNavigateToSettings) {
                 setSavedFingerprint(JSON.stringify(localExam));
@@ -1376,10 +1394,10 @@ export default function ExamPreview({
                 showToast('تغییرات شما ذخیره شد. در حال هدایت به تنظیمات توزیع آزمون...', 'info');
               }
             }}
-            className="flex-1 sm:flex-none px-5 py-2.5 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] font-bold rounded-xl text-caption shadow-xs hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer text-center"
+            className="flex-1 sm:flex-none hover:bg-[var(--color-accent-solid-hover)] shadow-xs hover:scale-[1.01] active:scale-[0.99] transition-all text-center"
           >
             ادامه به تنظیمات توزیع آزمون
-          </button>
+          </PillButton>
         </div>
       </div>
 
@@ -1664,13 +1682,15 @@ export default function ExamPreview({
               placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
             />
             {editingQuestion.imageUrl && (
-              <button
-                type="button"
+              <PillButton
+                fill="danger-soft"
+                size="xs"
+                radius="lg"
                 onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: undefined })}
-                className="px-2 py-1 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro transition-all cursor-pointer font-bold shrink-0"
+                className="hover:bg-[var(--color-danger-soft)]/40 transition-all shrink-0"
               >
                 حذف
-              </button>
+              </PillButton>
             )}
           </div>
           {/* Simulative quick presets to populate mock images safely */}
@@ -1688,14 +1708,16 @@ export default function ExamPreview({
                 url: 'https://images.unsplash.com/photo-1632571401005-458e9d244591?w=500&auto=format&fit=crop&q=60',
               },
             ].map((preset, pIdx) => (
-              <button
+              <PillButton
                 key={pIdx}
-                type="button"
+                fill="accent-soft"
+                size="none"
+                radius="md"
                 onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: preset.url })}
-                className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-0.5 rounded-md border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] transition-all text-micro font-bold"
+                className="px-2 py-0.5 border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] transition-all"
               >
                 {preset.label}
-              </button>
+              </PillButton>
             ))}
           </div>
         </div>
@@ -1762,14 +1784,18 @@ export default function ExamPreview({
                   />
 
                   {/* Remove Option */}
-                  <button
-                    type="button"
-                    onClick={() => removeOptionInDrawer(opt.id)}
-                    className="p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
+                  <IconButton
+                    label="حذف این گزینه"
                     title="حذف این گزینه"
+                    size="xs"
+                    radius="lg"
+                    tone="danger"
+                    surface="wash"
+                    motion={false}
+                    onClick={() => removeOptionInDrawer(opt.id)}
                   >
                     <Trash className="w-4 h-4" />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>
@@ -1835,10 +1861,14 @@ export default function ExamPreview({
                     className="w-full bg-transparent border-none text-caption focus:ring-0"
                     placeholder="کلمه معتبر..."
                   />
-                  <button
-                    type="button"
-                    aria-label={`حذف پاسخ معتبر شماره ${toPersianDigits(wIdx + 1)}`}
+                  <IconButton
+                    label={`حذف پاسخ معتبر شماره ${toPersianDigits(wIdx + 1)}`}
                     title="حذف پاسخ"
+                    size="xs"
+                    radius="lg"
+                    tone="danger"
+                    surface="bright"
+                    motion={false}
                     onClick={() => {
                       const nextWords = (editingQuestion.correctFillBlanks || []).filter(
                         (_, i) => i !== wIdx,
@@ -1848,10 +1878,9 @@ export default function ExamPreview({
                         correctFillBlanks: nextWords,
                       });
                     }}
-                    className="p-1 hover:brightness-105 text-[var(--color-danger)] rounded-lg"
                   >
                     <X className="w-3.5 h-3.5" />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>
@@ -1921,13 +1950,15 @@ export default function ExamPreview({
                     className="w-full glx field border-none px-2 py-1 rounded-md"
                     placeholder="شرح کوتاه برای دبیـر تصحیح‌کننده..."
                   />
-                  <button
-                    type="button"
+                  <PillButton
+                    fill="danger-soft"
+                    size="none"
+                    radius="md"
                     onClick={() => removeRubricInDrawer(rub.id)}
-                    className="text-[var(--color-danger)] font-bold hover:bg-[var(--color-danger-soft)]/40 px-2 py-1 rounded-md block text-micro transition-all"
+                    className="hover:bg-[var(--color-danger-soft)]/40 block transition-all"
                   >
                     پاک کردن این گزینه معیار
-                  </button>
+                  </PillButton>
                 </div>
               ))}
             </div>
@@ -1941,13 +1972,15 @@ export default function ExamPreview({
               <span className="text-micro text-[var(--color-info)] font-extrabold">
                 زیرسوالات درک مطلب (مینی‌سوال‌ها):
               </span>
-              <button
-                type="button"
+              <PillButton
+                fill="info-soft"
+                size="none"
+                radius="xl"
                 onClick={addNewSubquestionPartInDrawer}
-                className="bg-[var(--color-info-soft)]/80 text-[var(--color-text-on-solid)] px-2.5 py-1 rounded-xl font-bold text-micro"
+                className="px-2.5 py-1"
               >
                 افزودن زیرسوال جدید
-              </button>
+              </PillButton>
             </div>
 
             <div className="space-y-3">
@@ -1958,13 +1991,13 @@ export default function ExamPreview({
                 >
                   <div className="flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
                     <span>زیرسوال شماره {toPersianDigits(pIdx + 1)}</span>
-                    <button
-                      type="button"
+                    <TextLink
+                      tone="danger"
+                      hover="none"
                       onClick={() => removeSubquestionPartInDrawer(part.id)}
-                      className="text-[var(--color-danger)]"
                     >
                       حذف
-                    </button>
+                    </TextLink>
                   </div>
                   <input
                     type="text"

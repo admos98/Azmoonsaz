@@ -36,6 +36,9 @@ import {
   StatCard,
   SearchInput,
   ConfirmDialog,
+  IconButton,
+  PillButton,
+  TextLink,
 } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 import { toPersianDigits } from '../../utils/persian';
@@ -412,15 +415,19 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
             {/* Top Navigation & Action Title Raw header bar */}
             <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4 lens p-6 rounded-3xl">
               <div className="flex items-center gap-4">
-                <button
-                  type="button"
+                <IconButton
                   id="btn-return-exams-list-arrow"
-                  onClick={onBack}
-                  className="p-2 hover:brightness-105 rounded-2xl text-[var(--color-text-tertiary)] cursor-pointer transition-all border border-[var(--color-glass-light-stroke)]"
+                  label="بازگشت به آزمون‌ها"
                   title="بازگشت به آزمون‌ها"
+                  size="md"
+                  radius="2xl"
+                  tone="tertiary"
+                  surface="bright"
+                  border
+                  onClick={onBack}
                 >
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </IconButton>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full text-micro font-bold bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
@@ -569,8 +576,10 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                     فیلترها و محدودسازی کارنامه داوطلبان
                   </h3>
                 </div>
-                <button
-                  type="button"
+                <TextLink
+                  size="sm"
+                  bold
+                  hover="accent"
                   onClick={() => {
                     setSearchQuery('');
                     setClassFilter('all');
@@ -578,10 +587,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                     setCorrectionFilter('all');
                     setScoreRangeFilter('all');
                   }}
-                  className="text-micro text-[var(--color-accent)] font-bold hover:text-[var(--color-accent-hover)] cursor-pointer"
                 >
                   پاک کردن همه فیلترها
-                </button>
+                </TextLink>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -909,16 +917,20 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               {/* Grading panel title row */}
               <div className="pane p-5 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    aria-label="بازگشت به فهرست پاسخ‌برگ‌ها"
+                  <IconButton
+                    label="بازگشت به فهرست پاسخ‌برگ‌ها"
                     title="بازگشت"
                     id="btn-close-and-return-list"
+                    size="md"
+                    radius="2xl"
+                    tone="tertiary"
+                    surface="bright"
+                    border
+                    motion={false}
                     onClick={() => setSelectedSubmissionId(null)}
-                    className="p-2 border border-[var(--color-glass-light-stroke)] hover:brightness-105 rounded-2xl text-[var(--color-text-tertiary)] cursor-pointer"
                   >
                     <ArrowRight className="w-5 h-5" />
-                  </button>
+                  </IconButton>
                   <div>
                     <span className="text-micro font-bold text-[var(--color-accent)] block bg-[var(--color-accent-soft)]/30 px-2.5 py-0.5 rounded-full w-fit">
                       مدیریت پاسخ‌برگ داوطلب
@@ -1200,11 +1212,13 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               </span>
 
                               {/* 8. AI ASSISTED EVAL BUTTON FEATURE */}
-                              <button
-                                type="button"
+                              <PillButton
+                                fill="accent-soft"
+                                size="md"
+                                radius="lg"
                                 onClick={() => triggerAiAssistedGrading(q.id)}
                                 disabled={aiLoadingQuestionId !== null}
-                                className="inline-flex items-center gap-1 py-1.5 px-3 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] border border-[var(--color-accent)]/20 rounded-lg text-micro font-bold text-[var(--color-accent)] cursor-pointer disabled:opacity-50 transition-colors"
+                                className="inline-flex items-center gap-1 hover:bg-[var(--color-accent-soft)] border border-[var(--color-accent)]/20 disabled:opacity-50 transition-colors"
                               >
                                 {aiLoadingQuestionId === q.id ? (
                                   <span className="inline-flex items-center gap-1 animate-pulse">
@@ -1217,7 +1231,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                                     <span>پیشنهاد نمره با هوش مصنوعی</span>
                                   </>
                                 )}
-                              </button>
+                              </PillButton>
                             </div>
 
                             {/* Warning note for AI assisted scoring */}
@@ -1344,13 +1358,17 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
                           {/* Save single question button */}
                           <div className="flex justify-end pt-2 border-t border-[var(--color-glass-light-stroke)]/50">
-                            <button
-                              type="button"
+                            <PillButton
+                              fill={isGraded ? 'success-soft' : 'accent-solid'}
+                              size="none"
+                              radius="lg"
+                              text="micro"
+                              weight="black"
                               onClick={() => saveSingleQuestionGrade(q.id)}
-                              className={`px-4.5 py-2.5 text-micro font-black rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                              className={`px-4.5 py-2.5 transition-all flex items-center gap-2 ${
                                 isGraded
-                                  ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/20'
-                                  : 'bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] hover:bg-[var(--color-accent-solid-hover)]'
+                                  ? 'border border-[var(--color-success)]/20'
+                                  : 'hover:bg-[var(--color-accent-solid-hover)]'
                               }`}
                             >
                               {isGraded ? (
@@ -1361,7 +1379,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               <span>
                                 {isGraded ? 'نمره این سوال تایید و قفل شد' : 'ثبت نمره این سوال'}
                               </span>
-                            </button>
+                            </PillButton>
                           </div>
                         </div>
                       )}

@@ -26,6 +26,7 @@ import {
   EmptyState,
   Table,
   StatCard,
+  TextLink,
 } from '../../components/UIComponents';
 import { TheMark } from '../../components/TheMark';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
@@ -308,14 +309,15 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   سنجش‌های در حال آماده‌سازی یا فعال کنونی
                 </p>
               </div>
-              <button
-                type="button"
+              <TextLink
+                size="sm"
+                bold
                 onClick={() => onNavigate('exams')}
-                className="text-micro text-[var(--color-accent)] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                className="flex items-center gap-1"
               >
                 <span>مدیریت آزمون‌ها</span>
                 <ChevronLeft className="w-3 h-3" />
-              </button>
+              </TextLink>
             </div>
 
             <AnimatePresence mode="wait">
@@ -399,14 +401,15 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                   سنجش‌های زنده با قابلیت تصحیح سریع معلم
                 </p>
               </div>
-              <button
-                type="button"
+              <TextLink
+                size="sm"
+                bold
                 onClick={() => onNavigate('results')}
-                className="text-micro text-[var(--color-accent)] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                className="flex items-center gap-1"
               >
                 <span>مشاهده نتایج</span>
                 <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
+              </TextLink>
             </div>
 
             <AnimatePresence mode="wait">

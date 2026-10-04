@@ -8,7 +8,7 @@ import { ArrowRight, ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
 import { Exam } from '../../types';
 import { examService } from '../../services/api';
-import { Dropdown, Input, Textarea, Toggle } from '../../components/UIComponents';
+import { Dropdown, Input, PillButton, Textarea, Toggle } from '../../components/UIComponents';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 
 interface NewExamProps {
@@ -561,8 +561,11 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           </button>
 
           {step < 4 ? (
-            <button
-              type="button"
+            <PillButton
+              fill="accent-solid"
+              size="none"
+              radius="xl"
+              text="caption"
               id="wizard-btn-next"
               onClick={() => {
                 if (step === 1 && !title) {
@@ -575,11 +578,11 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
                 }
                 setStep(step + 1);
               }}
-              className="px-5 py-2 bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] rounded-xl text-caption font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-5 py-2 hover:bg-[var(--color-accent-solid-hover)] shadow-xs transition-colors flex items-center gap-1.5"
             >
               <span>مرحله بعدی</span>
               <ArrowLeft className="w-4 h-4" />
-            </button>
+            </PillButton>
           ) : (
             <button
               type="button"

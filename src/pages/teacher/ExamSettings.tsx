@@ -31,8 +31,10 @@ import {
   Button,
   Input,
   PageHeader,
+  PillButton,
   SearchInput,
   Textarea,
+  TextLink,
   Toggle,
 } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
@@ -458,14 +460,19 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
               </div>
 
               <div className="pt-1">
-                <button
-                  type="button"
+                <PillButton
+                  fill="warning-solid"
+                  size="none"
+                  radius="xl"
+                  text="caption"
+                  weight="black"
+                  textColor="primary"
                   onClick={handleApplyOfficialRecommendations}
-                  className="px-4.5 py-2 bg-[var(--color-warning-solid)] hover:bg-[var(--color-warning-solid)] text-[var(--color-text-primary)] rounded-xl text-caption font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border border-[var(--color-warning)]/20"
+                  className="px-4.5 py-2 hover:bg-[var(--color-warning-solid)] transition-all flex items-center gap-1.5 shadow-xs border border-[var(--color-warning)]/20"
                 >
                   <Zap className="w-4 h-4" />
                   <span>اعمال خودکار تنظیمات پیشنهادی امنیت هوشمند</span>
-                </button>
+                </PillButton>
               </div>
 
               {showRecommendationsApplied && (
@@ -716,14 +723,14 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                         {allowedClasses.map((cid) => {
                           const clsName = classGroups.find((c) => c.id === cid)?.name || '';
                           return (
-                            <button
+                            <TextLink
                               key={cid}
-                              type="button"
+                              size="sm"
+                              tone="inherit"
                               onClick={() => handleSelectAllStudentsForClass(cid)}
-                              className="hover:underline cursor-pointer text-micro"
                             >
                               وارونه کردن دسترسی {clsName}
-                            </button>
+                            </TextLink>
                           );
                         })}
                       </div>

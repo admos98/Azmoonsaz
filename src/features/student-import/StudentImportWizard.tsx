@@ -5,7 +5,7 @@ import { studentService } from '../../services/api';
 import { ClassGroup, Student } from '../../types';
 import { isValidIranianNationalId } from './nationalId';
 import type { StudentImportIssue, StudentImportRow } from './parseStudentFile';
-import { Button, Modal } from '../../components/UIComponents';
+import { Button, IconButton, Modal } from '../../components/UIComponents';
 
 /* The parsers (xlsx + papaparse, ~121 KB gz together) are the heaviest thing
    in the app. They are imported ONLY when a file is actually parsed, so the
@@ -226,17 +226,21 @@ export default function StudentImportWizard({
             <span className="relative max-w-xl rounded-xl frost p-3 pl-10 text-micro leading-6 text-[var(--color-text-tertiary)]">
               ستون‌های الزامی: نام، کد ملی، کلاس و پایه. نام کلاس باید با یکی از کلاس‌های ثبت‌شده
               یکسان باشد؛ تلفن و ایمیل اختیاری‌اند.
-              <button
-                type="button"
-                aria-label="دیگر این راهنما نمایش داده نشود"
-                className="absolute left-1 top-1 rounded-lg p-2"
+              <IconButton
+                label="دیگر این راهنما نمایش داده نشود"
+                size="md"
+                radius="lg"
+                tone="inherit"
+                surface="none"
+                motion={false}
+                className="absolute left-1 top-1"
                 onClick={(event) => {
                   event.preventDefault();
                   setShowFieldGuidance(false);
                 }}
               >
                 <X className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             </span>
           )}
           <Button

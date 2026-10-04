@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { normalizePersianText } from '../utils/persian';
+import { TextLink } from './UIComponents';
 import { usePersistentPreference } from '../hooks/usePersistentPreference';
 import { preloadTeacherPage } from '../utils/teacherPageLoaders';
 import { useTeacherCollections } from '../contexts/TeacherContext';
@@ -321,13 +322,15 @@ export default function CommandPalette({
               ) : (
                 <div className="px-4 py-10 text-center">
                   <p className="font-bold text-[var(--color-text-primary)]">نتیجه‌ای پیدا نشد</p>
-                  <button
-                    type="button"
+                  <TextLink
+                    size="md"
+                    bold
+                    hover="none"
                     onClick={() => setQuery('')}
-                    className="mt-2 text-caption font-bold text-[var(--color-accent)]"
+                    className="mt-2"
                   >
                     پاک کردن جستجو
-                  </button>
+                  </TextLink>
                 </div>
               )}
             </div>

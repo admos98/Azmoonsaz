@@ -31,9 +31,11 @@ import {
   ConfirmDialog,
   Dropdown,
   EmptyState,
+  IconButton,
   Input,
   Modal,
   PageHeader,
+  PillButton,
   SearchInput,
 } from '../../components/UIComponents';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
@@ -540,18 +542,20 @@ export default function Students() {
             selectedGrade !== 'all' ||
             selectedClassGroup !== 'all' ||
             selectedStatus !== 'all') && (
-            <button
-              type="button"
+            <PillButton
+              fill="danger-soft"
+              size="sm"
+              radius="lg"
               onClick={() => {
                 setSearchQuery('');
                 resetSelectedGrade();
                 resetSelectedClassGroup();
                 resetSelectedStatus();
               }}
-              className="px-2.5 py-1.5 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro font-bold transition-all cursor-pointer"
+              className="hover:bg-[var(--color-danger-soft)]/40 transition-all"
             >
               حذف فیلترها
-            </button>
+            </PillButton>
           )}
         </div>
       </div>
@@ -731,37 +735,46 @@ export default function Students() {
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {/* Student exams history */}
-                            <button
-                              type="button"
+                            <IconButton
                               id={`logs-std-${student.id}`}
-                              onClick={() => openStudentExamHistory(student)}
-                              className="p-2 text-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] rounded-xl transition-all cursor-pointer"
+                              label="سوابق آزمون"
                               title="سوابق آزمون"
+                              size="md"
+                              radius="xl"
+                              tone="accent"
+                              surface="wash"
+                              onClick={() => openStudentExamHistory(student)}
                             >
                               <Eye className="w-4 h-4" />
-                            </button>
+                            </IconButton>
 
                             {/* Edit */}
-                            <button
-                              type="button"
+                            <IconButton
                               id={`edit-std-${student.id}`}
-                              onClick={() => openEditModal(student)}
-                              className="p-2 text-[var(--color-text-tertiary)] hover:brightness-105 hover:text-[var(--color-text-primary)] rounded-xl transition-all cursor-pointer"
+                              label="ویرایش شناسنامه"
                               title="ویرایش شناسنامه"
+                              size="md"
+                              radius="xl"
+                              tone="tertiary"
+                              surface="bright"
+                              onClick={() => openEditModal(student)}
                             >
                               <Edit className="w-4 h-4" />
-                            </button>
+                            </IconButton>
 
                             {/* Delete */}
-                            <button
-                              type="button"
+                            <IconButton
                               id={`delete-std-${student.id}`}
-                              onClick={() => handleDeleteStudent(student.id, student.name)}
-                              className="p-2 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-xl transition-all cursor-pointer"
+                              label="حذف اطلاعات"
                               title="حذف اطلاعات"
+                              size="md"
+                              radius="xl"
+                              tone="danger"
+                              surface="wash"
+                              onClick={() => handleDeleteStudent(student.id, student.name)}
                             >
                               <Trash2 className="w-4 h-4" />
-                            </button>
+                            </IconButton>
                           </div>
                         </td>
                       </motion.tr>
@@ -855,13 +868,14 @@ export default function Students() {
                     </div>
 
                     <div className="flex items-center justify-end gap-1 border-t border-[var(--color-glass-light-stroke)]/60 pt-3.5">
-                      <button
-                        type="button"
+                      <PillButton
+                        fill="accent-soft"
+                        size="md"
+                        radius="xl"
                         onClick={() => openStudentExamHistory(student)}
-                        className="px-3 py-1.5 bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-xl font-bold text-micro"
                       >
                         سوابق آزمون
-                      </button>
+                      </PillButton>
                       <button
                         type="button"
                         onClick={() => openEditModal(student)}
@@ -869,13 +883,14 @@ export default function Students() {
                       >
                         ویرایش
                       </button>
-                      <button
-                        type="button"
+                      <PillButton
+                        fill="danger-soft"
+                        size="md"
+                        radius="xl"
                         onClick={() => handleDeleteStudent(student.id, student.name)}
-                        className="px-3 py-1.5 bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-xl font-bold text-micro"
                       >
                         حذف
-                      </button>
+                      </PillButton>
                     </div>
                   </motion.div>
                 );

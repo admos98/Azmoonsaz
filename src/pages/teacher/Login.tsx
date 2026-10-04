@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, CheckCircle2, ArrowRight, KeyRound, Send } from 'lucide-react';
 import { TheMark } from '../../components/TheMark';
-import { Input } from '../../components/UIComponents';
+import { IconButton, Input, PillButton, TextLink } from '../../components/UIComponents';
 import { authService } from '../../services/api';
 import type { Teacher } from '../../types';
 
@@ -171,17 +171,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
                     {email}
                   </p>
-                  <button
-                    type="button"
+                  <TextLink
+                    size="sm"
                     onClick={() => {
                       setView('email');
                       setError(null);
                       setPassword('');
                     }}
-                    className="text-micro text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
+                    className="mt-1"
                   >
                     تغییر ایمیل
-                  </button>
+                  </TextLink>
                 </div>
 
                 <Input
@@ -194,14 +194,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   placeholder="••••••••"
                   icon={<Lock className="w-4 h-4" />}
                   trailing={
-                    <button
-                      type="button"
-                      aria-label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                    <IconButton
+                      label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                      size="xs"
+                      radius="md"
+                      tone="tertiary"
+                      surface="plain"
+                      motion={false}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                    </IconButton>
                   }
                   autoFocus
                 />
@@ -224,29 +227,27 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 </button>
 
                 <div className="flex items-center justify-between text-micro">
-                  <button
-                    type="button"
+                  <TextLink
                     onClick={() => {
                       setView('forgot-password');
                       setError(null);
                       setPassword('');
                     }}
-                    className="text-[var(--color-accent)] hover:underline cursor-pointer flex items-center gap-1"
+                    className="flex items-center gap-1"
                   >
                     <KeyRound className="w-3 h-3" />
                     رمز عبور را فراموش کردم
-                  </button>
-                  <button
-                    type="button"
+                  </TextLink>
+                  <TextLink
+                    tone="success"
                     onClick={() => {
                       setView('signup');
                       setError(null);
                       setPassword('');
                     }}
-                    className="text-[var(--color-success)] hover:underline cursor-pointer"
                   >
                     ایجاد حساب جدید
-                  </button>
+                  </TextLink>
                 </div>
               </form>
             )}
@@ -270,17 +271,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   >
                     {email}
                   </p>
-                  <button
-                    type="button"
+                  <TextLink
+                    size="sm"
                     onClick={() => {
                       setView('password');
                       setError(null);
                       setPassword('');
                     }}
-                    className="text-micro text-[var(--color-accent)] hover:underline cursor-pointer mt-1"
+                    className="mt-1"
                   >
                     تغییر ایمیل
-                  </button>
+                  </TextLink>
                 </div>
 
                 <Input
@@ -293,14 +294,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   placeholder="حداقل ۶ کاراکتر"
                   icon={<Lock className="w-4 h-4" />}
                   trailing={
-                    <button
-                      type="button"
-                      aria-label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                    <IconButton
+                      label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                      size="xs"
+                      radius="md"
+                      tone="tertiary"
+                      surface="plain"
+                      motion={false}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                    </IconButton>
                   }
                   autoFocus
                 />
@@ -322,17 +326,19 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   {loading ? 'در حال ثبت‌نام...' : 'ساخت حساب'}
                 </button>
 
-                <button
-                  type="button"
+                <TextLink
+                  size="md"
+                  tone="tertiary"
+                  hover="secondary"
                   onClick={() => {
                     setView('password');
                     setError(null);
                     setPassword('');
                   }}
-                  className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
+                  className="w-full text-center"
                 >
                   بازگشت به ورود
-                </button>
+                </TextLink>
               </form>
             )}
 
@@ -356,13 +362,9 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     {email}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={resetAll}
-                  className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
-                >
+                <TextLink size="md" bold onClick={resetAll}>
                   بازگشت به ورود
-                </button>
+                </TextLink>
               </div>
             )}
 
@@ -396,26 +398,32 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   </p>
                 )}
 
-                <button
+                <PillButton
+                  fill="warning-solid"
+                  size="none"
+                  radius="xl"
+                  text="label"
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[var(--color-warning-solid)] hover:bg-[var(--color-warning-solid)]/90 disabled:opacity-60 text-[var(--color-text-on-solid)] font-bold text-label py-3 rounded-xl transition-colors shadow-md shadow-[var(--color-warning)]/10 cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3 hover:bg-[var(--color-warning-solid)]/90 disabled:opacity-60 transition-colors shadow-md shadow-[var(--color-warning)]/10 flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" />
                   {loading ? 'در حال ارسال...' : 'ارسال لینک بازیابی'}
-                </button>
+                </PillButton>
 
-                <button
-                  type="button"
+                <TextLink
+                  size="md"
+                  tone="tertiary"
+                  hover="secondary"
                   onClick={() => {
                     setView('password');
                     setError(null);
                     setPassword('');
                   }}
-                  className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
+                  className="w-full text-center"
                 >
                   بازگشت به ورود
-                </button>
+                </TextLink>
               </form>
             )}
 
@@ -439,13 +447,9 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     {email}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={resetAll}
-                  className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
-                >
+                <TextLink size="md" bold onClick={resetAll}>
                   بازگشت به ورود
-                </button>
+                </TextLink>
               </div>
             )}
           </div>

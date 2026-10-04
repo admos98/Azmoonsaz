@@ -25,10 +25,12 @@
   --font-size-base: 0.9375rem;
   /* Type-weight ramp. Vazirmatn goes muddy at 800–900 in UI sizes, so the
      heavy utility classes clamp to 700 — UI chrome lives at 600–700 and
-     heavy weights are reserved for the display scale. Retune every heading
-     in the app by changing these two lines. */
+     heavy weights are reserved for the display scale (its own token below,
+     consumed by text-display). Retune every heading in the app by changing
+     these three lines. */
   --font-weight-extrabold: 700;
   --font-weight-black: 700;
+  --font-weight-display: 800;
 
   /* Spacing (4px base) */
   --spacing-0: 0px;
@@ -136,9 +138,11 @@
   --color-text-on-dark-secondary: #d1d5db;
 
   /* Focus — the ONE keyboard-focus color for the whole app. Consumed by the
-     shared focus-visible baseline and by library components. Gold reads on
-     both themes, so no dark override is needed. */
-  --color-focus-ring: rgba(245, 179, 1, 0.72);
+     shared focus-visible baseline and by library components. Theme-split:
+     gold at 72% composited to ~#f4c442 on warm white = 1.43:1 (fails the
+     3:1 non-text minimum), so light uses ink (#343242, ~10.9:1); dark
+     keeps gold (5.64:1 on page-bg). */
+  --color-focus-ring: #343242;
 
   /* Login marketing surface — deliberately light-only (the art panel is a
      supplied photograph backdrop, never themed). Single-sourced here so the
@@ -261,7 +265,7 @@
      (surface convex_squircle, bezel 14, thickness 72, radius 21,
      refraction 0.5, blur 1.0, specular 0.34/5/-55deg, rgb-dim 0.15).
      The dark theme changes exactly ONE number: --lens-dim. */
-  --lens-dim: 0.10; /* rgb-dim — per-channel wash IN the lens/pane filters */
+  --lens-dim: 0.1; /* rgb-dim — per-channel wash IN the lens/pane filters */
   /* Floating menu material — hamburger/notif panels read against the DENSEST
      content (hero type, busy cards). Apple's menus sit near 80% opacity:
      deeper dim + heavier blur than resting panels, still glass. These only
@@ -431,6 +435,10 @@
   --color-text-tertiary: #8c8998;
   --color-text-on-dark: #f9fafb;
   --color-text-on-dark-secondary: #d1d5db;
+
+  /* Focus ring: gold on dark (5.64:1 on page-bg). Light theme keeps ink
+     — see the base token comment. */
+  --color-focus-ring: rgba(245, 179, 1, 0.72);
 
   --glass-scrim-a: 0.35;
   --glass-scrim-color: 0 0 0;
@@ -745,7 +753,6 @@ select::-webkit-calendar-picker-indicator {
    clean. lite/off tiers strip the whole property further down (unlayered
    tier rules always win). Full evidence: docs/liquid-glass-engine-audit.md. */
 
-
 /* Blur first, bend last — the playground's order, with the blur GPU-side. */
 :root[data-lens='on']:not([data-glass='lite']):not([data-glass='off']) .glx:not(.field) {
   backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
@@ -1024,7 +1031,7 @@ select::-webkit-calendar-picker-indicator {
 /* ─── Typography utilities ─── */
 @utility text-display {
   font-size: 2.25rem;
-  font-weight: 800;
+  font-weight: var(--font-weight-display);
   line-height: 1.1;
   /* No negative tracking: Persian is cursive — tightened spacing visually
      cramps the joins between letters. */
@@ -1051,7 +1058,7 @@ select::-webkit-calendar-picker-indicator {
 }
 @utility text-label {
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.4;
 }
 @utility text-caption {
@@ -1061,7 +1068,10 @@ select::-webkit-calendar-picker-indicator {
 }
 @utility text-micro {
   font-size: 0.75rem;
-  font-weight: 650;
+  /* 650 is valid in the variable Vazirmatn (300–900) but any fallback
+     during font-swap snaps to 700 — weight shifts mid-load. 700 is a
+     named instance everywhere; also the right weight for 12px content. */
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -1398,11 +1408,13 @@ select::-webkit-calendar-picker-indicator {
   outline-offset: 2px;
 }
 
-/* ONE press physics for the whole app: a subtle scale-down. Library buttons
-   used to ship their own active:scale on top of the old global translateY —
-   two competing identities on the same control. This is the single source;
-   components may override with a stronger Tailwind active:scale-* if a
-   control genuinely needs it. */
+/* Press physics — three deliberate tiers (they are NOT one rule):
+   1. raw controls: the global scale-down below, declared in zero-specificity
+      :where() so any component rule outranks it;
+   2. .btn-glass: a 0.5px sink + brightness filter (library identity —
+      outranks #1 by specificity, .btn-glass:active);
+   3. .btn-glass--still: no movement at all (explicit opt-out, .btn-glass--still:active).
+   Components may override with a stronger Tailwind active:scale-*. */
 :where(button, [role='button']):active:not(:disabled, [aria-disabled='true']) {
   transform: scale(0.98);
 }
@@ -1579,9 +1591,13 @@ button {
   backdrop-filter: blur(3px) saturate(1.6);
   -webkit-backdrop-filter: blur(3px) saturate(1.6);
   padding: 1.5px;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   mask-composite: exclude;
 }
 

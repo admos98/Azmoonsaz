@@ -38,11 +38,14 @@ import {
   DifficultyBadge,
   Dropdown,
   EmptyState,
+  IconButton,
   Input,
   Modal,
   PageHeader,
+  PillButton,
   SearchInput,
   Textarea,
+  TextLink,
 } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
@@ -951,8 +954,10 @@ export default function Questions() {
           selectedTag !== 'all' ||
           selectedStatus !== 'all') && (
           <div className="flex justify-start pt-2 border-t border-[var(--color-glass-light-stroke)]">
-            <button
-              type="button"
+            <PillButton
+              fill="danger-soft"
+              size="lg"
+              radius="lg"
               onClick={() => {
                 setSearchQuery('');
                 resetSelectedGrade();
@@ -963,10 +968,10 @@ export default function Questions() {
                 resetSelectedTag();
                 resetSelectedStatus();
               }}
-              className="px-3.5 py-1.5 bg-[var(--color-danger-soft)]/40 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg text-micro font-bold transition-all cursor-pointer"
+              className="hover:bg-[var(--color-danger-soft)]/40 transition-all"
             >
               حذف فیلترها و نمایش همگانی
-            </button>
+            </PillButton>
           </div>
         )}
       </div>
@@ -1133,36 +1138,45 @@ export default function Questions() {
                         </div>
 
                         <div className="flex gap-1.5">
-                          <button
-                            type="button"
+                          <IconButton
+                            label="پیش‌نمایش زنده"
+                            title="پیش‌نمایش زنده"
+                            size="sm"
+                            radius="lg"
+                            tone="accent"
+                            surface="bright"
                             onClick={(e) => {
                               previewTriggerRef.current = e.currentTarget;
                               setPreviewQuestion(q);
                             }}
-                            className="p-1.5 text-[var(--color-accent)] hover:brightness-105 rounded-lg transition-all cursor-pointer"
-                            title="پیش‌نمایش زنده"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
+                          </IconButton>
+                          <IconButton
+                            label="ویرایش سوال"
+                            title="ویرایش سوال"
+                            size="sm"
+                            radius="lg"
+                            tone="secondary"
+                            surface="bright"
                             onClick={(e) => {
                               drawerTriggerRef.current = e.currentTarget;
                               openEditDrawer(q);
                             }}
-                            className="p-1.5 text-[var(--color-text-secondary)] hover:brightness-105 hover:text-[var(--color-text-primary)] rounded-lg transition-all cursor-pointer"
-                            title="ویرایش سوال"
                           >
                             <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteQuestion(q.id, q.title)}
-                            className="p-1.5 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg transition-all cursor-pointer"
+                          </IconButton>
+                          <IconButton
+                            label="حذف سوال"
                             title="حذف سوال"
+                            size="sm"
+                            radius="lg"
+                            tone="danger"
+                            surface="wash"
+                            onClick={() => handleDeleteQuestion(q.id, q.title)}
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </IconButton>
                         </div>
                       </div>
                     </motion.div>
@@ -1266,36 +1280,47 @@ export default function Questions() {
                             {/* Row Actions */}
                             <td className="p-4 text-center">
                               <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  type="button"
+                                <IconButton
+                                  label="پیش‌نمایش"
+                                  title="پیش‌نمایش"
+                                  size="xs"
+                                  radius="lg"
+                                  tone="accent"
+                                  surface="bright"
+                                  motion={false}
                                   onClick={(e) => {
                                     previewTriggerRef.current = e.currentTarget;
                                     setPreviewQuestion(q);
                                   }}
-                                  className="p-1 hover:brightness-105 text-[var(--color-accent)] rounded-lg cursor-pointer"
-                                  title="پیش‌نمایش"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
+                                </IconButton>
+                                <IconButton
+                                  label="ویرایش"
+                                  title="ویرایش"
+                                  size="xs"
+                                  tone="tertiary"
+                                  surface="bright"
+                                  motion={false}
                                   onClick={(e) => {
                                     drawerTriggerRef.current = e.currentTarget;
                                     openEditDrawer(q);
                                   }}
-                                  className="p-1 hover:brightness-105 text-[var(--color-text-tertiary)] cursor-pointer"
-                                  title="ویرایش"
                                 >
                                   <Edit className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteQuestion(q.id, q.title)}
-                                  className="p-1 hover:bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-lg cursor-pointer"
+                                </IconButton>
+                                <IconButton
+                                  label="حذف"
                                   title="حذف"
+                                  size="xs"
+                                  radius="lg"
+                                  tone="danger"
+                                  surface="wash"
+                                  motion={false}
+                                  onClick={() => handleDeleteQuestion(q.id, q.title)}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                </IconButton>
                               </div>
                             </td>
                           </motion.tr>
@@ -1625,13 +1650,9 @@ export default function Questions() {
                       alt="تصویر بارگذاری شده در فرم"
                       className="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setFormImageUrl('')}
-                      className="text-[var(--color-danger)] font-bold hover:underline"
-                    >
+                    <TextLink tone="danger" bold onClick={() => setFormImageUrl('')}>
                       حذف پیوست ×
-                    </button>
+                    </TextLink>
                   </div>
                 ) : (
                   <span className="text-micro text-[var(--color-text-tertiary)]">
@@ -1689,15 +1710,19 @@ export default function Questions() {
                         </label>
 
                         {/* Remove opt */}
-                        <button
-                          type="button"
-                          aria-label={`حذف گزینه شماره ${toPersianDigits(oIdx + 1)}`}
+                        <IconButton
+                          label={`حذف گزینه شماره ${toPersianDigits(oIdx + 1)}`}
                           title="حذف گزینه"
+                          size="xs"
+                          radius="lg"
+                          tone="danger"
+                          surface="wash"
+                          motion={false}
                           onClick={() => removeOptionRow(oIdx)}
-                          className="mr-auto p-1 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]/40 rounded-lg cursor-pointer"
+                          className="mr-auto"
                         >
                           <Trash className="w-3.5 h-3.5" />
-                        </button>
+                        </IconButton>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
@@ -1744,17 +1769,18 @@ export default function Questions() {
                                   className="w-6 h-6 rounded object-cover border"
                                   alt="گزینه"
                                 />
-                                <button
-                                  type="button"
+                                <TextLink
+                                  size="sm"
+                                  tone="danger"
+                                  hover="none"
                                   onClick={() => {
                                     const updated = [...formOptions];
                                     updated[oIdx].imageUrl = '';
                                     setFormOptions(updated);
                                   }}
-                                  className="text-[var(--color-danger)] text-micro"
                                 >
                                   حذف
-                                </button>
+                                </TextLink>
                               </div>
                             ) : (
                               <span className="text-micro text-[var(--color-text-tertiary)] italic">
@@ -1849,15 +1875,17 @@ export default function Questions() {
                         className="w-full glx field border px-2.5 py-1.5 rounded-md text-micro"
                       />
                       {formFillBlanks.length > 1 && (
-                        <button
-                          type="button"
+                        <TextLink
+                          tone="danger"
+                          bold
+                          hover="none"
                           onClick={() =>
                             setFormFillBlanks(formFillBlanks.filter((_, i) => i !== idx))
                           }
-                          className="text-[var(--color-danger)] font-bold p-1 text-label"
+                          className="p-1 text-label"
                         >
                           &times;
-                        </button>
+                        </TextLink>
                       )}
                     </div>
                   ))}
@@ -1886,15 +1914,19 @@ export default function Questions() {
                 <div className="space-y-3">
                   {formMatchingPairs.map((pair, idx) => (
                     <div key={idx} className="grid grid-cols-2 gap-3 pane p-3 rounded-xl relative">
-                      <button
-                        type="button"
+                      <IconButton
+                        label="حذف این جفت"
+                        radius="full"
+                        tone="danger"
+                        surface="none"
+                        motion={false}
                         onClick={() =>
                           setFormMatchingPairs(formMatchingPairs.filter((_, i) => i !== idx))
                         }
-                        className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] rounded-full flex items-center justify-center font-bold"
+                        className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-[var(--color-danger-soft)]/40 font-bold flex items-center justify-center"
                       >
                         &times;
-                      </button>
+                      </IconButton>
                       <div className="space-y-1">
                         <span className="text-micro text-[var(--color-text-tertiary)] block">
                           سطر چپ (هدف):
@@ -1967,15 +1999,16 @@ export default function Questions() {
                         className="w-full glx field px-2 py-1.5 rounded-md text-micro"
                       />
                       {formOrderingItems.length > 2 && (
-                        <button
-                          type="button"
+                        <TextLink
+                          tone="danger"
+                          bold
+                          hover="none"
                           onClick={() =>
                             setFormOrderingItems(formOrderingItems.filter((_, i) => i !== idx))
                           }
-                          className="text-[var(--color-danger)] font-bold"
                         >
                           &times;
-                        </button>
+                        </TextLink>
                       )}
                     </div>
                   ))}
@@ -2017,13 +2050,15 @@ export default function Questions() {
                         key={rub.id}
                         className="pane p-3 rounded-xl border-[var(--color-danger)]/10 space-y-2 relative"
                       >
-                        <button
-                          type="button"
+                        <TextLink
+                          tone="danger"
+                          bold
+                          hover="none"
                           onClick={() => removeRubricRow(rub.id)}
-                          className="absolute top-2 left-2 text-[var(--color-danger)] font-bold text-label"
+                          className="absolute top-2 left-2 text-label"
                         >
                           &times;
-                        </button>
+                        </TextLink>
 
                         <div className="grid grid-cols-3 gap-2">
                           <div className="col-span-2 space-y-1">
@@ -2117,13 +2152,15 @@ export default function Questions() {
                 <div className="space-y-3">
                   {formParts.map((part, idx) => (
                     <div key={part.id} className="pane p-3 rounded-xl relative space-y-2">
-                      <button
-                        type="button"
+                      <TextLink
+                        tone="danger"
+                        bold
+                        hover="none"
                         onClick={() => removePartRow(idx)}
-                        className="absolute top-2 left-2 text-[var(--color-danger)] font-bold"
+                        className="absolute top-2 left-2"
                       >
                         &times;
-                      </button>
+                      </TextLink>
                       <span className="glx-inset rounded px-1.5 py-0.5 text-micro font-bold text-[var(--color-text-secondary)] block w-20 text-center">
                         بخش شماره {idx + 1}
                       </span>

@@ -47,7 +47,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const baseStyle =
-      'inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:opacity-50 disabled:pointer-events-none';
+      'inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] disabled:opacity-50 disabled:pointer-events-none';
 
     // kube-style glass buttons: the material, tint and press states all live
     // in the library (@utility btn-glass) — variants only pick the tint.
@@ -83,6 +83,218 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     );
   },
 );
+
+/* ==========================================
+   1b. MICRO CONTROLS — TextLink / IconButton / PillButton
+   The three shapes pages hand-rolled for months because Button (glass
+   material, three paddings, rounded-xl) cannot express them: link-styled
+   text buttons, icon-only micro actions, compact soft-fill pills. Each
+   primitive emits exactly the class vocabulary the hand-rolled corpus
+   used, so migrating a site can be verified byte-set-equal (pixel-safe);
+   tools/check-library-adoption.mjs ratchets every category.
+
+   Shared with Button: the focus-ring token. Deliberately NOT baked:
+   disabled opacity (sites carry their own disabled styling) and display
+   flex (sites that need a row pass flex items-center gap-*, matching the
+   original markup).
+   ========================================== */
+const FOCUS_RING =
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]';
+
+interface TextLinkProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** sm = text-micro (12px), md = text-caption (13px); omit to inherit the parent's size */
+  size?: 'sm' | 'md';
+  tone?: 'accent' | 'danger' | 'success' | 'tertiary' | 'inherit';
+  /** bold body (font-bold) — the canonical link weight in this app */
+  bold?: boolean;
+  /** hover affordance: underline (default), a hover colour, or none */
+  hover?: 'underline' | 'accent' | 'secondary' | 'none';
+}
+
+export const TextLink = React.forwardRef<HTMLButtonElement, TextLinkProps>(
+  ({ size, tone = 'accent', bold = false, hover = 'underline', className = '', ...props }, ref) => {
+    const sizes = { sm: 'text-micro', md: 'text-caption' };
+    const tones = {
+      accent: 'text-[var(--color-accent)]',
+      danger: 'text-[var(--color-danger)]',
+      success: 'text-[var(--color-success)]',
+      tertiary: 'text-[var(--color-text-tertiary)]',
+      inherit: '',
+    };
+    const hovers = {
+      underline: 'hover:underline',
+      accent: 'hover:text-[var(--color-accent-hover)]',
+      secondary: 'hover:text-[var(--color-text-secondary)]',
+      none: '',
+    };
+    return (
+      <button
+        type="button"
+        ref={ref}
+        className={`cursor-pointer ${size ? sizes[size] : ''} ${tones[tone]} ${
+          bold ? 'font-bold' : ''
+        } ${hovers[hover]} ${FOCUS_RING} ${className}`}
+        {...props}
+      />
+    );
+  },
+);
+TextLink.displayName = 'TextLink';
+
+interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** REQUIRED accessible name — an icon-only control has no visible text */
+  label: string;
+  /** padding step: xs p-1 · sm p-1.5 · md p-2 (omit for padding-free glyphs) */
+  size?: 'xs' | 'sm' | 'md';
+  radius?: 'md' | 'lg' | 'xl' | '2xl' | 'full';
+  tone?: 'danger' | 'accent' | 'tertiary' | 'secondary' | 'inherit';
+  /** hover material: wash = soft background, bright = brightness, plain = ink shift */
+  surface?: 'wash' | 'bright' | 'plain' | 'plainMuted' | 'none';
+  /** subtle glass stroke (border-glass-light-stroke) */
+  border?: boolean;
+  /** default true — pass false only to reproduce legacy no-transition buttons */
+  motion?: boolean;
+}
+
+export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
+  (
+    {
+      label,
+      size,
+      radius,
+      tone = 'tertiary',
+      surface = 'bright',
+      border = false,
+      motion = true,
+      className = '',
+      ...props
+    },
+    ref,
+  ) => {
+    const sizes = { xs: 'p-1', sm: 'p-1.5', md: 'p-2' };
+    const radii = {
+      md: 'rounded-md',
+      lg: 'rounded-lg',
+      xl: 'rounded-xl',
+      '2xl': 'rounded-2xl',
+      full: 'rounded-full',
+    };
+    // tone ink × hover material — the exact pairs the hand-rolled corpus used
+    const ink: Record<string, string> = {
+      danger: 'text-[var(--color-danger)]',
+      accent: 'text-[var(--color-accent)]',
+      tertiary: 'text-[var(--color-text-tertiary)]',
+      secondary: 'text-[var(--color-text-secondary)]',
+      inherit: '',
+    };
+    const material: Record<string, string> = {
+      'danger:wash': 'hover:bg-[var(--color-danger-soft)]/40',
+      'danger:bright': 'hover:brightness-105',
+      'accent:wash': 'hover:bg-[var(--color-accent-soft)]',
+      'accent:bright': 'hover:brightness-105',
+      'tertiary:bright': 'hover:brightness-105',
+      'tertiary:plain': 'hover:text-[var(--color-text-primary)]',
+      'tertiary:plainMuted': 'hover:text-[var(--color-text-secondary)]',
+      'secondary:bright': 'hover:brightness-105 hover:text-[var(--color-text-primary)]',
+      'secondary:plain': 'hover:text-[var(--color-text-primary)]',
+      'inherit:bright': '',
+      'inherit:none': '',
+    };
+    return (
+      <button
+        type="button"
+        ref={ref}
+        aria-label={label}
+        className={`cursor-pointer ${
+          size ? sizes[size] : ''
+        } ${radius ? radii[radius] : ''} ${ink[tone]} ${material[`${tone}:${surface}`] ?? ''} ${
+          border ? 'border border-[var(--color-glass-light-stroke)]' : ''
+        } ${motion ? 'transition-all' : ''} ${FOCUS_RING} ${className}`}
+        {...props}
+      />
+    );
+  },
+);
+IconButton.displayName = 'IconButton';
+
+interface PillButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** fill family — the pill's background + default ink */
+  fill:
+    'accent-soft' | 'danger-soft' | 'success-soft' | 'info-soft' | 'accent-solid' | 'warning-solid';
+  /** padding step: xs px-2 py-1 · sm px-2.5 py-1.5 · md px-3 py-1.5 · lg px-3.5 py-1.5 · xl px-5 py-2.5 · none = supply your own (className) */
+  size?: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  radius?: 'sm' | 'md' | 'lg' | 'xl';
+  /** role typography: micro (12px, default) · caption (13px) · label (14px) */
+  text?: 'micro' | 'caption' | 'label';
+  weight?: 'bold' | 'black';
+  /** ink override — defaults come from the fill family */
+  textColor?: 'accent' | 'danger' | 'success' | 'onSolid' | 'primary' | 'warning' | 'inherit';
+  /** no transition is baked: pass transition-all (hover fades) or
+      transition-colors in className — the legacy corpus used both */
+}
+
+export const PillButton = React.forwardRef<HTMLButtonElement, PillButtonProps>(
+  (
+    {
+      fill,
+      size = 'sm',
+      radius = 'lg',
+      text = 'micro',
+      weight = 'bold',
+      textColor,
+      className = '',
+      ...props
+    },
+    ref,
+  ) => {
+    const fills = {
+      'accent-soft': 'bg-[var(--color-accent-soft)]',
+      'danger-soft': 'bg-[var(--color-danger-soft)]/40',
+      'success-soft': 'bg-[var(--color-success-soft)]',
+      'info-soft': 'bg-[var(--color-info-soft)]/80',
+      'accent-solid': 'bg-[var(--color-accent-solid)]',
+      'warning-solid': 'bg-[var(--color-warning-solid)]',
+    };
+    const defaultInk = {
+      'accent-soft': 'accent',
+      'danger-soft': 'danger',
+      'success-soft': 'success',
+      'info-soft': 'onSolid',
+      'accent-solid': 'onSolid',
+      'warning-solid': 'onSolid',
+    } as const;
+    const sizes = {
+      xs: 'px-2 py-1',
+      sm: 'px-2.5 py-1.5',
+      md: 'px-3 py-1.5',
+      lg: 'px-3.5 py-1.5',
+      xl: 'px-5 py-2.5',
+    };
+    const radii = { sm: 'rounded-sm', md: 'rounded-md', lg: 'rounded-lg', xl: 'rounded-xl' };
+    const texts = { micro: 'text-micro', caption: 'text-caption', label: 'text-label' };
+    const inks = {
+      accent: 'text-[var(--color-accent)]',
+      danger: 'text-[var(--color-danger)]',
+      success: 'text-[var(--color-success)]',
+      onSolid: 'text-[var(--color-text-on-solid)]',
+      primary: 'text-[var(--color-text-primary)]',
+      warning: 'text-[var(--color-warning)]',
+      inherit: '',
+    };
+    const ink = inks[textColor ?? defaultInk[fill]];
+    return (
+      <button
+        type="button"
+        ref={ref}
+        className={`cursor-pointer ${fills[fill]} ${size === 'none' ? '' : sizes[size]} ${
+          radii[radius]
+        } ${texts[text]} ${weight === 'bold' ? 'font-bold' : 'font-black'} ${ink} ${FOCUS_RING} ${className}`}
+        {...props}
+      />
+    );
+  },
+);
+PillButton.displayName = 'PillButton';
 
 /* ==========================================
    2. CARD COMPONENT
@@ -301,6 +513,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             type={type}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={
+              error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
+            }
             className={`w-full ${sizeBase} glx-inset field hover:brightness-105 border outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${icon ? 'pr-11' : ''} ${trailing ? 'pl-11' : ''} ${className}`}
             {...props}
           />
@@ -316,13 +532,21 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
+          <p
+            id={`${inputId}-error`}
+            className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1"
+          >
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{error}</span>
           </p>
         )}
         {!error && helperText && (
-          <p className="text-micro text-[var(--color-text-tertiary)] font-semibold">{helperText}</p>
+          <p
+            id={`${inputId}-helper`}
+            className="text-micro text-[var(--color-text-tertiary)] font-semibold"
+          >
+            {helperText}
+          </p>
         )}
       </div>
     );
@@ -463,6 +687,8 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           onClick={() => setOpen(!open)}
           aria-haspopup="listbox"
           aria-expanded={open}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${dropdownId}-error` : undefined}
           aria-controls={open ? `${dropdownId}-list` : undefined}
           className={`relative w-full flex items-center justify-between glx field border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:outline-hidden focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${
             compact ? 'px-2.5 py-1.5 text-caption' : 'px-3.5 py-2.5 text-label'
@@ -533,7 +759,10 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
           document.body,
         )}
         {error && (
-          <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
+          <p
+            id={`${dropdownId}-error`}
+            className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1"
+          >
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{error}</span>
           </p>
@@ -1245,6 +1474,10 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           rows={rows}
           value={value}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={
+            error ? `${fieldId}-error` : helperText ? `${fieldId}-helper` : undefined
+          }
           className={`w-full ${sizeBase} glx-inset field hover:brightness-105 border outline-hidden focus:border-[var(--color-accent)] transition-all text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] resize-y leading-relaxed ${error ? 'border-[var(--color-danger)] focus:border-[var(--color-danger)]' : 'border-[var(--color-glass-light-stroke)]'} ${className}`}
           {...props}
         />
@@ -1258,13 +1491,21 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           </p>
         )}
         {error && (
-          <p className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1">
+          <p
+            id={`${fieldId}-error`}
+            className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1"
+          >
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{error}</span>
           </p>
         )}
         {!error && helperText && (
-          <p className="text-micro text-[var(--color-text-tertiary)] font-semibold">{helperText}</p>
+          <p
+            id={`${fieldId}-helper`}
+            className="text-micro text-[var(--color-text-tertiary)] font-semibold"
+          >
+            {helperText}
+          </p>
         )}
       </div>
     );
@@ -1307,7 +1548,7 @@ export const Toggle = ({
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border px-0.5 transition-all cursor-pointer select-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] ${
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border px-0.5 transition-all cursor-pointer select-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] ${
           checked
             ? 'bg-[var(--color-accent-solid)] border-transparent'
             : 'glx-inset border-[var(--color-glass-light-stroke)]'

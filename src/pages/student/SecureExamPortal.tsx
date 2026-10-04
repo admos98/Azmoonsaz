@@ -20,7 +20,7 @@ import {
   clearQueueForToken,
   getQueuedAnswers,
 } from '../../services/offlineAnswerQueue';
-import { ConfirmDialog } from '../../components/UIComponents';
+import { ConfirmDialog, PillButton, TextLink } from '../../components/UIComponents';
 
 type Phase = 'login' | 'ready' | 'take' | 'submitted';
 
@@ -251,13 +251,9 @@ export default function SecureExamPortal({
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onBackToTeacher}
-            className="text-caption font-bold text-[var(--color-accent)] hover:underline"
-          >
+          <TextLink size="md" bold onClick={onBackToTeacher}>
             بازگشت به پنل معلم
-          </button>
+          </TextLink>
         </div>
       </header>
 
@@ -371,11 +367,15 @@ export default function SecureExamPortal({
                     <span className="font-bold">
                       {toPersianDigits(queuedCount)} پاسخ همگام‌نشده (آفلاین)
                     </span>
-                    <button
-                      type="button"
+                    <PillButton
+                      fill="warning-solid"
+                      size="xs"
+                      radius="lg"
+                      weight="black"
+                      textColor="warning"
                       onClick={handleSyncQueued}
                       disabled={syncing}
-                      className="bg-[var(--color-warning-solid)] hover:bg-[var(--color-warning-solid)] px-2 py-1 rounded-lg font-black text-[var(--color-warning)] inline-flex items-center gap-1 cursor-pointer transition-colors"
+                      className="hover:bg-[var(--color-warning-solid)] inline-flex items-center gap-1 transition-colors"
                     >
                       {syncing ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -383,7 +383,7 @@ export default function SecureExamPortal({
                         <RefreshCw className="w-3.5 h-3.5" />
                       )}
                       همگام‌سازی الآن
-                    </button>
+                    </PillButton>
                   </div>
                 ) : (
                   <div

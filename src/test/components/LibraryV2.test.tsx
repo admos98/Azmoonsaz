@@ -13,12 +13,15 @@ import {
   DifficultyBadge,
   EmptyState,
   FilterBar,
+  IconButton,
   PageHeader,
+  PillButton,
   SearchInput,
   StatCard,
   StatusBadge,
   Table,
   Textarea,
+  TextLink,
   Toast,
   ToastStack,
   Toggle,
@@ -53,7 +56,14 @@ describe('StatCard', () => {
   });
 
   it('renders the footnote with tone', () => {
-    render(<StatCard label="l" value={1} footnote="پاسخ‌های تشریحی در انتظار نمره" footnoteTone="danger" />);
+    render(
+      <StatCard
+        label="l"
+        value={1}
+        footnote="پاسخ‌های تشریحی در انتظار نمره"
+        footnoteTone="danger"
+      />,
+    );
     expect(screen.getByText('پاسخ‌های تشریحی در انتظار نمره')).toBeInTheDocument();
   });
 });
@@ -159,7 +169,12 @@ describe('Table onRetry', () => {
   it('renders the designed retry button instead of a page reload', () => {
     const onRetry = vi.fn();
     render(
-      <Table headers={[{ key: 'a', label: 'A' }]} data={[]} renderRow={() => null} onRetry={onRetry} />,
+      <Table
+        headers={[{ key: 'a', label: 'A' }]}
+        data={[]}
+        renderRow={() => null}
+        onRetry={onRetry}
+      />,
     );
     const btn = screen.getByRole('button', { name: /تلاش دوباره/ });
     fireEvent.click(btn);
@@ -185,5 +200,84 @@ describe('Toast / ToastStack layout contract', () => {
     const stack = first.parentElement!;
     expect(stack.className).toContain('fixed');
     expect(stack.className).toContain('flex-col');
+  });
+});
+
+describe('Micro controls — TextLink / IconButton / PillButton (F-6 primitives)', () => {
+  const RING = 'focus-visible:outline-[var(--color-focus-ring)]';
+
+  it('TextLink composes size/tone/weight/hover and stays a typed button', () => {
+    render(
+      <TextLink size="sm" bold>
+        فراموشی رمز
+      </TextLink>,
+    );
+    const b = screen.getByRole('button', { name: 'فراموشی رمز' });
+    expect(b.className).toContain('cursor-pointer');
+    expect(b.className).toContain('text-micro');
+    expect(b.className).toContain('text-[var(--color-accent)]');
+    expect(b.className).toContain('font-bold');
+    expect(b.className).toContain('hover:underline');
+    expect(b.className).toContain(RING);
+    expect(b.getAttribute('type')).toBe('button');
+    // size omitted = inherit parent size (no text-* class emitted)
+    const bare = render(
+      <TextLink tone="danger" hover="none">
+        حذف
+      </TextLink>,
+    );
+    const b2 = bare.container.querySelector('button')!;
+    expect(b2.className).not.toMatch(/text-(micro|caption)/);
+    expect(b2.className).toContain('text-[var(--color-danger)]');
+    expect(b2.className).not.toContain('hover:underline');
+  });
+
+  it('IconButton requires its accessible name and maps tone×surface', () => {
+    render(
+      <IconButton
+        label="باز کردن گذرواژه"
+        size="xs"
+        tone="tertiary"
+        surface="plain"
+        motion={false}
+      />,
+    );
+    const b = screen.getByRole('button', { name: 'باز کردن گذرواژه' });
+    expect(b.className).toContain('p-1');
+    expect(b.className).toContain('text-[var(--color-text-tertiary)]');
+    expect(b.className).toContain('hover:text-[var(--color-text-primary)]');
+    expect(b.className).not.toContain('transition-all'); // motion=false (legacy parity)
+    expect(b.className).toContain(RING);
+    // danger wash is the destructive row-action pair
+    const c = render(<IconButton label="حذف" tone="danger" surface="wash" radius="lg" />);
+    const b2 = c.container.querySelector('button')!;
+    expect(b2.className).toContain('text-[var(--color-danger)]');
+    expect(b2.className).toContain('hover:bg-[var(--color-danger-soft)]/40');
+    expect(b2.className).toContain('rounded-lg');
+    expect(b2.className).toContain('transition-all'); // motion defaults on
+  });
+
+  it('PillButton composes fill family, default ink, and size ladder', () => {
+    render(<PillButton fill="danger-soft">حذف آزمون</PillButton>);
+    const b = screen.getByRole('button', { name: 'حذف آزمون' });
+    expect(b.className).toContain('bg-[var(--color-danger-soft)]/40');
+    expect(b.className).toContain('text-[var(--color-danger)]'); // default ink from fill
+    expect(b.className).toContain('px-2.5 py-1.5'); // default size sm
+    expect(b.className).toContain('rounded-lg');
+    expect(b.className).toContain('text-micro');
+    expect(b.className).toContain('font-bold');
+    expect(b.className).toContain(RING);
+    // solid fill flips ink to on-solid unless overridden
+    const c = render(
+      <PillButton fill="warning-solid" textColor="primary" size="lg" text="caption" weight="black">
+        شروع
+      </PillButton>,
+    );
+    const b2 = c.container.querySelector('button')!;
+    expect(b2.className).toContain('bg-[var(--color-warning-solid)]');
+    expect(b2.className).toContain('text-[var(--color-text-primary)]');
+    expect(b2.className).toContain('px-3.5 py-1.5');
+    expect(b2.className).toContain('text-caption');
+    expect(b2.className).toContain('font-black');
   });
 });

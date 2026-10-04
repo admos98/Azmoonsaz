@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GraduationCap, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import { Input } from '../../components/UIComponents';
+import { IconButton, Input, TextLink } from '../../components/UIComponents';
 import { getSupabasePublicClient } from '../../lib/supabasePublic';
 
 interface ResetPasswordProps {
@@ -134,13 +134,9 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <p className="text-label text-[var(--color-danger)]">
               {error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}
             </p>
-            <button
-              type="button"
-              onClick={onDone}
-              className="text-caption text-[var(--color-accent)] font-bold hover:underline cursor-pointer"
-            >
+            <TextLink size="md" bold onClick={onDone}>
               بازگشت به ورود
-            </button>
+            </TextLink>
           </div>
         </div>
       </div>
@@ -171,14 +167,17 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
               placeholder="حداقل ۶ کاراکتر"
               icon={<Lock className="w-4 h-4" />}
               trailing={
-                <button
-                  type="button"
-                  aria-label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                <IconButton
+                  label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                  size="xs"
+                  radius="md"
+                  tone="tertiary"
+                  surface="plainMuted"
+                  motion={false}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="p-1 rounded-md text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                </IconButton>
               }
               autoFocus
             />
@@ -197,13 +196,15 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
               {loading ? 'در حال ذخیره...' : 'ذخیره رمز جدید'}
             </button>
 
-            <button
-              type="button"
+            <TextLink
+              size="md"
+              tone="tertiary"
+              hover="secondary"
               onClick={onDone}
-              className="w-full text-center text-caption text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] cursor-pointer"
+              className="w-full text-center"
             >
               بازگشت به ورود
-            </button>
+            </TextLink>
           </form>
         </div>
       </div>

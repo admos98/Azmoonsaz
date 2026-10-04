@@ -15,7 +15,13 @@ import {
   Calendar,
   Play,
 } from 'lucide-react';
-import { Button, EmptyState, PageHeader, StatusBadge } from '../../components/UIComponents';
+import {
+  Button,
+  EmptyState,
+  PageHeader,
+  PillButton,
+  StatusBadge,
+} from '../../components/UIComponents';
 import { Exam } from '../../types';
 import { examService } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -323,25 +329,29 @@ export default function Exams({
                   {/* Status switcher actions */}
                   <div className="flex items-center">
                     {ex.status === 'draft' && (
-                      <button
-                        type="button"
+                      <PillButton
+                        fill="accent-soft"
+                        size="sm"
+                        radius="lg"
                         id={`ex-act-${ex.id}`}
                         onClick={() => handleStatusChange(ex.id, 'active')}
-                        className="px-2.5 py-1.5 bg-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)]/50 text-[var(--color-accent)] font-bold text-micro rounded-lg border border-[var(--color-accent)]/20 flex items-center gap-1 cursor-pointer animate-pulse"
+                        className="hover:bg-[var(--color-accent-soft)]/50 border border-[var(--color-accent)]/20 flex items-center gap-1 animate-pulse"
                       >
                         <Play className="w-3 h-3" />
                         <span>فعال‌سازی آزمون</span>
-                      </button>
+                      </PillButton>
                     )}
                     {ex.status === 'active' && (
-                      <button
-                        type="button"
+                      <PillButton
+                        fill="danger-soft"
+                        size="sm"
+                        radius="lg"
                         id={`ex-comp-${ex.id}`}
                         onClick={() => handleStatusChange(ex.id, 'completed')}
-                        className="px-2.5 py-1.5 bg-[var(--color-danger-soft)] hover:bg-[var(--color-danger-soft)]/50 text-[var(--color-danger)] font-bold text-micro rounded-lg border border-[var(--color-danger)]/10 flex items-center gap-1 cursor-pointer"
+                        className="hover:bg-[var(--color-danger-soft)]/50 border border-[var(--color-danger)]/10 flex items-center gap-1"
                       >
                         <span>اتمام برگزاری آزمون</span>
-                      </button>
+                      </PillButton>
                     )}
                     {ex.status === 'completed' && (
                       <span className="text-micro text-[var(--color-success)] font-semibold bg-[var(--color-success-soft)] px-2.5 py-1 rounded-md">
