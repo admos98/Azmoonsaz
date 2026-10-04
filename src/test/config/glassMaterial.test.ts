@@ -562,6 +562,13 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/\.btn-glass--danger\.modal-close\s*{\s*--btn-tint-mix:\s*28%/);
     expect(css).toMatch(/\.btn-glass--danger\.modal-close:hover,[\s\S]*?--btn-tint-mix:\s*72%/);
     expect(component('src/components/UIComponents.tsx')).toMatch(/btn-glass--danger modal-close/);
+    // notif + palette X carry the same red dismiss treatment (bare grey read
+    // as disabled next to the red modal X)
+    expect(component('src/components/Topbar.tsx')).toMatch(/btn-glass--danger modal-close/);
+    expect(component('src/components/CommandPalette.tsx')).toMatch(/btn-glass--danger modal-close/);
+    // menu hover runs ONE light turn (parked cursor drove 9s of full url()
+    // re-runs per hover on the densest panels); page buttons keep 3 turns
+    expect(css).toMatch(/\[id\^='hamburger-panel-'\] \.btn-glass:hover,[\s\S]*?animation-iteration-count:\s*1/);
     // primary CTA = brand Ink (the Mark's solid-fill colour), not the accent
     expect(css).toMatch(/\.btn-glass--primary\s*{\s*--btn-tint:\s*var\(--color-ink\)[^}]*/s);
     expect(css).toMatch(/\.btn-glass--primary\s*{[^}]*--btn-tint-mix:\s*24%/);

@@ -793,7 +793,7 @@ export default function Topbar({
                     type="button"
                     onClick={closeNotifications}
                     aria-label="بستن"
-                    className="btn-glass btn-glass--bare grid h-8 w-8 place-items-center rounded-full cursor-pointer text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                    className="btn-glass btn-glass--danger modal-close grid h-8 w-8 place-items-center rounded-full cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>

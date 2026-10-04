@@ -1784,6 +1784,16 @@ button {
     transform 80ms ease-out,
     filter 120ms ease-out;
 }
+/* menu hover runs ONE light turn, not three: a parked cursor on a menu item
+   otherwise drives compositor frames (and full url() re-runs on the densest
+   panels) for 9s per hover. One 3s sweep reads the same — the circuit ends at
+   the rest angle either way — and re-hover replays it. Scoped to the floating
+   menu panels; page buttons keep their 3 turns. */
+[id^='hamburger-panel-'] .btn-glass:hover,
+[id='notification-dropdown'] .btn-glass:hover,
+[role='listbox'] .btn-glass:hover {
+  animation-iteration-count: 1;
+}
 /* modal X: red glass at rest so it reads as dismiss, near-solid red fill +
    white glyph on hover so it stands out. Scoped to .modal-close — other
    danger buttons keep the quiet 16% wash. */

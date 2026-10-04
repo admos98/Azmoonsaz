@@ -279,7 +279,7 @@ export default function CommandPalette({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="btn-glass btn-glass--danger grid h-9 w-9 shrink-0 place-items-center rounded-full cursor-pointer"
+                className="btn-glass btn-glass--danger modal-close grid h-9 w-9 shrink-0 place-items-center rounded-full cursor-pointer"
                 aria-label="بستن"
               >
                 <X className="h-4 w-4" />
