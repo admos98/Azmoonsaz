@@ -22,6 +22,7 @@ import {
   PillButton,
   StatusBadge,
 } from '../../components/UIComponents';
+import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { Exam } from '../../types';
 import { examService } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -366,6 +367,7 @@ export default function Exams({
             <div className="col-span-full">
               <EmptyState
                 icon={<FileText className="w-6 h-6" />}
+                art={<EmptyStateArt kind="exams" />}
                 title="آزمونی یافت نشد"
                 description="هیچ آزمونی با ویژگی‌های بالا یافت نشد. اولین سنجش خود را راه‌اندازی کنید."
                 action={

@@ -29,6 +29,7 @@ import {
   TextLink,
 } from '../../components/UIComponents';
 import { TheMark } from '../../components/TheMark';
+import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
 import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext';
 import { useToast } from '../../hooks/useToast';
@@ -418,6 +419,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 /* 7. Exams Empty State */
                 <EmptyState
                   icon={<FileText className="w-8 h-8" />}
+                  art={<EmptyStateArt kind="exams" />}
                   title="هیچ آزمونی برای نمایش یافت نشد!"
                   description="در حال حاضر هیچ آزمون فعالی تعریف نگردیده است. با فشردن دکمه طراح زیر، اولین سنجش تحصیلی هماهنگ خود را پایه‌ریزی کنید."
                   actionFirst
@@ -590,6 +592,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 /* 7. Submissions / Students Empty State */
                 <EmptyState
                   icon={<Users className="w-8 h-8" />}
+                  art={<EmptyStateArt kind="students" />}
                   title="موردی برای تصحیح یافت نشد!"
                   description="هیچ دانش‌آموزی در کلاس جاری ثبت‌نام نشده یا پاسخی دریافت نگردیده است. شما می‌توانید فایل اکسل رسمی دانش‌آموزان را برای شروع بارگذاری کنید."
                   actionFirst

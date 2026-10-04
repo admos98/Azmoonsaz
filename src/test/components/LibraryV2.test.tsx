@@ -26,6 +26,8 @@ import {
   ToastStack,
   Toggle,
 } from '../../components/UIComponents';
+import { EmptyStateArt } from '../../components/EmptyStateArt';
+import { ThemeProvider } from '../../contexts/ThemeContext';
 
 describe('PageHeader', () => {
   it('renders an h1 by default (one h1 per page)', () => {
@@ -299,5 +301,45 @@ describe('Micro controls — TextLink / IconButton / PillButton (F-6 primitives)
     );
     const block = d.container.querySelector('div.space-y-1')!;
     expect([...block.children].map((el) => el.tagName)).toEqual(['H4', 'P']);
+  });
+
+  it('EmptyStateArt picks the per-theme pack and stays out of AT (1K)', () => {
+    render(
+      <ThemeProvider>
+        <EmptyStateArt kind="students" size={96} />
+      </ThemeProvider>,
+    );
+    const img = document.querySelector('img')!;
+    expect(img.getAttribute('src')).toMatch(/^\/empty-art\/(light|dark)\/01-students\.png$/);
+    expect(img.getAttribute('alt')).toBe('');
+    expect(img.getAttribute('aria-hidden')).toBe('true');
+    expect(img.getAttribute('width')).toBe('96');
+    expect(img.getAttribute('height')).toBe('96');
+  });
+
+  it('EmptyState renders art above the title; compact stays icon-only', () => {
+    const page = render(
+      <EmptyState
+        title="T"
+        description="D"
+        art={<img alt="" src="/empty-art/light/06-classes.png" />}
+      />,
+    );
+    const img = page.container.querySelector('img')!;
+    const h4 = page.container.querySelector('h4')!;
+    // art sits above the title in DOM order
+    expect(img.compareDocumentPosition(h4) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // compact ignores art entirely — icon circle only
+    const compact = render(
+      <EmptyState
+        compact
+        title="t"
+        description="d"
+        icon={<span data-testid="icon">ic</span>}
+        art={<img alt="" src="/empty-art/light/06-classes.png" />}
+      />,
+    );
+    expect(compact.container.querySelector('img')).toBeNull();
+    expect(compact.container.querySelector('[data-testid="icon"]')).not.toBeNull();
   });
 });

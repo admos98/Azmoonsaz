@@ -41,6 +41,7 @@ import {
   TextLink,
 } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
+import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { toPersianDigits } from '../../utils/persian';
 import { gradingService } from '../../services/api';
 import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext';
@@ -715,6 +716,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                 data={filteredRows}
                 emptyTitle="هیچ داوطلبی یافت نشد"
                 emptyDesc="هیچ داوطلبی مطابق فیلترهای کنونی در پایگاه داده پیدا نشد."
+                emptyArt={<EmptyStateArt kind="grading" />}
                 onRetry={() => void reload('submissions')}
                 renderRow={(row) => {
                   const hasSubmitted = row.status === 'submitted';

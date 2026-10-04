@@ -1068,6 +1068,9 @@ interface EmptyStateProps {
   /** CTA directly under the title — for panels whose action would otherwise
       clip at the viewport bottom (Round-1 1E) */
   actionFirst?: boolean;
+  /** Real empty-state illustration above the title (EmptyStateArt).
+      Page-level states only — compact stays icon-only (Round-1 1K). */
+  art?: React.ReactNode;
 }
 
 export const EmptyState = ({
@@ -1077,6 +1080,7 @@ export const EmptyState = ({
   action,
   compact = false,
   actionFirst = false,
+  art,
 }: EmptyStateProps) => {
   return (
     <div
@@ -1084,13 +1088,17 @@ export const EmptyState = ({
         compact ? 'p-6 md:p-8 space-y-2.5 rounded-2xl' : 'p-10 md:p-14 space-y-4 rounded-3xl'
       }`}
     >
-      <div
-        className={`bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-full ${
-          compact ? 'p-2.5' : 'p-4'
-        }`}
-      >
-        {icon || <HelpCircle className={compact ? 'w-5 h-5' : 'w-8 h-8'} />}
-      </div>
+      {!compact && art ? (
+        art
+      ) : (
+        <div
+          className={`bg-[var(--color-accent-soft)] text-[var(--color-accent)] rounded-full ${
+            compact ? 'p-2.5' : 'p-4'
+          }`}
+        >
+          {icon || <HelpCircle className={compact ? 'w-5 h-5' : 'w-8 h-8'} />}
+        </div>
+      )}
       <div className={`space-y-1 w-full ${compact ? 'max-w-xs' : 'max-w-sm'}`}>
         <h4
           className={`font-bold text-[var(--color-text-primary)] ${
@@ -1192,6 +1200,8 @@ interface TableProps<T> {
   emptyTitle?: string;
   emptyDesc?: string;
   emptyAction?: React.ReactNode;
+  /** Illustration for the empty state (EmptyStateArt) — page-level tables */
+  emptyArt?: React.ReactNode;
   /** Standard retry handler — renders the designed retry button in the empty state.
    *  The design system never falls back to a full page reload. */
   onRetry?: () => void;
@@ -1205,6 +1215,7 @@ export const Table = <T,>({
   emptyTitle = 'هیچ اطلاعاتی یافت نشد',
   emptyDesc = 'اطلاعاتی سازگار با فیلترهای کنونی در سیستم وجود ندارد.',
   emptyAction,
+  emptyArt,
   onRetry,
 }: TableProps<T>) => {
   if (data.length === 0) {
@@ -1212,6 +1223,7 @@ export const Table = <T,>({
       <EmptyState
         title={emptyTitle}
         description={emptyDesc}
+        art={emptyArt}
         action={
           emptyAction ??
           (onRetry ? (

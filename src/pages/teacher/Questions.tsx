@@ -47,6 +47,7 @@ import {
   Textarea,
   TextLink,
 } from '../../components/UIComponents';
+import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
@@ -1336,6 +1337,7 @@ export default function Questions() {
             <div id="empty-questions">
               <EmptyState
                 icon={<HelpCircle className="w-8 h-8" />}
+                art={<EmptyStateArt kind="questions" />}
                 title="هیچ سوالی با فیلترهای بالا همخوانی ندارد"
                 description="می‌توانید فیلترهای جستجو، سطح سختی یا نوع سوالات را تغییر دهید یا نسبت به افزودن سوال جدید به مخزن اقدام کنید."
               />
