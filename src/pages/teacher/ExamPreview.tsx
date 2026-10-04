@@ -806,7 +806,7 @@ export default function ExamPreview({
                       <span className="bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] font-extrabold rounded-md px-2.5 py-0.5 text-micro">
                         بخش {toPersianDigits(sIdx + 1)}
                       </span>
-                      <h4 className="text-caption font-slate-800 font-extrabold">
+                      <h4 className="text-caption text-[var(--color-text-primary)] font-extrabold">
                         {section.title}
                       </h4>
                     </div>

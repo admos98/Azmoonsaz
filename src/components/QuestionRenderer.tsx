@@ -40,7 +40,7 @@ export default function QuestionRenderer({
       return 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/15';
     if (diff === 'hard')
       return 'bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] border-[var(--color-danger)]/20';
-    return 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-amber-150';
+    return 'bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/20';
   };
 
   const getTypeNameInPersian = (type: QuestionType | undefined): string => {

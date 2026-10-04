@@ -7,10 +7,16 @@ import { fileURLToPath } from 'node:url';
 const root = join(fileURLToPath(new URL('../', import.meta.url)), '.');
 const sourceRoot = join(root, 'src');
 const violations = [];
+// Neutrals-only (original three) extended to the FULL palette + gradient
+// stops + accent: violet-50 / emerald-500 / slate-800 / amber-150 all
+// bypass the semantic light/dark theme (Round-1 1J audit). white/black
+// stay banned via the first three patterns; gradients made purely from
+// var() tokens remain legal.
 const forbidden = [
   /\bbg-(?:white|gray|slate|zinc|neutral|stone)(?:-[0-9]+)?(?:\/[0-9]+)?\b/g,
   /\bborder-(?:black|white|gray|slate|zinc|neutral|stone)(?:-[0-9]+)?(?:\/[0-9]+)?\b/g,
   /\btext-(?:black|white|gray|slate|zinc|neutral|stone)(?:-[0-9]+)?(?:\/[0-9]+)?\b/g,
+  /\b(?:bg|text|border|from|via|to|ring|fill|stroke|accent|font)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-[0-9]{1,3})?(?:\/[0-9]+)?\b/g,
 ];
 
 function walk(directory) {

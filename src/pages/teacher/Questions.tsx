@@ -1698,7 +1698,7 @@ export default function Questions() {
                             name="drawer-opt-correct"
                             checked={opt.isCorrect}
                             onChange={() => handleOptionCorrectChange(oIdx)}
-                            className="w-4 h-4 text-[var(--color-success)] border-[var(--color-glass-light-stroke)] cursor-pointer accent-emerald-500"
+                            className="w-4 h-4 text-[var(--color-success)] border-[var(--color-glass-light-stroke)] cursor-pointer accent-[var(--color-success)]"
                           />
                           <span
                             className={

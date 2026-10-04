@@ -426,7 +426,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
         {/* Right Columns (2/3 width) - Content Inputs and Custom Options */}
         <div className="lg:col-span-2 space-y-6">
           {/* A. Recommended Option Panel (One-click template helper) */}
-          <div className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent)] text-[var(--color-text-on-solid)] p-5 rounded-3xl relative overflow-hidden shadow-xs">
+          <div className="bg-[var(--color-accent-solid)] text-[var(--color-text-on-solid)] p-5 rounded-3xl relative overflow-hidden shadow-xs">
             <div className="absolute top-0 left-0 translate-x-1/10 -translate-y-1/10 opacity-10">
               <Compass className="w-48 h-48" />
             </div>
