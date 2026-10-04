@@ -34,7 +34,11 @@ VIOLET = "#7A6AD6"
 
 THEMES = {
     "light": dict(page="#f2efe8", line=INK, grain=INK, bloom=GOLD,
-                  line_a=0.10, gold_a=0.42, grain_a=0.05, lift="#FFFDF8"),
+                  # Round-1 parity: light drew its contours at dark's ALPHA,
+                  # but at cream luminance the eye needs a bigger delta to
+                  # see the same line (Weber) — 0.10 read as ~half of dark's
+                  # perceived weight. Cap ~0.20 or gutters get noisy.
+                  line_a=0.18, gold_a=0.55, grain_a=0.07, lift="#FFFDF8"),
     "dark":  dict(page="#131220", line=CREAM, grain=CREAM, bloom=VIOLET,
                   line_a=0.14, gold_a=0.55, grain_a=0.06, lift="#8C7AEB"),
 }
@@ -187,18 +191,18 @@ def build_D(theme):
 
     defs = f"""
     <radialGradient id="bloom" cx="0.62" cy="0.18" r="0.9">
-      <stop offset="0%" stop-color="{t['bloom']}" stop-opacity="{0.16 if theme=='light' else 0.22}"/>
-      <stop offset="55%" stop-color="{t['bloom']}" stop-opacity="{0.05 if theme=='light' else 0.07}"/>
+      <stop offset="0%" stop-color="{t['bloom']}" stop-opacity="{0.20 if theme=='light' else 0.22}"/>
+      <stop offset="55%" stop-color="{t['bloom']}" stop-opacity="{0.07 if theme=='light' else 0.07}"/>
       <stop offset="100%" stop-color="{t['bloom']}" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="pool" cx="0.04" cy="1.03" r="0.95">
-      <stop offset="0%" stop-color="{'#221E4A' if theme=='light' else '#000000'}" stop-opacity="{0.11 if theme=='light' else 0.5}"/>
+      <stop offset="0%" stop-color="{'#221E4A' if theme=='light' else '#000000'}" stop-opacity="{0.15 if theme=='light' else 0.5}"/>
       <stop offset="100%" stop-color="{'#221E4A' if theme=='light' else '#000000'}" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="fade" cx="0.6" cy="0.34" r="0.9">
       <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
-      <stop offset="70%" stop-color="#fff" stop-opacity="0.7"/>
-      <stop offset="100%" stop-color="#fff" stop-opacity="0.25"/>
+      <stop offset="70%" stop-color="#fff" stop-opacity="{0.8 if theme=='light' else 0.7}"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="{0.45 if theme=='light' else 0.25}"/>
     </radialGradient>
     <mask id="m"><rect width="{W}" height="{H}" fill="url(#fade)"/></mask>
     {grain(21, t['grain'])}"""
