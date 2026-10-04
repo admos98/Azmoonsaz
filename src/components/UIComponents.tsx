@@ -794,7 +794,7 @@ export const Modal = ({
                   type="button"
                   onClick={onClose}
                   aria-label="بستن پنجره"
-                  className="btn-glass btn-glass--danger grid h-9 w-9 shrink-0 place-items-center rounded-full cursor-pointer"
+                  className="btn-glass btn-glass--danger modal-close grid h-9 w-9 shrink-0 place-items-center rounded-full cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>

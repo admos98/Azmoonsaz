@@ -261,7 +261,7 @@
      (surface convex_squircle, bezel 14, thickness 72, radius 21,
      refraction 0.5, blur 1.0, specular 0.34/5/-55deg, rgb-dim 0.15).
      The dark theme changes exactly ONE number: --lens-dim. */
-  --lens-dim: 0.15; /* rgb-dim — per-channel wash IN the lens/pane filters */
+  --lens-dim: 0.10; /* rgb-dim — per-channel wash IN the lens/pane filters */
   /* Floating menu material — hamburger/notif panels read against the DENSEST
      content (hero type, busy cards). Apple's menus sit near 80% opacity:
      deeper dim + heavier blur than resting panels, still glass. These only
@@ -1758,6 +1758,42 @@ button {
 }
 .btn-glass--bare:active {
   --btn-tint-mix: 26%;
+}
+/* hamburger menu items read on the DENSEST glass (lens--menu, dim 0.14):
+   tertiary-on-tinted-glass measured grey-on-grey, so menu items carry the
+   brand ink at rest (theme-aware: near-black light, near-white dark). Hover
+   still materializes gold via the bare rule above (higher hover specificity
+   wins while hovering). Scoped to the hamburger panels — dropdown options
+   and other bare buttons keep their quiet tertiary rest. */
+[id^='hamburger-panel-'] .btn-glass--bare {
+  color: var(--color-ink);
+}
+/* bare hover is the menu-item hover too: faster (120ms, not 180ms) and more
+   subtle (8% wash, not 12%) — a tint breath, not a white-to-gold sweep. */
+.btn-glass--bare:hover,
+.btn-glass--bare:focus-visible {
+  --btn-tint-mix: 8%;
+  transition:
+    --btn-tint 120ms ease-out,
+    --btn-tint-mix 120ms ease-out,
+    --btn-sheen-a 120ms ease-out,
+    --btn-light-angle 120ms ease-out,
+    border-color 120ms ease-out,
+    box-shadow 120ms ease-out,
+    color 120ms ease-out,
+    transform 80ms ease-out,
+    filter 120ms ease-out;
+}
+/* modal X: red glass at rest so it reads as dismiss, near-solid red fill +
+   white glyph on hover so it stands out. Scoped to .modal-close — other
+   danger buttons keep the quiet 16% wash. */
+.btn-glass--danger.modal-close {
+  --btn-tint-mix: 28%;
+}
+.btn-glass--danger.modal-close:hover,
+.btn-glass--danger.modal-close:focus-visible {
+  --btn-tint-mix: 72%;
+  color: #fff;
 }
 /* a bare that NEVER materializes — no gold wash, no light circuit, no press
    tint. Only its rest state, the CSS transition, and its own shape morph

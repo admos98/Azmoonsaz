@@ -429,7 +429,7 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('the material family: six named surfaces, one design language', () => {
     const darkScope = ":root[data-theme='dark']";
     // ── tokens: the kube.io replica tune, 1:1 (playground export) ──
-    expect(token('--lens-dim')).toBe('0.15'); // rgb-dim IN the lens/pane filters
+    expect(token('--lens-dim')).toBe('0.10'); // rgb-dim IN the lens/pane filters (user: light panels too dark at 0.15)
     expect(token('--lens-dim', darkScope)).toBe('0.07'); // the ONE dark change (user: dark menu/dim band)
     expect(token('--glass-fill')).toBe('0'); // glassBg: transparent, like the playground
     expect(token('--glass-fill', ":root[data-glass='lite']")).toBe('0.32');
@@ -553,6 +553,15 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/\.btn-glass--bare:hover,\s*\.btn-glass--bare:focus-visible/);
     expect(css).toMatch(/--btn-tint:\s*var\(--color-gold\)/);
     expect(css).toMatch(/\.btn-glass--bare:active\s*{\s*--btn-tint-mix:\s*26%/);
+    // hamburger menu items carry brand ink at rest (tertiary-on-menu-glass
+    // read grey-on-grey); scoped to hamburger panels, bare stays quiet elsewhere
+    expect(css).toMatch(/\[id\^='hamburger-panel-'\] \.btn-glass--bare\s*{\s*color:\s*var\(--color-ink\)/);
+    // bare hover is faster (120ms) and subtler (8% wash) — a tint breath
+    expect(css).toMatch(/\.btn-glass--bare:hover,[\s\S]*?--btn-tint-mix:\s*8%/);
+    // modal X reads dismiss: red glass rest, near-solid red + white glyph hover
+    expect(css).toMatch(/\.btn-glass--danger\.modal-close\s*{\s*--btn-tint-mix:\s*28%/);
+    expect(css).toMatch(/\.btn-glass--danger\.modal-close:hover,[\s\S]*?--btn-tint-mix:\s*72%/);
+    expect(component('src/components/UIComponents.tsx')).toMatch(/btn-glass--danger modal-close/);
     // primary CTA = brand Ink (the Mark's solid-fill colour), not the accent
     expect(css).toMatch(/\.btn-glass--primary\s*{\s*--btn-tint:\s*var\(--color-ink\)[^}]*/s);
     expect(css).toMatch(/\.btn-glass--primary\s*{[^}]*--btn-tint-mix:\s*24%/);
