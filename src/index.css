@@ -1208,6 +1208,15 @@ select::-webkit-calendar-picker-indicator {
 .dashboard-hero-actions {
   display: flex;
   gap: 12px;
+  /* both buttons share one baseline: icon button and text button align on
+     the same cross-axis, and each label centers in its own box — no drift
+     between the icon row and the text row, stacked or not. */
+  align-items: stretch;
+}
+.dashboard-hero-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Login: supplied art on desktop, compact form-only experience on phones. */

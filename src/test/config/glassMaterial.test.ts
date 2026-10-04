@@ -271,6 +271,22 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('menus and notif center cast NOTHING: halo + veil layers are gone', () => {
     const topbar = component('src/components/Topbar.tsx');
     expect(topbar).not.toMatch(/area-blur|bgfx/);
+    // avatar name panel grows toward screen center on LOGICAL props (physical
+    // left/right sent it off-screen on mobile RTL); bell never shoved (the
+    // old rightward push drove it into the panel / off-screen)
+    expect(topbar).toMatch(/start-\[14px\]/);
+    expect(topbar).toMatch(/justify-end whitespace-nowrap/);
+    expect(topbar).not.toMatch(/translate-x-\[124px\]/);
+    // hero buttons share one cross-axis baseline (icon vs text drift on mobile)
+    expect(css).toMatch(/\.dashboard-hero-actions\s*\{[^}]*align-items:\s*stretch/s);
+    expect(css).toMatch(/\.dashboard-hero-actions > button\s*\{[^}]*justify-content:\s*center/s);
+    // hero light fields live INSIDE the panel (oversized blurred squares bled
+    // a sharp sliver past the rounded corner on mobile GPUs + cost fullscreen
+    // blur passes per frame)
+    const dash = component('src/pages/teacher/Dashboard.tsx');
+    expect(dash).toMatch(/w-\[20rem\] h-\[20rem\] max-w-full max-h-full/);
+    expect(dash).toMatch(/w-60 h-60 max-w-full max-h-full/);
+    expect(dash).not.toMatch(/w-\[28rem\]/);
     const ui = component('src/components/UIComponents.tsx');
     expect(ui).not.toMatch(/area-blur/);
     // and the utilities are dead in CSS too

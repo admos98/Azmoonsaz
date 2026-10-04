@@ -91,8 +91,13 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
         className="relative overflow-hidden p-6 md:p-10 rounded-3xl lens"
         id="dashboard-hero-banner"
       >
-        <div className="absolute top-0 right-0 w-[28rem] h-[28rem] bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[var(--color-accent-solid)]/8 rounded-full blur-[80px] filter" />
+        {/* Decorative light fields — sized to live INSIDE the panel. An oversized
+            blurred square bleeds past the rounded corner (a sharp square sliver
+            on some mobile GPUs, where clip + 100px blur misalign by a pixel)
+            and each one costs a full-screen-size blur pass per frame. Kept
+            fully within the hero box: same glow, no edge bleed, cheaper. */}
+        <div className="absolute top-0 right-0 w-[20rem] h-[20rem] max-w-full max-h-full bg-[var(--color-gold)]/10 rounded-full blur-[100px] filter" />
+        <div className="absolute bottom-0 left-0 w-60 h-60 max-w-full max-h-full bg-[var(--color-accent-solid)]/8 rounded-full blur-[80px] filter" />
 
         <div className="dashboard-hero-content relative z-10">
           <div className="dashboard-hero-copy text-right">
