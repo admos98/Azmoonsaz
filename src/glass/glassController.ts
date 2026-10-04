@@ -90,6 +90,54 @@ let domObserver: MutationObserver | null = null;
 let container: SVGDefsElement | null = null;
 let seq = 0;
 
+/* ── velocity gate: fast scroll parks the refraction ────────────────────
+   Scroll frames are mandatory and each one re-runs every url() graph (~80ms
+   at ~2M url-px on the dashboard). Above FAST_V_PX_S the bend is
+   imperceptible anyway (content smears past faster than eyes track
+   refraction — the iOS behaviour), so panels dress blur-only for the fast
+   stretch and the url() returns SETTLE_MS after the last scroll event.
+   Both flips ride the normal queueSync path against CACHED maps/filters, so
+   each is sub-frame string ops — no worker re-post, no flash, no pop at rest.
+   Hysteresis by design: fast is entered by velocity, exited ONLY by the
+   quiet timer, so threshold jitter can never flap strip/restore per second.
+   Slow/reading scrolls (< 400px/s) keep full refraction the whole time. */
+let scrollFast = false;
+let settleTimer = 0;
+let lastScrollY = 0;
+let lastScrollT = 0;
+const FAST_V_PX_S = 400;
+const SETTLE_MS = 150;
+
+/** Requeue every live panel so the velocity flip re-dresses them. Iterates
+ *  OUR Set, never the DOM tree. */
+function requeueAll(): void {
+  for (const el of tracked) {
+    if (el.isConnected) pendingSync.add(el);
+  }
+  scheduleFlush();
+}
+
+function onScrollVelocity(): void {
+  if (!mounted || !glassAllowed()) return;
+  const now = performance.now();
+  const y = window.scrollY;
+  const dt = Math.max(1, now - lastScrollT);
+  const v = (Math.abs(y - lastScrollY) * 1000) / dt;
+  lastScrollY = y;
+  lastScrollT = now;
+  if (v > FAST_V_PX_S && !scrollFast) {
+    scrollFast = true;
+    requeueAll();
+  }
+  if (settleTimer) window.clearTimeout(settleTimer);
+  settleTimer = window.setTimeout(() => {
+    settleTimer = 0;
+    if (!scrollFast) return;
+    scrollFast = false;
+    if (mounted && glassAllowed()) requeueAll();
+  }, SETTLE_MS);
+}
+
 let defaultParams: LensParams | null = null;
 
 /* Engine counters — the ?perf=1 oracle for the map pipeline. posted =
@@ -355,7 +403,10 @@ function flushSync(): void {
     const radius = radiusOf(el, cs, cssNum(cs, '--lens-radius', 21));
     const chainBase = chainOf(el, cs);
     const withDim = kind !== 'drop' && p.dim > 0;
-    const quickKey = `${kind}|${w}x${h}|${Math.round(radius)}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
+    // The velocity gate rides inside the idempotency key: a fast/settle flip
+    // must re-dress every panel (strip/restore the url()), and anything else
+    // must NOT re-dress. Without the suffix the guard would swallow the flip.
+    const quickKey = `${kind}|${w}x${h}|${Math.round(radius)}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}|${scrollFast ? 1 : 0}`;
     if (el.dataset.lastQuickKey === quickKey) continue;
     todo.push({ el, kind, w, h, radius, p, chainBase, withDim, quickKey });
   }
@@ -382,6 +433,13 @@ function dressPanel(t: PendingPanel, entry: BucketEntry): void {
   // the stylesheet de-nest rule — undress instead.
   if (isNestedGlass(el)) {
     undressNested(el);
+    return;
+  }
+  // Velocity gate: fast scroll dresses blur-only (no filter markup built, no
+  // url() attached). The settle flip re-dresses with the url() from cache.
+  if (scrollFast) {
+    applyChain(el, chainBase);
+    el.dataset.lastQuickKey = quickKey;
     return;
   }
   const mapKey = `${kind}|${w}x${h}|${Math.round(radius)}`;
@@ -659,11 +717,21 @@ export function mountGlassEngine(): void {
   });
   domObserver.observe(document.body, { childList: true, subtree: true });
 
+  // Velocity gate listener: passive scrollY deltas only, no layout. Installed
+  // once with the engine; the handler early-outs unless mounted + allowed.
+  lastScrollY = window.scrollY;
+  lastScrollT = performance.now();
+  window.addEventListener('scroll', onScrollVelocity, { passive: true, capture: true });
+
   resyncGlass();
 }
 
 export function unmountGlassEngine(): void {
   mounted = false;
+  window.removeEventListener('scroll', onScrollVelocity, { capture: true });
+  if (settleTimer) window.clearTimeout(settleTimer);
+  settleTimer = 0;
+  scrollFast = false;
   resizeObserver?.disconnect();
   resizeObserver = null;
   attrObserver?.disconnect();
