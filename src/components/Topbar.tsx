@@ -386,13 +386,16 @@ export default function Topbar({
         className={`flex items-center gap-3 ${showHamburgerMenu ? 'opacity-40' : ''}`}
         id="topbar-left-group"
       >
-        {/* Bell — the name panel grows RIGHTWARD from the circle (toward screen
-            center), away from the bell, so the bell never moves: the old
-            rightward shove pushed the bell into the panel on some viewports
-            and off-screen on mobile. Transform kept (no layout, no reflow;
-            getBoundingClientRect for the dropdown anchor is unaffected). */}
+        {/* Bell — the name panel grows RIGHTWARD from the circle, under the
+            bell's zone, so the bell slides right clear of it while open
+            (transform only: no layout, no reflow; getBoundingClientRect for
+            the dropdown anchor already includes transforms). Physical px, not
+            logical: the avatar sits at the physical screen-left edge, so
+            logical props mirrored the panel off-screen (regression). */}
         <div
-          className={`transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] translate-x-0`}
+          className={`transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            avatarExpanded ? 'translate-x-[124px] lg:translate-x-[174px]' : 'translate-x-0'
+          }`}
         >
           <button
             type="button"
@@ -450,19 +453,19 @@ export default function Topbar({
               }, 200);
             }}
           >
-            {/* Name panel — pane glass that emerges from behind the circle.
-                Anchored with LOGICAL props (inset-inline-start): in RTL the
-                panel grows rightward toward screen center; in LTR it mirrors.
-                Physical left/right here sent it off-screen on mobile. The text
-                hugs the circle (justify-end in RTL = physical left = the
-                circle side) instead of riding the panel's far edge. */}
+            {/* Name panel — pane glass that emerges from behind the circle and
+                grows RIGHTWARD under the bell zone (the bell slides clear, see
+                above). Physical left/right: the avatar is anchored at the
+                physical screen-left edge, and logical inset-inline-start
+                mirrored the panel off-screen on desktop. The text hugs the
+                circle (justify-end in RTL = physical left = circle side). */}
             <div
-              className={`absolute top-0 start-[14px] h-10 rounded-full overflow-hidden pane transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              className={`absolute top-0 left-[14px] h-10 rounded-full overflow-hidden pane transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 avatarExpanded ? 'w-[150px] lg:w-[200px]' : 'w-0'
               }`}
             >
               <div
-                className="absolute inset-y-0 start-[44px] end-[14px] flex items-center justify-end whitespace-nowrap"
+                className="absolute inset-y-0 left-[44px] right-[14px] flex items-center justify-end whitespace-nowrap"
                 style={{ direction: 'rtl' }}
               >
                 <p className="text-body font-bold text-[var(--color-text-primary)] truncate">

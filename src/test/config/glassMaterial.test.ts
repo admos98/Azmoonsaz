@@ -271,12 +271,12 @@ describe('glass material contract (pixel-audit gates)', () => {
   it('menus and notif center cast NOTHING: halo + veil layers are gone', () => {
     const topbar = component('src/components/Topbar.tsx');
     expect(topbar).not.toMatch(/area-blur|bgfx/);
-    // avatar name panel grows toward screen center on LOGICAL props (physical
-    // left/right sent it off-screen on mobile RTL); bell never shoved (the
-    // old rightward push drove it into the panel / off-screen)
-    expect(topbar).toMatch(/start-\[14px\]/);
+    // avatar name panel grows rightward from the physical screen-left circle
+    // (logical props mirrored it off-screen); the bell slides clear while
+    // open; text hugs the circle instead of riding the far edge
+    expect(topbar).toMatch(/left-\[14px\]/);
     expect(topbar).toMatch(/justify-end whitespace-nowrap/);
-    expect(topbar).not.toMatch(/translate-x-\[124px\]/);
+    expect(topbar).toMatch(/translate-x-\[124px\]/);
     // hero buttons share one cross-axis baseline (icon vs text drift on mobile)
     expect(css).toMatch(/\.dashboard-hero-actions\s*\{[^}]*align-items:\s*stretch/s);
     expect(css).toMatch(/\.dashboard-hero-actions > button\s*\{[^}]*justify-content:\s*center/s);
