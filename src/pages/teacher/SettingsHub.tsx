@@ -40,27 +40,36 @@ export default function SettingsHub({
           activeTab={tab}
           onChange={(id) => activate(id as SettingsTab)}
           className="w-full sm:w-auto"
-          aria-label="بخش‌های تنظیمات"
+          ariaLabel="بخش‌های تنظیمات"
+          idPrefix="settings-tabs"
         />
       </div>
-      {tab === 'system' ? (
-        <Settings />
-      ) : (
-        <div className="space-y-6">
-          <QuestionBankHealth />
-          <Suspense
-            fallback={
-              <div
-                className="h-64 rounded-2xl lens skeleton"
-                role="status"
-                aria-label="در حال بارگذاری بانک سوالات"
-              />
-            }
-          >
-            <Questions />
-          </Suspense>
-        </div>
-      )}
+      {/* one dynamic panel: aria-labelledby follows the active tab */}
+      <div
+        role="tabpanel"
+        id="settings-tabs-panel"
+        aria-labelledby={`settings-tabs-tab-${tab}`}
+        className="space-y-6"
+      >
+        {tab === 'system' ? (
+          <Settings />
+        ) : (
+          <div className="space-y-6">
+            <QuestionBankHealth />
+            <Suspense
+              fallback={
+                <div
+                  className="h-64 rounded-2xl lens skeleton"
+                  role="status"
+                  aria-label="در حال بارگذاری بانک سوالات"
+                />
+              }
+            >
+              <Questions />
+            </Suspense>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

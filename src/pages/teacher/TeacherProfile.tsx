@@ -235,7 +235,9 @@ export default function TeacherProfile({
     return (
       <div>
         <ProfileHeader tab={tab} setTab={handleTabChange} />
-        <Students />
+        <div role="tabpanel" id="profile-tabs-panel" aria-labelledby={`profile-tabs-tab-${tab}`}>
+          <Students />
+        </div>
       </div>
     );
   }
@@ -243,7 +245,9 @@ export default function TeacherProfile({
     return (
       <div>
         <ProfileHeader tab={tab} setTab={handleTabChange} />
-        <Classes />
+        <div role="tabpanel" id="profile-tabs-panel" aria-labelledby={`profile-tabs-tab-${tab}`}>
+          <Classes />
+        </div>
       </div>
     );
   }
@@ -252,285 +256,291 @@ export default function TeacherProfile({
     <div className="mx-auto max-w-7xl space-y-6">
       <ProfileHeader tab={tab} setTab={handleTabChange} />
 
-      <section className="relative lens overflow-hidden rounded-3xl p-5 sm:p-7">
-        <div className="relative z-10 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="group relative shrink-0"
-            aria-label="تغییر تصویر پروفایل"
-            disabled={status.type === 'uploading'}
-          >
-            {avatarUrl ? (
-              <img
-                loading="eager"
-                decoding="async"
-                src={avatarUrl}
-                alt={`تصویر پروفایل ${name || 'دبیر'}`}
-                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/50"
-              />
-            ) : (
-              <span className="grid h-24 w-24 place-items-center rounded-3xl bg-[var(--color-ink)] text-heading-1 font-black text-[var(--color-text-on-solid)]">
-                {name[0] || 'م'}
-              </span>
-            )}
-            <span className="absolute -bottom-2 -left-2 grid h-9 w-9 place-items-center rounded-xl bg-[var(--color-gold)] text-[var(--color-ink)] shadow-md">
-              <Camera className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </button>
-          <input
-            ref={fileRef}
-            hidden
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => uploadAvatar(event.target.files?.[0])}
-          />
-
-          <div className="flex-1">
-            <p className="mb-1 text-caption font-bold text-[var(--color-text-secondary)]">
-              پروفایل حرفه‌ای دبیر
-            </p>
-            <h1 className="text-heading-1 font-black">{name || 'پروفایل دبیر'}</h1>
-            <p className="mt-2 text-label text-[var(--color-text-secondary)]">
-              {subject || 'درس تخصصی ثبت نشده'} ·{' '}
-              {schools.length ? `${schools.length} مدرسه` : 'مدرسه‌ای ثبت نشده'}
-            </p>
-          </div>
-
-          <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            <Button
-              onClick={save}
-              disabled={status.type === 'saving' || status.type === 'uploading'}
-              isLoading={status.type === 'saving'}
-              icon={<Save className="h-4 w-4" aria-hidden="true" />}
+      <div role="tabpanel" id="profile-tabs-panel" aria-labelledby={`profile-tabs-tab-${tab}`}>
+        <section className="relative lens overflow-hidden rounded-3xl p-5 sm:p-7">
+          <div className="relative z-10 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="group relative shrink-0"
+              aria-label="تغییر تصویر پروفایل"
+              disabled={status.type === 'uploading'}
             >
-              {status.type === 'saving' ? 'در حال ذخیره…' : 'ذخیره تغییرات'}
-            </Button>
-            {status.message && (
-              <p
-                role={status.type === 'error' ? 'alert' : 'status'}
-                aria-live="polite"
-                className={`max-w-xs text-caption ${status.type === 'error' ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)]'}`}
-              >
-                {status.message}
+              {avatarUrl ? (
+                <img
+                  loading="eager"
+                  decoding="async"
+                  src={avatarUrl}
+                  alt={`تصویر پروفایل ${name || 'دبیر'}`}
+                  className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/50"
+                />
+              ) : (
+                <span className="grid h-24 w-24 place-items-center rounded-3xl bg-[var(--color-ink)] text-heading-1 font-black text-[var(--color-text-on-solid)]">
+                  {name[0] || 'م'}
+                </span>
+              )}
+              <span className="absolute -bottom-2 -left-2 grid h-9 w-9 place-items-center rounded-xl bg-[var(--color-gold)] text-[var(--color-ink)] shadow-md">
+                <Camera className="h-4 w-4" aria-hidden="true" />
+              </span>
+            </button>
+            <input
+              ref={fileRef}
+              hidden
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => uploadAvatar(event.target.files?.[0])}
+            />
+
+            <div className="flex-1">
+              <p className="mb-1 text-caption font-bold text-[var(--color-text-secondary)]">
+                پروفایل حرفه‌ای دبیر
               </p>
-            )}
+              <h1 className="text-heading-1 font-black">{name || 'پروفایل دبیر'}</h1>
+              <p className="mt-2 text-label text-[var(--color-text-secondary)]">
+                {subject || 'درس تخصصی ثبت نشده'} ·{' '}
+                {schools.length ? `${schools.length} مدرسه` : 'مدرسه‌ای ثبت نشده'}
+              </p>
+            </div>
+
+            <div className="flex flex-col items-stretch gap-2 sm:items-end">
+              <Button
+                onClick={save}
+                disabled={status.type === 'saving' || status.type === 'uploading'}
+                isLoading={status.type === 'saving'}
+                icon={<Save className="h-4 w-4" aria-hidden="true" />}
+              >
+                {status.type === 'saving' ? 'در حال ذخیره…' : 'ذخیره تغییرات'}
+              </Button>
+              {status.message && (
+                <p
+                  role={status.type === 'error' ? 'alert' : 'status'}
+                  aria-live="polite"
+                  className={`max-w-xs text-caption ${status.type === 'error' ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)]'}`}
+                >
+                  {status.message}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
-        <Card glassLayer="light" className="relative rounded-3xl space-y-5">
-          <PageHeader
-            level={2}
-            icon={<UserRound className="h-5 w-5" />}
-            title="اطلاعات دبیر"
-            subtitle="اطلاعاتی که در پنل و آزمون‌ها نمایش داده می‌شود."
-          />
-          <Input
-            label="نام و نام خانوادگی"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <Input
-            label="درس یا دروس تخصصی"
-            value={subject}
-            onChange={(event) => setSubject(event.target.value)}
-            placeholder="مثلاً ریاضی و فیزیک"
-          />
-          <Textarea
-            label="درباره من"
-            rows={4}
-            value={bio}
-            onChange={(event) => setBio(event.target.value)}
-            placeholder="معرفی کوتاه برای نمایش در کنار آزمون‌ها"
-            maxLength={1000}
-            maxCount={1000}
-            className="min-h-24 leading-7"
-          />
+        <div className="grid gap-6 lg:grid-cols-[1.05fr_.95fr]">
+          <Card glassLayer="light" className="relative rounded-3xl space-y-5">
+            <PageHeader
+              level={2}
+              icon={<UserRound className="h-5 w-5" />}
+              title="اطلاعات دبیر"
+              subtitle="اطلاعاتی که در پنل و آزمون‌ها نمایش داده می‌شود."
+            />
+            <Input
+              label="نام و نام خانوادگی"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+            <Input
+              label="درس یا دروس تخصصی"
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+              placeholder="مثلاً ریاضی و فیزیک"
+            />
+            <Textarea
+              label="درباره من"
+              rows={4}
+              value={bio}
+              onChange={(event) => setBio(event.target.value)}
+              placeholder="معرفی کوتاه برای نمایش در کنار آزمون‌ها"
+              maxLength={1000}
+              maxCount={1000}
+              className="min-h-24 leading-7"
+            />
 
-          <div>
-            <p className="mb-2 block text-caption md:text-label font-bold text-[var(--color-text-secondary)]">
-              مدارس محل تدریس
-            </p>
-            <div className="space-y-2">
-              {schools.map((school, index) => (
-                <div key={school.id} className="flex items-center gap-2">
-                  <div className="mt-0 flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-panel-fill)] px-3">
-                    <School
-                      className="h-4 w-4 shrink-0 text-[var(--color-ink)]"
-                      aria-hidden="true"
-                    />
-                    <span className="flex-1 truncate">{school.name}</span>
-                    {index === 0 && (
-                      <span className="text-caption text-[var(--color-text-tertiary)]">اصلی</span>
-                    )}
+            <div>
+              <p className="mb-2 block text-caption md:text-label font-bold text-[var(--color-text-secondary)]">
+                مدارس محل تدریس
+              </p>
+              <div className="space-y-2">
+                {schools.map((school, index) => (
+                  <div key={school.id} className="flex items-center gap-2">
+                    <div className="mt-0 flex h-11 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-panel-fill)] px-3">
+                      <School
+                        className="h-4 w-4 shrink-0 text-[var(--color-ink)]"
+                        aria-hidden="true"
+                      />
+                      <span className="flex-1 truncate">{school.name}</span>
+                      {index === 0 && (
+                        <span className="text-caption text-[var(--color-text-tertiary)]">اصلی</span>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeSchool(school)}
+                      className="text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
+                    >
+                      حذف
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeSchool(school)}
-                    className="text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
-                  >
-                    حذف
-                  </Button>
+                ))}
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Input
+                  wrapperClassName="flex-1"
+                  value={newSchool}
+                  onChange={(event) => setNewSchool(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      addSchool();
+                    }
+                  }}
+                  placeholder="نام مدرسه جدید"
+                  aria-label="نام مدرسه جدید"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={addSchool}
+                  icon={<Plus className="h-4 w-4" aria-hidden="true" />}
+                >
+                  افزودن
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <Card glassLayer="light" className="relative rounded-3xl">
+            <PageHeader
+              level={2}
+              icon={<CalendarDays className="h-5 w-5" />}
+              title="برنامه هفتگی"
+              subtitle="کلاس‌ها، مدرسه و ساعت تدریس شما."
+            />
+            <div className="mt-5 grid grid-cols-7 gap-1" aria-label="روزهای هفته">
+              {days.map((day) => (
+                <div
+                  key={day}
+                  title={day}
+                  className="glx-inset rounded-xl py-2 text-center text-caption"
+                >
+                  {day.slice(0, 2)}
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex gap-2">
-              <Input
-                wrapperClassName="flex-1"
-                value={newSchool}
-                onChange={(event) => setNewSchool(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    addSchool();
-                  }
-                }}
-                placeholder="نام مدرسه جدید"
-                aria-label="نام مدرسه جدید"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={addSchool}
-                icon={<Plus className="h-4 w-4" aria-hidden="true" />}
-              >
-                افزودن
-              </Button>
+
+            <div className="mt-5 space-y-3">
+              {schedule.length ? (
+                schedule.map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative grid grid-cols-2 items-end gap-2 rounded-2xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-light-fill)] p-3 min-[900px]:grid-cols-[0.8fr_0.8fr_0.8fr_1.3fr_1.2fr_1.2fr_auto]"
+                  >
+                    <label className="min-w-0">
+                      <span className={scheduleLabelClass}>روز</span>
+                      <select
+                        className={scheduleFieldClass}
+                        value={item.day}
+                        onChange={(event) =>
+                          updateSchedule(item.id, { day: Number(event.target.value) })
+                        }
+                      >
+                        {days.map((day, index) => (
+                          <option key={day} value={index}>
+                            {day}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="min-w-0">
+                      <span className={scheduleLabelClass}>شروع</span>
+                      <input
+                        type="time"
+                        className={scheduleFieldClass}
+                        value={item.startTime}
+                        onChange={(event) =>
+                          updateSchedule(item.id, { startTime: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="min-w-0">
+                      <span className={scheduleLabelClass}>پایان</span>
+                      <input
+                        type="time"
+                        className={scheduleFieldClass}
+                        value={item.endTime}
+                        onChange={(event) =>
+                          updateSchedule(item.id, { endTime: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="min-w-0">
+                      <span className={scheduleLabelClass}>مدرسه</span>
+                      <select
+                        className={scheduleFieldClass}
+                        value={item.schoolName}
+                        onChange={(event) =>
+                          updateSchedule(item.id, { schoolName: event.target.value })
+                        }
+                      >
+                        <option value="">انتخاب مدرسه</option>
+                        {schools.map((school) => (
+                          <option key={school.id} value={school.name}>
+                            {school.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="min-w-0">
+                      <span className={scheduleLabelClass}>کلاس</span>
+                      <input
+                        className={scheduleFieldClass}
+                        value={item.className}
+                        onChange={(event) =>
+                          updateSchedule(item.id, { className: event.target.value })
+                        }
+                        placeholder="مثلاً هفتم الف"
+                      />
+                    </label>
+                    <label className="min-w-0">
+                      <span className={scheduleLabelClass}>درس</span>
+                      <input
+                        className={scheduleFieldClass}
+                        value={item.subject}
+                        onChange={(event) =>
+                          updateSchedule(item.id, { subject: event.target.value })
+                        }
+                        placeholder="نام درس"
+                      />
+                    </label>
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        setSchedule((current) => current.filter((row) => row.id !== item.id))
+                      }
+                      className="h-11 w-11 p-0 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] min-[900px]:justify-self-end"
+                      aria-label="حذف این کلاس از برنامه"
+                      icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+                    />
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  compact
+                  icon={<CalendarDays className="h-7 w-7" />}
+                  title="برنامه‌ای ثبت نشده است."
+                  description="کلاس‌های هفتگی خود را اضافه کنید تا در این برنامه نمایش داده شوند."
+                />
+              )}
             </div>
-          </div>
-        </Card>
-
-        <Card glassLayer="light" className="relative rounded-3xl">
-          <PageHeader
-            level={2}
-            icon={<CalendarDays className="h-5 w-5" />}
-            title="برنامه هفتگی"
-            subtitle="کلاس‌ها، مدرسه و ساعت تدریس شما."
-          />
-          <div className="mt-5 grid grid-cols-7 gap-1" aria-label="روزهای هفته">
-            {days.map((day) => (
-              <div
-                key={day}
-                title={day}
-                className="glx-inset rounded-xl py-2 text-center text-caption"
-              >
-                {day.slice(0, 2)}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {schedule.length ? (
-              schedule.map((item) => (
-                <div
-                  key={item.id}
-                  className="relative grid grid-cols-2 items-end gap-2 rounded-2xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-glass-light-fill)] p-3 min-[900px]:grid-cols-[0.8fr_0.8fr_0.8fr_1.3fr_1.2fr_1.2fr_auto]"
-                >
-                  <label className="min-w-0">
-                    <span className={scheduleLabelClass}>روز</span>
-                    <select
-                      className={scheduleFieldClass}
-                      value={item.day}
-                      onChange={(event) =>
-                        updateSchedule(item.id, { day: Number(event.target.value) })
-                      }
-                    >
-                      {days.map((day, index) => (
-                        <option key={day} value={index}>
-                          {day}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="min-w-0">
-                    <span className={scheduleLabelClass}>شروع</span>
-                    <input
-                      type="time"
-                      className={scheduleFieldClass}
-                      value={item.startTime}
-                      onChange={(event) =>
-                        updateSchedule(item.id, { startTime: event.target.value })
-                      }
-                    />
-                  </label>
-                  <label className="min-w-0">
-                    <span className={scheduleLabelClass}>پایان</span>
-                    <input
-                      type="time"
-                      className={scheduleFieldClass}
-                      value={item.endTime}
-                      onChange={(event) => updateSchedule(item.id, { endTime: event.target.value })}
-                    />
-                  </label>
-                  <label className="min-w-0">
-                    <span className={scheduleLabelClass}>مدرسه</span>
-                    <select
-                      className={scheduleFieldClass}
-                      value={item.schoolName}
-                      onChange={(event) =>
-                        updateSchedule(item.id, { schoolName: event.target.value })
-                      }
-                    >
-                      <option value="">انتخاب مدرسه</option>
-                      {schools.map((school) => (
-                        <option key={school.id} value={school.name}>
-                          {school.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="min-w-0">
-                    <span className={scheduleLabelClass}>کلاس</span>
-                    <input
-                      className={scheduleFieldClass}
-                      value={item.className}
-                      onChange={(event) =>
-                        updateSchedule(item.id, { className: event.target.value })
-                      }
-                      placeholder="مثلاً هفتم الف"
-                    />
-                  </label>
-                  <label className="min-w-0">
-                    <span className={scheduleLabelClass}>درس</span>
-                    <input
-                      className={scheduleFieldClass}
-                      value={item.subject}
-                      onChange={(event) => updateSchedule(item.id, { subject: event.target.value })}
-                      placeholder="نام درس"
-                    />
-                  </label>
-                  <Button
-                    variant="ghost"
-                    onClick={() =>
-                      setSchedule((current) => current.filter((row) => row.id !== item.id))
-                    }
-                    className="h-11 w-11 p-0 text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] min-[900px]:justify-self-end"
-                    aria-label="حذف این کلاس از برنامه"
-                    icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-                  />
-                </div>
-              ))
-            ) : (
-              <EmptyState
-                compact
-                icon={<CalendarDays className="h-7 w-7" />}
-                title="برنامه‌ای ثبت نشده است."
-                description="کلاس‌های هفتگی خود را اضافه کنید تا در این برنامه نمایش داده شوند."
-              />
-            )}
-          </div>
-          <Button
-            variant="secondary"
-            className="mt-4 w-full"
-            onClick={addSchedule}
-            icon={<Plus className="h-4 w-4" aria-hidden="true" />}
-          >
-            افزودن کلاس به برنامه
-          </Button>
-        </Card>
+            <Button
+              variant="secondary"
+              className="mt-4 w-full"
+              onClick={addSchedule}
+              icon={<Plus className="h-4 w-4" aria-hidden="true" />}
+            >
+              افزودن کلاس به برنامه
+            </Button>
+          </Card>
+        </div>
       </div>
     </div>
   );
@@ -556,6 +566,7 @@ function ProfileHeader({ tab, setTab }: { tab: ProfileTab; setTab: (tab: Profile
         onChange={(id) => setTab(id as ProfileTab)}
         className="w-full sm:w-auto"
         ariaLabel="بخش‌های پروفایل دبیر"
+        idPrefix="profile-tabs"
       />
     </div>
   );

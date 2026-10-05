@@ -791,10 +791,26 @@ interface TabsProps {
   className?: string;
   /** Accessible name for the tablist */
   ariaLabel?: string;
+  /** Stable id stem for the ARIA wiring: buttons become `${idPrefix}-tab-${id}`.
+      Consumers that pass it must render ONE dynamic panel as
+      role="tabpanel" id={`${idPrefix}-panel`}
+      aria-labelledby={`${idPrefix}-tab-${activeTab}`} — every tab's
+      aria-controls then points at it. Without it, ids stay internal and
+      aria-controls is omitted (no dangling reference). */
+  idPrefix?: string;
 }
 
-export const Tabs = ({ tabs, activeTab, onChange, className = '', ariaLabel }: TabsProps) => {
+export const Tabs = ({
+  tabs,
+  activeTab,
+  onChange,
+  className = '',
+  ariaLabel,
+  idPrefix,
+}: TabsProps) => {
   const baseId = useId();
+  const stem = idPrefix ?? baseId;
+  const panelId = idPrefix ? `${idPrefix}-panel` : undefined;
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const focusTab = (index: number) => {
@@ -836,9 +852,10 @@ export const Tabs = ({ tabs, activeTab, onChange, className = '', ariaLabel }: T
             ref={(el) => {
               tabRefs.current[index] = el;
             }}
-            id={`${baseId}-tab-${tab.id}`}
+            id={`${stem}-tab-${tab.id}`}
             role="tab"
             aria-selected={isActive}
+            aria-controls={panelId}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 text-caption md:text-label font-bold rounded-xl transition-all cursor-pointer select-none ${isActive ? 'btn-glass btn-glass--gold' : 'btn-glass btn-glass--bare'}`}
@@ -1173,14 +1190,11 @@ export const ConfirmDialog = ({
         <div className={`p-2.5 rounded-full ${iconBg}`}>
           <AlertTriangle className="w-5 h-5 text-current" />
         </div>
-        <div className="space-y-1">
-          <p className="font-bold text-[var(--color-text-primary)] text-caption md:text-label">
-            {title}
-          </p>
-          <p className="text-caption text-[var(--color-text-tertiary)] leading-relaxed font-semibold">
-            {message}
-          </p>
-        </div>
+        {/* no title echo here — the Modal header already announces it;
+            repeating it in the body read the title twice */}
+        <p className="text-caption text-[var(--color-text-tertiary)] leading-relaxed font-semibold">
+          {message}
+        </p>
       </div>
     </Modal>
   );
@@ -1265,6 +1279,7 @@ export const Table = <T,>({
                 return (
                   <th
                     key={col.key}
+                    scope="col"
                     className={`p-4 font-bold ${alignStyles[col.align || 'right']} ${idx === 0 ? 'rounded-r-2xl' : ''} ${idx === headers.length - 1 ? 'rounded-l-2xl' : ''}`}
                   >
                     {col.label}
@@ -1558,6 +1573,8 @@ export const Toggle = ({
 }: ToggleProps) => {
   const generatedId = useId();
   const toggleId = id || generatedId;
+  const labelId = `${toggleId}-label`;
+  const descId = `${toggleId}-desc`;
   return (
     <div className={`flex items-start gap-3 ${className}`}>
       <button
@@ -1565,7 +1582,10 @@ export const Toggle = ({
         id={toggleId}
         role="switch"
         aria-checked={checked}
-        aria-label={label}
+        /* labelled by the VISIBLE label — aria-label here used to announce
+           the text twice (once from the attribute, once from the span) */
+        aria-labelledby={label ? labelId : undefined}
+        aria-describedby={description ? descId : undefined}
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border px-0.5 transition-all cursor-pointer select-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] ${
@@ -1585,12 +1605,18 @@ export const Toggle = ({
       {(label || description) && (
         <div className="space-y-0.5 min-w-0">
           {label && (
-            <span className="block text-caption font-bold text-[var(--color-text-primary)]">
+            <span
+              id={labelId}
+              className="block text-caption font-bold text-[var(--color-text-primary)]"
+            >
               {label}
             </span>
           )}
           {description && (
-            <span className="block text-micro text-[var(--color-text-tertiary)] leading-normal">
+            <span
+              id={descId}
+              className="block text-micro text-[var(--color-text-tertiary)] leading-normal"
+            >
               {description}
             </span>
           )}
@@ -1667,13 +1693,19 @@ interface ToastProps {
 
 export const Toast = ({ message, type = 'info', onClose, duration = 4000, action }: ToastProps) => {
   const [visible, setVisible] = useState(true);
+  const innerTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const outerTimer = window.setTimeout(() => {
       setVisible(false);
-      setTimeout(() => onClose?.(), 300);
+      innerTimer.current = window.setTimeout(() => onClose?.(), 300);
     }, duration);
-    return () => clearTimeout(timer);
+    return () => {
+      // both timers cleared — the inner 300ms close used to survive
+      // unmount and fire onClose after the toast was gone
+      clearTimeout(outerTimer);
+      if (innerTimer.current) clearTimeout(innerTimer.current);
+    };
   }, [duration, onClose]);
 
   // family rule: a toast is a floating PANEL -> pane (rim + 2x blur), with the

@@ -729,7 +729,8 @@ describe('glass material contract (pixel-audit gates)', () => {
     // ever set it; errors were invisible to screen readers. Three field
     // components now associate the error/helper <p> by id.
     expect(ui.match(/aria-invalid=\{error \? true : undefined\}/g)!.length).toBe(3);
-    expect(ui.match(/aria-describedby=/g)!.length).toBe(3);
+    // 4 = the three F-4 fields + Toggle's description association (F-9)
+    expect(ui.match(/aria-describedby=/g)!.length).toBe(4);
     // 6 = 3 id assignments on the error <p> + 3 aria-describedby references
     expect(ui.match(/\$\{(?:inputId|fieldId|dropdownId)\}-error/g)!.length).toBe(6);
     // F-5: 650 snapped to 700 in any fallback during font-swap (weight shift);

@@ -8,8 +8,9 @@
  * and the Toast/ToastStack layout contract.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
+  ConfirmDialog,
   DifficultyBadge,
   EmptyState,
   FilterBar,
@@ -20,6 +21,7 @@ import {
   StatCard,
   StatusBadge,
   Table,
+  Tabs,
   Textarea,
   TextLink,
   Toast,
@@ -141,6 +143,119 @@ describe('DifficultyBadge', () => {
   it('renders nothing when difficulty is absent — never invents a level', () => {
     const { container } = render(<DifficultyBadge />);
     expect(container.firstChild).toBeNull();
+  });
+});
+
+describe('F-9 accessibility wiring', () => {
+  it('Toggle names itself from the visible label once (no aria-label echo)', () => {
+    render(<Toggle checked={false} onChange={() => {}} label="ارسال خودکار" description="توضیح" />);
+    const sw = screen.getByRole('switch');
+    expect(sw).not.toHaveAttribute('aria-label');
+    const labelledBy = sw.getAttribute('aria-labelledby');
+    expect(labelledBy).toBeTruthy();
+    expect(document.getElementById(labelledBy as string)?.textContent).toBe('ارسال خودکار');
+    const describedBy = sw.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy as string)?.textContent).toBe('توضیح');
+  });
+
+  it('Tabs without idPrefix keeps ids internal — no dangling aria-controls', () => {
+    render(
+      <Tabs
+        tabs={[
+          { id: 'a', label: 'الف' },
+          { id: 'b', label: 'ب' },
+        ]}
+        activeTab="a"
+        onChange={() => {}}
+        ariaLabel="بخش‌ها"
+      />,
+    );
+    expect(screen.getByRole('tablist')).toHaveAttribute('aria-label', 'بخش‌ها');
+    expect(screen.getByRole('tab', { name: 'الف' })).not.toHaveAttribute('aria-controls');
+  });
+
+  it('Tabs with idPrefix exposes stable ids the consumer panel links to', () => {
+    render(
+      <Tabs
+        tabs={[
+          { id: 'a', label: 'الف' },
+          { id: 'b', label: 'ب' },
+        ]}
+        activeTab="a"
+        onChange={() => {}}
+        idPrefix="demo-tabs"
+      />,
+    );
+    const active = screen.getByRole('tab', { name: 'الف' });
+    expect(active).toHaveAttribute('id', 'demo-tabs-tab-a');
+    expect(active).toHaveAttribute('aria-controls', 'demo-tabs-panel');
+    expect(screen.getByRole('tab', { name: 'ب' })).toHaveAttribute(
+      'aria-controls',
+      'demo-tabs-panel',
+    );
+  });
+
+  it('Table header cells carry scope="col"', () => {
+    render(
+      <Table
+        headers={[{ key: 'name', label: 'نام' }]}
+        data={[{ id: 'r1', name: 'علی' }]}
+        renderRow={(row) => (
+          <tr key={row.id}>
+            <td>{row.name}</td>
+          </tr>
+        )}
+      />,
+    );
+    expect(screen.getByRole('columnheader')).toHaveAttribute('scope', 'col');
+  });
+
+  it('ConfirmDialog renders the title once — the Modal header owns it', () => {
+    render(
+      <ConfirmDialog
+        isOpen
+        title="حذف آزمون"
+        message="این عملیات برگشت‌پذیر نیست."
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.getAllByText('حذف آزمون')).toHaveLength(1);
+    expect(screen.getByText('این عملیات برگشت‌پذیر نیست.')).toBeInTheDocument();
+  });
+
+  it('Toast clears both timers — no late onClose after unmount', () => {
+    vi.useFakeTimers();
+    try {
+      const onClose = vi.fn();
+      const { unmount } = render(<Toast message="ذخیره شد" onClose={onClose} duration={1000} />);
+      unmount();
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(onClose).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('Toast fires onClose exactly once after duration + fade', () => {
+    vi.useFakeTimers();
+    try {
+      const onClose = vi.fn();
+      render(<Toast message="ذخیره شد" onClose={onClose} duration={1000} />);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(onClose).not.toHaveBeenCalled(); // fade window still running
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
