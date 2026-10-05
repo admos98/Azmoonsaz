@@ -40,7 +40,14 @@ import {
   type LensParams,
 } from './mapMath';
 
-export { buildDisplacementMap, buildSpecularMap, computeProfile, dimParams, mapCornerExp, mapScaleFor };
+export {
+  buildDisplacementMap,
+  buildSpecularMap,
+  computeProfile,
+  dimParams,
+  mapCornerExp,
+  mapScaleFor,
+};
 export type { LensParams };
 
 /** Maps are smooth gradients: clamp the display DPR to [1, 2] device px per
@@ -78,13 +85,30 @@ export function currentDPR(): number {
 }
 
 const esc = (s: string | number) =>
-  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 /** A fresh <filter> markup string for one panel (lens = with displacement,
  *  pane = rim only, drop = disc, dim applied only when withDim). W/H are the
  *  element's CSS px — feImage sizes must match them EXACTLY. The map images
  *  themselves may be smaller (mapScaleFor cap): feImage scales them to W×H,
- *  which is loss-free for smooth gradient fields. */
+ *  which is loss-free for smooth gradient fields.
+ *
+ *  CHAIN SHAPE (perf lever 1, 2026-10-05): the saturate-boosted branch is
+ *  masked by the specular alpha and blended over the RAW displaced backdrop;
+ *  the rgb-dim wash runs ONCE, AFTER that blend — instead of dimming both
+ *  branches before it (two feComponentTransfer passes). dim(x) = slope·x +
+ *  intercept is affine and the blend weights sum to 1, so the reorder is
+ *  algebraically exact for any backdrop alpha; Chromium clamps the shared
+ *  feColorMatrix node before either chain consumes it, so even the
+ *  saturate-overflow path (s=4 pushes pure primaries >1) stays in range.
+ *  Measured in Chromium on a primary-heavy pattern: max 2/255 LSB, mean
+ *  0.14 (scratch/filter-equiv-probe.html). Saves one full-res pass per
+ *  frame per panel — two when withDim=false, where the identity dim CTs
+ *  are no longer emitted at all. */
 export function buildFilterMarkup(
   id: string,
   dispURL: string | null,
@@ -98,33 +122,32 @@ export function buildFilterMarkup(
   const [r, g, b] = dimParams(p);
   const dim = withDim
     ? `
-      <feFuncR type="linear" slope="${esc(r[0].toFixed(4))}" intercept="${esc(r[1].toFixed(4))}"/>
-      <feFuncG type="linear" slope="${esc(g[0].toFixed(4))}" intercept="${esc(g[1].toFixed(4))}"/>
-      <feFuncB type="linear" slope="${esc(b[0].toFixed(4))}" intercept="${esc(b[1].toFixed(4))}"/>`
-    : `
-      <feFuncR type="linear" slope="1" intercept="0"/>
-      <feFuncG type="linear" slope="1" intercept="0"/>
-      <feFuncB type="linear" slope="1" intercept="0"/>`;
-  const displace = dispURL != null
-    ? `
+      <feComponentTransfer in="withSaturation" result="dimmed">
+        <feFuncR type="linear" slope="${esc(r[0].toFixed(4))}" intercept="${esc(r[1].toFixed(4))}"/>
+        <feFuncG type="linear" slope="${esc(g[0].toFixed(4))}" intercept="${esc(g[1].toFixed(4))}"/>
+        <feFuncB type="linear" slope="${esc(b[0].toFixed(4))}" intercept="${esc(b[1].toFixed(4))}"/>
+      </feComponentTransfer>`
+    : '';
+  // withDim=false: no dim CT at all (the old chain emitted two identity
+  // feComponentTransfer passes there — pure full-res cost, zero pixels).
+  const dimDst = withDim ? 'dimmed' : 'withSaturation';
+  const displace =
+    dispURL != null
+      ? `
       <feImage href="${esc(dispURL)}" x="0" y="0" width="${esc(W)}" height="${esc(H)}" result="displacement_map"/>
       <feDisplacementMap in="SourceGraphic" in2="displacement_map"
                scale="${esc(effectiveScale(maxAbs, p).toFixed(3))}"
                xChannelSelector="R" yChannelSelector="G" result="displaced"/>`
-    : `
+      : `
       <feOffset in="SourceGraphic" dx="0" dy="0" result="displaced"/>`;
   return `<filter id="${esc(id)}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">${displace}
       <feColorMatrix in="displaced" type="saturate" values="${esc(p.specSaturation)}" result="displaced_saturated"/>
-      <feComponentTransfer in="displaced" result="rgb_dimmed">${dim}
-      </feComponentTransfer>
-      <feComponentTransfer in="displaced_saturated" result="saturated_dimmed">${dim}
-      </feComponentTransfer>
       <feImage href="${esc(specURL)}" x="0" y="0" width="${esc(W)}" height="${esc(H)}" result="specular_layer"/>
-      <feComposite in="saturated_dimmed" in2="specular_layer" operator="in" result="specular_saturated"/>
+      <feComposite in="displaced_saturated" in2="specular_layer" operator="in" result="rim_saturated"/>
+      <feBlend in="rim_saturated" in2="displaced" mode="normal" result="withSaturation"/>${dim}
       <feComponentTransfer in="specular_layer" result="specular_faded">
         <feFuncA type="linear" slope="${esc(p.specOpacity)}"/>
       </feComponentTransfer>
-      <feBlend in="specular_saturated" in2="rgb_dimmed" mode="normal" result="withSaturation"/>
-      <feBlend in="specular_faded" in2="withSaturation" mode="normal"/>
+      <feBlend in="specular_faded" in2="${dimDst}" mode="normal"/>
     </filter>`;
 }

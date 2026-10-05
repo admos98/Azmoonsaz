@@ -428,8 +428,14 @@ describe('glass material contract (pixel-audit gates)', () => {
     // 3) NO blur primitive in the chain — blur stays in the CSS chain (GPU);
     //    the SVG chain only bends/saturates/rims the already-blurred backdrop
     expect(engine).not.toMatch(/feGaussianBlur/);
-    // 4) the specular rim construction (backdrop-derived, never painted)
-    expect(engine).toMatch(/feComposite in="saturated_dimmed" in2="specular_layer"/);
+    // 4) the specular rim construction (backdrop-derived, never painted):
+    //    saturate is masked by the spec alpha and blended over the RAW
+    //    backdrop; the dim wash runs ONCE after that blend (perf lever 1 —
+    //    affine dim commutes with the alpha-weighted blend, verified in
+    //    Chromium: max 2/255 LSB. See the CHAIN SHAPE doc in lensEngine).
+    expect(engine).toMatch(/feComposite in="displaced_saturated" in2="specular_layer"/);
+    expect(engine).toMatch(/feBlend in="rim_saturated" in2="displaced"/);
+    expect(engine).toMatch(/feComponentTransfer in="withSaturation" result="dimmed"/);
     expect(engine).toMatch(/feFuncA type="linear" slope="\$\{esc\(p\.specOpacity\)\}"/);
   });
 
