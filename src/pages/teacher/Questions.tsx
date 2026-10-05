@@ -78,31 +78,10 @@ export default function Questions() {
   } = useTeacherCollections();
   const loading = status.questions === 'loading';
 
-  // Display-list enrichment, stable per cache cycle: difficulty/section/tags
-  // are derived deterministically by index — identical to the previous
-  // per-fetch behavior.
-  const questions = useMemo<RichQuestion[]>(() => {
-    const difficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard'];
-    const sections = [
-      'بخش اول: مفاهیم مبنا',
-      'بخش دوم: ساختار سلولی',
-      'فصل سوم: منطق عددی',
-      'بخش چهارم: قواعد صرفی',
-    ];
-    const tagSets = [
-      ['کنکوری', 'محاسباتی', 'فرمول‌محور'],
-      ['زیست', 'درک_شکل', 'آزمایشگاهی'],
-      ['دستورزبان', 'درک_ادبی', 'واژگان'],
-      ['کلوز', 'مهارت_درک_بهتر', 'ترجمه_فوری'],
-    ];
-    return rawQuestions.map((q, idx) => ({
-      ...q,
-      difficulty: q.difficulty || difficulties[idx % difficulties.length],
-      section: q.section || sections[idx % sections.length],
-      tags: q.tags || tagSets[idx % tagSets.length],
-      completenessStatus: q.completenessStatus || (idx % 6 === 5 ? 'incomplete' : 'complete'),
-    }));
-  }, [rawQuestions]);
+  // The list is now honestly server-shaped: difficulty/section/tags/
+  // completenessStatus persist in the payload (see handleSaveQuestion) and
+  // come back on every fetch — the old index-derived fabrication is gone.
+  const questions = useMemo<RichQuestion[]>(() => rawQuestions, [rawQuestions]);
 
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -367,10 +346,11 @@ export default function Questions() {
 
   // Persiarized helper converters
 
-  // Image Upload handler (Simulation)
-  const handleMockImageUpload = async (
+  // Image upload handler: FileReader → dataURL, stored on the question
+  // (main imageUrl / option imageUrl) and persisted through questionToBody.
+  const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    target: 'main' | { optIndex: number } | { partIndex: number },
+    target: 'main' | { optIndex: number },
   ) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -383,9 +363,6 @@ export default function Questions() {
           const updated = [...formOptions];
           updated[target.optIndex].imageUrl = dataUrl;
           setFormOptions(updated);
-        } else if ('partIndex' in target) {
-          // Additional mock mapping
-          showToast('تصویر با موفقیت الحاق شد.', 'success');
         }
       };
       reader.readAsDataURL(file);
@@ -585,13 +562,22 @@ export default function Questions() {
       resolvedCorrectAnswer = formOptions.filter((o) => o.isCorrect).map((o) => o.id);
     }
 
-    const modifiedQuestionPayload: Omit<Question, 'id' | 'createdAt'> = {
+    const modifiedQuestionPayload: Omit<Question, 'id' | 'createdAt'> &
+      Pick<RichQuestion, 'explanation' | 'sampleAnswer'> = {
       title: formTitle,
       text: formText,
       type: formType,
       points: Number(formPoints),
       category: formSubject,
       grade: formGrade,
+      // metadata that must survive reload — server persists these in body
+      // (questionToBody) / answer_key (deriveAnswerKey)
+      difficulty: formDifficulty,
+      section: formSection || undefined,
+      tags: parsedTags,
+      completenessStatus: 'complete',
+      explanation: formExplanation || undefined,
+      sampleAnswer: formType === 'long_answer' ? formSampleAnswer || undefined : undefined,
       imageUrl: formImageUrl || undefined,
       options:
         formType === 'single_choice' || formType === 'multiple_choice' || formType === 'image_based'
@@ -608,33 +594,17 @@ export default function Questions() {
     setSaveState('saving');
     try {
       if (drawerMode === 'add') {
+        // server response now carries difficulty/section/tags/explanation —
+        // no client-side enrichment overlay anymore
         const created = await questionService.createQuestion(modifiedQuestionPayload);
-        const enrichedCreated: RichQuestion = {
-          ...created,
-          difficulty: formDifficulty,
-          tags: parsedTags,
-          section: formSection,
-          completenessStatus: 'complete',
-          sampleAnswer: formType === 'long_answer' ? formSampleAnswer : undefined,
-          explanation: formExplanation || undefined,
-        };
-        upsertQuestion(enrichedCreated);
+        upsertQuestion(created);
       } else {
         if (!activeQuestionId) return;
         const updated = await questionService.updateQuestion(
           activeQuestionId,
           modifiedQuestionPayload,
         );
-        const enrichedUpdated: RichQuestion = {
-          ...updated,
-          difficulty: formDifficulty,
-          tags: parsedTags,
-          section: formSection,
-          completenessStatus: 'complete',
-          sampleAnswer: formType === 'long_answer' ? formSampleAnswer : undefined,
-          explanation: formExplanation || undefined,
-        };
-        upsertQuestion(enrichedUpdated);
+        upsertQuestion(updated);
       }
       const savedAt = new Date();
       setLastSavedAt(savedAt);
@@ -1079,7 +1049,7 @@ export default function Questions() {
                             )}
                           </div>
 
-                          <DifficultyBadge difficulty={q.difficulty} />
+                          {q.difficulty && <DifficultyBadge difficulty={q.difficulty} />}
                         </div>
 
                         {/* Title block */}
@@ -1253,7 +1223,11 @@ export default function Questions() {
 
                             {/* Difficulty */}
                             <td className="p-4 text-center">
-                              <DifficultyBadge difficulty={q.difficulty} />
+                              {q.difficulty ? (
+                                <DifficultyBadge difficulty={q.difficulty} />
+                              ) : (
+                                <span className="text-[var(--color-text-tertiary)]">—</span>
+                              )}
                             </td>
 
                             {/* Score Gained */}
@@ -1624,7 +1598,7 @@ export default function Questions() {
               />
             </div>
 
-            {/* 4. IMAGE SUPPORT: MOCK UPLOAD & PREVIEW */}
+            {/* 4. IMAGE SUPPORT: UPLOAD & PREVIEW */}
             <div className="relative pane p-4 rounded-xl space-y-2">
               <span className="text-micro text-[var(--color-text-primary)] font-bold block">
                 الصاق پرونده تصویر برای کل سوال (اختیاری):
@@ -1639,7 +1613,7 @@ export default function Questions() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => handleMockImageUpload(e, 'main')}
+                    onChange={(e) => handleImageUpload(e, 'main')}
                   />
                 </label>
 
@@ -1759,7 +1733,7 @@ export default function Questions() {
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
-                                onChange={(e) => handleMockImageUpload(e, { optIndex: oIdx })}
+                                onChange={(e) => handleImageUpload(e, { optIndex: oIdx })}
                               />
                             </label>
                             {opt.imageUrl ? (

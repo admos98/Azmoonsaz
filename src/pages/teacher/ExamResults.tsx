@@ -15,14 +15,12 @@ import {
   UserCheck,
   UserX,
   Percent,
-  Sparkles,
   Download,
   Filter,
   AlertCircle,
   Check,
   X,
   BookOpen,
-  Cpu,
   FileSpreadsheet,
   ShieldAlert,
 } from 'lucide-react';
@@ -48,6 +46,7 @@ import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext
 import {
   buildResultStats,
   buildResultsCsv,
+  buildResultsXlsx,
   buildStudentRows,
   filterRows,
   formatAnswerValue,
@@ -106,9 +105,6 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     Record<string, boolean>
   >({});
 
-  // AI assistant simulation state
-  const [aiLoadingQuestionId, setAiLoadingQuestionId] = useState<string | null>(null);
-  const [_aiMessage, setAiMessage] = useState<string | null>(null);
   const { showToast, toastElement } = useToast();
   const [confirmFinalize, setConfirmFinalize] = useState(false);
 
@@ -204,7 +200,6 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     setTeacherComments(comments);
     setRubricScores(initialRubric);
     setSavedDescriptiveQuestions(gradedQSaved);
-    setAiMessage(null);
   };
 
   // Helper to retrieve or establish default rubrics for long answers
@@ -257,53 +252,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     );
   };
 
-  // AI Assisted score generator
-  const triggerAiAssistedGrading = (qId: string) => {
-    const q = exam.questions.find((item) => item.id === qId);
-    if (!q) return;
-
-    setAiLoadingQuestionId(qId);
-    setAiMessage(null);
-
-    // Simulate calling server Gemini API with loading delay
-    setTimeout(() => {
-      const rubrics = getQuestionRubrics(q);
-      const generatedScores: Record<string, number> = {};
-
-      // Auto-assign high/medium realistic scores for student answers
-      rubrics.forEach((r) => {
-        // assign 85% to 95% of score
-        const rScore = Number((r.maxPoints * (0.85 + Math.random() * 0.12)).toFixed(2));
-        generatedScores[r.id] = rScore;
-      });
-
-      setRubricScores((prev) => ({
-        ...prev,
-        [qId]: {
-          ...prev[qId],
-          ...generatedScores,
-        },
-      }));
-
-      // Generate contextually intelligent comment in Persian
-      const feedbackTexts = [
-        'پاسخ تشریحی ارائه شده پیوندی منسجم بین مفاهیم علمی سال هفتم دارد. ساختار استدلالی در نگارش متن بسیار عالی است.',
-        'خوانا و تحلیل‌گرانه‌؛ گزاره‌ها انطباق بالایی با اهداف کتاب درسی نوین دارند. ایرادات املائی وجود ندارد.',
-        'نتیجه‌گیری پایانی غنی و منطبق بر کلید تصحیح است. نمره پیشنهادی با لحاظ شیوایی سخن در بالاترین بازه قرار گرفت.',
-      ];
-
-      const randomFeedback = feedbackTexts[Math.floor(Math.random() * feedbackTexts.length)];
-      setTeacherComments((prev) => ({
-        ...prev,
-        [qId]: randomFeedback,
-      }));
-
-      setAiLoadingQuestionId(null);
-      setAiMessage(
-        `هوش مصنوعی پیشنهاد نمره را ثبت کرد. لطفاً پیشنهاد را بازبینی و بارم‌ها را تأیید کنید.`,
-      );
-    }, 1200);
-  };
+  // Note: the old "AI suggested score" button is gone — it filled rubric
+  // rows with Math.random() and canned Persian feedback while no
+  // /api/teacher/ai-grade endpoint exists. Grades are teacher-entered only.
 
   // Check if any descriptive questions remain ungraded
   const getUngradedDescriptiveQuestionsCount = () => {
@@ -392,13 +343,15 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
     buildResultsCsv(exam.title, studentRows);
   };
 
-  const handleExportExcelMock = () => {
-    // Elegant system feedback indicating Excel export setup
-    showToast(
-      'خروجی Excel با فرمت XLSX به کمک ماژول پیشرفته ExcelJS آماده دانلود گردید. انتقال با موفقیت انجام شد.',
-      'success',
-    );
-    handleExportCSV();
+  // Real XLSX via SheetJS — the old button faked an ExcelJS success toast
+  // over a CSV file. The toast fires only after the workbook downloads.
+  const handleExportExcel = async () => {
+    try {
+      await buildResultsXlsx(exam.title, studentRows);
+      showToast('فایل Excel (XLSX) دانلود شد.', 'success');
+    } catch {
+      showToast('ساخت فایل Excel ممکن نشد؛ از خروجی CSV استفاده کنید.', 'error');
+    }
   };
 
   return (
@@ -460,7 +413,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   خروجی CSV
                 </Button>
                 <Button
-                  onClick={handleExportExcelMock}
+                  onClick={handleExportExcel}
                   variant="success"
                   className="flex-1 md:flex-initial"
                   icon={<FileSpreadsheet className="w-4 h-4" />}
@@ -1212,39 +1165,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                               <span className="text-micro font-black text-[var(--color-danger)]/80 block">
                                 جدول بارم‌بندی تفصیلی تصحیح (Rubrics):
                               </span>
-
-                              {/* 8. AI ASSISTED EVAL BUTTON FEATURE */}
-                              <PillButton
-                                fill="accent-soft"
-                                size="md"
-                                radius="lg"
-                                onClick={() => triggerAiAssistedGrading(q.id)}
-                                disabled={aiLoadingQuestionId !== null}
-                                className="inline-flex items-center gap-1 hover:bg-[var(--color-accent-soft)] border border-[var(--color-accent)]/20 disabled:opacity-50 transition-colors"
-                              >
-                                {aiLoadingQuestionId === q.id ? (
-                                  <span className="inline-flex items-center gap-1 animate-pulse">
-                                    <Cpu className="w-3 px-0.5 animate-spin" />
-                                    <span>تحلیل تالیف با هوش مصنوعی...</span>
-                                  </span>
-                                ) : (
-                                  <>
-                                    <Sparkles className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-                                    <span>پیشنهاد نمره با هوش مصنوعی</span>
-                                  </>
-                                )}
-                              </PillButton>
                             </div>
-
-                            {/* Warning note for AI assisted scoring */}
-                            <p className="text-micro text-[var(--color-accent)] bg-[var(--color-accent-soft)]/30 p-2.5 rounded-lg border border-[var(--color-accent-soft)] leading-relaxed flex items-start gap-1.5">
-                              <Cpu className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0 mt-0.5" />
-                              <span>
-                                نمره پیشنهادی هوش مصنوعی برپایه فهمِ معنایی زبان و معیارهای کلید
-                                آزمون استوار است؛ لذا باید توسط معلم ارجمند بررسی، حک و تایید قطعی
-                                گردد.
-                              </span>
-                            </p>
 
                             {/* Horizontal scroll instead of page overflow: the
                                 rubric's fixed w-24/w-32 columns exceed a 360px

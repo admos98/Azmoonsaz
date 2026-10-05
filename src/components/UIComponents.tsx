@@ -452,7 +452,10 @@ export const DifficultyBadge = ({ difficulty, className = '' }: DifficultyBadgeP
     hard: { variant: 'danger', label: 'سخت' },
   };
 
-  const item = config[difficulty ?? 'medium'];
+  // No stored difficulty (legacy rows) → render nothing. Never invent a
+  // default level for display.
+  const item = difficulty ? config[difficulty] : undefined;
+  if (!item) return null;
 
   return (
     <Badge variant={item.variant} className={className}>

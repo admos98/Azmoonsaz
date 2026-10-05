@@ -60,17 +60,9 @@ export default function Students() {
     removeStudent,
   } = useTeacherCollections();
 
-  // Display-list enrichment, stable per cache cycle: the backend doesn't
-  // send a status for every student yet, so a deterministic demo status is
-  // derived by index — identical to the previous per-fetch behavior.
-  const students = useMemo<Student[]>(
-    () =>
-      rawStudents.map((s, idx) => ({
-        ...s,
-        status: s.status || (idx % 4 === 1 ? 'examining' : idx % 5 === 3 ? 'suspended' : 'active'),
-      })),
-    [rawStudents],
-  );
+  // Server-shaped status (mapStudent normalizes active/suspended) — the old
+  // index-derived demo statuses are gone.
+  const students = rawStudents;
   const loading = status.students === 'loading';
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);

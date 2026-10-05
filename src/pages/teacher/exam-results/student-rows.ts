@@ -240,39 +240,64 @@ export const filterRows = (rows: ResultRow[], filters: ResultFilters): ResultRow
     return true;
   });
 
-/** Excel CSV Export (with Persian BOM support for MS Excel). */
+/* ── Shared export rows: one source of truth for CSV and XLSX ───────────
+   National ID is exported MASKED (***last4) — the API only ever sends the
+   mask (mapStudent / submissions mapper), matching the security rule that
+   plain national IDs never leave the backend. */
+const exportHeaders: string[] = [
+  'نام دانش‌آموز',
+  'کد ملی دانش‌آموز',
+  'گروه کلاسی',
+  'وضعیت شرکت در آزمون',
+  'ساعت شروع',
+  'ساعت ارسال پاسخ‌برگ',
+  'نمره آزمون تستی (خودکار)',
+  'بارم نمره نهایی',
+];
+
+const exportRowValues = (row: ResultRow): (string | number)[] => {
+  const timeOrAbsent = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })
+      : 'غایب';
+
+  const pStatus =
+    row.status === 'graded'
+      ? 'تصحیح شده'
+      : row.status === 'submitted'
+        ? 'ارسال شده (در انتظار تصحیح)'
+        : row.status === 'ongoing'
+          ? 'در حال آزمون'
+          : 'غایب / بدون پاسخ‌برگ';
+
+  return [
+    row.studentName,
+    row.maskedNationalId || '***',
+    row.className,
+    pStatus,
+    timeOrAbsent(row.startedAt),
+    timeOrAbsent(row.submittedAt),
+    row.autoScore,
+    row.score,
+  ];
+};
+
+/** CSV cell: quote-escape (embedded " or newline breaks columns) and
+    neutralize spreadsheet formula injection (a leading = + - @ executes
+    in Excel/LibreOffice on open). */
+const csvCell = (value: string | number): string => {
+  let s = String(value ?? '');
+  if (s.length > 0 && '=+-@'.indexOf(s[0]) >= 0) s = "'" + s;
+  const NL = String.fromCharCode(10);
+  if (s.includes(',') || s.includes('"') || s.includes(NL)) {
+    s = '"' + s.split('"').join('""') + '"';
+  }
+  return s;
+};
+
+/** UTF-8 CSV with Persian BOM (Excel needs the BOM to read Persian). */
 export const buildResultsCsv = (examTitle: string, rows: ResultRow[]): void => {
-  let csvData = '\uFEFF'; // UTF-8 byte order mark to display Persian characters flawlessly in MS Excel
-
-  // Headers
-  csvData +=
-    'نام دانش‌آموز,کد ملی دانش‌آموز,گروه کلاسی,وضعیت شرکت در آزمون,ساعت شروع,ساعت ارسال پاسخ‌برگ,نمره آزمون تستی (خودکار),بارم نمره نهایی\n';
-
-  rows.forEach((row) => {
-    const startStr = row.startedAt
-      ? new Date(row.startedAt).toLocaleTimeString('fa-IR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : 'غایب';
-    const submitStr = row.submittedAt
-      ? new Date(row.submittedAt).toLocaleTimeString('fa-IR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : 'غایب';
-
-    const pStatus =
-      row.status === 'graded'
-        ? 'تصحیح شده'
-        : row.status === 'submitted'
-          ? 'ارسال شده (در انتظار تصحیح)'
-          : row.status === 'ongoing'
-            ? 'در حال آزمون'
-            : 'غایب / بدون پاسخ‌برگ';
-
-    csvData += `"${row.studentName}","${row.nationalId}","${row.className}","${pStatus}","${startStr}","${submitStr}",${row.autoScore},${row.score}\n`;
-  });
+  const csvData = ['\uFEFF' + exportHeaders.map(csvCell).join(','), ...rows.map((row) => exportRowValues(row).map(csvCell).join(','))].join('\n');
 
   const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -282,4 +307,24 @@ export const buildResultsCsv = (examTitle: string, rows: ResultRow[]): void => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+};
+
+/** Real XLSX workbook (SheetJS, lazy — paid only when the Excel button is
+    pressed; this used to toast a fake "ExcelJS" success over a CSV file). */
+export const buildResultsXlsx = async (examTitle: string, rows: ResultRow[]): Promise<void> => {
+  const XLSX = await import('xlsx');
+  const worksheet = XLSX.utils.aoa_to_sheet([exportHeaders, ...rows.map(exportRowValues)]);
+  worksheet['!cols'] = [
+    { wch: 26 }, // name
+    { wch: 14 }, // masked id
+    { wch: 18 }, // class
+    { wch: 28 }, // status
+    { wch: 10 },
+    { wch: 10 },
+    { wch: 14 },
+    { wch: 14 },
+  ];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'نتایج');
+  XLSX.writeFile(workbook, `کارنامه_برخط_آزمون_${examTitle.replace(/\s+/g, '_')}.xlsx`);
 };

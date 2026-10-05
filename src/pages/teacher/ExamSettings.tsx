@@ -48,16 +48,23 @@ interface ExamSettingsProps {
   onBack: () => void;
 }
 
+/** Today (local clock) as YYYY-MM-DD — defaults must not be frozen demo
+    dates; scheduling itself is evaluated against Date.now() below. */
+const todayYmd = (() => {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+})();
+
 export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps) {
   // 1. Core Scheduling States
-  const [startDate, setStartDate] = useState<string>(exam.settings.startDate || '2026-06-15');
+  const [startDate, setStartDate] = useState<string>(exam.settings.startDate || todayYmd);
   const [startHour, setStartHour] = useState<string>(exam.settings.startHour || '08:30');
-  const [endDate, setEndDate] = useState<string>(exam.settings.endDate || '2026-06-15');
+  const [endDate, setEndDate] = useState<string>(exam.settings.endDate || todayYmd);
   const [endHour, setEndHour] = useState<string>(exam.settings.endHour || '10:30');
   const [durationMinutes, setDurationMinutes] = useState<number>(
     exam.settings.durationMinutes || exam.duration || 60,
   );
-  const [_timezone] = useState<string>('IRDT - تهران (GMT+3:30)');
 
   // 2. Student Access States
   const [allowedClasses, setAllowedClasses] = useState<string[]>(
@@ -114,7 +121,9 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
   // 6. Syncing States On Component mount
   const [examStatus, setExamStatus] = useState<Exam['status']>(exam.status || 'draft');
-  const [examLink, setExamLink] = useState<string>(exam.settings.examLink || '');
+  // Join link is DERIVED from the server-issued exam code — the old client-
+  // minted AZMOON-7-XXXXXX link never matched exam_code in the DB, so it 404'd.
+  const examLink = exam.examCode ? `/secure-exam/${exam.examCode}` : '';
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [showRecommendationsApplied, setShowRecommendationsApplied] = useState<boolean>(false);
 
@@ -141,7 +150,6 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
     resultsDisplayMode,
     startInstructions,
     examStatus,
-    examLink,
   ]);
   const [savedSnapshot, setSavedSnapshot] = useState(editorSnapshot);
   const guardUnsavedAction = useUnsavedChanges(editorSnapshot !== savedSnapshot);
@@ -297,7 +305,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
       beastMode,
       resultsDisplayMode,
       startInstructions,
-      examLink,
+      // examLink no longer persisted — derived from exam.examCode at render
     };
 
     setSavedSnapshot(editorSnapshot);
@@ -322,23 +330,12 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
       return;
     }
 
-    // Generate random code for safe unique route mapping
-    const randCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const gradeLetter =
-      exam.grade === 'هفتم'
-        ? '7'
-        : exam.grade === 'هشتم'
-          ? '8'
-          : exam.grade === 'نهم'
-            ? '9'
-            : 'GEN';
-    const generatedLink = `/exam/AZMOON-${gradeLetter}-${randCode}`;
+    // Join link: the server mints exam_code at creation (hydrateExam/mapExam
+    // round-trip it) — nothing to generate client-side.
 
-    setExamLink(generatedLink);
-
-    // Set correct status depending on current local time comparison (mocked to 2026-06-13)
-    // For demo purposes, we activate it right away so they can view, or scheduler logic is respected
-    const nowTimestamp = new Date('2026-06-13T18:36:44-07:00').getTime();
+    // Live scheduling check against the real clock (this used to compare
+    // against a frozen 2026-06-13 demo timestamp).
+    const nowTimestamp = Date.now();
     const startTimestamp = new Date(`${startDate}T${startHour}:00`).getTime();
 
     let targetStatus: Exam['status'] = 'active';
@@ -377,7 +374,6 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
       beastMode,
       resultsDisplayMode,
       startInstructions,
-      examLink: generatedLink,
     };
 
     setSavedSnapshot(editorSnapshot);
@@ -1324,7 +1320,6 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
                   type="button"
                   onClick={() => {
                     setExamStatus('draft');
-                    setExamLink('');
                   }}
                   className="w-full py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl text-micro font-bold border-[var(--color-glass-light-stroke)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
@@ -1334,8 +1329,8 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
               </div>
             )}
 
-            {/* Mock link generator display panel */}
-            {examLink && (
+            {/* Server-issued exam link panel (derived from exam.examCode) */}
+            {examStatus !== 'draft' && examLink && (
               <div className="p-3 pane rounded-2xl border-[var(--color-accent)]/20 space-y-2.5">
                 <span className="text-micro font-bold text-[var(--color-text-primary)] flex items-center gap-1">
                   <Link className="w-3.5 h-3.5 text-[var(--color-accent)]" />

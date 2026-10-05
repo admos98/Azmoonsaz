@@ -79,6 +79,13 @@ export function questionToBody(question) {
     parts: cleanParts,
     matchingPairs: question.matchingPairs,
     orderingItems: question.orderingItems,
+    // Display metadata the teacher fills in the drawer — persisted in body
+    // so it survives reload (it used to live only in the client cache,
+    // refabricated by row index after every refresh).
+    difficulty: question.difficulty,
+    section: question.section,
+    tags: Array.isArray(question.tags) ? question.tags : undefined,
+    completenessStatus: question.completenessStatus,
   });
 }
 
@@ -104,6 +111,11 @@ export function mapQuestion(row) {
     correctAnswer: key.correctAnswer,
     imageUrl: body.imageUrl,
     parts: body.parts,
+    // display metadata (whitelisted in questionToBody, stored in body)
+    difficulty: body.difficulty,
+    section: body.section,
+    tags: body.tags,
+    completenessStatus: body.completenessStatus,
     rubrics: key.rubrics || [],
     sampleAnswer: key.sampleAnswer,
     explanation: key.explanation,

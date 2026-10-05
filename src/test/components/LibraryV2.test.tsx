@@ -125,17 +125,22 @@ describe('FilterBar', () => {
 });
 
 describe('DifficultyBadge', () => {
-  it('maps difficulties to labels and defaults undefined to متوسط', () => {
+  it('maps difficulties to labels', () => {
     render(
       <>
         <DifficultyBadge difficulty="easy" />
         <DifficultyBadge difficulty="hard" />
-        <DifficultyBadge />
+        <DifficultyBadge difficulty="medium" />
       </>,
     );
     expect(screen.getByText('آسان')).toBeInTheDocument();
     expect(screen.getByText('سخت')).toBeInTheDocument();
-    expect(screen.getAllByText('متوسط').length).toBe(1);
+    expect(screen.getByText('متوسط')).toBeInTheDocument();
+  });
+
+  it('renders nothing when difficulty is absent — never invents a level', () => {
+    const { container } = render(<DifficultyBadge />);
+    expect(container.firstChild).toBeNull();
   });
 });
 
