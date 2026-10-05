@@ -20,6 +20,13 @@ for (const file of files) {
     failures.push(`dev harness chunk leaked into dist: ${file}`);
 }
 
+// P1-3: reference labs (playground, probes, tuners) live in tools/reference/
+// and must never ride the deploy — Vite copies public/ wholesale.
+for (const name of await readdir(path.resolve('dist'))) {
+  if (/playground|probe|tuner/i.test(name))
+    failures.push(`deploy cruft found in dist: ${name}`);
+}
+
 console.log('JavaScript chunk sizes (largest first):');
 for (const item of report.sort((a, b) => b.bytes - a.bytes)) {
   const percentage = Math.round((item.bytes / item.limit) * 100);

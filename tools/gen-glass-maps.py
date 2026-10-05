@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Glass family maps — lens / pane / drop displacement + specular rasters.
 
-Physics port of the playground's kube.io replica (public/playground/
+Physics port of the playground's kube.io replica (tools/reference/playground/
 playground.js buildDisplacementMap/computeProfile/buildSpecularMap), same
 math end to end:
 
