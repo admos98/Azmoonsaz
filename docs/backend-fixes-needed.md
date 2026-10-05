@@ -1,4 +1,8 @@
 # Backend fixes needed (from Rounds 2–4 triage, 2026-10-05)
+> Update 2026-10-05: frontend halves shipped in 674d2ab — client exam-link
+> minting, mock clock, fake AI grading, and the fake Excel export are gone.
+> BE-4 closes entirely (frontend deletion landed; backend AI endpoint is a
+> product decision, not a bug). BE-2/BE-3 remain server-side only.
 
 Frontend-led work is NOT in this file — it ships as normal frontend batches.
 Each item below needs `api/` work or a backend contract decision first.
