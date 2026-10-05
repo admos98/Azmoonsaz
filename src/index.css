@@ -105,6 +105,9 @@
   --color-gold: #f5b301;
   --color-gold-soft: #fef9e7;
   --color-gold-glow: rgba(245, 179, 1, 0.16);
+  /* gold as CONTENT (icons/text): bright #f5b301 is ~1.8:1 on cream — fine
+     for fills, invisible as ink. Same value as --color-login-gold-ink. */
+  --color-gold-ink: #765500;
 
   /* Semantic — Primary */
   --color-accent: #343242;
@@ -407,6 +410,8 @@
   --color-ink: #f5f6fa;
   --color-gold: #f8c542;
   --color-gold-soft: #382d10;
+  /* gold as content: bright gold reads on dark (11:1 on page-bg) */
+  --color-gold-ink: #f8c542;
   --color-gold-glow: rgba(248, 197, 66, 0.18);
 
   /* Hero focal pane — DARK carries no paint. It used to be a 0.97-opaque
@@ -1443,23 +1448,25 @@ select::-webkit-calendar-picker-indicator {
   box-shadow: 0 0 0 2px var(--color-danger-soft);
 }
 
-/* Viewport and safe-area resilience for mobile browser chrome and virtual keyboards. */
-.min-h-screen {
-  min-height: 100vh;
-  min-height: 100dvh;
-}
+/* Viewport and safe-area resilience for mobile browser chrome and virtual keyboards.
+   Native min-h-dvh replaced the .min-h-screen override (F-10) — Tailwind's own
+   utility now carries the dynamic-viewport height; 100vh fallback no longer
+   needed for our browser floor. */
 
 .command-palette-trigger {
   bottom: max(1rem, env(safe-area-inset-bottom));
   left: max(1rem, env(safe-area-inset-left));
 }
 
+/* break-word, not anywhere (F-10): `anywhere` feeds min-content sizing, so
+   flex/grid children get squeezed by long tokens before wrapping is needed;
+   break-word wraps only on overflow — same visual result, stable layout. */
 body,
 p,
 li,
 label,
 button {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* Preserve usable touch targets on coarse-pointer devices without inflating desktop density. */
@@ -1808,10 +1815,21 @@ button {
   backdrop-filter: none;
   color: var(--color-text-tertiary);
 }
+/* press FIRST, hover after: the late hover block must keep winning on
+   mouse-press (hover+active both match → 8%), while keyboard-press —
+   no :hover — still lands on the 26% push. Same cascade as the old
+   two-block layout. */
+.btn-glass--bare:active {
+  --btn-tint-mix: 26%;
+}
+/* ONE bare hover block (F-7: the second block used to re-open the same
+   selector with 8% + transitions; merged — final values are identical).
+   The gold wash materializes the ghost body on hover/focus; the menu-item
+   hover rides the same rule (scoped color below stays the later winner). */
 .btn-glass--bare:hover,
 .btn-glass--bare:focus-visible {
   --btn-tint: var(--color-gold);
-  --btn-tint-mix: 12%;
+  --btn-tint-mix: 8%;
   --btn-sheen-a: 1;
   border-color: rgb(255 255 255 / var(--btn-edge-a));
   box-shadow:
@@ -1820,24 +1838,6 @@ button {
     0 1px 2px rgb(0 0 0 / 0.1);
   backdrop-filter: blur(var(--btn-blur)) saturate(1.4);
   color: var(--color-text-primary);
-}
-.btn-glass--bare:active {
-  --btn-tint-mix: 26%;
-}
-/* hamburger menu items read on the DENSEST glass (lens--menu, dim 0.14):
-   tertiary-on-tinted-glass measured grey-on-grey, so menu items carry the
-   brand ink at rest (theme-aware: near-black light, near-white dark). Hover
-   still materializes gold via the bare rule above (higher hover specificity
-   wins while hovering). Scoped to the hamburger panels — dropdown options
-   and other bare buttons keep their quiet tertiary rest. */
-[id^='hamburger-panel-'] .btn-glass--bare {
-  color: var(--color-ink);
-}
-/* bare hover is the menu-item hover too: faster (120ms, not 180ms) and more
-   subtle (8% wash, not 12%) — a tint breath, not a white-to-gold sweep. */
-.btn-glass--bare:hover,
-.btn-glass--bare:focus-visible {
-  --btn-tint-mix: 8%;
   transition:
     --btn-tint 120ms ease-out,
     --btn-tint-mix 120ms ease-out,
@@ -1848,6 +1848,15 @@ button {
     color 120ms ease-out,
     transform 80ms ease-out,
     filter 120ms ease-out;
+}
+/* hamburger menu items read on the DENSEST glass (lens--menu): tertiary-on-
+   tinted-glass measured grey-on-grey, so menu items carry the brand ink at
+   rest (theme-aware: near-black light, near-white dark). The gold WASH still
+   materializes on hover via the bare rule above; this later rule keeps the
+   ink readable while hovered. Scoped to the hamburger panels — dropdown
+   options and other bare buttons keep their quiet tertiary rest. */
+[id^='hamburger-panel-'] .btn-glass--bare {
+  color: var(--color-ink);
 }
 /* menu hover runs ONE light turn, not three: a parked cursor on a menu item
    otherwise drives compositor frames (and full url() re-runs on the densest

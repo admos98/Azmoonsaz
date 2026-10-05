@@ -158,7 +158,7 @@ export default function FixtureGallery() {
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-[var(--color-page-bg)] px-4 py-8 sm:px-8"
+      className="min-h-dvh bg-[var(--color-page-bg)] px-4 py-8 sm:px-8"
       data-testid="fixture-gallery"
     >
       <div className="mx-auto max-w-6xl space-y-10">

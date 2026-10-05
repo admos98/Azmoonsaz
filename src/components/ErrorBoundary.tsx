@@ -34,7 +34,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
       if (this.props.fallback) return this.props.fallback;
       return (
         <div
-          className="min-h-screen flex items-center justify-center bg-[var(--color-glass-light-fill)] p-8"
+          className="min-h-dvh flex items-center justify-center bg-[var(--color-glass-light-fill)] p-8"
           dir="rtl"
         >
           <div className="max-w-md w-full lens rounded-3xl p-8 text-center">

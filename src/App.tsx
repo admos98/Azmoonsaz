@@ -63,7 +63,7 @@ const TopbarHarness = import.meta.env.DEV
 function BootScreen({ label }: { label: string }) {
   return (
     <div
-      className="grid min-h-screen place-items-center bg-[var(--color-page-bg)]"
+      className="grid min-h-dvh place-items-center bg-[var(--color-page-bg)]"
       role="status"
       aria-label={label}
     >
@@ -295,7 +295,7 @@ export default function App() {
       <Suspense
         fallback={
           <div
-            className="min-h-screen bg-[var(--color-page-bg)]"
+            className="min-h-dvh bg-[var(--color-page-bg)]"
             role="status"
             aria-label="در حال بارگذاری آزمایشگاه مواد"
           />
@@ -344,7 +344,7 @@ export default function App() {
           (fixed, z-0). The shell itself must stay transparent so the plate
           reads; leaving the bg-[--color-page-bg] utility here would re-paint
           the base over it. */}
-      <div className="min-h-screen flex" dir="rtl" id="app-teacher-shell">
+      <div className="min-h-dvh flex" dir="rtl" id="app-teacher-shell">
         {/* ONE background: the topo page plate painted by #app-teacher-shell::before
             (index.css). The old depth-field stage (blobs/rings/bands) is gone — it
             rendered as a second background over the plate. The plate's contour
@@ -352,7 +352,7 @@ export default function App() {
 
         {/* Main Container — layer 10 */}
         <div
-          className="relative z-10 flex-1 pt-14 lg:pt-0 flex flex-col min-h-screen"
+          className="relative z-10 flex-1 pt-14 lg:pt-0 flex flex-col min-h-dvh"
           id="main-content-layout"
         >
           <Topbar

@@ -55,9 +55,9 @@ function DensePage() {
 
 export default function TopbarHarness() {
   return (
-    <div id="app-teacher-shell" className="min-h-screen" dir="rtl">
+    <div id="app-teacher-shell" className="min-h-dvh" dir="rtl">
       <TeacherProvider initialTeacher={MOCK_TEACHER}>
-        <div className="relative z-10 flex min-h-screen flex-col pt-14" id="main-content-layout">
+        <div className="relative z-10 flex min-h-dvh flex-col pt-14" id="main-content-layout">
           <Topbar
             currentTab="dashboard"
             onTabChange={() => {}}

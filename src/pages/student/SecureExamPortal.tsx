@@ -234,7 +234,7 @@ export default function SecureExamPortal({
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-[var(--color-on-dark-subtle)] text-[var(--color-text-primary)] flex flex-col"
+      className="min-h-dvh bg-[var(--color-on-dark-subtle)] text-[var(--color-text-primary)] flex flex-col"
     >
       <header className="lens border-b border-[var(--color-glass-light-stroke)]">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">

@@ -72,7 +72,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
 
   if (validating) {
     return (
-      <div className="min-h-screen bg-[var(--color-page-bg)] flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-[var(--color-page-bg)] flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
             <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
@@ -85,7 +85,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-[var(--color-page-bg)] flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-[var(--color-page-bg)] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
@@ -120,7 +120,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
 
   if (!tokenValid) {
     return (
-      <div className="min-h-screen bg-[var(--color-page-bg)] flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-[var(--color-page-bg)] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
@@ -144,7 +144,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-page-bg)] flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-[var(--color-page-bg)] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4 shadow-lg shadow-lg">

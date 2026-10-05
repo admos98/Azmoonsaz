@@ -100,7 +100,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   };
 
   return (
-    <div className="login-shell min-h-screen p-4 sm:p-6">
+    <div className="login-shell min-h-dvh p-4 sm:p-6">
       <aside className="login-art" aria-hidden="true">
         <div className="login-art-mark">
           <TheMark variant="row" size={72} animated={false} />

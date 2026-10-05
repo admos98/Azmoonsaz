@@ -74,7 +74,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-page-bg)] flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-[var(--color-page-bg)] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">

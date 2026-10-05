@@ -356,7 +356,7 @@ export default function Settings() {
 
       <Card>
         <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-3">
-          <Shield className="w-4 h-4 text-[var(--color-gold)]" />
+          <Shield className="w-4 h-4 text-[var(--color-gold-ink)]" />
           راهنمای امنیت آزمون
         </h3>
         <p className="text-caption text-[var(--color-text-secondary)] leading-7">

@@ -119,6 +119,9 @@ const PAIRS = [
   ['--color-text-on-solid', '--color-accent-solid', 4.5],
   ['--color-text-on-solid', '--color-success-solid', 4.5],
   ['--color-text-on-solid', '--color-danger-solid', 4.5],
+  // gold as content (icons/text on the brand surface) — F-10
+  ['--color-gold-ink', '--color-page-bg', 4.5],
+  ['--color-gold-ink', '--color-surface', 4.5],
 ];
 
 const failures = [];
