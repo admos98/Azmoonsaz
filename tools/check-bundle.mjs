@@ -14,6 +14,10 @@ for (const file of files) {
     failures.push(
       `${file}: ${(bytes / 1024).toFixed(1)} kB exceeds ${(limit / 1024).toFixed(0)} kB`,
     );
+  // Dev harness must never ship: App.tsx gates both lazy imports behind
+  // import.meta.env.DEV so production builds drop the chunks entirely.
+  if (/FixtureGallery|TopbarHarness/.test(file))
+    failures.push(`dev harness chunk leaked into dist: ${file}`);
 }
 
 console.log('JavaScript chunk sizes (largest first):');

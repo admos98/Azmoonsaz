@@ -47,11 +47,16 @@ const TeacherProfile = lazy(loadTeacherProfile);
 // download it and it stays out of the entry chunk.
 const SecureExamPortal = lazy(() => import('./pages/student/SecureExamPortal'));
 
-// Dev-only material laboratory (`/dev/fixtures`). Rendered before auth so the
-// visual baseline can be captured without a backend; never linked from nav.
-const FixtureGallery = lazy(() => import('./pages/dev/FixtureGallery'));
+// Dev-only material laboratory (`/dev/fixtures`). DEV-gated at build time:
+// in production `import.meta.env.DEV` folds to `false`, these conditional
+// lazy() calls dead-code-eliminate — the chunks never reach dist.
+const FixtureGallery = import.meta.env.DEV
+  ? lazy(() => import('./pages/dev/FixtureGallery'))
+  : null;
 // Dev-only topbar harness (`/dev/topbar`) — same gate, real Topbar + mock teacher.
-const TopbarHarness = lazy(() => import('./pages/dev/TopbarHarness'));
+const TopbarHarness = import.meta.env.DEV
+  ? lazy(() => import('./pages/dev/TopbarHarness'))
+  : null;
 
 /** Full-page boot state. Used for the auth handshake and as the Suspense
  *  fallback on route-level code boundaries. */
@@ -279,10 +284,13 @@ export default function App() {
   }
 
   // Dev-only material laboratory — bypasses auth so primitives can be
-  // inspected without a backend session. Compiled out of production builds:
-  // the bypass-auth design must never ship.
-  if (currentPath.startsWith('/dev/')) {
+  // inspected without a backend session. Gated on import.meta.env.DEV so
+  // production builds DCE the whole branch (lazy imports + chunks included).
+  if (import.meta.env.DEV && currentPath.startsWith('/dev/')) {
     const DevPage = currentPath.startsWith('/dev/topbar') ? TopbarHarness : FixtureGallery;
+    // Unreachable: prod folds both consts to null and the DEV guard above
+    // never opens; kept so the narrow type renders without a cast.
+    if (!DevPage) return null;
     return (
       <Suspense
         fallback={
