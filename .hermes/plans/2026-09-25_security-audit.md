@@ -6,18 +6,18 @@
 
 ## Verification evidence (this pass)
 
-| Check | Result |
-|---|---|
-| `npm run verify:prod` | ✅ passed |
-| `npm test` (browser) | ✅ 27 files / 174 tests |
-| `npm test` (server, `vitest.server.config.ts`) | ✅ 4 files / 28 tests |
-| `npm audit` | ⚠️ 7 vulns (6 high, 1 moderate) — see F-16 |
-| git history secret scan (all revs) + secret-prefix grep | ✅ clean |
-| `SERVICE_ROLE` refs in `src/` | ✅ zero |
-| `.from(` / `.rpc(` in `src/` (students hitting tables) | ✅ zero |
-| `SECURITY DEFINER` / functions / views / triggers in `supabase/` | ✅ zero |
-| `dangerouslySetInnerHTML` / `innerHTML` / `eval` in `src/`+`api/` | ✅ zero |
-| SPA rewrite order in `vercel.json` | ✅ `/api/:path*` before `/(.*)` |
+| Check                                                             | Result                                     |
+| ----------------------------------------------------------------- | ------------------------------------------ |
+| `npm run verify:prod`                                             | ✅ passed                                  |
+| `npm test` (browser)                                              | ✅ 27 files / 174 tests                    |
+| `npm test` (server, `vitest.server.config.ts`)                    | ✅ 6 files / 58 tests (post-wave-1/2)      |
+| `npm audit`                                                       | ⚠️ 7 vulns (6 high, 1 moderate) — see F-16 |
+| git history secret scan (all revs) + secret-prefix grep           | ✅ clean                                   |
+| `SERVICE_ROLE` refs in `src/`                                     | ✅ zero                                    |
+| `.from(` / `.rpc(` in `src/` (students hitting tables)            | ✅ zero                                    |
+| `SECURITY DEFINER` / functions / views / triggers in `supabase/`  | ✅ zero                                    |
+| `dangerouslySetInnerHTML` / `innerHTML` / `eval` in `src/`+`api/` | ✅ zero                                    |
+| SPA rewrite order in `vercel.json`                                | ✅ `/api/:path*` before `/(.*)`            |
 
 Diff scope since prior anchor `7a15420`: security-relevant changes confined to
 `api/_lib/{examSecurity,utils}.js`, `api/routes/teacher.js` (bulk endpoint),
@@ -31,67 +31,67 @@ Diff scope since prior anchor `7a15420`: security-relevant changes confined to
 
 ### Fixed since prior audit ✅
 
-| ID | Finding | Evidence |
-|---|---|---|
-| F-10 | Legacy `ExamPortal.tsx` (client-side student auth + grading, teacher payloads in student context) | File deleted; `src/App.tsx` imports only `SecureExamPortal` (lazy, line 49), route `/secure-exam/:code` (line 271) |
-| F-17 | Auth gate set from URL (`/teacher/exams/:id/results` flipped `isTeacherLoggedIn`) | `App.tsx:103-126` — boot handshake via `supabase.auth.getSession()` + `onAuthStateChange` |
-| F-23 | Dev tuner pages shipped in `public/` | Moved to `tools/reference/` (not deployed); `public/boot.js` external, CSP-compliant by design (comment cites `script-src 'self'`) |
-| — | Dev harness exposure (related) | `83bc374`: `/dev/*` pages gated on `import.meta.env.DEV` (`App.tsx:288`), folds to `false` in prod build |
-| — | CSV export formula injection + plaintext national ID (new surface, prevented) | `student-rows.ts:288-296` neutralizes leading `=+-@`, quotes cells; export uses `maskedNationalId` only (`:275`) |
+| ID   | Finding                                                                                           | Evidence                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| F-10 | Legacy `ExamPortal.tsx` (client-side student auth + grading, teacher payloads in student context) | File deleted; `src/App.tsx` imports only `SecureExamPortal` (lazy, line 49), route `/secure-exam/:code` (line 271)                 |
+| F-17 | Auth gate set from URL (`/teacher/exams/:id/results` flipped `isTeacherLoggedIn`)                 | `App.tsx:103-126` — boot handshake via `supabase.auth.getSession()` + `onAuthStateChange`                                          |
+| F-23 | Dev tuner pages shipped in `public/`                                                              | Moved to `tools/reference/` (not deployed); `public/boot.js` external, CSP-compliant by design (comment cites `script-src 'self'`) |
+| —    | Dev harness exposure (related)                                                                    | `83bc374`: `/dev/*` pages gated on `import.meta.env.DEV` (`App.tsx:288`), folds to `false` in prod build                           |
+| —    | CSV export formula injection + plaintext national ID (new surface, prevented)                     | `student-rows.ts:288-296` neutralizes leading `=+-@`, quotes cells; export uses `maskedNationalId` only (`:275`)                   |
 
 ### Open — P0 (fix first)
 
-| ID | Finding | Location (current lines) | Status |
-|---|---|---|---|
+| ID   | Finding                                                                                                                                                                                            | Location (current lines)                                                                                     | Status                                                                                                                                                                |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | F-01 | **Score forgery**: `save-answer` upserted `body.answer` verbatim; student could embed `__grading.scoreGained`, trusted by `extractGrading()` and the submissions reducer (`score = Σ scoreGained`) | `api/routes/student.js` save-answer, `api/_lib/utils.js` extractGrading, `api/routes/teacher.js` submissions | **FIXED** — `sanitizeStudentAnswer()` (`api/_lib/examSecurity.js`) stores only `{ value }` (bounded); regression tests in `tests/server/studentSessionWindow.test.ts` |
 
 ### Open — P1
 
-| ID | Finding | Location | Status |
-|---|---|---|---|
-| F-02 | Duration/window bypass: fresh full-TTL token on every `start-session`; `save-answer`/`submit` had no window check; `ExamCountdown` was unwired | `student.js`, `utils.js` token TTL, `SecureExamPortal` | **FIXED** — `tokenTtlForSession()` anchors TTL to `started_at`; window checks on save/submit/payload/start-session (410 `exam_time_expired`, session frozen to `expired`); grace = 5 min (matches token grace), teacher intent (completed/archived/draft) and not-yet-open stay strict; `ExamCountdown` wired into `SecureExamPortal` (locks question list via `inert`, blocks saves, banner + `exam_time_expired` message) |
-| F-03 | Rate-limit key = first `x-forwarded-for` entry (client-controlled) → limit bypass | `api/_lib/http.js:22-25` | **OPEN** |
-| F-04 | `rate_limits` table: no RLS in exposed schema; no GRANT/REVOKE anywhere → anon/auth may reset counters via Data API | `supabase/migrations/20260915000001_rate_limits.sql:15` | **FIXED + APPLIED + VERIFIED LIVE (2026-10-06)** — migration `20260925000001_rate_limits_row_level_security.sql` pushed to linked project `rluswiufyzwlsuhunhmj`; read-back: `rls_enabled=true, force_rls=true, policy_count=0`; `migration list` shows remote applied |
-| F-05 | `orderingItems`/`matchingPairs` whitelisted into student payload = correct order/mapping (answer key); `shuffleQuestions`/`shuffleOptions` stored but never enforced | `api/_lib/examSecurity.js:15-22` (whitelist untouched by this round's diff) | **OPEN** |
-| F-06 | `question-images` bucket public, no MIME/size limits, upload policy uses deprecated `auth.role()`; contradicts `docs/supabase-hardening.md` §4 (private + signed URLs) | `supabase/migrations/20260617000003_storage_question_images.sql:2-6` | **OPEN** |
+| ID        | Finding                                                                                                                                                                | Location                                                         | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F-02      | Duration/window bypass: fresh full-TTL token on every `start-session`; `save-answer`/`submit` had no window check; `ExamCountdown` was unwired                         | `student.js`, `utils.js` token TTL, `SecureExamPortal`           | **FIXED** — `tokenTtlForSession()` anchors TTL to `started_at`; window checks on save/submit/payload/start-session (410 `exam_time_expired`, session frozen to `expired`); grace = 5 min (matches token grace), teacher intent (completed/archived/draft) and not-yet-open stay strict; `ExamCountdown` wired into `SecureExamPortal` (locks question list via `inert`, blocks saves, banner + `exam_time_expired` message)                                      |
+| F-03      | Rate-limit key = first `x-forwarded-for` entry (client-controlled) → limit bypass                                                                                      | `api/_lib/http.js` `getClientIp()`                               | **FIXED** — trusts `x-real-ip`, else the LAST XFF entry (edge-appended), else socket; regression tests in `tests/server/rateLimiting.test.ts`                                                                                                                                                                                                                                                                                                                    |
+| F-04      | `rate_limits` table: no RLS in exposed schema; no GRANT/REVOKE anywhere → anon/auth may reset counters via Data API                                                    | `supabase/migrations/20260915000001_rate_limits.sql:15`          | **FIXED + APPLIED + VERIFIED LIVE (2026-10-06)** — migration `20260925000001_rate_limits_row_level_security.sql` pushed to linked project `rluswiufyzwlsuhunhmj`; read-back: `rls_enabled=true, force_rls=true, policy_count=0`; `migration list` shows remote applied                                                                                                                                                                                           |
+| F-05      | `orderingItems`/`matchingPairs` whitelisted into student payload = correct order/mapping (answer key); `shuffleQuestions`/`shuffleOptions` stored but never enforced   | `api/_lib/examSecurity.js`                                       | **FIXED** — whitelist stripped (`QUESTION_BODY_WHITELIST` no longer admits them); `applyExamShuffles()` (mulberry32 over sha256, seed = sessionId) enforces `shuffleQuestions`/`shuffleOptions` server-side in `exam-payload` — deterministic across reloads, per-session, answers keyed by question id (order-independent); tests in `rateLimiting.test.ts`                                                                                                     |
+| F-06/F-24 | `question-images` bucket public, no MIME/size limits, upload policy uses deprecated `auth.role()`; contradicts `docs/supabase-hardening.md` §4 (private + signed URLs) | `supabase/migrations/20260617000003_storage_question_images.sql` | **FIXED + APPLIED + VERIFIED LIVE (2026-10-06)** — `20261006000002_question_images_hardening.sql`: bucket `public=false`, 5 MB cap, jpeg/png/webp/gif allow-list, policies rewritten `TO authenticated` (SELECT + INSERT); read-back: `bucket_public=false, old_public_policy=0, policies=[SELECT/INSERT {authenticated}]`; no live producer of bucket URLs (recon), so nothing breaks — student reads to stay server-issued signed URLs when storage sync lands |
 
 ### Open — P2
 
-| ID | Finding | Location | Status |
-|---|---|---|---|
-| F-07 | Limiter read-modify-write race + fail-open local fallback | `rateLimit.js:26-66` | OPEN |
-| F-08 | Rate limiting sparse: bulk endpoint now limited (✅ `students-bulk:<teacherId>` 10/min, `teacher.js` bulk handler) but `save-answer`, `submit`, other teacher routes, `student-id-demo` still unlimited | `api/routes/*` | PARTIAL |
-| F-09 | Signup enumeration (`already registered`); min-6 password client-side only | `src/services/api.ts:46`, `Login.tsx` | OPEN |
-| F-11 | Exam codes via `Math.random()`; custom `examCode` accepted unvalidated (`exam.examCode \|\| randomExamCode()`); note `docs/backend-fixes-needed.md` BE-2 says "server mints at create" — client-supplied override still present | `utils.js:24-28`, `teacher.js:360` | OPEN |
-| F-12 | Exam-code enumeration oracle (`exam_not_found` vs `invalid_credentials` vs `not_allowed_for_exam`) | `student.js:29-44` | OPEN |
-| F-13 | No audit logging — `audit_logs` only in `schema-security-draft.sql:99`, never migrated | `supabase/` | OPEN |
-| F-14 | Student lookup by `national_id_hash` unscoped (no `teacher_id`) + `maybeSingle()` → 500 on multi-teacher duplicates | `student.js:32-35` | OPEN |
-| F-15 | Unauthenticated HMAC-prefix oracle (`hashPreview` 12 hex chars of any national ID), no rate limit | `public.js:25-36` | OPEN |
-| F-16 | Vulnerable components: **xlsx ^0.18.5 runtime, no fix** (prototype pollution + ReDoS, reachable from teacher Excel import); now 7 advisories total — browserslist/nanoid/postcss/source-map-js/vite are build-time, `npm audit fix` addresses them | `package.json` | OPEN (worsened: 6→7) |
+| ID   | Finding                                                                                                                                                                                                                                            | Location                                  | Status                                                                                                                                                                                                                                                                                                                                                           |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F-07 | Limiter read-modify-write race + fail-open local fallback                                                                                                                                                                                          | `api/_lib/rateLimit.js`                   | **FIXED + APPLIED + VERIFIED LIVE (2026-10-06)** — atomic `bump_rate_limit(p_key text, p_window_ms integer)` RPC (SECURITY INVOKER, single upsert `count+1 RETURNING`); EXECUTE ACL = `{postgres, service_role}` only; local fallback bounded to 5000 keys; live probe `bumped_count=1` OK; follow-up `20261006000003` pins `search_path` (advisor WARN cleared) |
+| F-08 | Rate limiting sparse                                                                                                                                                                                                                               | `api/routes/*`, `api/_lib/teacherAuth.js` | **FIXED** — added: `student-id-demo:<ip>` 10/min (`public.js`), `teacher-write:<teacherId>` 120/min on non-GET (`teacherAuth.js`), `start-session-id:<examCode>:<hash16>` 10/min, `save-answer:<sid>` 120/min, `submit:<sid>` 30/min (`student.js`); limiter now atomic via F-07 RPC so limits hold across serverless instances; tests assert 429s               |
+| F-09 | Signup enumeration (`already registered`); min-6 password client-side only                                                                                                                                                                         | `src/services/api.ts:46`, `Login.tsx`     | OPEN                                                                                                                                                                                                                                                                                                                                                             |
+| F-11 | Exam codes via `Math.random()`; custom `examCode` accepted unvalidated (`exam.examCode \|\| randomExamCode()`); note `docs/backend-fixes-needed.md` BE-2 says "server mints at create" — client-supplied override still present                    | `utils.js:24-28`, `teacher.js:360`        | OPEN                                                                                                                                                                                                                                                                                                                                                             |
+| F-12 | Exam-code enumeration oracle (`exam_not_found` vs `invalid_credentials` vs `not_allowed_for_exam`)                                                                                                                                                 | `student.js:29-44`                        | OPEN                                                                                                                                                                                                                                                                                                                                                             |
+| F-13 | No audit logging — `audit_logs` only in `schema-security-draft.sql:99`, never migrated                                                                                                                                                             | `supabase/`                               | OPEN                                                                                                                                                                                                                                                                                                                                                             |
+| F-14 | Student lookup by `national_id_hash` unscoped (no `teacher_id`) + `maybeSingle()` → 500 on multi-teacher duplicates                                                                                                                                | `student.js:32-35`                        | OPEN                                                                                                                                                                                                                                                                                                                                                             |
+| F-15 | Unauthenticated HMAC-prefix oracle (`hashPreview` 12 hex chars of any national ID)                                                                                                                                                                 | `public.js` `student-id-demo`             | **MITIGATED (F-08: 10 probes/min/IP)** — removal / teacher-gate still Wave 3                                                                                                                                                                                                                                                                                     |
+| F-16 | Vulnerable components: **xlsx ^0.18.5 runtime, no fix** (prototype pollution + ReDoS, reachable from teacher Excel import); now 7 advisories total — browserslist/nanoid/postcss/source-map-js/vite are build-time, `npm audit fix` addresses them | `package.json`                            | OPEN (worsened: 6→7)                                                                                                                                                                                                                                                                                                                                             |
 
 ### Open — P3
 
-| ID | Finding | Location | Status |
-|---|---|---|---|
-| F-18 | `scoreGained = Infinity` passes `Number.isNaN`; no upper bound vs points | `teacher.js:446-449` | OPEN |
-| F-19 | `grade-answer` doesn't verify `questionId ∈ exam`; `save-answer` payload unbounded (body-limit only) | `teacher.js:450-455` | OPEN |
-| F-20 | Onboarding `schoolName`/`subject` unbounded | `auth.js:42-43` | OPEN |
-| F-21 | Student IP + User-Agent persisted in `client_info` (PII) | `student.js:60` | OPEN |
-| F-22 | `security-check` discloses config booleans publicly | `public.js:10-23` | OPEN |
-| F-24 | Storage policy `auth.role()` deprecation (fold into F-06) | storage migration | OPEN |
-| F-25 | Session secret falls back to `STUDENT_ID_PEPPER` (key-purpose reuse) | `studentSession.js:13,33` | OPEN |
+| ID   | Finding                                                                                              | Location                  | Status                                        |
+| ---- | ---------------------------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------- |
+| F-18 | `scoreGained = Infinity` passes `Number.isNaN`; no upper bound vs points                             | `teacher.js:446-449`      | OPEN                                          |
+| F-19 | `grade-answer` doesn't verify `questionId ∈ exam`; `save-answer` payload unbounded (body-limit only) | `teacher.js:450-455`      | OPEN                                          |
+| F-20 | Onboarding `schoolName`/`subject` unbounded                                                          | `auth.js:42-43`           | OPEN                                          |
+| F-21 | Student IP + User-Agent persisted in `client_info` (PII)                                             | `student.js:60`           | OPEN                                          |
+| F-22 | `security-check` discloses config booleans publicly                                                  | `public.js:10-23`         | OPEN                                          |
+| F-24 | Storage policy `auth.role()` deprecation                                                             | storage migration         | **FIXED with F-06** — see F-06/F-24 row above |
+| F-25 | Session secret falls back to `STUDENT_ID_PEPPER` (key-purpose reuse)                                 | `studentSession.js:13,33` | OPEN                                          |
 
 ### New findings this pass
 
-| ID | Sev | Finding | Location |
-|---|---|---|---|
-| N-01 | P3 | Bulk import: `name`/`grade` strings length-unbounded (only `.trim()`); rows capped at 500 but each text unbounded within the ~4.5 MB body limit | `api/routes/teacher.js` (`handleTeacherStudentsBulk` → `insertRow`) |
-| N-02 | info | Client sends `phoneNumber`/`email` in bulk payload; server drops them silently (functional drift, not a vuln) | `src/services/api.ts` (`importStudents`) vs bulk handler insert columns |
-| N-03 | info | `docs/backend-fixes-needed.md` BE-2/BE-3 claims partially overstate: scheduling window is enforced on `start-session`/`exam-payload` only (F-02 still open); client `examCode` override still exists (F-11) | docs vs `api/` |
-| N-04 | P2 | **Advisors WARN (live, 2026-10-06):** leaked password protection disabled — enable HIBP check in Supabase Auth settings (dashboard action, folds into F-09/dashboard item ⑦) | Supabase dashboard → Auth → Password |
-| N-05 | P3 | **Advisors WARN (live):** `auth_rls_initplan` × 9 — policies on `teacher_profiles` (2), `class_groups`, `students`, `exams`, `questions`, `teacher_schools`, `teacher_schedule` call `auth.uid()` per row; fix = `(select auth.uid())` in a follow-up migration (performance-only) | live policies, `database-linter?lint=0003` |
-| N-06 | P2 | **Schema drift:** `public.audit_logs` EXISTS remotely with RLS enabled (advisors) but is not in any repo migration (F-13 claimed it never existed) — and nothing in `api/` writes to it. Reconcile: add a migration that tracks the table (or drop it) and wire audit writes | live DB vs `supabase/migrations/` |
-| — | info | Advisors security INFO × 6: `rls_enabled_no_policy` on `audit_logs`, `exam_allowed_classes`, `exam_questions`, `rate_limits`, `student_answers`, `student_exam_sessions` — all deny-by-design server-only tables (service_role only). 0 security errors | live advisors, `lint=0008` |
+| ID   | Sev  | Finding                                                                                                                                                                                                                                                                            | Location                                                                |
+| ---- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| N-01 | P3   | Bulk import: `name`/`grade` strings length-unbounded (only `.trim()`); rows capped at 500 but each text unbounded within the ~4.5 MB body limit                                                                                                                                    | `api/routes/teacher.js` (`handleTeacherStudentsBulk` → `insertRow`)     |
+| N-02 | info | Client sends `phoneNumber`/`email` in bulk payload; server drops them silently (functional drift, not a vuln)                                                                                                                                                                      | `src/services/api.ts` (`importStudents`) vs bulk handler insert columns |
+| N-03 | info | `docs/backend-fixes-needed.md` BE-2/BE-3 claims partially overstate: scheduling window is enforced on `start-session`/`exam-payload` only (F-02 still open); client `examCode` override still exists (F-11)                                                                        | docs vs `api/`                                                          |
+| N-04 | P2   | **Advisors WARN (live, 2026-10-06):** leaked password protection disabled — enable HIBP check in Supabase Auth settings (dashboard action, folds into F-09/dashboard item ⑦)                                                                                                       | Supabase dashboard → Auth → Password                                    |
+| N-05 | P3   | **Advisors WARN (live):** `auth_rls_initplan` × 9 — policies on `teacher_profiles` (2), `class_groups`, `students`, `exams`, `questions`, `teacher_schools`, `teacher_schedule` call `auth.uid()` per row; fix = `(select auth.uid())` in a follow-up migration (performance-only) | live policies, `database-linter?lint=0003`                              |
+| N-06 | P2   | **Schema drift:** `public.audit_logs` EXISTS remotely with RLS enabled (advisors) but is not in any repo migration (F-13 claimed it never existed) — and nothing in `api/` writes to it. Reconcile: add a migration that tracks the table (or drop it) and wire audit writes       | live DB vs `supabase/migrations/`                                       |
+| —    | info | Advisors security INFO × 6: `rls_enabled_no_policy` on `audit_logs`, `exam_allowed_classes`, `exam_questions`, `rate_limits`, `student_answers`, `student_exam_sessions` — all deny-by-design server-only tables (service_role only). 0 security errors                            | live advisors, `lint=0008`                                              |
 
 ---
 
@@ -106,21 +106,23 @@ Diff scope since prior anchor `7a15420`: security-relevant changes confined to
    - `start-session` freezes past-window sessions to `expired` (no token minted) and reports already-frozen as `exam_time_expired`;
    - grace policy: 5 min after personal deadline and after clock-based `ends_at` (offline flush + final submit); teacher intent (stored `completed`/`archived`/`draft`) and not-yet-open stay strict;
    - `ExamCountdown` wired into `SecureExamPortal` (sticky bar): at expiry → `timeExpired` state, question list `inert`, saves blocked client-side, danger banner; `exam_time_expired` added to `friendlyApiError`.
-   *Verified:* `tests/server/studentSessionWindow.test.ts` (15 tests: stripping, TTL anchor, 410s, freeze, grace matrix).
+     _Verified:_ `tests/server/studentSessionWindow.test.ts` (15 tests: stripping, TTL anchor, 410s, freeze, grace matrix).
 3. ✅ **F-04** — migration `supabase/migrations/20260925000001_rate_limits_row_level_security.sql` (ENABLE + FORCE RLS, zero policies). **Applied to linked project `rluswiufyzwlsuhunhmj` (Azmoonsaz) 2026-10-06 with user confirmation; read-back verified `rls_enabled=true, force_rls=true, policy_count=0`; `supabase db advisors --linked` run (security: 1 WARN `auth_leaked_password_protection` = N-04, 6 INFO deny-by-design, 0 errors; performance: 9 WARN `auth_rls_initplan` = N-05).**
 
-### Wave 2 — abuse resistance
+### Wave 2 — abuse resistance ✅ DONE (2026-10-06) — all migrations applied + verified live
 
-4. **F-03** — Key rate limits on Vercel's trusted hop (`x-real-ip` / last XFF entry), not first.
-5. **F-07** — Atomic increment (single SQL `INSERT … ON CONFLICT DO UPDATE SET count = count + 1 … RETURNING`) or RPC; treat Supabase outage as fail-closed for `start-session` (or cap local fallback strictly).
-6. **F-05** — Server-side scramble of `orderingItems`/`matchingPairs` before send; store scrambled order + canonical key; enforce `shuffleQuestions`/`shuffleOptions` server-side. Extend the `examStatus.test.ts` answer-key leak test to cover `safeQuestionForStudent` bodies (current test only covers the exam row).
-7. **F-06/F-24** — Migration: `file_size_limit` + `allowed_mime_types` on `question-images`; rewrite policy `TO authenticated` + folder scope; per doc §4 consider private bucket + signed URLs.
-8. **F-08** — Rate-limit `save-answer` (per session), `student-id-demo`, and remaining teacher write routes.
+4. ✅ **F-03** — `getClientIp()` (`api/_lib/http.js`): `x-real-ip` first, else LAST XFF entry (edge-appended; the first entry is attacker-controlled), else socket address.
+5. ✅ **F-07** — `bump_rate_limit(p_key text, p_window_ms integer)` RPC (`20261006000001`): atomic upsert `count = count + 1 … RETURNING`, SECURITY INVOKER, EXECUTE revoked from `PUBLIC`/`anon`/`authenticated` (live ACL = `{postgres, service_role}`); `rateLimit.js` calls it with a bounded (5000-key) per-instance fallback. Follow-up `20261006000003` pins `search_path` (advisor `function_search_path_mutable` cleared). **Live probe: `bumped_count=1` OK.**
+6. ✅ **F-05** — `QUESTION_BODY_WHITELIST` stripped of `orderingItems`/`matchingPairs`; `applyExamShuffles()` (mulberry32 over sha256, seed = sessionId) enforces `shuffleQuestions`/`shuffleOptions` in `exam-payload` — deterministic per session (reload-stable), same set preserved, answers keyed by question id so grading is order-independent; `safeQuestionForStudent` leak covered by new test.
+7. ✅ **F-06/F-24** — `20261006000002_question_images_hardening.sql`: bucket `public=false`, 5 MB `file_size_limit`, jpeg/png/webp/gif allow-list, policies rewritten `TO authenticated` (SELECT + INSERT, `auth.role()` predicate gone). Recon: no live producer of bucket URLs (bodies are base64/external) → safe. **Read-back: `bucket_public=false, old_public_policy=0`.**
+8. ✅ **F-08** — `student-id-demo:<ip>` 10/min; `teacher-write:<teacherId>` 120/min on non-GET; `start-session-id:<examCode>:<hash16>` 10/min; `save-answer:<sid>` 120/min; `submit:<sid>` 30/min. With F-07's DB-backed counter, limits hold across serverless instances.
+
+_Wave 2 verified:_ `tests/server/rateLimiting.test.ts` (15 tests: trusted-hop keying, RPC path + fallback, 429s on all five new limits, answer-key strip, shuffle determinism) — server 6 files / 58 tests, browser 174/174, `tsc --noEmit` clean, eslint 0 errors, `vite build` OK, `verify:prod` pass. Commits `3d8709c` (+ follow-up).
 
 ### Wave 3 — crypto/auth hygiene
 
 9. **F-11** — `crypto.randomInt` for exam codes; validate/override client-supplied `examCode` (`/^[A-Z0-9]{4,10}$/`, server-mint only).
-10. **F-15** — Remove `student-id-demo` (or gate behind teacher auth + rate limit).
+10. **F-15** — Remove `student-id-demo` (now rate-limited 10/min/IP via F-08; oracle removal/teacher-gate still pending).
 11. **F-09** — Uniform signup response ("check your email"); enforce min password length in Supabase dashboard settings.
 12. **F-12** — Collapse error codes to uniform `invalid_credentials` where enumeration matters.
 13. **F-14** — Scope student lookup by the exam's `teacher_id` (`students.teacher_id = exams.teacher_id`) — also fixes the 500 on duplicate hashes.
@@ -139,7 +141,7 @@ Live checks require user confirmation per authorization gate: ① public signup 
 ## Exit criteria (audit closes when)
 
 - [x] Wave 1 items fixed + `tests/server/` regression tests added + `npm run verify:prod` + `npm test` green (174 browser + 43 server, `tsc --noEmit` clean, eslint 0 errors, `vite build` OK)
-- [ ] Wave 2 items fixed or explicitly Accepted Risk (with compensating control + re-evaluation trigger, per owasp-audit disposition rules)
+- [x] Wave 2 items fixed + regression tests + full gates green (174 browser + 58 server, `tsc --noEmit` clean, eslint 0 errors, `vite build` OK, `verify:prod` pass); all 3 migrations applied to linked project + read-back verified 2026-10-06
 - [x] F-04 migration applied to the linked project + advisors run (confirmation required) — done 2026-10-06
 - [ ] Dashboard items ①–⑥ confirmed in writing (+ ⑦ enable leaked password protection, N-04)
 - [ ] `npm audit` triaged: runtime-reachable vulns = 0 or Accepted Risk documented
