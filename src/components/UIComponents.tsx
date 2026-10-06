@@ -634,7 +634,13 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
       const opts = Array.from(
         listRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [],
       );
-      (opts.find((o) => o.getAttribute('aria-selected') === 'true') || opts[0])?.focus();
+      const target = opts.find((o) => o.getAttribute('aria-selected') === 'true') || opts[0];
+      target?.focus();
+      // F-9: also scroll the list onto the selection — the portalled listbox
+      // is its own scroller (max-h-56), so opening long a list used to show
+      // the top while focus sat on an option below the fold. Optional call:
+      // jsdom doesn't implement scrollIntoView.
+      target?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     }, [open]);
 
     // Portal geometry: anchored to the trigger button and measured in a layout
@@ -729,7 +735,9 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                 style={{ ...listStyle, boxShadow: 'none', transformOrigin: 'top center' }}
                 id={`${dropdownId}-list`}
                 role="listbox"
-                aria-label={label || placeholder}
+                /* F-9: named by the TRIGGER (its visible text = the current
+                   selection), not a copied aria-label that can drift */
+                aria-labelledby={dropdownId}
                 onKeyDown={handleListKeyDown}
                 className="relative glx-strong field rounded-xl max-h-56 overflow-y-auto"
               >
@@ -922,6 +930,18 @@ export const Modal = ({
   // The old area-blur halo is gone (painted shadow — removed). The hook's
   // companion slot stays unthreaded: it null-guards a missing ref.
   const [originStyle] = useOriginFromTrigger(triggerRef, panelRef, isOpen);
+
+  // F-9: lock background scroll while the dialog is open (mobile browsers
+  // otherwise rubber-band the page behind a bottom-sheet). Saves and restores
+  // the exact previous value, so nested dialogs unwind correctly.
+  useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;

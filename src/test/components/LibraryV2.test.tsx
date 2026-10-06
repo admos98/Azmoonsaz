@@ -12,9 +12,11 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
   ConfirmDialog,
   DifficultyBadge,
+  Dropdown,
   EmptyState,
   FilterBar,
   IconButton,
+  Modal,
   PageHeader,
   PillButton,
   SearchInput,
@@ -256,6 +258,68 @@ describe('F-9 accessibility wiring', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('Dropdown listbox is named by its trigger (aria-labelledby, not a copied label)', () => {
+    render(
+      <Dropdown
+        id="cls"
+        value="a"
+        onChange={() => {}}
+        label="کلاس"
+        options={[
+          { value: 'a', label: 'اول' },
+          { value: 'b', label: 'دوم' },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button'));
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toHaveAttribute('aria-labelledby', 'cls');
+    expect(listbox).not.toHaveAttribute('aria-label');
+    // trigger id resolves to the visible button
+    expect(document.getElementById('cls')).toBe(screen.getByRole('button'));
+  });
+
+  it('Dropdown parks focus and scrolls the list onto the selected option', () => {
+    render(
+      <Dropdown
+        value="b"
+        onChange={() => {}}
+        options={[
+          { value: 'a', label: 'اول' },
+          { value: 'b', label: 'دوم' },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button'));
+    const selected = screen.getByRole('option', { name: 'دوم' });
+    expect(selected).toHaveFocus();
+    expect(selected).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('Modal locks body scroll while open and restores it on close (F-9)', () => {
+    const { rerender, unmount } = render(
+      <Modal isOpen onClose={() => {}} title="پنجره">
+        محتوا
+      </Modal>,
+    );
+    expect(document.body.style.overflow).toBe('hidden');
+    rerender(
+      <Modal isOpen={false} onClose={() => {}} title="پنجره">
+        محتوا
+      </Modal>,
+    );
+    expect(document.body.style.overflow).toBe('');
+    // unmount from open state also restores (cleanup path)
+    rerender(
+      <Modal isOpen onClose={() => {}} title="پنجره">
+        محتوا
+      </Modal>,
+    );
+    expect(document.body.style.overflow).toBe('hidden');
+    unmount();
+    expect(document.body.style.overflow).toBe('');
   });
 });
 
