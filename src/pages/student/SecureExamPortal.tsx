@@ -21,6 +21,7 @@ import {
   getQueuedAnswers,
 } from '../../services/offlineAnswerQueue';
 import { ConfirmDialog, PillButton, TextLink } from '../../components/UIComponents';
+import { ExamCountdown } from '../../components/ExamCountdown';
 
 type Phase = 'login' | 'ready' | 'take' | 'submitted';
 
@@ -79,6 +80,7 @@ function friendlyApiError(error: unknown): string {
       exam_not_open: 'این آزمون هنوز شروع نشده است.',
       exam_closed: 'زمان شرکت در این آزمون به پایان رسیده است.',
       exam_already_finalized: 'پاسخ شما قبلاً برای این آزمون ثبت نهایی شده است.',
+      exam_time_expired: 'زمان آزمون شما به پایان رسیده است. پاسخ‌نامه را ثبت کنید.',
       not_allowed_for_exam: 'شما اجازه شرکت در این آزمون را ندارید.',
       too_many_requests: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید.',
       session_not_active: 'نشست آزمون فعال نیست یا قبلاً ارسال شده است.',
@@ -108,6 +110,8 @@ export default function SecureExamPortal({
   const [savedAt, setSavedAt] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [queuedCount, setQueuedCount] = useState(0);
+  const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
+  const [timeExpired, setTimeExpired] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -153,6 +157,8 @@ export default function SecureExamPortal({
       );
       setExam(response.exam);
       setQuestions(response.questions || []);
+      setSessionStartedAt(response.session?.startedAt || null);
+      setTimeExpired(false);
       setPhase('take');
     } catch (err) {
       setError(friendlyApiError(err));
@@ -162,6 +168,10 @@ export default function SecureExamPortal({
   };
 
   const handleSaveAnswer = async (questionId: string, value: string) => {
+    if (timeExpired) {
+      setError('زمان آزمون به پایان رسید؛ پاسخ جدیدی ذخیره نمی‌شود.');
+      return;
+    }
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
     setSaving(true);
     setError('');
@@ -361,6 +371,13 @@ export default function SecureExamPortal({
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-caption">
+                {sessionStartedAt && (exam.durationMinutes ?? 0) > 0 && (
+                  <ExamCountdown
+                    durationMinutes={exam.durationMinutes}
+                    startedAt={sessionStartedAt}
+                    onExpire={() => setTimeExpired(true)}
+                  />
+                )}
                 {queuedCount > 0 ? (
                   <div className="bg-[var(--color-warning-soft)] border border-[var(--color-warning)]/20 text-[var(--color-warning)]/80 rounded-xl px-3 py-2 flex items-center gap-2">
                     <WifiOff className="w-4 h-4 text-[var(--color-warning)] animate-pulse" />
@@ -414,65 +431,77 @@ export default function SecureExamPortal({
               </div>
             </div>
 
-            {questions.map((question, index) => (
-              <section key={question.id} className="lens rounded-3xl p-5 md:p-6 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-glass-light-stroke)] pb-3">
-                  <h3 className="font-black text-[var(--color-text-primary)] text-label">
-                    سوال {toPersianDigits(index + 1)}: {question.title}
-                  </h3>
-                  <span className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 rounded-xl px-3 py-1 text-caption font-black">
-                    {toPersianDigits(question.points)} نمره
-                  </span>
-                </div>
-                <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
-                  {question.body?.text || 'متن سوال موجود نیست.'}
-                </p>
-                {question.body?.imageUrl && (
-                  <div className="my-3">
-                    <img
-                      loading="lazy"
-                      decoding="async"
-                      src={question.body!.imageUrl}
-                      alt="پیوست سوال"
-                      className="max-h-64 rounded-2xl object-cover border border-[var(--color-glass-light-stroke)] shadow-xs"
-                    />
+            {timeExpired && (
+              <div
+                role="alert"
+                className="lens rounded-3xl p-4 border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)]/30 text-[var(--color-danger)] font-black text-caption flex items-center gap-2"
+              >
+                <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
+                زمان آزمون به پایان رسید — پاسخ‌ها دیگر ذخیره نمی‌شوند. پاسخ‌نامه خود را ثبت کنید.
+              </div>
+            )}
+
+            <div inert={timeExpired}>
+              {questions.map((question, index) => (
+                <section key={question.id} className="lens rounded-3xl p-5 md:p-6 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-glass-light-stroke)] pb-3">
+                    <h3 className="font-black text-[var(--color-text-primary)] text-label">
+                      سوال {toPersianDigits(index + 1)}: {question.title}
+                    </h3>
+                    <span className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 rounded-xl px-3 py-1 text-caption font-black">
+                      {toPersianDigits(question.points)} نمره
+                    </span>
                   </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {(question.body?.options || []).map((option) => {
-                    const selected = answers[question.id] === option.id;
-                    return (
-                      <button
-                        type="button"
-                        key={option.id}
-                        onClick={() => handleSaveAnswer(question.id, option.id)}
-                        aria-pressed={selected}
-                        className={
-                          (selected
-                            ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)] text-[var(--color-accent)] shadow-xs font-black '
-                            : 'border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)] ') +
-                          'rounded-2xl border p-4 text-right text-caption transition-all flex items-center justify-between cursor-pointer'
-                        }
-                      >
-                        <span>{option.text}</span>
-                        {option.imageUrl && (
-                          <img
-                            loading="lazy"
-                            decoding="async"
-                            src={option.imageUrl}
-                            alt="گزینه"
-                            className="w-10 h-10 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] ml-2"
-                          />
-                        )}
-                        <span className="font-mono text-micro text-[var(--color-text-tertiary)] font-bold frost px-2 py-0.5 rounded-md">
-                          {option.id}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+                  <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
+                    {question.body?.text || 'متن سوال موجود نیست.'}
+                  </p>
+                  {question.body?.imageUrl && (
+                    <div className="my-3">
+                      <img
+                        loading="lazy"
+                        decoding="async"
+                        src={question.body!.imageUrl}
+                        alt="پیوست سوال"
+                        className="max-h-64 rounded-2xl object-cover border border-[var(--color-glass-light-stroke)] shadow-xs"
+                      />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(question.body?.options || []).map((option) => {
+                      const selected = answers[question.id] === option.id;
+                      return (
+                        <button
+                          type="button"
+                          key={option.id}
+                          onClick={() => handleSaveAnswer(question.id, option.id)}
+                          aria-pressed={selected}
+                          className={
+                            (selected
+                              ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)] text-[var(--color-accent)] shadow-xs font-black '
+                              : 'border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)] ') +
+                            'rounded-2xl border p-4 text-right text-caption transition-all flex items-center justify-between cursor-pointer'
+                          }
+                        >
+                          <span>{option.text}</span>
+                          {option.imageUrl && (
+                            <img
+                              loading="lazy"
+                              decoding="async"
+                              src={option.imageUrl}
+                              alt="گزینه"
+                              className="w-10 h-10 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] ml-2"
+                            />
+                          )}
+                          <span className="font-mono text-micro text-[var(--color-text-tertiary)] font-bold frost px-2 py-0.5 rounded-md">
+                            {option.id}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
         )}
 

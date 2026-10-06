@@ -21,19 +21,9 @@ const QUESTION_BODY_WHITELIST = new Set([
   'orderingItems',
 ]);
 
-const OPTION_WHITELIST = new Set([
-  'id',
-  'text',
-  'imageUrl',
-]);
+const OPTION_WHITELIST = new Set(['id', 'text', 'imageUrl']);
 
-const PART_WHITELIST = new Set([
-  'id',
-  'text',
-  'type',
-  'options',
-  'imageUrl',
-]);
+const PART_WHITELIST = new Set(['id', 'text', 'type', 'options', 'imageUrl']);
 
 function whitelistObject(obj, allowedKeys) {
   if (!obj || typeof obj !== 'object') return obj;
@@ -134,8 +124,75 @@ export function getExamAvailability(exam, now = new Date()) {
   if (!exam) return { ok: false, status: 404, error: 'exam_not_found' };
 
   const status = deriveExamStatus(exam, now);
-  if (status === 'completed' || status === 'archived') return { ok: false, status: 410, error: 'exam_closed' };
+  if (status === 'completed' || status === 'archived')
+    return { ok: false, status: 410, error: 'exam_closed' };
   if (status === 'draft') return { ok: false, status: 403, error: 'exam_not_available' };
   if (status === 'scheduled') return { ok: false, status: 423, error: 'exam_not_open' };
   return { ok: true };
+}
+
+// --- Student session time window (F-02) ---
+
+/** Grace after any hard deadline so flush/submit can still land (mirrors the token TTL grace). */
+export const SESSION_GRACE_MS = 5 * 60 * 1000;
+
+/**
+ * Absolute end of an in-progress session: started_at + duration (+ grace).
+ * The session's own clock — re-joining never resets it.
+ */
+export function sessionDeadlineMs(session, exam, { grace = true } = {}) {
+  const startedMs = Date.parse(session?.started_at || '');
+  if (!Number.isFinite(startedMs)) return Number.NaN;
+  const durationMs = Math.max(1, Number(exam?.duration_minutes) || 60) * 60_000;
+  return startedMs + durationMs + (grace ? SESSION_GRACE_MS : 0);
+}
+
+/**
+ * Availability with end-of-window grace: students whose exam window just
+ * closed keep SESSION_GRACE_MS to flush/submit. Teacher intent (stored
+ * completed/archived/draft) and the not-yet-open window stay strict.
+ */
+export function getExamAvailabilityWithGrace(exam, now = new Date()) {
+  const strict = getExamAvailability(exam, now);
+  if (strict.ok || strict.error !== 'exam_closed') return strict;
+  if (exam?.status === 'completed' || exam?.status === 'archived') return strict;
+  const endsMs = Date.parse(exam?.ends_at || '');
+  if (!Number.isFinite(endsMs) || now.getTime() > endsMs + SESSION_GRACE_MS) return strict;
+  return { ok: true };
+}
+
+/** Personal window check for an in-progress session (grace included). */
+export function getSessionTimeWindow(session, exam, now = new Date()) {
+  const deadlineMs = sessionDeadlineMs(session, exam);
+  if (!Number.isFinite(deadlineMs)) return { ok: false, status: 422, error: 'session_invalid' };
+  if (now.getTime() > deadlineMs) return { ok: false, status: 410, error: 'exam_time_expired' };
+  return { ok: true };
+}
+
+// --- Student answer sanitization (F-01) ---
+
+const MAX_ANSWER_VALUE_CHARS = 4000;
+const MAX_ANSWER_ITEMS = 200;
+
+/**
+ * Students may write `{ value }` and nothing else. Server-side grading state
+ * (`__grading`, comments, correctness flags) is teacher-owned and is stripped
+ * here so a client can never forge a score through save-answer.
+ */
+export function sanitizeStudentAnswer(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const { value } = raw;
+  if (typeof value === 'string') return { value: value.slice(0, MAX_ANSWER_VALUE_CHARS) };
+  if (typeof value === 'number') return Number.isFinite(value) ? { value } : {};
+  if (typeof value === 'boolean') return { value };
+  if (Array.isArray(value)) {
+    const items = value
+      .filter(
+        (item) => typeof item === 'string' || (typeof item === 'number' && Number.isFinite(item)),
+      )
+      .slice(0, MAX_ANSWER_ITEMS)
+      .map((item) => (typeof item === 'string' ? item.slice(0, MAX_ANSWER_VALUE_CHARS) : item));
+    return { value: items };
+  }
+  return {};
 }

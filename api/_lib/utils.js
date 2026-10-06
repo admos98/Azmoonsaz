@@ -2,7 +2,7 @@
  * Shared API utilities extracted from api/index.js
  */
 
-import { stripTeacherOnlyFields, deriveExamStatus } from './examSecurity.js';
+import { stripTeacherOnlyFields, deriveExamStatus, sessionDeadlineMs } from './examSecurity.js';
 
 export function safeError(error, fallback) {
   const response = { error: fallback };
@@ -14,7 +14,9 @@ export function safeError(error, fallback) {
 }
 
 export function isUuid(value) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || ''),
+  );
 }
 
 export function normalizeStudentStatus(status) {
@@ -50,7 +52,9 @@ export function deriveAnswerKey(question) {
   const options = Array.isArray(question.options) ? question.options : [];
   const correctFromOptions = options.filter((o) => o.isCorrect).map((o) => o.id);
   return {
-    correctAnswer: question.correctAnswer ?? (question.type === 'multiple_choice' ? correctFromOptions : correctFromOptions[0]),
+    correctAnswer:
+      question.correctAnswer ??
+      (question.type === 'multiple_choice' ? correctFromOptions : correctFromOptions[0]),
     correctFillBlanks: question.correctFillBlanks || [],
     rubrics: question.rubrics || [],
     sampleAnswer: question.sampleAnswer,
@@ -68,7 +72,9 @@ export function questionToBody(question) {
         const { correctAnswer, ...rest } = part;
         return {
           ...rest,
-          options: Array.isArray(part.options) ? part.options.map(({ isCorrect, ...option }) => option) : part.options,
+          options: Array.isArray(part.options)
+            ? part.options.map(({ isCorrect, ...option }) => option)
+            : part.options,
         };
       })
     : undefined;
@@ -101,10 +107,14 @@ export function mapQuestion(row) {
     points: Number(row.points || 0),
     category: row.subject,
     grade: row.grade,
-    options: Array.isArray(body.options) ? body.options.map((option) => ({
-      ...option,
-      isCorrect: Array.isArray(correctAnswer) ? correctAnswer.includes(option.id) : correctAnswer === option.id,
-    })) : undefined,
+    options: Array.isArray(body.options)
+      ? body.options.map((option) => ({
+          ...option,
+          isCorrect: Array.isArray(correctAnswer)
+            ? correctAnswer.includes(option.id)
+            : correctAnswer === option.id,
+        }))
+      : undefined,
     matchingPairs: body.matchingPairs,
     orderingItems: body.orderingItems,
     correctFillBlanks: key.correctFillBlanks || [],
@@ -238,7 +248,8 @@ export async function hydrateExam(teacher, exam) {
   const sectionsByTitle = new Map();
   for (const row of examQuestions || []) {
     const title = row.section_title || 'سوالات آزمون';
-    if (!sectionsByTitle.has(title)) sectionsByTitle.set(title, { id: title, title, questionIds: [] });
+    if (!sectionsByTitle.has(title))
+      sectionsByTitle.set(title, { id: title, title, questionIds: [] });
     sectionsByTitle.get(title).questionIds.push(row.question_id);
   }
   return mapExam(exam, questions, [...sectionsByTitle.values()]);
@@ -251,10 +262,32 @@ export function tokenTtlForExam(exam) {
   return Math.max(60, Math.min(durationSeconds, secondsUntilEnd + 300));
 }
 
+/**
+ * TTL for a student session token, anchored to the session's own clock
+ * (started_at + duration + grace). Re-joining can never mint a token that
+ * outlives the personal window (F-02).
+ */
+export function tokenTtlForSession(exam, session, now = Date.now()) {
+  const baseTtl = tokenTtlForExam(exam);
+  const deadlineMs = sessionDeadlineMs(session, exam);
+  if (!Number.isFinite(deadlineMs)) return baseTtl;
+  const remainingSeconds = Math.floor((deadlineMs - now) / 1000);
+  return Math.max(60, Math.min(baseTtl, remainingSeconds));
+}
+
 export async function requireOwnedSession(teacher, sessionId) {
-  const { data: session, error: sessionError } = await teacher.admin.from('student_exam_sessions').select('id, exam_id, student_id, status').eq('id', sessionId).maybeSingle();
+  const { data: session, error: sessionError } = await teacher.admin
+    .from('student_exam_sessions')
+    .select('id, exam_id, student_id, status')
+    .eq('id', sessionId)
+    .maybeSingle();
   if (sessionError || !session) return { error: sessionError || new Error('missing session') };
-  const { data: exam, error: examError } = await teacher.admin.from('exams').select('id').eq('id', session.exam_id).eq('teacher_id', teacher.id).maybeSingle();
+  const { data: exam, error: examError } = await teacher.admin
+    .from('exams')
+    .select('id')
+    .eq('id', session.exam_id)
+    .eq('teacher_id', teacher.id)
+    .maybeSingle();
   if (examError || !exam) return { error: examError || new Error('exam not owned') };
   return { session };
 }
