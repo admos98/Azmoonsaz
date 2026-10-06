@@ -7,6 +7,7 @@ import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { TeacherProvider } from './contexts/TeacherContext';
 import type { Teacher } from './types';
 import Topbar from './components/Topbar';
+import { BubbleLoader } from './components/BubbleLoader';
 import Login from './pages/teacher/Login';
 import Onboarding from './pages/teacher/Onboarding';
 import ResetPassword from './pages/teacher/ResetPassword';
@@ -54,9 +55,7 @@ const FixtureGallery = import.meta.env.DEV
   ? lazy(() => import('./pages/dev/FixtureGallery'))
   : null;
 // Dev-only topbar harness (`/dev/topbar`) — same gate, real Topbar + mock teacher.
-const TopbarHarness = import.meta.env.DEV
-  ? lazy(() => import('./pages/dev/TopbarHarness'))
-  : null;
+const TopbarHarness = import.meta.env.DEV ? lazy(() => import('./pages/dev/TopbarHarness')) : null;
 
 /** Full-page boot state. Used for the auth handshake and as the Suspense
  *  fallback on route-level code boundaries. */
@@ -68,7 +67,7 @@ function BootScreen({ label }: { label: string }) {
       aria-label={label}
     >
       <div className="space-y-4 text-center">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-ink)]" />
+        <BubbleLoader label={null} />
         <p className="text-label text-[var(--color-text-secondary)]">{label}</p>
       </div>
     </div>

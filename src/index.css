@@ -1752,9 +1752,51 @@ button {
    frames — which re-runs every url() surface at 60fps even when the user sits
    still. THREE blinks, then rest: opacity returns to 1 = the static look, so
    the badge/icon reads identical at rest and the page goes back to zero
-   frames. Loaders use animate-spin (transient, untouched). */
+   frames. */
 .animate-pulse {
   animation-iteration-count: 3;
+}
+/* bubble-row loader — THE one sanctioned infinite loop (exception record for
+   the cap above; do not copy the loop pattern elsewhere). Four outline
+   bubbles, the gold "answered" fill hops 1→2→3→4 at 180ms/step — the brand
+   grammar (a bubble fills when it's answered) in motion. Transient block/
+   page loading only; inline button slots keep the compact ring. Reduced
+   motion / data-motion='reduce' parks it on the third bubble — the resting
+   brand state. */
+.bubble-loader {
+  display: inline-flex;
+  gap: 6px;
+}
+.bubble-loader i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-ink);
+  animation: bubble-cycle 720ms steps(1) infinite;
+  animation-delay: calc(var(--i) * 180ms);
+}
+@keyframes bubble-cycle {
+  0% {
+    background: var(--color-gold);
+  }
+  25%,
+  100% {
+    background: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bubble-loader i {
+    animation: none;
+  }
+  .bubble-loader i:nth-child(3) {
+    background: var(--color-gold);
+  }
+}
+[data-motion='reduce'] .bubble-loader i {
+  animation: none;
+}
+[data-motion='reduce'] .bubble-loader i:nth-child(3) {
+  background: var(--color-gold);
 }
 /* push: the tint becomes more prominent (the variant's resting mix -> 34%) */
 .btn-glass:active {

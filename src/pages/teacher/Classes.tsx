@@ -19,6 +19,7 @@ import { ClassGroup } from '../../types';
 import { formatPersianNumber } from '../../services/persianHelpers';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
+import { BubbleLoader } from '../../components/BubbleLoader';
 
 export default function Classes() {
   // The class list rides the shared cache — this page used to refetch the
@@ -165,7 +166,7 @@ export default function Classes() {
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-[var(--color-accent)]/20 border-t-transparent rounded-full animate-spin" />
+          <BubbleLoader />
         </div>
       ) : (
         <Card className="overflow-hidden border-[var(--color-glass-light-stroke)] shadow-sm">

@@ -750,4 +750,29 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(cssRaw).toMatch(/Press physics — three deliberate tiers/);
     expect(cssRaw).not.toMatch(/ONE press physics/);
   });
+
+  it('bubble loader — the sanctioned loop + block loaders converted', () => {
+    // DOM contract in LibraryV2; this pins the CSS exception record and
+    // the spinner migration at file level.
+    expect(cssRaw).toMatch(/THE one sanctioned infinite loop/);
+    expect(css).toMatch(
+      /\.bubble-loader i\s*{[^}]*animation:\s*bubble-cycle 720ms steps\(1\) infinite/s,
+    );
+    expect(css).toMatch(/@keyframes bubble-cycle\s*{\s*0%\s*{\s*background:\s*var\(--color-gold\)/);
+    expect(css).toMatch(
+      /\[data-motion='reduce'\]\s*\.bubble-loader i:nth-child\(3\)\s*{\s*background:\s*var\(--color-gold\)/,
+    );
+    // block/page loaders converted to bubbles
+    for (const f of [
+      'src/App.tsx',
+      'src/pages/teacher/Classes.tsx',
+      'src/features/student-import/StudentImportWizard.tsx',
+    ]) {
+      expect(component(f), `${f} should no longer spin a ring`).not.toMatch(/animate-spin/);
+    }
+    // inline button slots keep the compact ring (bubbles don't fit a w-4)
+    expect(component('src/components/UIComponents.tsx')).toMatch(
+      /Loader2 className="w-4 h-4 animate-spin/,
+    );
+  });
 });

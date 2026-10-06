@@ -24,6 +24,10 @@ const sourceRoot = join(root, 'src');
 
 // Names we reference but define outside src (documented, not drift):
 const ALLOWLIST = new Set([
+  // Bubble-loader stagger index — set inline per bubble
+  // (BubbleLoader.tsx style={{ '--i': i }}), consumed by
+  // animation-delay: calc(var(--i) * 180ms) in index.css.
+  '--i',
   // Runtime-set by useEdgeLight.ts via style.setProperty on each glass
   // surface. Referenced only WITH fallbacks, so pre-pointer paint is correct.
   '--eg-x',

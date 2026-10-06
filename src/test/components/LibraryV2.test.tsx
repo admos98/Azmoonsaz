@@ -31,6 +31,7 @@ import {
   Toggle,
 } from '../../components/UIComponents';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
+import { BubbleLoader } from '../../components/BubbleLoader';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 
 describe('PageHeader', () => {
@@ -320,6 +321,24 @@ describe('F-9 accessibility wiring', () => {
     expect(document.body.style.overflow).toBe('hidden');
     unmount();
     expect(document.body.style.overflow).toBe('');
+  });
+});
+
+describe('BubbleLoader (the sanctioned loop)', () => {
+  it('announces via role=status with the default Persian label, four bubbles', () => {
+    render(<BubbleLoader />);
+    const loader = screen.getByRole('status');
+    expect(loader).toHaveAttribute('aria-label', 'در حال بارگذاری…');
+    expect(loader.className).toContain('bubble-loader');
+    expect(loader.querySelectorAll('i')).toHaveLength(4);
+  });
+
+  it('decorative mode is aria-hidden with no live role (outer region owns the message)', () => {
+    const { container } = render(<BubbleLoader label={null} />);
+    const loader = container.querySelector('.bubble-loader')!;
+    expect(loader).toHaveAttribute('aria-hidden', 'true');
+    expect(loader).not.toHaveAttribute('role');
+    expect(loader.querySelectorAll('i')).toHaveLength(4);
   });
 });
 

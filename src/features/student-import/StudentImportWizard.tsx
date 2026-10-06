@@ -6,6 +6,7 @@ import { ClassGroup, Student } from '../../types';
 import { isValidIranianNationalId } from './nationalId';
 import type { StudentImportIssue, StudentImportRow } from './parseStudentFile';
 import { Button, IconButton, Modal } from '../../components/UIComponents';
+import { BubbleLoader } from '../../components/BubbleLoader';
 
 /* The parsers (xlsx + papaparse, ~121 KB gz together) are the heaviest thing
    in the app. They are imported ONLY when a file is actually parsed, so the
@@ -266,7 +267,9 @@ export default function StudentImportWizard({
       {(step === 'parsing' || step === 'importing') && (
         <div role="status" className="grid min-h-64 place-items-center text-center">
           <div>
-            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-glass-light-stroke)] border-t-[var(--color-ink)]" />
+            <div className="mb-4">
+              <BubbleLoader label={null} />
+            </div>
             <p>{step === 'parsing' ? 'در حال خواندن فایل…' : 'در حال ثبت دانش‌آموزان…'}</p>
           </div>
         </div>

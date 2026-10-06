@@ -36,13 +36,14 @@ npm run test:e2e     # playwright test (tests/e2e/)
 npm run build        # vite build
 npm run check        # typecheck + lint + content gates + build
 npm run gate         # check + tests + bundle budget — RUN THIS BEFORE EVERY PUSH
-npm run check:contrast|check:tokens|check:theme|check:glass|check:library|check:typography|check:a11y-buttons|check:bundle
+npm run check:contrast|check:tokens|check:theme|check:glass|check:library|check:typography|check:a11y-buttons|check:bundle|check:art
+npm run art:sheet    # regenerate tools/art-gate/sheet.png (visual review artifact)
 npm run check:env    # validate .env.local has all required vars
 npm run verify:prod  # scan src/api docs for leaked secret markers
 npm run predeploy    # lint → build → verify:prod → deploy:check (sequential)
 ```
 
-Quality gates live in `tools/check-*.mjs`: WCAG contrast (both themes), theme-token purity, dead-token ratchet (baseline 43, only down), glass discipline, library adoption (raw-button ratchet), typography, icon buttons, bundle budget (incl. no dev-harness/deploy cruft in `dist/`).
+Quality gates live in `tools/check-*.mjs`: WCAG contrast (both themes), theme-token purity, dead-token ratchet (baseline 43, only down), glass discipline, library adoption (raw-button ratchet), typography, icon buttons, bundle budget (incl. no dev-harness/deploy cruft in `dist/`). Plus `tools/art-gate/` (Python): stroke-weight spread ≤15% across `public/empty-art` motifs — skips loudly if `python`/pillow/numpy are absent.
 
 ## Dev Server Quirks
 
@@ -156,6 +157,7 @@ Located in `supabase/migrations/`. Schema draft in `supabase/schema-security-dra
 The `docs/` folder has detailed architecture docs. Most relevant for agents:
 
 - `docs/backend-fixes-needed.md` — open backend work (bulk import, exam-code, scheduling, AI grading decision)
+- `docs/art/Azmoonsaz-ART-MASTERPLAN.md` — art grammar + pipeline (prompts, gates, PanelCrest/Cut specs; companion files alongside)
 - `docs/security-architecture.md` — security model overview
 - `docs/supabase-hardening.md` — RLS policies and database security
 - `docs/local-api-testing.md` — how to test API locally
