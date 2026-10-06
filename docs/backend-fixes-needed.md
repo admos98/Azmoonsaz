@@ -1,81 +1,103 @@
-# Backend fixes needed (from Rounds 2–4 triage, 2026-10-05)
-> Update 2026-10-05: frontend halves shipped in 674d2ab — client exam-link
-> minting, mock clock, fake AI grading, and the fake Excel export are gone.
-> BE-4 closes entirely (frontend deletion landed; backend AI endpoint is a
-> product decision, not a bug). BE-2/BE-3 remain server-side only.
+# Backend fixes — status after the 2026-10-06 pass
 
-Frontend-led work is NOT in this file — it ships as normal frontend batches.
-Each item below needs `api/` work or a backend contract decision first.
-Evidence paths verified against the tree at `5cf72da` + `f5c62ea`.
+> History: written from Rounds 2–4 triage on 2026-10-05; frontend halves landed
+> in `674d2ab`. This revision re-audited every claim against the tree, shipped
+> the server halves, and closed what was already closed.
+>
+> **Server tests now exist:** `tests/server/**` (config
+> `vitest.server.config.ts`, typechecked by `tsconfig.server.json`). `npm test`
+> runs browser + server suites; `npm run typecheck:server` checks the API
+> side. Both are wired into `check` and `gate`.
 
-## BE-1 · Bulk student-import endpoint (P1-5) — new endpoint
-- Today: `src/features/student-import/StudentImportWizard.tsx:129` awaits
-  `studentService.createStudent` once per row — N sequential POSTs.
-- Need: `POST /api/teacher/students:bulk` (or equivalent) accepting an array,
-  validating each row server-side (Iranian national-ID checksum, duplicate
-  detection, class-group resolution), returning per-row results
-  `{ imported: [...], failed: [{ row, reason }] }`.
-- Frontend then becomes one call + result render. Acceptance: 100-row import
-  in < 5s on broadband; no partial-silence (every row accounted for).
+## BE-1 · Bulk student-import endpoint — ✅ shipped
 
-## BE-2 · Exam join code: single source of truth (P0-1, server half)
-- Today: `api/routes/teacher.js:253-257` already issues `randomExamCode()`
-  server-side on create; but `src/pages/teacher/ExamSettings.tsx:326-337`
-  mints its own `AZMOON-{grade}-{randCode}` client-side link and persists
-  `settings.examLink` — two competing code systems.
-- Need: confirm `GET exam` hydration always returns the server `exam_code`;
-  frontend deletes randCode/gradeLetter/generatedLink and reads the code off
-  the hydrated exam. `settings.examLink` stops being persisted.
-- Acceptance: publish → student joins with the server code → submits →
-  teacher grades, covered by extending `tests/e2e/exam-flow.spec.ts`
-  (infra exists: `playwright.config.ts` + one spec already).
+`POST /api/teacher/students/bulk` replaces N sequential POSTs with one call:
 
-## BE-3 · Scheduling evaluated server-side at request time (P0-3, server half)
-- Today: `ExamSettings.tsx:339-341` compares against a hardcoded
-  `new Date('2026-06-13T18:36:44-07:00')` mock clock; defaults `:53-56`
-  hardcode `2026-06-15`; `_timezone:60` is a decorative label, never used
-  in computation.
-- Need: exam `status` (scheduled/active/completed) derived on the server
-  from stored start/end timestamps at request time, in Asia/Tehran;
-  frontend sends real timestamps and renders the returned status.
-- Acceptance: no `Date('2026-…')` literals in src; status flips without a
-  teacher re-save; timezone explicit end-to-end.
+- validates every row server-side (Iranian national-ID checksum, required
+  fields), resolves class groups **once per distinct class** — no N lookups and
+  no race that creates the same class twice;
+- inserts in batches of 10 and answers for **every** row: `imported[]` or
+  `failed[{ row, reason }]` — never a silent count;
+- idempotent on `unique (teacher_id, national_id_hash)`: a re-run row returns
+  `duplicate_student`, never a duplicate student;
+- returns hash + last-4 only — the plain national ID never leaves the server.
 
-## BE-4 · AI grading: build it or keep it deleted (P0-2, decision)
-- Today: `ExamResults.tsx:261-303` `triggerAiAssistedGrading` assigns
-  `0.85 + Math.random() * 0.12` of rubric points as real student scores.
-  No `/api/teacher/ai-grade` exists. Frontend batch will delete the button
-  and the function.
-- Decision needed: is server-side AI grading on the roadmap? If yes, spec
-  the endpoint contract (input: submission answers + rubric; output:
-  per-rubric scores + rationales; model, cost cap, teacher-override rule).
-  If no, BE-4 closes the moment the frontend deletion lands.
-- Acceptance: either a live endpoint with eval coverage, or zero
-  random-grade code paths in the tree.
+Frontend: `studentService.importStudents` is a single request and the wizard
+renders each failed row with its Persian reason.
 
-## BE-5 · Submissions scoping: verify, don't build (P1-4, server half)
-- Server already scopes: `api/routes/teacher.js:297-302` (`examId` query,
-  `allowedExamIds`, `exam_not_owned` 403). Frontend calls
-  `getSubmissions(undefined)` (all exams) from `TeacherContext`.
-- Need: confirm the `examId` param path is covered by a server test or
-  smoke check; frontend then passes the current exam's id. No new endpoint.
-- Acceptance: ExamResults for exam A never receives exam B rows even if
-  the client omits the param (server default-deny or teacher-scoped).
+**Tests:** `tests/server/studentsBulk.test.ts` (9 cases: happy path, per-row
+reasons, duplicates, class-not-found, 400s, 500-row cap, 429, 405, hashing).
 
-## BE-6 · Request hygiene on the new endpoints
-- `AbortController` support: no `signal` plumbing exists anywhere in
-  `src/contexts` or `src/services` (frontend adds it alongside BE-1/BE-5
-  work). Server should tolerate client disconnects on bulk import
-  (idempotency key or dedupe on national-ID hash per exam).
-- Rate limits on BE-1/BE-4 (bulk + AI are the two abuse-prone surfaces).
+## BE-2 · Exam join code: single source of truth — ✅ closed
+
+Client-side minting is gone: `ExamSettings.tsx` derives the link from
+`exam.examCode` and no longer persists `settings.examLink` (the old
+`AZMOON-{grade}-{rand}` code never matched `exam_code` and 404'd). The server
+mints `exam_code` at create and `mapExam` round-trips it.
+
+**Test:** `tests/server/examCreate.test.ts` — stored code === returned code,
+scheduling instant survives the round trip.
+
+## BE-3 · Scheduling — ✅ fixed (the original evidence was stale)
+
+The doc's evidence (mock clock `2026-06-13`, hardcoded defaults, decorative
+`_timezone`) no longer exists in the tree — and window enforcement at request
+time already lived in `getExamAvailability`. What the audit *missed* was the
+actual bug, now fixed:
+
+**Naive strings (`2026-06-15T08:30`) written into `timestamptz` are cast as UTC
+by Postgres while the teacher means Tehran — every exam window was 3h30m off.**
+
+- `src/utils/tehranClock.ts` — `wallClockToIso` / `isoToWallClock` with an
+  explicit `+03:30` (Iran has had no DST since 2022). `ExamSettings.tsx` emits
+  instants from both save paths and recovers legacy wall clocks on load.
+- `api/_lib/examSecurity.js` — `deriveExamStatus(exam, now)` is the single
+  source of truth: stored intent + start/end window, evaluated per read.
+  `getExamAvailability`, `safeExamForStudent` and `mapExam` all consume it, so
+  status flips without a re-save and the student payload matches the badge.
+
+**Tests:** `tests/server/examStatus.test.ts` (12 cases: sticky states, window
+transitions, garbage timestamps, availability contract, answer-key leak).
+
+## BE-4 · AI grading — ✅ closed, decision: do not build
+
+Zero random-grade code paths remain (the only `Math.random` near grading is
+inside a comment explaining its removal), and no `/api/teacher/ai-grade` route
+exists. Grades are teacher-entered only. The acceptance — "zero random-grade
+code paths in the tree" — is met.
+
+## BE-5 · Submissions scoping — ✅ verified, nothing to build
+
+`api/routes/teacher.js` scopes every query to the teacher's own exams and 403s
+a foreign `examId`. The frontend intentionally fetches once and derives the
+per-exam view client-side (`ExamResults.tsx`, a shared-cache design that
+replaced a per-page refetch), so `?examId=` stays optional — the server default
+is teacher-scoped, never global.
+
+**Tests:** `tests/server/submissionsScope.test.ts` — foreign examId → 403,
+owned examId → only that exam's rows, omitted examId → this teacher's exams
+only.
+
+## BE-6 · Request hygiene — ✅ shipped with BE-1
+
+- Rate limit on the bulk surface: `students-bulk:<teacherId>`, 10/min, backed
+  by the Supabase `rate_limits` table with an in-memory fallback.
+- `AbortController`: `teacherGet`/`teacherPost` accept `{ signal }`; the import
+  wizard aborts in-flight imports when the modal closes.
+- Idempotency came free from the unique constraint (see BE-1).
+
+**Tests:** rate-limit case in `studentsBulk.test.ts`; the wizard's signal
+assertion in `src/test/features/StudentImportWizard.test.tsx`.
 
 ## Explicitly NOT backend work (stays frontend)
-- P0-4 Excel: `xlsx@^0.18.5` is already a dependency — real XLSX export is
-  a frontend-only change (plus deleting the fake ExcelJS success toast at
-  `ExamResults.tsx:395-402`).
+
+- P0-4 Excel: `xlsx@^0.18.5` is already a dependency — real XLSX export is a
+  frontend-only change (plus deleting the fake ExcelJS success toast).
 - P1-9 CSV: quote escaping + formula-injection guard + masked-national-ID
-  export all live in `src/pages/teacher/exam-results/student-rows.ts`.
-- P1-2 `/dev/` harness: ships in the prod bundle behind a runtime pathname
-  check (`App.tsx:284`) — fix is `import.meta.env.DEV` gating (Vite
-  dead-code-eliminates it). No server involvement.
+  export live in `src/pages/teacher/exam-results/student-rows.ts`.
+- P1-2 `/dev/` harness: **already fixed** in `83bc374` (`import.meta.env.DEV`
+  gating at `App.tsx`).
 - P2-1 AGENTS.md rewrite, P2-2 test trim, F-7/F-10 hygiene: frontend docs/tests.
+- E2E (`tests/e2e/exam-flow.spec.ts`) still drives the `DEMO7` fixture; a full
+  authenticated Playwright journey needs seeded credentials — tracked as
+  E2E/frontend work, not server work.

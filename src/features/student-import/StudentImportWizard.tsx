@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 import { studentService } from '../../services/api';
-import { ClassGroup, Student } from '../../types';
+import { ClassGroup, Student, StudentImportFailure } from '../../types';
 import { isValidIranianNationalId } from './nationalId';
 import type { StudentImportIssue, StudentImportRow } from './parseStudentFile';
 import { Button, IconButton, Modal } from '../../components/UIComponents';
@@ -28,6 +28,19 @@ type Props = {
 };
 type Step = 'select' | 'parsing' | 'preview' | 'importing' | 'done';
 
+/** Server failure reason -> the sentence shown to the teacher. */
+const FAIL_REASON_LABELS: Record<string, string> = {
+  missing_student_name: 'نام وارد نشده است.',
+  missing_student_grade: 'پایه تحصیلی وارد نشده است.',
+  invalid_national_id: 'کد ملی معتبر نیست.',
+  class_not_found: 'کلاس در سامانه پیدا نشد.',
+  duplicate_student: 'کد ملی تکراری است.',
+  student_create_failed: 'ثبت این ردیف ناموفق بود.',
+};
+
+const failReasonLabel = (reason: string) =>
+  FAIL_REASON_LABELS[reason] || 'ثبت این ردیف ناموفق بود.';
+
 export default function StudentImportWizard({
   open,
   onClose,
@@ -46,6 +59,9 @@ export default function StudentImportWizard({
     true,
   );
   const [importResult, setImportResult] = useState({ imported: 0, failed: 0 });
+  const [failedRows, setFailedRows] = useState<StudentImportFailure[]>([]);
+  // One controller for the in-flight import; closing the modal aborts it.
+  const importAbortRef = useRef<AbortController | null>(null);
 
   const validation = useMemo(() => {
     const valid: StudentImportRow[] = [];
@@ -79,6 +95,8 @@ export default function StudentImportWizard({
   }, [classGroups, existingStudents, rows]);
 
   const resetAndClose = () => {
+    importAbortRef.current?.abort();
+    importAbortRef.current = null;
     onClose();
     window.setTimeout(() => {
       setStep('select');
@@ -86,6 +104,7 @@ export default function StudentImportWizard({
       setFileName('');
       setError('');
       setImportResult({ imported: 0, failed: 0 });
+      setFailedRows([]);
     }, 300);
   };
 
@@ -125,8 +144,10 @@ export default function StudentImportWizard({
     if (!validation.valid.length) return;
     setStep('importing');
     setError('');
-    const imported: Student[] = [];
-    let failed = 0;
+    setFailedRows([]);
+
+    // Resolve class ids once, then ship the entire batch in ONE request.
+    const payload: (Omit<Student, 'id' | 'maskedNationalId'> & { row?: number })[] = [];
     for (const row of validation.valid) {
       const matched = classGroups.find(
         (group) =>
@@ -134,32 +155,45 @@ export default function StudentImportWizard({
           group.name.includes(row.className) ||
           row.className.includes(group.name),
       );
-      if (!matched) {
-        failed += 1;
-        continue;
-      }
-      try {
-        const student = await studentService.createStudent({
-          name: row.name,
-          nationalId: row.nationalId,
-          grade: row.grade,
-          classGroupId: matched.id,
-          phoneNumber: row.phone,
-          email: row.email,
-        });
-        imported.push({ ...student, status: student.status || 'active' });
-      } catch {
-        failed += 1;
-      }
+      if (!matched) continue; // pre-validated; guards against a stale class list
+      payload.push({
+        row: row.row,
+        name: row.name,
+        nationalId: row.nationalId,
+        grade: row.grade,
+        classGroupId: matched.id,
+        phoneNumber: row.phone,
+        email: row.email,
+      });
     }
-    if (imported.length) onImported(imported);
-    setImportResult({ imported: imported.length, failed });
-    if (!imported.length) {
-      setError('هیچ ردیفی ثبت نشد. اطلاعات فایل و اتصال شبکه را بررسی کنید.');
+    if (!payload.length) {
+      setError('هیچ ردیفی قابل ثبت نیست. فهرست کلاس‌ها را بررسی کنید.');
       setStep('preview');
       return;
     }
-    setStep('done');
+
+    const controller = new AbortController();
+    importAbortRef.current = controller;
+    try {
+      const result = await studentService.importStudents(payload, { signal: controller.signal });
+      const importedStudents: Student[] = result.imported;
+      setFailedRows(result.failed);
+      setImportResult({ imported: importedStudents.length, failed: result.failed.length });
+      if (importedStudents.length) onImported(importedStudents);
+      // The request answered — show the outcome even when every row failed,
+      // because the per-row reasons ARE the answer (no partial silence).
+      setStep('done');
+    } catch (caught) {
+      if (controller.signal.aborted) return; // modal closed mid-flight
+      setError(
+        caught instanceof Error && caught.message
+          ? `ورود گروهی قطع شد: ${caught.message}`
+          : 'ورود گروهی انجام نشد. اتصال شبکه را بررسی کنید.',
+      );
+      setStep('preview');
+    } finally {
+      importAbortRef.current = null;
+    }
   };
 
   return (
@@ -318,20 +352,44 @@ export default function StudentImportWizard({
         </>
       )}
       {step === 'done' && (
-        <div role="status" className="grid min-h-64 place-items-center text-center">
+        <div role="status" className="space-y-4 py-2 text-center">
           <div>
-            <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-[var(--color-success)]" />
-            <h3 className="text-heading-3 font-black">ورود اطلاعات انجام شد</h3>
+            {importResult.imported > 0 ? (
+              <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-[var(--color-success)]" />
+            ) : (
+              <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-[var(--color-danger)]" />
+            )}
+            <h3 className="text-heading-3 font-black">
+              {importResult.imported > 0 ? 'ورود اطلاعات انجام شد' : 'هیچ ردیفی ثبت نشد'}
+            </h3>
             <p className="mt-2 text-caption text-[var(--color-text-secondary)]">
               {importResult.imported.toLocaleString('fa-IR')} دانش‌آموز اضافه شد.
             </p>
             {importResult.failed > 0 && (
               <p className="mt-2 text-caption text-[var(--color-danger)]">
-                ثبت {importResult.failed.toLocaleString('fa-IR')} ردیف انجام نشد.
+                ثبت {importResult.failed.toLocaleString('fa-IR')} ردیف انجام نشد:
               </p>
             )}
-            {/* The modal's X closes (resetAndClose) — no duplicate close button. */}
           </div>
+          {/* Every failed row is named — a count alone is partial silence. */}
+          {failedRows.length > 0 && (
+            <ul className="max-h-56 space-y-1.5 overflow-auto rounded-2xl border border-[var(--color-glass-light-stroke)] p-3 text-right text-caption">
+              {failedRows.map((failure) => (
+                <li
+                  key={`${failure.row}-${failure.reason}`}
+                  className="flex items-baseline justify-between gap-3 rounded-xl bg-[var(--color-danger-soft)] px-3 py-2"
+                >
+                  <span className="font-bold text-[var(--color-text-primary)]">
+                    ردیف {failure.row.toLocaleString('fa-IR')}
+                  </span>
+                  <span className="text-[var(--color-danger)]">
+                    {failReasonLabel(failure.reason)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* The modal's X closes (resetAndClose) — no duplicate close button. */}
         </div>
       )}
     </Modal>

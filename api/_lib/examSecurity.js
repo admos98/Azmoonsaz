@@ -74,14 +74,14 @@ export function stripTeacherOnlyFields(value) {
   return cleaned;
 }
 
-export function safeExamForStudent(exam) {
+export function safeExamForStudent(exam, now = new Date()) {
   return {
     id: exam.id,
     examCode: exam.exam_code,
     title: exam.title,
     grade: exam.grade,
     subject: exam.subject,
-    status: exam.status,
+    status: deriveExamStatus(exam, now),
     mode: exam.mode,
     startsAt: exam.starts_at,
     endsAt: exam.ends_at,
@@ -103,15 +103,39 @@ export function safeQuestionForStudent(question, examQuestion = {}) {
   };
 }
 
+/**
+ * Derive the effective exam status at request time (single source of truth).
+ *
+ * Stored status only carries teacher intent (draft / scheduled / active /
+ * completed / archived). The real state — "is it open right now?" — is a
+ * function of the stored intent plus the start/end window, evaluated against
+ * the clock on every read so no re-save is ever needed.
+ *
+ * Timestamps are absolute instants (timestamptz), so the comparison is
+ * timezone-independent: Asia/Tehran only matters when the wall-clock input is
+ * converted to an instant, which the frontend does via src/utils/tehranClock.
+ */
+export function deriveExamStatus(exam, now = new Date()) {
+  const stored = exam?.status || 'active';
+  if (stored === 'draft') return 'draft';
+  if (stored === 'archived') return 'archived';
+  // Teacher explicitly closed it — that decision wins over the clock.
+  if (stored === 'completed') return 'completed';
+
+  const startsAt = exam?.starts_at ? new Date(exam.starts_at) : null;
+  const endsAt = exam?.ends_at ? new Date(exam.ends_at) : null;
+
+  if (endsAt && !Number.isNaN(endsAt.getTime()) && now > endsAt) return 'completed';
+  if (startsAt && !Number.isNaN(startsAt.getTime()) && now < startsAt) return 'scheduled';
+  return 'active';
+}
+
 export function getExamAvailability(exam, now = new Date()) {
   if (!exam) return { ok: false, status: 404, error: 'exam_not_found' };
-  if (['completed', 'archived'].includes(exam.status)) return { ok: false, status: 410, error: 'exam_closed' };
-  if (exam.status === 'draft') return { ok: false, status: 403, error: 'exam_not_available' };
 
-  const startsAt = exam.starts_at ? new Date(exam.starts_at) : null;
-  const endsAt = exam.ends_at ? new Date(exam.ends_at) : null;
-
-  if (startsAt && now < startsAt) return { ok: false, status: 423, error: 'exam_not_open' };
-  if (endsAt && now > endsAt) return { ok: false, status: 410, error: 'exam_closed' };
+  const status = deriveExamStatus(exam, now);
+  if (status === 'completed' || status === 'archived') return { ok: false, status: 410, error: 'exam_closed' };
+  if (status === 'draft') return { ok: false, status: 403, error: 'exam_not_available' };
+  if (status === 'scheduled') return { ok: false, status: 423, error: 'exam_not_open' };
   return { ok: true };
 }

@@ -1,6 +1,7 @@
 import { json, requireMethod } from '../_lib/http.js';
 import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
 import { requireTeacher } from '../_lib/teacherAuth.js';
+import { checkRateLimit } from '../_lib/rateLimit.js';
 import { safeError, isUuid, normalizeStudentStatus, randomExamCode, mapStudent, deriveAnswerKey, questionToBody, mapQuestion, extractAnswerPayload, extractGrading, resolveClassGroupId, resolveClassGroupIds, hydrateExam, requireOwnedSession } from '../_lib/utils.js';
 
 async function loadTeacherProfile(teacher) {
@@ -184,6 +185,112 @@ async function handleTeacherStudents(req, res) {
   json(res, 400, { error: 'unknown_action' });
 }
 
+/**
+ * POST /api/teacher/students/bulk
+ * Body: { students: [{ row?, name, nationalId, grade, classGroupId, ... }] }
+ *
+ * One request for the whole import instead of N sequential POSTs. Every row is
+ * accounted for: successes come back in `imported`, failures as
+ * `{ row, reason }` in `failed` — never partial silence.
+ *
+ * Idempotent by construction: the `(teacher_id, national_id_hash)` unique
+ * constraint turns a re-run row into `duplicate_student` rather than a
+ * duplicate student.
+ */
+async function handleTeacherStudentsBulk(req, res) {
+  if (!requireMethod(req, res, ['POST'])) return;
+  const teacher = await requireTeacher(req, res);
+  if (!teacher) return;
+
+  const body = req.body || {};
+  const rows = Array.isArray(body.students) ? body.students : null;
+  if (!rows || rows.length === 0) return json(res, 400, { error: 'missing_students' });
+  if (rows.length > 500) return json(res, 400, { error: 'too_many_students' });
+
+  // Bulk is the abuse-prone teacher surface: bound it per teacher.
+  const rate = await checkRateLimit(`students-bulk:${teacher.id}`, { limit: 10, windowMs: 60_000 });
+  if (!rate.ok) return json(res, 429, { error: 'rate_limited' });
+
+  const { normalizeNationalId, nationalIdHash, validateIranianNationalId } = await import('../_lib/crypto.js');
+  const SELECT_COLUMNS = 'id, full_name, grade, class_group_id, national_id_last4, status, created_at';
+
+  // Pass 1 — resolve every distinct class group once. A 100-row import must
+  // not fire 100 class lookups, and two rows racing to create the same class
+  // must not both create one.
+  const classIdByKey = new Map();
+  const classKeyOf = (row) =>
+    `${String(row?.grade || '').trim()}|${String(row?.classGroupId || '').trim()}`;
+  for (const row of rows) {
+    const key = classKeyOf(row);
+    if (classIdByKey.has(key)) continue;
+    try {
+      classIdByKey.set(
+        key,
+        await resolveClassGroupId(teacher, row?.classGroupId, String(row?.grade || '').trim()),
+      );
+    } catch {
+      classIdByKey.set(key, null); // surfaced per row as class_not_found
+    }
+  }
+
+  // Pass 2 — validate and insert, bounded concurrency (100 rows well under 5s,
+  // without hammering PostgREST with 500 simultaneous statements).
+  const insertRow = async (row, index) => {
+    const rowNumber = Number(row?.row) > 0 ? Number(row?.row) : index + 1;
+    const name = String(row?.name || '').trim();
+    const grade = String(row?.grade || '').trim();
+
+    if (!name) return { row: rowNumber, reason: 'missing_student_name' };
+    if (!grade) return { row: rowNumber, reason: 'missing_student_grade' };
+    const cleanNationalId = normalizeNationalId(row?.nationalId);
+    if (!validateIranianNationalId(cleanNationalId)) return { row: rowNumber, reason: 'invalid_national_id' };
+    const classGroupId = classIdByKey.get(classKeyOf(row));
+    if (!classGroupId) return { row: rowNumber, reason: 'class_not_found' };
+
+    try {
+      const { data, error } = await teacher.admin
+        .from('students')
+        .insert({
+          teacher_id: teacher.id,
+          class_group_id: classGroupId,
+          full_name: name,
+          grade,
+          national_id_hash: nationalIdHash(cleanNationalId),
+          national_id_last4: cleanNationalId.slice(-4),
+          status: normalizeStudentStatus(row?.status),
+        })
+        .select(SELECT_COLUMNS)
+        .single();
+      if (error) {
+        return { row: rowNumber, reason: error.code === '23505' ? 'duplicate_student' : 'student_create_failed' };
+      }
+      return { row: rowNumber, student: mapStudent(data) };
+    } catch {
+      return { row: rowNumber, reason: 'student_create_failed' };
+    }
+  };
+
+  const BATCH_SIZE = 10;
+  const imported = [];
+  const failed = [];
+  for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
+    const chunk = rows.slice(offset, offset + BATCH_SIZE);
+    const outcomes = await Promise.all(chunk.map((row, i) => insertRow(row, offset + i)));
+    for (const outcome of outcomes) {
+      if (outcome.student) imported.push(outcome.student);
+      else failed.push({ row: outcome.row, reason: outcome.reason });
+    }
+  }
+
+  return json(res, 200, {
+    ok: true,
+    imported,
+    failed,
+    importedCount: imported.length,
+    failedCount: failed.length,
+  });
+}
+
 async function handleTeacherSummary(req, res) {
   if (!requireMethod(req, res, ['GET'])) return;
   const teacher = await requireTeacher(req, res);
@@ -364,7 +471,7 @@ async function handleTeacherFinalizeSubmission(req, res) {
 }
 
 export {
-  handleTeacherMe, handleTeacherProfile, handleTeacherClasses, handleTeacherStudents, handleTeacherSummary,
+  handleTeacherMe, handleTeacherProfile, handleTeacherClasses, handleTeacherStudents, handleTeacherStudentsBulk, handleTeacherSummary,
   handleTeacherQuestions, handleTeacherExams, handleTeacherSubmissions,
   handleTeacherGradeAnswer, handleTeacherFinalizeSubmission,
 };

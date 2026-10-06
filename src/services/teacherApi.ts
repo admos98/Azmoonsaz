@@ -39,14 +39,19 @@ async function teacherRequest<T>(path: string, init: RequestInit = {}): Promise<
   return payload as T;
 }
 
-export async function teacherGet<T>(path: string): Promise<T> {
-  return teacherRequest<T>(path, { method: 'GET' });
+export async function teacherGet<T>(path: string, options?: { signal?: AbortSignal }): Promise<T> {
+  return teacherRequest<T>(path, { method: 'GET', signal: options?.signal ?? null });
 }
 
-export async function teacherPost<T>(path: string, body: unknown): Promise<T> {
+export async function teacherPost<T>(
+  path: string,
+  body: unknown,
+  options?: { signal?: AbortSignal },
+): Promise<T> {
   return teacherRequest<T>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal: options?.signal ?? null,
   });
 }

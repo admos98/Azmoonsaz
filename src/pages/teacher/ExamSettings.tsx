@@ -39,6 +39,7 @@ import {
 } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
 import { formatPersianDate, normalizePersianText, toPersianDigits } from '../../utils/persian';
+import { isoToWallClock, wallClockToIso } from '../../utils/tehranClock';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 
@@ -58,10 +59,23 @@ const todayYmd = (() => {
 
 export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps) {
   // 1. Core Scheduling States
-  const [startDate, setStartDate] = useState<string>(exam.settings.startDate || todayYmd);
-  const [startHour, setStartHour] = useState<string>(exam.settings.startHour || '08:30');
-  const [endDate, setEndDate] = useState<string>(exam.settings.endDate || todayYmd);
-  const [endHour, setEndHour] = useState<string>(exam.settings.endHour || '10:30');
+  // Wall clock fields are the editor's source of truth. Legacy exams have no
+  // startDate/startHour in settings — recover their Tehran wall clock from the
+  // persisted instant instead of silently defaulting to "today".
+  const startClock = isoToWallClock(exam.settings.startTime);
+  const endClock = isoToWallClock(exam.settings.endTime);
+  const [startDate, setStartDate] = useState<string>(
+    exam.settings.startDate || startClock?.date || todayYmd,
+  );
+  const [startHour, setStartHour] = useState<string>(
+    exam.settings.startHour || startClock?.hour || '08:30',
+  );
+  const [endDate, setEndDate] = useState<string>(
+    exam.settings.endDate || endClock?.date || todayYmd,
+  );
+  const [endHour, setEndHour] = useState<string>(
+    exam.settings.endHour || endClock?.hour || '10:30',
+  );
   const [durationMinutes, setDurationMinutes] = useState<number>(
     exam.settings.durationMinutes || exam.duration || 60,
   );
@@ -279,8 +293,9 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
     const settings: SettingsType = {
       mode: exam.settings.mode, // Preserve 'official' or 'practice'
       durationMinutes,
-      startTime: `${startDate}T${startHour}:00`,
-      endTime: `${endDate}T${endHour}:00`,
+      // Tehran wall clock -> absolute instant (+03:30, never a naive string).
+      startTime: wallClockToIso(startDate, startHour) || undefined,
+      endTime: wallClockToIso(endDate, endHour) || undefined,
       shuffleQuestions,
       shuffleOptions,
       allowBacktrack,
@@ -333,13 +348,19 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
     // Join link: the server mints exam_code at creation (hydrateExam/mapExam
     // round-trip it) — nothing to generate client-side.
 
-    // Live scheduling check against the real clock (this used to compare
-    // against a frozen 2026-06-13 demo timestamp).
-    const nowTimestamp = Date.now();
-    const startTimestamp = new Date(`${startDate}T${startHour}:00`).getTime();
+    // Optimistic local mirror of the server's deriveExamStatus() — parses the
+    // same Tehran instant the server will store, so client and server agree
+    // on "scheduled vs active". The server re-derives on every read anyway.
+    const nowMs = Date.now();
+    const startIso = wallClockToIso(startDate, startHour);
+    const endIso = wallClockToIso(endDate, endHour);
+    const startMs = startIso ? Date.parse(startIso) : NaN;
+    const endMs = endIso ? Date.parse(endIso) : NaN;
 
     let targetStatus: Exam['status'] = 'active';
-    if (startTimestamp > nowTimestamp) {
+    if (Number.isFinite(endMs) && nowMs > endMs) {
+      targetStatus = 'completed';
+    } else if (Number.isFinite(startMs) && nowMs < startMs) {
       targetStatus = 'scheduled';
     }
 
@@ -349,8 +370,9 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
     const settings: SettingsType = {
       mode: exam.settings.mode,
       durationMinutes,
-      startTime: `${startDate}T${startHour}:00`,
-      endTime: `${endDate}T${endHour}:00`,
+      // Tehran wall clock -> absolute instant (+03:30, never a naive string).
+      startTime: wallClockToIso(startDate, startHour) || undefined,
+      endTime: wallClockToIso(endDate, endHour) || undefined,
       shuffleQuestions,
       shuffleOptions,
       allowBacktrack,

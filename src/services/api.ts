@@ -6,6 +6,7 @@
 import {
   Teacher,
   Student,
+  StudentImportFailure,
   ClassGroup,
   Question,
   Exam,
@@ -151,18 +152,37 @@ export const studentService = {
     }
   },
 
+  /**
+   * Import the whole batch in ONE request — the server validates, dedupes and
+   * reports every row. Failures come back per row, never as a silent count.
+   */
   async importStudents(
-    studentsToImport: Omit<Student, 'id' | 'maskedNationalId'>[],
-  ): Promise<Student[]> {
-    const created: Student[] = [];
-    for (const student of studentsToImport) {
-      const response = await teacherPost<{ student: Student }>('/api/teacher/students', {
-        action: 'create',
-        student,
-      });
-      created.push(response.student);
-    }
-    return created;
+    studentsToImport: (Omit<Student, 'id' | 'maskedNationalId'> & { row?: number })[],
+    options?: { signal?: AbortSignal },
+  ): Promise<{ imported: Student[]; failed: StudentImportFailure[] }> {
+    const response = await teacherPost<{
+      imported: Student[];
+      failed: StudentImportFailure[];
+    }>(
+      '/api/teacher/students/bulk',
+      {
+        students: studentsToImport.map((student, index) => ({
+          row: student.row ?? index + 1,
+          name: student.name,
+          nationalId: student.nationalId,
+          grade: student.grade,
+          classGroupId: student.classGroupId,
+          phoneNumber: student.phoneNumber,
+          email: student.email,
+          status: student.status,
+        })),
+      },
+      options,
+    );
+    return {
+      imported: response.imported || [],
+      failed: response.failed || [],
+    };
   },
 
   async createStudent(student: Omit<Student, 'id' | 'maskedNationalId'>): Promise<Student> {

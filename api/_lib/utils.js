@@ -2,7 +2,7 @@
  * Shared API utilities extracted from api/index.js
  */
 
-import { stripTeacherOnlyFields } from './examSecurity.js';
+import { stripTeacherOnlyFields, deriveExamStatus } from './examSecurity.js';
 
 export function safeError(error, fallback) {
   const response = { error: fallback };
@@ -192,19 +192,22 @@ export function mapExam(row, questions = [], sections = []) {
     settings: {
       mode: row.mode,
       durationMinutes: row.duration_minutes,
-      startTime: row.starts_at,
-      endTime: row.ends_at,
       shuffleQuestions: Boolean(settings.shuffleQuestions),
       shuffleOptions: Boolean(settings.shuffleOptions),
       allowBacktrack: settings.allowBacktrack !== false,
       showImmediateResults: Boolean(settings.showImmediateResults),
       maxAttempts: Number(settings.maxAttempts || 1),
       ...settings,
+      // The timestamptz columns are the persisted instants and always win
+      // over whatever settings string was stored alongside them.
+      startTime: row.starts_at,
+      endTime: row.ends_at,
     },
     sections,
     questions,
     classGroupIds: row.classGroupIds || [],
-    status: row.status,
+    // Derived at read time — never trust the stored value for "is it open?".
+    status: deriveExamStatus(row),
     teacherId: row.teacher_id,
     createdAt: row.created_at,
   };

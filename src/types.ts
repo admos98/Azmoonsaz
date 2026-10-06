@@ -43,6 +43,18 @@ export interface Student {
   status?: 'active' | 'suspended' | 'examining';
 }
 
+/** A row the bulk import endpoint could not accept (`POST /api/teacher/students/bulk`). */
+export interface StudentImportFailure {
+  /** Source row number in the imported file. */
+  row: number;
+  /**
+   * Stable machine reason:
+   * `missing_student_name` | `missing_student_grade` | `invalid_national_id` |
+   * `class_not_found` | `duplicate_student` | `student_create_failed`
+   */
+  reason: string;
+}
+
 export interface ClassGroup {
   id: string;
   name: string;
