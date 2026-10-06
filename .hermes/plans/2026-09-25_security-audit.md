@@ -116,6 +116,30 @@ Verified clean this sweep: signup enumeration (byte-identical response both bran
 
 ---
 
+## Exam-hardening workstream — PAUSED 2026-10-06 (resume tomorrow)
+
+**Scope agreed (brainstorm delivered, user approved direction):** Wave A client deterrence → Wave B server integrity → Wave C teacher proctor view → Wave D sweep-2 fixes (F-26/F-27, N-07/N-08/N-10).
+
+**Decisions:**
+- Watermark: purpose = attribution (explained, approved implicitly); per-student name + exam code overlay planned.
+- Turnstile: **approved** — user has Cloudflare account. Build gated on env (`TURNSTILE_SECRET_KEY` server, `VITE_TURNSTILE_SITE_KEY` client), activates when keys land in Vercel; click-path instructions owed to user.
+- Invalidation policy: **first invalidation → warning + clean restart with recorded warning; second → blocked on that exam** (replaces today's permanent-block-on-first).
+- UNRESOLVED ② `showImmediateResults` in official exams (default proposal: practice-mode only).
+- UNRESOLVED ③ mid-exam reload: redisplay student's own saved answers via server read (default: yes, own answers aren't secret) — needs a `student_answers` SELECT path (none exists).
+- ⑤ per-student question pools: deferred, not now.
+
+**Recon facts (post-brainstorm):**
+- `SecureExamPortal.tsx` (544 lines): zero anti-copy/print/tab-switch logic — Wave A is greenfield.
+- No MCQ auto-grade exists anywhere: only writer of `__grading` is teacher `grade-answer` (`teacher.js:818`); `answer_key` stored via `deriveAnswerKey` (`utils.js:54` — `correctAnswer` / `correctFillBlanks` / `rubrics` / `sampleAnswer`) but nothing grades against it at submit. Wave B = server auto-grade pass at submit.
+- `student.js` has NO SELECT on `student_answers` — answers/scores never echoed to client (integrity ✓, but no reload-restore path).
+- One-attempt already structurally enforced: `unique (exam_id, student_id)` + status gates (409/410). Wave B = regression tests + warning-then-block.
+- Stylesheet home: `src/index.css`. Question types: `multiple_choice` + part-based (matching/ordering live in `body.matchingPairs`/`body.orderingItems`).
+- Screenshot blocking: impossible in browsers (no API) — deterrence package = watermark + visibility blur + print block + copy/shortcut interception (Wave A).
+
+**No code written yet for Wave A.**
+
+---
+
 ## Remediation plan (ordered)
 
 ### Wave 1 — integrity & auth bypass ✅ DONE (2026-10-06) — F-04 apply pending
