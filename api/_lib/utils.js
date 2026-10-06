@@ -2,6 +2,7 @@
  * Shared API utilities extracted from api/index.js
  */
 
+import { randomInt } from 'node:crypto';
 import { stripTeacherOnlyFields, deriveExamStatus, sessionDeadlineMs } from './examSecurity.js';
 
 export function safeError(error, fallback) {
@@ -26,7 +27,9 @@ export function normalizeStudentStatus(status) {
 export function randomExamCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  // F-11: join codes are guessable secrets — mint with a CSPRNG, never
+  // Math.random (whose state is recoverable from observed outputs).
+  for (let i = 0; i < 6; i++) code += chars[randomInt(chars.length)];
   return code;
 }
 

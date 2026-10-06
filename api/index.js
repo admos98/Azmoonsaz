@@ -1,7 +1,24 @@
 import { json } from './_lib/http.js';
-import { handleHealth, handleSecurityCheck, handleStudentIdDemo } from './routes/public.js';
-import { handleStudentStartSession, handleStudentExamPayload, handleStudentSaveAnswer, handleStudentSubmit } from './routes/student.js';
-import { handleTeacherMe, handleTeacherProfile, handleTeacherClasses, handleTeacherStudents, handleTeacherStudentsBulk, handleTeacherSummary, handleTeacherQuestions, handleTeacherExams, handleTeacherSubmissions, handleTeacherGradeAnswer, handleTeacherFinalizeSubmission } from './routes/teacher.js';
+import { handleHealth, handleSecurityCheck } from './routes/public.js';
+import {
+  handleStudentStartSession,
+  handleStudentExamPayload,
+  handleStudentSaveAnswer,
+  handleStudentSubmit,
+} from './routes/student.js';
+import {
+  handleTeacherMe,
+  handleTeacherProfile,
+  handleTeacherClasses,
+  handleTeacherStudents,
+  handleTeacherStudentsBulk,
+  handleTeacherSummary,
+  handleTeacherQuestions,
+  handleTeacherExams,
+  handleTeacherSubmissions,
+  handleTeacherGradeAnswer,
+  handleTeacherFinalizeSubmission,
+} from './routes/teacher.js';
 import { handleOnboardingStatus, handleOnboarding } from './routes/auth.js';
 
 function routePath(req) {
@@ -23,9 +40,8 @@ function routePath(req) {
 }
 
 const routes = {
-  'health': handleHealth,
+  health: handleHealth,
   'security-check': handleSecurityCheck,
-  'student-id-demo': handleStudentIdDemo,
   'auth/onboarding-status': handleOnboardingStatus,
   'auth/onboarding': handleOnboarding,
   'student/start-session': handleStudentStartSession,

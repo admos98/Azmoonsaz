@@ -68,11 +68,9 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       await authService.signupTeacher(email, password);
       setView('signup-sent');
     } catch (err: unknown) {
-      if (err instanceof Error && err.message?.includes('ثبت شده')) {
-        setError('این ایمیل قبلاً ثبت شده است.');
-      } else {
-        setError(err instanceof Error ? err.message : 'خطا در ثبت‌نام');
-      }
+      // F-09: signup never reports "already registered" anymore — the special
+      // case that displayed it is gone on purpose (registration-status oracle).
+      setError(err instanceof Error ? err.message : 'خطا در ثبت‌نام');
     } finally {
       setLoading(false);
     }

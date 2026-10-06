@@ -25,7 +25,9 @@ async function handleStudentStartSession(req, res) {
     .trim()
     .toUpperCase();
   const cleanNationalId = normalizeNationalId(body.nationalId);
-  if (!/^[A-Z0-9_-]{4,32}$/.test(cleanExamCode))
+  // F-11: codes are 6-char server-minted [A-Z0-9]; bound what a join attempt
+  // may even carry (no separators, no 32-char probes).
+  if (!/^[A-Z0-9]{4,10}$/.test(cleanExamCode))
     return json(res, 400, { error: 'invalid_exam_code' });
   if (!validateIranianNationalId(cleanNationalId))
     return json(res, 400, { error: 'invalid_credentials' });
@@ -42,16 +44,22 @@ async function handleStudentStartSession(req, res) {
     const { data: exam, error: examError } = await supabase
       .from('exams')
       .select(
-        'id, exam_code, title, grade, subject, status, mode, starts_at, ends_at, duration_minutes',
+        'id, exam_code, title, grade, subject, status, mode, starts_at, ends_at, duration_minutes, teacher_id',
       )
       .eq('exam_code', cleanExamCode)
       .maybeSingle();
     if (examError) throw examError;
-    if (!exam) return json(res, 404, { error: 'exam_not_found' });
+    // F-12: an unknown code and wrong credentials answer identically — no
+    // existence oracle for exam-code enumeration.
+    if (!exam) return json(res, 403, { error: 'invalid_credentials' });
     const availability = getExamAvailability(exam);
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select('id, full_name, grade, class_group_id, status')
+      // F-14: scope by the exam's teacher — the HMAC hash alone is global, so
+      // two teachers importing the same national ID used to collide (maybeSingle
+      // 500). DB unique (teacher_id, national_id_hash) makes this 0..1 rows.
+      .eq('teacher_id', exam.teacher_id)
       .eq('national_id_hash', hash)
       .maybeSingle();
     if (studentError) throw studentError;
@@ -66,7 +74,9 @@ async function handleStudentStartSession(req, res) {
       allowedClasses.length > 0 &&
       !allowedClasses.some((row) => row.class_group_id === student.class_group_id)
     ) {
-      return json(res, 403, { error: 'not_allowed_for_exam' });
+      // F-12: same answer as every other credential failure — "not on the
+      // class list" must not confirm the code is real.
+      return json(res, 403, { error: 'invalid_credentials' });
     }
     const { data: existing, error: existingError } = await supabase
       .from('student_exam_sessions')

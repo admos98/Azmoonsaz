@@ -1,7 +1,5 @@
-import { json, requireMethod, getClientIp } from '../_lib/http.js';
+import { json, requireMethod } from '../_lib/http.js';
 import { getSupabaseConfigStatus } from '../_lib/supabaseAdmin.js';
-import { normalizeNationalId, maskNationalId } from '../_lib/crypto.js';
-import { checkRateLimit } from '../_lib/rateLimit.js';
 
 async function handleHealth(req, res) {
   if (!requireMethod(req, res, ['GET'])) return;
@@ -26,27 +24,8 @@ async function handleSecurityCheck(req, res) {
   });
 }
 
-async function handleStudentIdDemo(req, res) {
-  if (!requireMethod(req, res, ['POST'])) return;
-  // F-08: capped oracle — 10 probes/minute/IP against the HMAC prefix leak.
-  const rate = await checkRateLimit('student-id-demo:' + getClientIp(req), {
-    limit: 10,
-    windowMs: 60_000,
-  });
-  if (!rate.ok) return json(res, 429, { error: 'too_many_requests' });
-  const { nationalId } = req.body || {};
-  const normalized = normalizeNationalId(nationalId);
-  if (!normalized) return json(res, 400, { error: 'invalid_national_id' });
-  try {
-    const { nationalIdHash } = await import('../_lib/crypto.js');
-    json(res, 200, {
-      ok: true,
-      masked: maskNationalId(normalized),
-      hashPreview: nationalIdHash(normalized).slice(0, 12) + '...',
-    });
-  } catch {
-    json(res, 500, { error: 'server_secret_not_configured' });
-  }
-}
+// F-15: `student-id-demo` (unauthenticated HMAC-prefix oracle for arbitrary
+// national IDs) was removed — no frontend flow called it, and a rate limit
+// on an oracle is not a fix. The oracle itself is gone.
 
-export { handleHealth, handleSecurityCheck, handleStudentIdDemo };
+export { handleHealth, handleSecurityCheck };

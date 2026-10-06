@@ -40,14 +40,18 @@ export const authService = {
 
   async signupTeacher(email: string, password: string): Promise<{ ok: boolean; message: string }> {
     const supabase = getSupabasePublicClient();
-    const { data: _data, error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
-      if (
+      // F-09: registration status must never leak. An existing account answers
+      // byte-identically to a fresh signup — the caller sees the same success
+      // either way, so probing an email list through this form is useless.
+      const code = (error as { code?: string }).code;
+      const existingAccount =
+        code === 'user_already_exists' ||
+        code === 'email_exists' ||
         error.message?.includes('already registered') ||
-        error.message?.includes('already been registered')
-      ) {
-        throw new Error('این ایمیل قبلاً ثبت شده است. لطفاً وارد شوید.');
-      }
+        error.message?.includes('already been registered');
+      if (existingAccount) return { ok: true, message: 'verification_email_sent' };
       throw new Error(error.message || 'خطا در ثبت‌نام');
     }
     return { ok: true, message: 'verification_email_sent' };

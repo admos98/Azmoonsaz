@@ -34,6 +34,7 @@ const minutesAhead = (minutes: number) => new Date(Date.now() + minutes * 60_000
 const examRow = {
   id: EXAM_ID,
   exam_code: 'TEST1',
+  teacher_id: '11111111-1111-4111-8111-111111111111',
   status: 'active',
   mode: 'official',
   starts_at: minutesAgo(60),
@@ -291,5 +292,93 @@ describe('POST /api/student/start-session (F-02: clock never resets)', () => {
     await handleStudentStartSession(startReq() as never, res as never);
     expect(res.statusCode).toBe(409);
     expect((res.body as { error: string }).error).toBe('exam_time_expired');
+  });
+});
+
+describe('POST /api/student/start-session (F-12/F-14: uniform failures, teacher scoping)', () => {
+  const startReq = () =>
+    createReq({
+      method: 'POST',
+      url: '/api/student/start-session',
+      body: { examCode: 'TEST1', nationalId: '0000000019' },
+    });
+
+  it('an unknown exam code answers exactly like wrong credentials', async () => {
+    vi.mocked(getSupabaseAdmin).mockReturnValue(createAdmin({ exams: { single: null } }) as never);
+    const res = createRes();
+    await handleStudentStartSession(startReq() as never, res as never);
+    expect(res.statusCode).toBe(403);
+    expect((res.body as { error: string }).error).toBe('invalid_credentials');
+  });
+
+  it('student lookup is scoped by the exam teacher (F-14)', async () => {
+    const studentFilters: Record<string, unknown>[] = [];
+    const admin = createAdmin({
+      exams: { single: examRow },
+      students: {
+        onResult: (ctx) => {
+          studentFilters.push({ ...ctx.filters });
+          return {
+            data: {
+              id: STUDENT_ID,
+              full_name: 'دانش‌آموز',
+              grade: 'هفتم',
+              class_group_id: null,
+              status: 'active',
+            },
+            error: null,
+          };
+        },
+      },
+      exam_allowed_classes: { rows: [] },
+      student_exam_sessions: { single: sessionRow(minutesAgo(5)) },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(admin as never);
+    const res = createRes();
+    await handleStudentStartSession(startReq() as never, res as never);
+    expect(res.statusCode).toBe(200);
+    expect(studentFilters).toHaveLength(1);
+    expect(studentFilters[0].teacher_id).toBe(examRow.teacher_id);
+    expect(typeof studentFilters[0].national_id_hash).toBe('string');
+  });
+
+  it('not-on-the-class-list fails identically to every other credential failure', async () => {
+    vi.mocked(getSupabaseAdmin).mockReturnValue(
+      createAdmin({
+        exams: { single: examRow },
+        students: {
+          single: {
+            id: STUDENT_ID,
+            full_name: 'دانش‌آموز',
+            grade: 'هفتم',
+            class_group_id: 'group-A',
+            status: 'active',
+          },
+        },
+        exam_allowed_classes: { rows: [{ class_group_id: 'group-B' }] },
+        student_exam_sessions: { single: null },
+      }) as never,
+    );
+    const res = createRes();
+    await handleStudentStartSession(startReq() as never, res as never);
+    expect(res.statusCode).toBe(403);
+    expect((res.body as { error: string }).error).toBe('invalid_credentials');
+  });
+
+  it('rejects non-minted code shapes before any lookup (F-11)', async () => {
+    const admin = createAdmin({ exams: { single: examRow } });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(admin as never);
+    const res = createRes();
+    await handleStudentStartSession(
+      createReq({
+        method: 'POST',
+        url: '/api/student/start-session',
+        body: { examCode: 'A_B-C-1234567890', nationalId: '0000000019' },
+      }) as never,
+      res as never,
+    );
+    expect(res.statusCode).toBe(400);
+    expect((res.body as { error: string }).error).toBe('invalid_exam_code');
+    expect(admin.calls).toHaveLength(0); // rejected before any table access
   });
 });

@@ -5,7 +5,7 @@
  * - F-07: checkRateLimit uses the atomic bump_rate_limit RPC and falls back to
  *   a bounded per-instance counter when Supabase errors.
  * - F-08: 429 coverage on save-answer, submit, start-session identity bucket,
- *   student-id-demo, and teacher mutating requests.
+ *   and teacher mutating requests. (student-id-demo was deleted in F-15.)
  * - F-05: ordering/matching answer keys stripped from student payloads; the
  *   shuffle flags are enforced server-side, deterministically per session.
  */
@@ -18,7 +18,6 @@ import {
   handleStudentSubmit,
   handleStudentStartSession,
 } from '../../api/routes/student.js';
-import { handleStudentIdDemo } from '../../api/routes/public.js';
 import { requireTeacher } from '../../api/_lib/teacherAuth.js';
 import { createStudentSessionToken } from '../../api/_lib/studentSession.js';
 import { safeQuestionForStudent, applyExamShuffles } from '../../api/_lib/examSecurity.js';
@@ -151,18 +150,6 @@ describe('F-08 rate-limit coverage', () => {
     await handleStudentStartSession(req as never, res as never);
     expect(res.statusCode).toBe(429);
     expect(client.calls).toHaveLength(0); // blocked before any table access
-  });
-
-  it('student-id-demo returns 429 over 10 probes/minute/IP', async () => {
-    makeAdmin(async () => bumpResult(11));
-    const res = createRes();
-    const req = createReq({
-      method: 'POST',
-      url: '/api/student-id-demo',
-      body: { nationalId: '0000000019' },
-    });
-    await handleStudentIdDemo(req as never, res as never);
-    expect(res.statusCode).toBe(429);
   });
 
   it('teacher mutating requests are limited per teacher; GETs are not', async () => {

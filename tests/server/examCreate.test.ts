@@ -77,13 +77,13 @@ describe('POST /api/teacher/exams (create)', () => {
     const { admin, examInserts } = makeAdmin();
     setTeacher(admin);
     const res = createRes();
-    await handleTeacherExams(
-      createReq({ method: 'POST', body: examBody }) as never,
-      res as never,
-    );
+    await handleTeacherExams(createReq({ method: 'POST', body: examBody }) as never, res as never);
 
     expect(res.statusCode).toBe(200);
-    const body = res.body as { ok: boolean; exam: { examCode: string; settings: Record<string, string> } };
+    const body = res.body as {
+      ok: boolean;
+      exam: { examCode: string; settings: Record<string, string> };
+    };
     expect(body.ok).toBe(true);
 
     // The stored code and the returned code are the same value — no client
@@ -125,6 +125,22 @@ describe('POST /api/teacher/exams (create)', () => {
     // echoing whatever is stored.
     const body = res.body as { exam: { status: string } };
     expect(body.exam.status).toBe('scheduled');
+  });
+
+  it('ignores a client-supplied examCode — the server mints every code (F-11)', async () => {
+    const { admin, examInserts } = makeAdmin();
+    setTeacher(admin);
+    const res = createRes();
+    await handleTeacherExams(
+      createReq({
+        method: 'POST',
+        body: { ...examBody, exam: { ...examBody.exam, examCode: 'HACKED1' } },
+      }) as never,
+      res as never,
+    );
+    expect(res.statusCode).toBe(200);
+    expect(examInserts[0].exam_code).not.toBe('HACKED1');
+    expect(examInserts[0].exam_code).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
   });
 
   it('rejects an unsupported method with 405', async () => {
