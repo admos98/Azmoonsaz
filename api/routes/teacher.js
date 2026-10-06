@@ -2,6 +2,7 @@ import { json, requireMethod } from '../_lib/http.js';
 import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
 import { requireTeacher } from '../_lib/teacherAuth.js';
 import { checkRateLimit } from '../_lib/rateLimit.js';
+import { auditLog } from '../_lib/auditLog.js';
 import {
   safeError,
   isUuid,
@@ -402,6 +403,12 @@ async function handleTeacherStudentsBulk(req, res) {
   for (const row of rows) {
     const key = classKeyOf(row);
     if (classIdByKey.has(key)) continue;
+    // N-01: an oversized grade must not create a junk class group in pass 1
+    // — the row fails validation below, so never resolve it here either.
+    if (String(row?.grade || '').trim().length > 64) {
+      classIdByKey.set(key, null);
+      continue;
+    }
     try {
       classIdByKey.set(
         key,
@@ -421,6 +428,9 @@ async function handleTeacherStudentsBulk(req, res) {
 
     if (!name) return { row: rowNumber, reason: 'missing_student_name' };
     if (!grade) return { row: rowNumber, reason: 'missing_student_grade' };
+    // N-01: text fields are unbounded in the DB — bound them at the edge.
+    if (name.length > 128) return { row: rowNumber, reason: 'name_too_long' };
+    if (grade.length > 64) return { row: rowNumber, reason: 'grade_too_long' };
     const cleanNationalId = normalizeNationalId(row?.nationalId);
     if (!validateIranianNationalId(cleanNationalId))
       return { row: rowNumber, reason: 'invalid_national_id' };
@@ -465,6 +475,8 @@ async function handleTeacherStudentsBulk(req, res) {
     }
   }
 
+  // F-13: mass student import is a high-value audit event (counts only, no PII).
+  await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'students_bulk_import', entityType: 'student', entityId: null, metadata: { importedCount: imported.length, failedCount: failed.length } });
   return json(res, 200, {
     ok: true,
     imported,
@@ -683,6 +695,7 @@ async function handleTeacherExams(req, res) {
       .eq('id', id)
       .eq('teacher_id', teacher.id);
     if (error) return json(res, 400, safeError(error, 'exam_delete_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'exam_delete', entityType: 'exam', entityId: id });
     return json(res, 200, { ok: true });
   }
   json(res, 400, { error: 'unknown_action' });
@@ -774,10 +787,25 @@ async function handleTeacherGradeAnswer(req, res) {
   const scoreGained = Number(body.scoreGained || 0);
   const teacherComment = String(body.comment || body.teacherComment || '');
   if (!sessionId || !questionId) return json(res, 400, { error: 'missing_grade_target' });
-  if (Number.isNaN(scoreGained) || scoreGained < 0)
+  // F-18: NaN alone is not enough — Infinity passes Number.isNaN, and a score
+  // is only meaningful against the question's point value.
+  if (!Number.isFinite(scoreGained) || scoreGained < 0)
     return json(res, 400, { error: 'invalid_score' });
   const owned = await requireOwnedSession(teacher, sessionId);
   if (owned.error) return json(res, 403, safeError(owned.error, 'submission_not_owned'));
+  // F-19: the question must belong to THIS session's exam — otherwise a
+  // teacher could grade (and score-cap against) arbitrary question ids.
+  const { data: examQuestion, error: eqError } = await teacher.admin
+    .from('exam_questions')
+    .select('question_id, points, questions(points)')
+    .eq('exam_id', owned.session.exam_id)
+    .eq('question_id', questionId)
+    .maybeSingle();
+  if (eqError) return json(res, 500, safeError(eqError, 'grade_lookup_failed'));
+  if (!examQuestion) return json(res, 403, { error: 'question_not_in_exam' });
+  const maxScore = Number(examQuestion.points ?? examQuestion.questions?.points ?? 0);
+  const scoreCap = Number.isFinite(maxScore) && maxScore > 0 ? maxScore : 100;
+  if (scoreGained > scoreCap) return json(res, 400, { error: 'score_exceeds_points' });
   const { data: existing } = await teacher.admin
     .from('student_answers')
     .select('answer')
@@ -807,6 +835,7 @@ async function handleTeacherGradeAnswer(req, res) {
       { onConflict: 'session_id,question_id' },
     );
   if (upsertError) return json(res, 500, safeError(upsertError, 'grade_save_failed'));
+  await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'grade_answer', entityType: 'session', entityId: sessionId, metadata: { questionId, scoreGained } });
   json(res, 200, { ok: true });
 }
 
@@ -827,6 +856,7 @@ async function handleTeacherFinalizeSubmission(req, res) {
     .select('id, exam_id, student_id, status, started_at, submitted_at')
     .single();
   if (error) return json(res, 500, safeError(error, 'finalize_failed'));
+  await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'finalize_submission', entityType: 'session', entityId: sessionId, metadata: { examId: owned.session.exam_id } });
   json(res, 200, { ok: true, session: data });
 }
 

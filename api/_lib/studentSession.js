@@ -1,6 +1,24 @@
 import './env.js';
 import crypto from 'node:crypto';
 
+/**
+ * F-25: session tokens never sign with the national-ID pepper itself.
+ * A dedicated STUDENT_SESSION_SECRET wins when set; otherwise the key is
+ * derived via HKDF with a fixed info label, so the pepper stays a pure
+ * HMAC key and token signing gets a cryptographically separate key.
+ */
+function sessionSecret() {
+  const dedicated = process.env.STUDENT_SESSION_SECRET;
+  if (dedicated && dedicated.length >= 32) return dedicated;
+  const pepper = process.env.STUDENT_ID_PEPPER;
+  if (!pepper || pepper.length < 32) {
+    throw new Error('Student session secret is missing or too short');
+  }
+  return Buffer.from(
+    crypto.hkdfSync('sha256', pepper, 'azmoon-student-session', 'token-signing-v1', 32),
+  ).toString('base64');
+}
+
 function base64url(input) {
   return Buffer.from(JSON.stringify(input)).toString('base64url');
 }
@@ -10,11 +28,7 @@ function sign(data, secret) {
 }
 
 export function createStudentSessionToken(payload, ttlSeconds = 7200) {
-  const secret = process.env.STUDENT_SESSION_SECRET || process.env.STUDENT_ID_PEPPER;
-  if (!secret || secret.length < 32) {
-    throw new Error('Student session secret is missing or too short');
-  }
-
+  const secret = sessionSecret();
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'HS256', typ: 'JWT' };
   const body = {
@@ -30,11 +44,7 @@ export function createStudentSessionToken(payload, ttlSeconds = 7200) {
 }
 
 export function verifyStudentSessionToken(token) {
-  const secret = process.env.STUDENT_SESSION_SECRET || process.env.STUDENT_ID_PEPPER;
-  if (!secret || secret.length < 32) {
-    throw new Error('Student session secret is missing or too short');
-  }
-
+  const secret = sessionSecret();
   const parts = String(token || '').split('.');
   if (parts.length !== 3) return null;
 

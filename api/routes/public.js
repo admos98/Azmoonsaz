@@ -9,18 +9,20 @@ async function handleHealth(req, res) {
 async function handleSecurityCheck(req, res) {
   if (!requireMethod(req, res, ['GET'])) return;
   const supabase = getSupabaseConfigStatus();
+  // F-22: one aggregate boolean instead of a per-component posture map —
+  // a public config-status oracle tells an attacker which piece is missing.
+  const configured = Boolean(
+    supabase.hasUrl &&
+      supabase.hasAnonKey &&
+      supabase.hasServiceRoleKey &&
+      process.env.STUDENT_ID_PEPPER &&
+      process.env.STUDENT_ID_PEPPER.length >= 32,
+  );
   json(res, 200, {
     ok: true,
-    checks: {
-      hasSupabaseUrl: supabase.hasUrl,
-      hasSupabaseAnonKey: supabase.hasAnonKey,
-      hasServiceRoleKey: supabase.hasServiceRoleKey,
-      hasStudentIdPepper: Boolean(
-        process.env.STUDENT_ID_PEPPER && process.env.STUDENT_ID_PEPPER.length >= 32,
-      ),
-    },
+    configured,
     warning:
-      'This endpoint reports only boolean configuration status. It never returns secret values.',
+      'This endpoint reports only aggregate configuration status. It never returns secret values.',
   });
 }
 

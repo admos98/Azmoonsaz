@@ -115,7 +115,9 @@ async function handleStudentStartSession(req, res) {
           exam_id: exam.id,
           student_id: student.id,
           status: 'ongoing',
-          client_info: { ip, userAgent: req.headers['user-agent'] || 'unknown' },
+          // F-21: client_info stays empty — nothing reads it, and raw
+          // IP/User-Agent would be PII with no retention policy. The column
+          // keeps its '{}' default.
         })
         .select('id, status, started_at, submitted_at')
         .single();

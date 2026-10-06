@@ -1,5 +1,6 @@
 import { json } from '../_lib/http.js';
 import { requireTeacher } from '../_lib/teacherAuth.js';
+import { auditLog } from '../_lib/auditLog.js';
 
 /**
  * GET /api/auth/onboarding-status
@@ -44,6 +45,9 @@ export async function handleOnboarding(req, res) {
 
   if (!schoolName) return json(res, 400, { error: 'missing_school_name' });
   if (!subject) return json(res, 400, { error: 'missing_subject' });
+  // F-20: DB columns are plain text — bound the edge input.
+  if (schoolName.length > 200) return json(res, 400, { error: 'school_name_too_long' });
+  if (subject.length > 100) return json(res, 400, { error: 'subject_too_long' });
 
   const { error } = await teacher.admin
     .from('teacher_profiles')
@@ -56,5 +60,13 @@ export async function handleOnboarding(req, res) {
 
   if (error) return json(res, 500, { error: 'onboarding_update_failed' });
 
+  await auditLog(teacher.admin, {
+    actorType: 'teacher',
+    actorId: teacher.id,
+    action: 'onboarding_complete',
+    entityType: 'teacher_profile',
+    entityId: teacher.id,
+    metadata: { schoolName, subject },
+  });
   return json(res, 200, { ok: true });
 }

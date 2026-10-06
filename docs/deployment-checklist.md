@@ -38,7 +38,8 @@ Open:
 /api/health
 /api/security-check
 
-security-check must show all required booleans as true.
+security-check must return `configured: true` (aggregate status only; the
+per-component boolean map was removed in Wave 4 / F-22).
 
 Then test:
 
