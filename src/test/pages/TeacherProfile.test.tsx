@@ -6,6 +6,7 @@ import TeacherProfile from '../../pages/teacher/TeacherProfile';
 const uploadAvatar = vi.fn();
 const save = vi.fn();
 const updateTeacher = vi.fn();
+const updateUser = vi.fn();
 let mockSchedule: Array<{
   id: string;
   day: number;
@@ -39,12 +40,16 @@ vi.mock('../../contexts/TeacherContext', () => ({
 }));
 vi.mock('../../pages/teacher/Students', () => ({ default: () => <div>Students</div> }));
 vi.mock('../../pages/teacher/Classes', () => ({ default: () => <div>Classes</div> }));
+vi.mock('../../lib/supabasePublic', () => ({
+  getSupabasePublicClient: () => ({ auth: { updateUser: (...args: unknown[]) => updateUser(...args) } }),
+}));
 
 describe('TeacherProfile draft integrity', () => {
   beforeEach(() => {
     uploadAvatar.mockReset();
     save.mockReset();
     updateTeacher.mockReset();
+    updateUser.mockReset();
     mockSchedule = [];
   });
 
@@ -58,6 +63,38 @@ describe('TeacherProfile draft integrity', () => {
     expect(await screen.findByText(/تصویر آماده است/)).toBeInTheDocument();
     expect(bio).toHaveValue('متن ذخیره‌نشده');
     expect(updateTeacher).not.toHaveBeenCalled();
+  });
+
+  it('rejects mismatched password confirmation without calling auth', async () => {
+    render(<TeacherProfile />);
+    await userEvent.type(screen.getByLabelText('رمز عبور جدید'), 'secret123');
+    await userEvent.type(screen.getByLabelText('تکرار رمز عبور جدید'), 'secret124');
+    await userEvent.click(screen.getByRole('button', { name: /تغییر رمز عبور/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('یکسان نیستند');
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects a password under 6 characters without calling auth', async () => {
+    render(<TeacherProfile />);
+    await userEvent.type(screen.getByLabelText('رمز عبور جدید'), 'abc');
+    await userEvent.type(screen.getByLabelText('تکرار رمز عبور جدید'), 'abc');
+    await userEvent.click(screen.getByRole('button', { name: /تغییر رمز عبور/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('حداقل ۶ کاراکتر');
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('changes the password through supabase.auth.updateUser and clears the fields', async () => {
+    updateUser.mockResolvedValue({ error: null });
+    render(<TeacherProfile />);
+    const newPw = screen.getByLabelText('رمز عبور جدید');
+    const confirmPw = screen.getByLabelText('تکرار رمز عبور جدید');
+    await userEvent.type(newPw, 'secret123');
+    await userEvent.type(confirmPw, 'secret123');
+    await userEvent.click(screen.getByRole('button', { name: /تغییر رمز عبور/ }));
+    expect(await screen.findByRole('status')).toHaveTextContent('با موفقیت تغییر کرد');
+    expect(updateUser).toHaveBeenCalledWith({ password: 'secret123' });
+    expect(newPw).toHaveValue('');
+    expect(confirmPw).toHaveValue('');
   });
 
   it('renders more than four schedule entries', () => {

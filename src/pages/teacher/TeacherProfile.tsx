@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   Button,
   Card,
   EmptyState,
+  IconButton,
   Input,
   PageHeader,
   Tabs,
@@ -11,7 +12,10 @@ import {
 import {
   Camera,
   CalendarDays,
+  Eye,
+  EyeOff,
   GraduationCap,
+  Lock,
   Plus,
   Save,
   School,
@@ -21,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTeacher } from '../../contexts/TeacherContext';
 import { teacherProfileService } from '../../services/api';
+import { getSupabasePublicClient } from '../../lib/supabasePublic';
 import Students from './Students';
 import Classes from './Classes';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
@@ -81,6 +86,16 @@ export default function TeacherProfile({
     })),
   );
   const [status, setStatus] = useState<SaveStatus>({ type: 'idle', message: '' });
+  // Account security — password change (session-based updateUser, same auth
+  // backend as ResetPassword; no old-password round trip exists client-side).
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{
+    type: 'error' | 'success';
+    text: string;
+  } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const profileSnapshot = JSON.stringify([name, subject, bio, avatarUrl, schools, schedule]);
   const [savedProfileSnapshot, setSavedProfileSnapshot] = useState(profileSnapshot);
@@ -191,6 +206,42 @@ export default function TeacherProfile({
         type: 'error',
         message: error instanceof Error ? error.message : 'بارگذاری تصویر انجام نشد.',
       });
+    }
+  };
+
+  const changePassword = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!newPassword || !confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'رمز عبور جدید و تکرار آن را وارد کنید.' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordMessage({ type: 'error', text: 'رمز عبور باید حداقل ۶ کاراکتر باشد.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ type: 'error', text: 'رمز عبور و تکرار آن یکسان نیستند.' });
+      return;
+    }
+    setPasswordBusy(true);
+    setPasswordMessage(null);
+    try {
+      const supabase = getSupabasePublicClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordMessage({
+        type: 'success',
+        text: 'رمز عبور با موفقیت تغییر کرد.',
+      });
+    } catch (error) {
+      setPasswordMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'تغییر رمز عبور انجام نشد. دوباره تلاش کنید.',
+      });
+    } finally {
+      setPasswordBusy(false);
     }
   };
 
@@ -541,6 +592,70 @@ export default function TeacherProfile({
             </Button>
           </Card>
         </div>
+
+        <Card glassLayer="light" className="relative rounded-3xl">
+          <PageHeader
+            level={2}
+            icon={<Lock className="h-5 w-5" />}
+            title="امنیت حساب"
+            subtitle="رمز عبور ورود به پنل دبیر را تغییر دهید."
+          />
+          <form onSubmit={changePassword} className="mt-5 space-y-4">
+            <Input
+              label="رمز عبور جدید"
+              type={showPassword ? 'text' : 'password'}
+              dir="ltr"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              placeholder="حداقل ۶ کاراکتر"
+              icon={<Lock className="w-4 h-4" />}
+              trailing={
+                <IconButton
+                  label={showPassword ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور'}
+                  size="xs"
+                  radius="md"
+                  tone="tertiary"
+                  surface="plainMuted"
+                  motion={false}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </IconButton>
+              }
+            />
+            <Input
+              label="تکرار رمز عبور جدید"
+              type={showPassword ? 'text' : 'password'}
+              dir="ltr"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              placeholder="دوباره وارد کنید"
+            />
+            {passwordMessage && (
+              <p
+                role={passwordMessage.type === 'error' ? 'alert' : 'status'}
+                aria-live="polite"
+                className={
+                  passwordMessage.type === 'error'
+                    ? 'text-caption text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/20 rounded-lg px-3 py-2'
+                    : 'text-caption text-[var(--color-success)] bg-[var(--color-success-soft)] border border-[var(--color-success)]/20 rounded-lg px-3 py-2'
+                }
+              >
+                {passwordMessage.text}
+              </p>
+            )}
+            <Button
+              type="submit"
+              isLoading={passwordBusy}
+              disabled={passwordBusy}
+              icon={<Save className="h-4 w-4" aria-hidden="true" />}
+            >
+              {passwordBusy ? 'در حال تغییر…' : 'تغییر رمز عبور'}
+            </Button>
+          </form>
+        </Card>
       </div>
     </div>
   );
