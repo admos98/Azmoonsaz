@@ -1,12 +1,23 @@
 import { getSupabaseAdmin } from './supabaseAdmin.js';
 
-// In-memory fast path — survives within a single Vercel instance.
-// Supabase is the source of truth for cross-instance consistency.
+// Per-instance fallback store — only consulted when Supabase is unreachable.
+// Bounded: keys rotate (attacker-chosen IPs), so an unbounded Map would be a
+// memory-exhaustion vector. Oldest entries are evicted at LOCAL_MAX_KEYS.
 const localCache = new Map();
+const LOCAL_MAX_KEYS = 5_000;
+
+function cacheSet(bucketKey, bucket) {
+  if (localCache.size >= LOCAL_MAX_KEYS && !localCache.has(bucketKey)) {
+    const oldest = localCache.keys().next().value;
+    if (oldest !== undefined) localCache.delete(oldest);
+  }
+  localCache.set(bucketKey, bucket);
+}
 
 /**
- * Check rate limit using Supabase as the shared store.
- * Falls back to in-memory if Supabase is unavailable.
+ * Check rate limit using a single atomic Postgres increment (bump_rate_limit
+ * RPC) — race-free across concurrent serverless instances.
+ * Falls back to a bounded per-instance counter if Supabase is unavailable.
  *
  * @param {string} key - Rate limit key (e.g. "start-session:192.168.1.1")
  * @param {{ limit?: number, windowMs?: number }} options
@@ -17,51 +28,27 @@ export async function checkRateLimit(key, options = {}) {
   const windowMs = options.windowMs || 60_000;
   const now = Date.now();
   const bucketKey = String(key || 'anonymous');
-  const resetAtIso = new Date(now + windowMs).toISOString();
 
   try {
     const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase.rpc('bump_rate_limit', {
+      p_key: bucketKey,
+      p_window_ms: windowMs,
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row.bumped_count !== 'number') throw new Error('empty bump result');
 
-    // Try to read existing bucket
-    const { data: existing, error: readError } = await supabase
-      .from('rate_limits')
-      .select('count, reset_at')
-      .eq('key', bucketKey)
-      .maybeSingle();
-
-    if (readError) throw readError;
-
-    let count;
-    let newResetAt;
-
-    if (!existing || new Date(existing.reset_at).getTime() <= now) {
-      // Expired or new — reset
-      count = 1;
-      newResetAt = resetAtIso;
-    } else {
-      // Not expired — increment
-      count = existing.count + 1;
-      newResetAt = existing.reset_at;
-    }
-
-    // Upsert the counter
-    const { error: writeError } = await supabase
-      .from('rate_limits')
-      .upsert({ key: bucketKey, count, reset_at: newResetAt }, { onConflict: 'key' });
-
-    if (writeError) throw writeError;
-
-    // Sync local cache
-    localCache.set(bucketKey, { count, resetAt: new Date(newResetAt).getTime() });
-
+    const resetAt = new Date(row.reset_at).getTime();
+    cacheSet(bucketKey, { count: row.bumped_count, resetAt });
     return {
-      ok: count <= limit,
+      ok: row.bumped_count <= limit,
       limit,
-      remaining: Math.max(0, limit - count),
-      resetAt: new Date(newResetAt).getTime(),
+      remaining: Math.max(0, limit - row.bumped_count),
+      resetAt,
     };
   } catch {
-    // Supabase unavailable — fall back to local in-memory
+    // Supabase unavailable — bounded per-instance fallback.
     return checkRateLimitLocal(bucketKey, limit, windowMs, now);
   }
 }
@@ -79,7 +66,7 @@ function checkRateLimitLocal(bucketKey, limit, windowMs, now) {
   }
 
   bucket.count += 1;
-  localCache.set(bucketKey, bucket);
+  cacheSet(bucketKey, bucket);
 
   return {
     ok: bucket.count <= limit,

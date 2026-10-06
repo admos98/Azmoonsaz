@@ -1,4 +1,5 @@
 import { getSupabaseAdmin, getSupabasePublicServerClient } from './supabaseAdmin.js';
+import { checkRateLimit } from './rateLimit.js';
 
 export function getBearerToken(req) {
   const header = req.headers.authorization || req.headers.Authorization || '';
@@ -10,12 +11,7 @@ export function getBearerToken(req) {
 
 function displayNameFromUser(user) {
   const meta = user?.user_metadata || {};
-  return (
-    meta.full_name ||
-    meta.name ||
-    user?.email?.split('@')[0] ||
-    'Teacher'
-  );
+  return meta.full_name || meta.name || user?.email?.split('@')[0] || 'Teacher';
 }
 
 async function ensureTeacherProfile(admin, user) {
@@ -25,13 +21,14 @@ async function ensureTeacherProfile(admin, user) {
   const fullName = displayNameFromUser(user);
   const schoolName = user?.user_metadata?.school_name || '';
 
-  const { error } = await admin
-    .from('teacher_profiles')
-    .upsert({
+  const { error } = await admin.from('teacher_profiles').upsert(
+    {
       id: user.id,
       full_name: fullName,
       school_name: schoolName,
-    }, { onConflict: 'id', ignoreDuplicates: false });
+    },
+    { onConflict: 'id', ignoreDuplicates: false },
+  );
 
   if (error) {
     // Do not block login in rare cases, but inserts may fail if this stays broken.
@@ -55,6 +52,19 @@ export async function requireTeacher(req, res) {
 
   const admin = getSupabaseAdmin();
   await ensureTeacherProfile(admin, data.user);
+
+  // F-08: mutating teacher requests are rate-limited per teacher; reads stay
+  // free so list/preview UIs are unaffected.
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(String(req.method || 'GET').toUpperCase())) {
+    const rate = await checkRateLimit(`teacher-write:${data.user.id}`, {
+      limit: 120,
+      windowMs: 60_000,
+    });
+    if (!rate.ok) {
+      res.status(429).json({ error: 'too_many_requests' });
+      return null;
+    }
+  }
 
   return {
     id: data.user.id,

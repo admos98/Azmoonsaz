@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 const TEACHER_ONLY_KEYS = new Set([
   'answer_key',
   'answerKey',
@@ -17,8 +19,9 @@ const QUESTION_BODY_WHITELIST = new Set([
   'imageUrl',
   'options',
   'parts',
-  'matchingPairs',
-  'orderingItems',
+  // F-05: `orderingItems` / `matchingPairs` are the canonical correct
+  // order/mapping — never sent to students. When a student UI needs them,
+  // send a per-session scrambled copy and keep the canonical key server-side.
 ]);
 
 const OPTION_WHITELIST = new Set(['id', 'text', 'imageUrl']);
@@ -195,4 +198,56 @@ export function sanitizeStudentAnswer(raw) {
     return { value: items };
   }
   return {};
+}
+
+// --- Session-seeded display shuffles (F-05) ---
+
+/** Deterministic PRNG (mulberry32) seeded from sha256 of the given seed. */
+function seededRandom(seed) {
+  let a = crypto.createHash('sha256').update(String(seed)).digest().readUInt32BE(0);
+  return function next() {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffledArray(array, random) {
+  const out = array.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    const tmp = out[i];
+    out[i] = out[j];
+    out[j] = tmp;
+  }
+  return out;
+}
+
+/**
+ * Enforce the teacher's shuffle flags server-side on the student payload.
+ * Seeded per (session, question): a reload yields the same order, different
+ * students get different orders, and answers stay keyed by id so grading is
+ * order-independent. Flags live in `exams.settings`.
+ */
+export function applyExamShuffles(questions, exam, sessionId) {
+  const settings = exam && typeof exam === 'object' && exam.settings ? exam.settings : {};
+  let result = Array.isArray(questions) ? questions.slice() : questions;
+  if (settings.shuffleQuestions && Array.isArray(result) && result.length > 1) {
+    result = shuffledArray(result, seededRandom(`${sessionId}|questions`));
+  }
+  if (settings.shuffleOptions && Array.isArray(result)) {
+    result = result.map((question) => {
+      const options = question?.body?.options;
+      if (!Array.isArray(options) || options.length < 2) return question;
+      return {
+        ...question,
+        body: {
+          ...question.body,
+          options: shuffledArray(options, seededRandom(`${sessionId}|options|${question.id}`)),
+        },
+      };
+    });
+  }
+  return result;
 }

@@ -19,9 +19,16 @@ export function requireMethod(req, res, methods) {
 }
 
 export function getClientIp(req) {
+  // Vercel sets x-real-ip from the trusted hop. x-forwarded-for is
+  // client-controllable: the FIRST entry is attacker-supplied, so only the
+  // LAST entry (appended by the edge) may be trusted. Never key limits on it first.
+  const real = req.headers['x-real-ip'];
+  if (typeof real === 'string' && real.trim().length > 0) return real.trim();
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0].trim();
+    const parts = forwarded.split(',');
+    const last = parts[parts.length - 1].trim();
+    if (last.length > 0) return last;
   }
   return req.socket?.remoteAddress || 'unknown';
 }

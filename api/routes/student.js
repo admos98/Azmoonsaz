@@ -11,6 +11,7 @@ import {
   getExamAvailabilityWithGrace,
   getSessionTimeWindow,
   sanitizeStudentAnswer,
+  applyExamShuffles,
 } from '../_lib/examSecurity.js';
 import { tokenTtlForSession, isUuid } from '../_lib/utils.js';
 
@@ -31,6 +32,13 @@ async function handleStudentStartSession(req, res) {
   try {
     const supabase = getSupabaseAdmin();
     const hash = nationalIdHash(cleanNationalId);
+    // F-08: identity-scoped bucket — credential stuffing stays capped even
+    // when the attacker rotates source IPs (IP bucket alone can't see it).
+    const identityRate = await checkRateLimit(
+      `start-session-id:${cleanExamCode}:${hash.slice(0, 16)}`,
+      { limit: 10, windowMs: 60_000 },
+    );
+    if (!identityRate.ok) return json(res, 429, { error: 'too_many_requests' });
     const { data: exam, error: examError } = await supabase
       .from('exams')
       .select(
@@ -142,7 +150,7 @@ async function handleStudentExamPayload(req, res) {
     const { data: exam, error: examError } = await supabase
       .from('exams')
       .select(
-        'id, exam_code, title, grade, subject, status, mode, starts_at, ends_at, duration_minutes',
+        'id, exam_code, title, grade, subject, status, mode, starts_at, ends_at, duration_minutes, settings',
       )
       .eq('id', payload.eid)
       .single();
@@ -175,11 +183,15 @@ async function handleStudentExamPayload(req, res) {
           : null,
       )
       .filter(Boolean);
+    // F-05: enforce the teacher's shuffle flags server-side, seeded per session
+    // so a reload keeps the same order. Answers are keyed by id — grading is
+    // order-independent.
+    const orderedQuestions = applyExamShuffles(safeQuestions, exam, session.id);
     json(res, 200, {
       ok: true,
       exam: safeExamForStudent(exam),
       session: { id: session.id, startedAt: session.started_at },
-      questions: safeQuestions,
+      questions: orderedQuestions,
     });
   } catch {
     json(res, 500, { error: 'exam_payload_failed' });
@@ -195,6 +207,9 @@ async function handleStudentSaveAnswer(req, res) {
     return json(res, 401, { error: 'invalid_session' });
   const questionId = String(body.questionId || '').trim();
   if (!questionId) return json(res, 400, { error: 'missing_question_id' });
+  // F-08: per-session save budget (covers offline-queue flushes).
+  const rate = await checkRateLimit('save-answer:' + payload.sid, { limit: 120, windowMs: 60_000 });
+  if (!rate.ok) return json(res, 429, { error: 'too_many_requests' });
   try {
     const supabase = getSupabaseAdmin();
     const { data: session, error: sessionError } = await supabase
@@ -221,17 +236,15 @@ async function handleStudentSaveAnswer(req, res) {
       .maybeSingle();
     if (eqError) throw eqError;
     if (!examQuestion) return json(res, 403, { error: 'question_not_in_exam' });
-    const { error: upsertError } = await supabase
-      .from('student_answers')
-      .upsert(
-        {
-          session_id: payload.sid,
-          question_id: questionId,
-          answer: sanitizeStudentAnswer(body.answer),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'session_id,question_id' },
-      );
+    const { error: upsertError } = await supabase.from('student_answers').upsert(
+      {
+        session_id: payload.sid,
+        question_id: questionId,
+        answer: sanitizeStudentAnswer(body.answer),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'session_id,question_id' },
+    );
     if (upsertError) throw upsertError;
     json(res, 200, { ok: true, savedAt: new Date().toISOString() });
   } catch {
@@ -245,6 +258,8 @@ async function handleStudentSubmit(req, res) {
   const payload = verifyStudentSessionToken(token);
   if (!payload || payload.type !== 'student_exam')
     return json(res, 401, { error: 'invalid_session' });
+  const rate = await checkRateLimit('submit:' + payload.sid, { limit: 30, windowMs: 60_000 });
+  if (!rate.ok) return json(res, 429, { error: 'too_many_requests' });
   try {
     const supabase = getSupabaseAdmin();
     const { data: current, error: readError } = await supabase
