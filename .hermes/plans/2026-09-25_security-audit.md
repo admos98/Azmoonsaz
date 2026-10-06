@@ -95,6 +95,27 @@ Diff scope since prior anchor `7a15420`: security-relevant changes confined to
 
 ---
 
+## Sweep 2 — full re-audit (2026-10-06, post-wave-4 HEAD `03402db`)
+
+Method: manual second-opinion pass (owasp-audit adversarial framing), static + local gates only, no live packets.
+Independently re-verified: route/auth matrix (11/11 teacher + 4/4 student + 2/2 public+auth handlers), student token binding (sid+eid+stid triple predicate on every query), F-01/05/09/11/12/14/18/19/20/21/22/25 fix call-sites, no XSS sinks (`dangerouslySetInnerHTML`/`innerHTML`/`eval` = 0), no raw SQL (all PostgREST-parameterized), vercel.json headers (HSTS/CSP `script-src 'self'`/XFO DENY/CORP/COOP), localStorage contents (prefs only), RLS inventory (13/13 tables enabled; deny-by-design server tables zero-policy), storage policies, `npm audit` = 0, secret-prefix scan = clean, gates: browser 177/177, server 80/80, typecheck ×2, lint 0 errors, build, verify:prod, check:bundle — all green.
+
+### New findings this sweep
+
+| ID   | Sev  | Finding | Location |
+| ---- | ---- | ------- | -------- |
+| F-26 | P2   | **IDOR via FK (A01):** exam create accepts arbitrary `questionIds` (only `isUuid` filter, no ownership check) → `exam_questions` links foreign questions; `hydrateExam` then fetches them without `teacher_id` scope and maps `answer_key`/`isCorrect`/`matchingPairs` → cross-tenant question **content + answer key** disclosure given a leaked question UUID (UUIDs not enumerable, so P2 not P1). Student `exam-payload` similarly serves foreign question content (keys stripped). | `api/routes/teacher.js:641-655`, `api/_lib/utils.js:244-247` |
+| F-27 | P3   | `resolveClassGroupIds` array path returns raw UUIDs with **no** teacher scoping (single-id path IS scoped via `.eq('teacher_id')`). Impact limited: only `exam_allowed_classes` rows can go foreign; student joins still fail the `exam.teacher_id` student-lookup scope. | `api/_lib/utils.js:188-193` |
+| N-07 | P3   | Input length caps inconsistent: F-20/N-01 capped onboarding + bulk import only; single student create/update, class create/update, exam create/update (`title`/`grade`/`subject`), question `grade`/`subject` remain trim-only/unbounded (4.5 MB body, teacher-write 120/min) → DB-bloat vector. | `api/routes/teacher.js` (classes/students/exams/questions handlers) |
+| N-08 | info | `FORCE ROW LEVEL SECURITY` set only on `rate_limits` + `audit_logs`; other 11 tables have ENABLE only → owner-bypass defense-in-depth absent (inert while owner = superuser `postgres`; matters only if ownership moves to a non-superuser role). | `supabase/migrations/` |
+| N-09 | info | Repo migrations still contain **bare** `auth.uid()` policies (live DB was rewritten by `20261006000005`) — a fresh DB replayed from migrations gets `auth_rls_initplan`-warn policies. Performance-only drift; fix = amend base migrations or accept historical immutability. | `20260617000001`, `20260923000001` |
+| N-10 | P3   | `question-images` storage policies (`to authenticated`, bucket_id only) have no per-teacher path scoping → any authenticated teacher can **list/download every object** in the bucket (cross-tenant read within the teacher tier); no UPDATE/DELETE policy → no overwrite/delete. Mitigation: bucket has no live producer/consumer yet (per migration NOTE). | `20261006000002_question_images_hardening.sql` |
+| — | info | CSP `img-src https:` is broad (any host); could pin to `*.supabase.co` once image sources are known. `teacher-avatars` bucket public-read is intentional (profile pics); upload/update are folder-scoped to `auth.uid()`. | `vercel.json`, `20260923000001` |
+
+Verified clean this sweep: signup enumeration (byte-identical response both branches), auth boot handshake (session-driven), grade-answer/finalize ownership + caps, submissions exam-scope gate, method guards on every handler, rate-limit coverage (start-session 15/min IP + 10/min identity, save 120, submit 30, teacher-write 120), HSTS/CSP/CORP headers, no realtime channels, `verify:prod`/`check:bundle` enforce secret/mock-mode absence.
+
+---
+
 ## Remediation plan (ordered)
 
 ### Wave 1 — integrity & auth bypass ✅ DONE (2026-10-06) — F-04 apply pending
