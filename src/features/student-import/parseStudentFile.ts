@@ -53,7 +53,15 @@ function mapRows(rows: UnknownRow[]): StudentImportRow[] {
     }));
 }
 
+// F-16: xlsx parsing runs on untrusted bytes in the teacher's browser — cap
+// the input before the parser sees it (compensating control for the SheetJS
+// advisories; the parser itself is upgraded separately).
+const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
+
 export async function parseStudentFile(file: File): Promise<StudentImportRow[]> {
+  if (file.size > MAX_IMPORT_BYTES) {
+    throw new Error('حجم فایل بیشتر از ۱۰ مگابایت است.');
+  }
   const extension = file.name.split('.').pop()?.toLowerCase();
   if (extension === 'csv' || file.type.includes('csv')) {
     const text = await file.text();
