@@ -216,6 +216,9 @@ async function handleTeacherClasses(req, res) {
     const grade = String(body.grade || '').trim();
     if (!name) return json(res, 400, { error: 'missing_class_name' });
     if (!grade) return json(res, 400, { error: 'missing_class_grade' });
+    // N-07: text columns are unbounded — cap at the edge like bulk (N-01).
+    if (name.length > 100) return json(res, 400, { error: 'class_name_too_long' });
+    if (grade.length > 64) return json(res, 400, { error: 'grade_too_long' });
     const { data, error } = await teacher.admin
       .from('class_groups')
       .insert({ teacher_id: teacher.id, name, grade })
@@ -233,6 +236,10 @@ async function handleTeacherClasses(req, res) {
     const updates = {};
     if (body.name !== undefined) updates.name = String(body.name || '').trim();
     if (body.grade !== undefined) updates.grade = String(body.grade || '').trim();
+    if (updates.name && updates.name.length > 100)
+      return json(res, 400, { error: 'class_name_too_long' });
+    if (updates.grade && updates.grade.length > 64)
+      return json(res, 400, { error: 'grade_too_long' });
     const { data, error } = await teacher.admin
       .from('class_groups')
       .update(updates)
@@ -284,6 +291,9 @@ async function handleTeacherStudents(req, res) {
     const cleanNationalId = normalizeNationalId(studentBody.nationalId);
     if (!name) return json(res, 400, { error: 'missing_student_name' });
     if (!grade) return json(res, 400, { error: 'missing_student_grade' });
+    // N-07: match the bulk-import caps (N-01).
+    if (name.length > 128) return json(res, 400, { error: 'name_too_long' });
+    if (grade.length > 64) return json(res, 400, { error: 'grade_too_long' });
     if (!validateIranianNationalId(cleanNationalId))
       return json(res, 400, { error: 'invalid_national_id' });
     try {
@@ -321,6 +331,10 @@ async function handleTeacherStudents(req, res) {
       const updates = {};
       if (studentBody.name !== undefined) updates.full_name = String(studentBody.name || '').trim();
       if (studentBody.grade !== undefined) updates.grade = String(studentBody.grade || '').trim();
+      if (updates.full_name && updates.full_name.length > 128)
+        return json(res, 400, { error: 'name_too_long' });
+      if (updates.grade && updates.grade.length > 64)
+        return json(res, 400, { error: 'grade_too_long' });
       if (studentBody.status !== undefined)
         updates.status = normalizeStudentStatus(studentBody.status);
       if (studentBody.classGroupId !== undefined)
@@ -522,11 +536,16 @@ async function handleTeacherQuestions(req, res) {
   const action = body.action || 'create';
   const question = body.question || body;
   if (action === 'create') {
+    const qGrade = String(question.grade || '').trim();
+    const qSubject = String(question.category || question.subject || '').trim();
+    // N-07: grade/subject are stored trim-only — cap them (title is sliced).
+    if (qGrade.length > 64) return json(res, 400, { error: 'grade_too_long' });
+    if (qSubject.length > 100) return json(res, 400, { error: 'subject_too_long' });
     const payload = {
       teacher_id: teacher.id,
       type: question.type,
-      grade: String(question.grade || '').trim(),
-      subject: String(question.category || question.subject || '').trim(),
+      grade: qGrade,
+      subject: qSubject,
       title: String(question.title || question.text || 'Untitled question').slice(0, 160),
       body: questionToBody(question),
       answer_key: deriveAnswerKey(question),
@@ -543,10 +562,14 @@ async function handleTeacherQuestions(req, res) {
   if (action === 'update') {
     const id = String(question.id || '').trim();
     if (!id) return json(res, 400, { error: 'missing_question_id' });
+    const uGrade = String(question.grade || '').trim();
+    const uSubject = String(question.category || question.subject || '').trim();
+    if (uGrade.length > 64) return json(res, 400, { error: 'grade_too_long' });
+    if (uSubject.length > 100) return json(res, 400, { error: 'subject_too_long' });
     const updates = {
       type: question.type,
-      grade: String(question.grade || '').trim(),
-      subject: String(question.category || question.subject || '').trim(),
+      grade: uGrade,
+      subject: uSubject,
       title: String(question.title || question.text || 'Untitled question').slice(0, 160),
       body: questionToBody(question),
       answer_key: deriveAnswerKey(question),
@@ -597,6 +620,13 @@ async function handleTeacherExams(req, res) {
   const action = body.action || 'create';
   const exam = body.exam || body;
   if (action === 'create') {
+    // N-07: payload stores these raw — bound the raw values.
+    if (String(exam.title || '').length > 200)
+      return json(res, 400, { error: 'title_too_long' });
+    if (String(exam.grade || '').length > 64)
+      return json(res, 400, { error: 'grade_too_long' });
+    if (String(exam.subject || '').length > 100)
+      return json(res, 400, { error: 'subject_too_long' });
     try {
       const classIds = await resolveClassGroupIds(teacher, exam.classGroupIds, exam.grade);
       const settings = { ...(exam.settings || {}), description: exam.description || '' };
@@ -641,7 +671,18 @@ async function handleTeacherExams(req, res) {
       const questions = Array.isArray(exam.questions)
         ? exam.questions.filter((q) => isUuid(q.id))
         : [];
-      if (questions.length > 0)
+      if (questions.length > 0) {
+        // F-26 (A01, IDOR via FK): only THIS teacher's questions may be
+        // attached — hydrateExam reads them back with their answer keys.
+        const { data: ownedQuestions, error: ownershipError } = await teacher.admin
+          .from('questions')
+          .select('id')
+          .eq('teacher_id', teacher.id)
+          .in('id', questions.map((q) => q.id));
+        if (ownershipError) throw ownershipError;
+        const ownedIds = new Set((ownedQuestions || []).map((row) => row.id));
+        if (questions.some((q) => !ownedIds.has(q.id)))
+          return json(res, 400, { error: 'question_not_owned' });
         await teacher.admin
           .from('exam_questions')
           .insert(
@@ -653,6 +694,7 @@ async function handleTeacherExams(req, res) {
               points: q.points || null,
             })),
           );
+      }
       return json(res, 200, { ok: true, exam: await hydrateExam(teacher, data) });
     } catch (error) {
       return json(res, 400, safeError(error, 'exam_create_failed'));
@@ -674,6 +716,13 @@ async function handleTeacherExams(req, res) {
       settings,
     };
     Object.keys(updates).forEach((key) => updates[key] === undefined && delete updates[key]);
+    // N-07: same bounds as create (stored raw).
+    if (updates.title !== undefined && String(updates.title).length > 200)
+      return json(res, 400, { error: 'title_too_long' });
+    if (updates.grade !== undefined && String(updates.grade).length > 64)
+      return json(res, 400, { error: 'grade_too_long' });
+    if (updates.subject !== undefined && String(updates.subject).length > 100)
+      return json(res, 400, { error: 'subject_too_long' });
     const { data, error } = await teacher.admin
       .from('exams')
       .update(updates)

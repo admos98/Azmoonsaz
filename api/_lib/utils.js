@@ -188,7 +188,19 @@ export async function resolveClassGroupId(teacher, rawClassGroupId, grade) {
 export async function resolveClassGroupIds(teacher, rawIds, grade) {
   const ids = Array.isArray(rawIds) ? rawIds : [];
   const uuidIds = ids.filter(isUuid);
-  if (uuidIds.length > 0) return uuidIds;
+  if (uuidIds.length > 0) {
+    // F-27: the array path must keep the SAME ownership scope as the single
+    // path — foreign class ids are dropped, never attached to the exam.
+    const { data, error } = await teacher.admin
+      .from('class_groups')
+      .select('id')
+      .eq('teacher_id', teacher.id)
+      .in('id', uuidIds);
+    if (error) throw error;
+    const owned = new Set((data || []).map((row) => row.id));
+    const scoped = uuidIds.filter((id) => owned.has(id));
+    if (scoped.length > 0) return scoped;
+  }
   return [await resolveClassGroupId(teacher, ids[0], grade)];
 }
 
@@ -241,9 +253,12 @@ export async function hydrateExam(teacher, exam) {
   const questionIds = (examQuestions || []).map((row) => row.question_id);
   let questions = [];
   if (questionIds.length > 0) {
+    // F-26: belt to the create-side ownership gate — never read keys for a
+    // question that is not this teacher's, even if a row slipped through.
     const { data } = await teacher.admin
       .from('questions')
       .select('id, type, grade, subject, title, body, answer_key, points, created_at')
+      .eq('teacher_id', teacher.id)
       .in('id', questionIds);
     const byId = new Map((data || []).map((q) => [q.id, mapQuestion(q)]));
     questions = questionIds.map((id) => byId.get(id)).filter(Boolean);
