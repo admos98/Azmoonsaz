@@ -152,7 +152,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 id="hero-btn-questions"
                 type="button"
                 onClick={() => onNavigate('questions')}
-                className="px-5 py-3 btn-glass btn-glass--primary text-[var(--color-text-primary)] rounded-xl text-caption font-semibold transition-all cursor-pointer"
+                className="px-5 py-3 btn-glass btn-glass--quiet text-[var(--color-text-primary)] rounded-xl text-caption font-semibold transition-all cursor-pointer"
               >
                 افزودن سوال جدید
               </button>

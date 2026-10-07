@@ -118,7 +118,7 @@ export default function QuestionBankHealth() {
             </div>
           )}
           {questions.length > 0 && questions.length < 12 && (
-            <div className="flex gap-3 rounded-[14px] bg-[var(--color-warning-soft)] p-4 text-caption text-[var(--color-warning)]">
+            <div className="flex gap-3 rounded-lg bg-[var(--color-warning-soft)] p-4 text-caption text-[var(--color-warning)]">
               <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>برای ساخت آزمون‌های متنوع‌تر، سوال‌های بیشتری به بانک اضافه کنید.</span>
             </div>

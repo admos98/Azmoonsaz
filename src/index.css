@@ -656,7 +656,7 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: rgba(26, 26, 46, 0.15);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(26, 26, 46, 0.25);
@@ -1091,32 +1091,52 @@ select::-webkit-calendar-picker-indicator {
   line-height: 1.2;
 }
 
-/* ─── Skeleton shimmer ─── */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
+/* ─── Skeleton: one sweep, then rest ───
+   V3 language: a wash plane (accent-soft at 35% light / 50% dark) crossed
+   by ONE sweep pass, right→left (the RTL reading direction), then it goes
+   quiet. The old shimmer was `background-position … infinite` — a looping
+   gradient repaint, exactly what pulse discipline bans; this runs once per
+   mount (1.2s) and rests as a static wash. Reduced motion: static wash
+   (no sweep at all). */
+@keyframes skeleton-sweep {
+  from {
+    transform: translateX(160%);
   }
-  100% {
-    background-position: 200% 0;
+  to {
+    transform: translateX(-160%);
   }
 }
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-surface) 25%,
-    var(--color-surface-secondary) 50%,
-    var(--color-surface) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  --skeleton-mix: 35%;
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-accent-soft) var(--skeleton-mix), transparent);
   border-radius: var(--radius-sm);
+}
+:root[data-theme='dark'] .skeleton {
+  /* same plane, denser night */
+  --skeleton-mix: 50%;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 25%,
+    var(--color-accent-soft) 50%,
+    transparent 75%
+  );
+  transform: translateX(160%);
+  animation: skeleton-sweep 1.2s ease-out 1 both;
 }
 
 /* ─── Reduced motion ───
    data-motion is resolved before first paint. The media query remains as a
    CSS-level safety net if JavaScript is unavailable. */
 :root[data-motion='reduce'] .goldpop,
-:root[data-motion='reduce'] .skeleton {
+:root[data-motion='reduce'] .skeleton,
+:root[data-motion='reduce'] .skeleton::after {
   animation: none;
 }
 :root[data-motion='reduce'] *,
@@ -1129,7 +1149,8 @@ select::-webkit-calendar-picker-indicator {
 }
 @media (prefers-reduced-motion: reduce) {
   .goldpop,
-  .skeleton {
+  .skeleton,
+  .skeleton::after {
     animation: none;
   }
   *,
@@ -1263,7 +1284,7 @@ select::-webkit-calendar-picker-indicator {
   position: relative;
   overflow: hidden;
   min-height: calc(100vh - 48px);
-  border-radius: 30px;
+  border-radius: var(--radius-3xl);
   color: var(--color-ink);
   background-color: var(--color-login-art-paper);
   background-image: image-set(
@@ -1288,7 +1309,7 @@ select::-webkit-calendar-picker-indicator {
   max-width: 42%;
   padding: 22px;
   border: 1px solid var(--color-glass-light-stroke);
-  border-radius: 22px;
+  border-radius: var(--radius-2xl);
   background: rgba(250, 248, 242, 0.76);
   backdrop-filter: blur(12px);
 }
@@ -1567,7 +1588,7 @@ button {
 }
 
 @utility drop {
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   background: rgb(var(--dim-tint) / var(--glass-fill));
   backdrop-filter: blur(var(--drop-blur));
 }

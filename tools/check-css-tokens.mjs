@@ -68,9 +68,16 @@ const files = [];
 
 const defRe = /(^|[\s;{])((?:--)[a-zA-Z][\w-]*)\s*:/g;
 const refRe = /var\(\s*(--[a-zA-Z][\w-]*)/g;
+// V5 radius ratchet: raw px radius (css) and arbitrary rounded-[…] (tsx)
+// are how ad-hoc shape values creep in. The scale is the --radius-*
+// tokens (sm 8 / md 12 / lg 16 / xl 20 / 2xl 24 / 3xl 32 / full);
+// border-radius: 50% (circles) stays legal.
+const rawRadiusRe = /border-radius:\s*(\d+)px/g;
+const arbRadiusRe = /rounded-\[([^\]]*)\]/g;
 
 const defined = new Map(); // name -> first "file:line"
 const referenced = new Map(); // name -> [{where}]
+const rawRadius = [];
 
 for (const path of files) {
   const rel = relative(root, path);
@@ -84,6 +91,14 @@ for (const path of files) {
       const name = m[1];
       if (!referenced.has(name)) referenced.set(name, []);
       referenced.get(name).push(`${rel}:${i + 1}`);
+    }
+    if (path.endsWith('.css')) {
+      for (const m of line.matchAll(rawRadiusRe))
+        rawRadius.push(`${rel}:${i + 1}  border-radius: ${m[1]}px`);
+    } else if (path.endsWith('.tsx')) {
+      for (const m of line.matchAll(arbRadiusRe)) {
+        if (!m[1].includes('var(')) rawRadius.push(`${rel}:${i + 1}  rounded-[${m[1]}]`);
+      }
     }
   });
 }
@@ -104,6 +119,13 @@ for (const [name, where] of defined) {
   }
 }
 const DEAD_TOKEN_BASELINE = 43; // 2026-10-05 audit state — only down from here
+
+if (rawRadius.length) {
+  console.error(`\u2717 Radius ratchet FAILED: ${rawRadius.length} raw radius value(s) — use the --radius-* tokens:\n`);
+  rawRadius.forEach((r) => console.log(`  - ${r}`));
+  console.error('\nScale: --radius-sm 8 / md 12 / lg 16 / xl 20 / 2xl 24 / 3xl 32 / full. border-radius: 50% (circles) stays legal.');
+  process.exit(1);
+}
 
 if (phantoms.length) {
   console.error(`\u2717 Token integrity check FAILED: ${phantoms.length} referenced token(s) are never defined:\n`);

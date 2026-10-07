@@ -288,8 +288,19 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(topbar).toMatch(/md:translate-x-\[124px\]/);
     expect(topbar).toMatch(/relative h-11 w-11 md:h-10 md:w-10 cursor-pointer/);
     // hero buttons share one cross-axis baseline (icon vs text drift on mobile)
-    expect(css).toMatch(/\.dashboard-hero-actions\s*\{[^}]*align-items:\s*stretch/s);
-    expect(css).toMatch(/\.dashboard-hero-actions > button\s*\{[^}]*justify-content:\s*center/s);
+    expect(css).toMatch(/\.dashboard-hero-actions\s*{[^}]*align-items:\s*stretch/s);
+    expect(css).toMatch(/\.dashboard-hero-actions > button\s*{[^}]*justify-content:\s*center/s);
+    // V0: one solid slab in the hero row, second action is quiet glass
+    // (two --primary buttons read as a double-solid strip)
+    expect(component('src/pages/teacher/Dashboard.tsx')).toMatch(
+      /id="hero-btn-new-exam"[\s\S]{0,220}?btn-glass--primary/,
+    );
+    expect(component('src/pages/teacher/Dashboard.tsx')).toMatch(
+      /id="hero-btn-questions"[\s\S]{0,220}?btn-glass--quiet/,
+    );
+    expect(component('src/pages/teacher/Dashboard.tsx')).not.toMatch(
+      /id="hero-btn-questions"[\s\S]{0,220}?btn-glass--primary/,
+    );
     // hero light fields live INSIDE the panel (oversized blurred squares bled
     // a sharp sliver past the rounded corner on mobile GPUs + cost fullscreen
     // blur passes per frame)
@@ -537,8 +548,9 @@ describe('glass material contract (pixel-audit gates)', () => {
     // field: blur ONLY — host keeps the fill, no rim, no bend
     expect(util('field')).toMatch(/backdrop-filter: blur\(var\(--field-blur\)\)/);
     expect(util('field')).not.toMatch(/box-shadow|background|border:/);
-    // drop: a circle with its own blur + a static ring where the probe is off
-    expect(util('drop')).toMatch(/border-radius: 9999px/);
+    // drop: a circle with its own blur + a static ring where the prob…
+    // (radius tokenized in V5 — --radius-full is 9999px, same circle)
+    expect(util('drop')).toMatch(/border-radius: var\(--radius-full\)/);
     expect(util('drop')).toMatch(/backdrop-filter: blur\(var\(--drop-blur\)\)/);
     expect(css).toMatch(/:root:not\(\[data-lens='on'\]\) \.drop\s*\{[^}]*box-shadow/);
     // btn-glass: tinted glass, press states, NEVER a refraction
@@ -774,5 +786,17 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(component('src/components/UIComponents.tsx')).toMatch(
       /Loader2 className="w-4 h-4 animate-spin/,
     );
+  });
+
+  it('V3 skeleton — one sweep then rest, the looping shimmer is gone', () => {
+    expect(css).not.toMatch(/shimmer/); // keyframe + class both gone
+    expect(css).toMatch(/@keyframes skeleton-sweep\s*{\s*from\s*{\s*transform:\s*translateX\(160%\)/);
+    // exactly one iteration, fill-mode parks it off-canvas
+    expect(css).toMatch(/animation:\s*skeleton-sweep 1\.2s ease-out 1 both/);
+    expect(css).toMatch(/:root\[data-theme='dark'\] \.skeleton\s*{\s*--skeleton-mix:\s*50%/);
+    expect(cssRaw).toMatch(/one sweep, then rest/);
+    // reduced motion parks the sweep entirely (media + attribute paths)
+    expect(css).toMatch(/:root\[data-motion='reduce'\] \.skeleton::after\s*{\s*animation:\s*none/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) {\s*.goldpop,\s*.skeleton,\s*.skeleton::after/);
   });
 });
