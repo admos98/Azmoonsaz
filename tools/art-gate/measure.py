@@ -2,12 +2,14 @@
 """Art gate: measure optical stroke weight + fill of every shipped motif.
 The six (and any future motif) must stay within a +/-15% stroke/canvas
 band or they do not read as one system at slot size. Run after any regen:
-    python tools/art-gate/measure.py
+    python tools/art-gate/measure.py              # parents (default gate)
+    python tools/art-gate/measure.py <light-dir>  # one family, own band
+    e.g. public/empty-art/cuts/light
 Exit 0 = PASS (spread <= 15%), 1 = FAIL.
 
 PALETTE NOTE: the ink mask keys on #221E4A, the legacy plum the shipped
 set was keyed with. Live `--color-ink` is #1a1a2e — retarget INK here
-(and in process.py's recolor) before any future regeneration round.
+(and in ingest.py's recolor) before any future regeneration round.
 """
 import numpy as np
 from PIL import Image
@@ -15,7 +17,8 @@ import os, glob, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 # repo layout: tools/art-gate/measure.py -> public/empty-art/light/*.png
-LIGHT = os.path.normpath(os.path.join(HERE, "..", "..", "public", "empty-art", "light"))
+ROOT = os.path.normpath(os.path.join(HERE, "..", "..", "public", "empty-art"))
+LIGHT = os.path.join(ROOT, "light")
 
 
 def run_lengths(mask):
@@ -31,8 +34,11 @@ def run_lengths(mask):
 
 
 def main():
+    target = LIGHT
+    if len(sys.argv) > 1:
+        target = sys.argv[1] if os.path.isabs(sys.argv[1]) else os.path.normpath(sys.argv[1])
     rows = []
-    for p in sorted(glob.glob(os.path.join(LIGHT, "*.png"))):
+    for p in sorted(glob.glob(os.path.join(target, "*.png"))):
         im = np.asarray(Image.open(p).convert("RGBA"))
         a = im[..., 3] > 128
         ink = a & (np.abs(im[..., :3].astype(int) - np.array([34, 30, 74])).sum(axis=2) < 30)
@@ -46,7 +52,7 @@ def main():
         fill = 100 * (xs.max() - xs.min() + 1) / side
         rows.append((os.path.basename(p), stroke, ratio, fill))
     if not rows:
-        print(f"art gate: no PNGs found in {LIGHT}")
+        print(f"art gate: no PNGs found in {target}")
         return 1
     print(f"{'asset':20s} {'stroke':>6s} {'ratio e-3':>9s} {'fill%':>6s}")
     for name, stroke, ratio, fill in rows:
