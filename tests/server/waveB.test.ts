@@ -471,3 +471,53 @@ describe('start-session: blocked + Turnstile (Wave B)', () => {
     expect(res.body).toEqual({ error: 'exam_invalidated' });
   });
 });
+
+describe('GET submissions exposes proctor bookkeeping (Wave C)', () => {
+  it('maps proctor_flags / warning_count / attempt_count per submission', async () => {
+    const admin = createAdmin({
+      exams: { rows: [examRow] },
+      student_exam_sessions: {
+        rows: [
+          {
+            id: SESSION_ID,
+            exam_id: EXAM_ID,
+            student_id: STUDENT_ID,
+            status: 'submitted',
+            started_at: minutesAgo(50),
+            submitted_at: minutesAgo(5),
+            proctor_flags: { tabHidden: 2, copyAttempt: 1 },
+            warning_count: 1,
+            attempt_count: 2,
+          },
+        ],
+      },
+      students: {
+        rows: [
+          { id: STUDENT_ID, full_name: 'دانش‌آموز تست', national_id_last4: '1234' },
+        ],
+      },
+      student_answers: { rows: [] },
+      exam_questions: { rows: [{ exam_id: EXAM_ID, points: 10 }] },
+    });
+    vi.mocked(requireTeacher).mockResolvedValue({
+      id: TEACHER_ID,
+      email: 'teacher@test.dev',
+      admin,
+    } as unknown as Teacher);
+
+    const res = createRes();
+    await handleTeacherSubmissions(
+      createReq({ method: 'GET', url: '/api/teacher/submissions' }) as never,
+      res as never,
+    );
+    expect(res.statusCode).toBe(200);
+    const body = res.body as { submissions: Array<Record<string, unknown>> };
+    expect(body.submissions).toHaveLength(1);
+    expect(body.submissions[0]).toMatchObject({
+      proctorFlags: { tabHidden: 2, copyAttempt: 1 },
+      warningCount: 1,
+      attemptCount: 2,
+      maskedNationalId: '***1234',
+    });
+  });
+});

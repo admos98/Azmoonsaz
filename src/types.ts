@@ -213,9 +213,13 @@ export interface Submission {
   answers: StudentAnswer[];
   startedAt: string;
   submittedAt?: string;
-  status: 'ongoing' | 'submitted' | 'graded';
+  status: 'ongoing' | 'submitted' | 'graded' | 'expired' | 'invalidated';
   score: number;
   maxScore: number;
   gradedBy?: string;
   gradedAt?: string;
+  /** Wave C: proctor counters (no PII) + warn-then-block bookkeeping. */
+  proctorFlags?: Record<string, number>;
+  warningCount?: number;
+  attemptCount?: number;
 }

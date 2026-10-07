@@ -389,6 +389,16 @@ export const gradingService = {
     throw new Error('Auto-grade should use the secure exam portal.');
   },
 
+  /** Wave C: disciplinary action — first call warns + restarts the session,
+   *  the server turns the second call into a permanent block. */
+  async invalidateSubmission(submissionId: string): Promise<{
+    ok: boolean;
+    action: 'warned' | 'blocked';
+    warningCount: number;
+  }> {
+    return teacherPost('/api/teacher/submissions', { sessionId: submissionId });
+  },
+
   /** Persists one answer grade. The caller owns the cache patch — the endpoint
    *  answers { ok } only, so the previous full-list refetch here was pure
    *  waste (and ran once per answer inside grading loops). */

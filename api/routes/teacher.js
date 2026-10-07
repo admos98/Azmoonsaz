@@ -779,7 +779,9 @@ async function handleTeacherSubmissions(req, res) {
   const examCodeById = new Map((exams || []).map((exam) => [exam.id, exam.exam_code]));
   const { data: sessions, error: sessionsError } = await teacher.admin
     .from('student_exam_sessions')
-    .select('id, exam_id, student_id, status, started_at, submitted_at')
+    .select(
+      'id, exam_id, student_id, status, started_at, submitted_at, proctor_flags, warning_count, attempt_count',
+    )
     .in('exam_id', targetExamIds)
     .order('started_at', { ascending: false });
   if (sessionsError) return json(res, 500, safeError(sessionsError, 'submissions_fetch_failed'));
@@ -832,6 +834,10 @@ async function handleTeacherSubmissions(req, res) {
       status: session.status,
       score,
       maxScore: Number(maxScoreByExam.get(session.exam_id) || 0),
+      // Wave C: counters only — never IP/UA (F-21).
+      proctorFlags: session.proctor_flags || {},
+      warningCount: Number(session.warning_count || 0),
+      attemptCount: Number(session.attempt_count || 1),
     };
   });
   json(res, 200, { ok: true, submissions });

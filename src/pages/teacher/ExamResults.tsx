@@ -39,9 +39,11 @@ import {
   TextLink,
 } from '../../components/UIComponents';
 import { useToast } from '../../hooks/useToast';
+import { logger } from '../../lib/logger';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { toPersianDigits } from '../../utils/persian';
 import { gradingService } from '../../services/api';
+import { ProctorFlags } from '../../features/exam-guard/ProctorFlags';
 import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext';
 import {
   buildResultStats,
@@ -107,6 +109,8 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
   const { showToast, toastElement } = useToast();
   const [confirmFinalize, setConfirmFinalize] = useState(false);
+  const [confirmInvalidate, setConfirmInvalidate] = useState(false);
+  const [invalidateBusy, setInvalidateBusy] = useState(false);
 
   // Construct complete row data pairing cohort with submissions, then derive
   // overview stats and the filtered view — all logic lives in the pure
@@ -120,6 +124,33 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
   const activeSubmission = selectedSubmissionId
     ? studentRows.find((row) => row.id === selectedSubmissionId) || null
     : null;
+
+  // Wave C: disciplinary action — the SERVER decides warn-first vs block
+  // (first strike restarts the session, second strike locks it permanently).
+  const handleInvalidate = async () => {
+    const submissionId = activeSubmission?.rawSubmission?.id;
+    if (!submissionId) return;
+    setConfirmInvalidate(false);
+    setInvalidateBusy(true);
+    try {
+      const result = await gradingService.invalidateSubmission(submissionId);
+      if (result.action === 'warned') {
+        showToast(
+          'هشدار ثبت شد و آزمون این دانش‌آموز از نو (با زمان کامل) شروع شد.',
+          'warning',
+        );
+      } else {
+        showToast('دانش‌آموز برای این آزمون مسدود شد.', 'success');
+      }
+      setSelectedSubmissionId(null);
+      await reload('submissions');
+    } catch (err) {
+      logger.error('Invalidate submission failed:', err);
+      showToast('انجام اقدام ممکن نشد. دوباره تلاش کنید.', 'error');
+    } finally {
+      setInvalidateBusy(false);
+    }
+  };
 
   const {
     totalCohortsCount,
@@ -896,6 +927,23 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   </div>
                 </div>
 
+                <ProctorFlags
+                  flags={activeSubmission.rawSubmission?.proctorFlags}
+                  warningCount={activeSubmission.rawSubmission?.warningCount}
+                />
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmInvalidate(true)}
+                    disabled={invalidateBusy}
+                    className="rounded-xl btn-glass btn-glass--danger px-4 py-2 text-caption font-black inline-flex items-center gap-2"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    {invalidateBusy ? 'در حال اعمال...' : 'اقدام انضباطی (هشدار / مسدودسازی)'}
+                  </button>
+                </div>
+
                 <div className="pane px-4 py-2.5 rounded-2xl flex items-center gap-4 text-caption">
                   <div>
                     <span className="text-[var(--color-text-tertiary)] font-bold block text-micro mb-0.5">
@@ -1433,6 +1481,22 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
       </AnimatePresence>
 
       {toastElement}
+      <ConfirmDialog
+        isOpen={confirmInvalidate}
+        title="اقدام انضباطی آزمون"
+        message={
+          (activeSubmission?.rawSubmission?.warningCount || 0) > 0
+            ? 'این دانش‌آموز قبلاً یک هشدار دارد. این بار پاسخ‌برگ او مسدود و شرکت در این آزمون برای همیشه بسته می‌شود. ادامه می‌دهید؟'
+            : 'اولین هشدار: پاسخ‌های این نشست پاک و آزمون از نو (با زمان کامل) شروع می‌شود. در صورت تکرار تخلف، دانش‌آموز برای همیشه در این آزمون مسدود خواهد شد. ادامه می‌دهید؟'
+        }
+        confirmText="بله، اعمال شود"
+        cancelText="انصراف"
+        variant="danger"
+        onConfirm={() => {
+          void handleInvalidate();
+        }}
+        onCancel={() => setConfirmInvalidate(false)}
+      />
       <ConfirmDialog
         isOpen={confirmFinalize}
         title="ثبت کارنامه با تصحیح ناقص"

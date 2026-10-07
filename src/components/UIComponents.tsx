@@ -405,7 +405,9 @@ interface StatusBadgeProps {
     | 'graded'
     | 'absent'
     | 'present'
-    | 'needs-grading';
+    | 'needs-grading'
+    | 'expired'
+    | 'invalidated';
   className?: string;
 }
 
@@ -423,6 +425,8 @@ export const StatusBadge = ({ status, className = '' }: StatusBadgeProps) => {
     ongoing: { variant: 'warning', label: 'در حال آزمون', live: true },
     submitted: { variant: 'info', label: 'تحویل داده شده' },
     graded: { variant: 'success', label: 'تصحیح شده' },
+    expired: { variant: 'danger', label: 'منقضی شده' },
+    invalidated: { variant: 'danger', label: 'مسدود شده' },
     absent: { variant: 'danger', label: 'غایب' },
     present: { variant: 'success', label: 'حاضر' },
     'needs-grading': { variant: 'warning', label: 'نیازمند تصحیح' },
