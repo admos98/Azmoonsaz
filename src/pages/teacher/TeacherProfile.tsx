@@ -10,6 +10,7 @@ import {
   Textarea,
 } from '../../components/UIComponents';
 import { PanelCrest } from '../../components/PanelCrest';
+import { Cut } from '../../components/Cut';
 import {
   Camera,
   CalendarDays,
@@ -464,7 +465,7 @@ export default function TeacherProfile({
             <PanelCrest kind="scheduled" state={schedule.length > 0 ? 'filled' : 'empty'}>
             <PageHeader
               level={2}
-              icon={<CalendarDays className="h-5 w-5" />}
+              icon={<Cut kind="scheduled" size={20} />}
               title="برنامه هفتگی"
               subtitle="کلاس‌ها، مدرسه و ساعت تدریس شما."
             />

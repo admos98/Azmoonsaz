@@ -33,6 +33,7 @@ import {
 import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { BubbleLoader } from '../../components/BubbleLoader';
 import { PanelCrest } from '../../components/PanelCrest';
+import { Cut } from '../../components/Cut';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 
 describe('PageHeader', () => {
@@ -549,6 +550,20 @@ describe('Micro controls — TextLink / IconButton / PillButton (F-6 primitives)
     expect(container.querySelector('.panel-crest')!.getAttribute('data-state')).toBe('empty');
     expect(container.querySelector('.panel-crest__rail img')).toBeTruthy();
     expect(container.querySelector('#body')).toBeTruthy();
+  });
+
+  it('Cut picks the keyed theme pair and stays out of AT (C.1/D.3)', () => {
+    render(
+      <ThemeProvider>
+        <Cut kind="questions" size={24} />
+      </ThemeProvider>,
+    );
+    const img = document.querySelector('img')!;
+    expect(img.getAttribute('src')).toMatch(/^\/empty-art\/cuts\/(light|dark)\/cut-1\.png$/);
+    expect(img.getAttribute('alt')).toBe('');
+    expect(img.getAttribute('aria-hidden')).toBe('true');
+    expect(img.getAttribute('width')).toBe('24');
+    expect(img.getAttribute('height')).toBe('24');
   });
 
   it('EmptyState renders art above the title; compact stays icon-only', () => {

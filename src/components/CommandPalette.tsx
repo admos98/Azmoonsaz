@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
-  BookOpen,
-  GraduationCap,
   Home,
   Keyboard,
   PlusCircle,
   Search,
   Settings,
   UserRound,
-  Users,
   X,
 } from 'lucide-react';
+import { Cut } from './Cut';
 import { normalizePersianText } from '../utils/persian';
 import { TextLink } from './UIComponents';
 import { usePersistentPreference } from '../hooks/usePersistentPreference';
@@ -22,7 +21,7 @@ type Command = {
   label: string;
   description: string;
   keywords: string;
-  icon: typeof Home;
+  icon: ReactNode;
   destination?: string;
 };
 
@@ -32,49 +31,49 @@ const commands: Command[] = [
     label: 'داشبورد',
     description: 'نمای کلی فعالیت‌ها',
     keywords: 'خانه آمار',
-    icon: Home,
+    icon: <Home className="h-4 w-4" />,
   },
   {
     id: 'exams',
     label: 'آزمون‌ها',
     description: 'مدیریت و مشاهده آزمون‌ها',
     keywords: 'امتحان فهرست',
-    icon: BookOpen,
+    icon: <Cut kind="exams" size={20} />,
   },
   {
     id: 'new-exam',
     label: 'ساخت آزمون',
     description: 'ایجاد آزمون تازه',
     keywords: 'جدید افزودن امتحان',
-    icon: PlusCircle,
+    icon: <PlusCircle className="h-4 w-4" />,
   },
   {
     id: 'profile',
     label: 'پروفایل دبیر',
     description: 'اطلاعات و برنامه تدریس',
     keywords: 'حساب مشخصات',
-    icon: UserRound,
+    icon: <UserRound className="h-4 w-4" />,
   },
   {
     id: 'students',
     label: 'دانش‌آموزان',
     description: 'فهرست و ورود اطلاعات',
     keywords: 'هنرجو شاگرد',
-    icon: Users,
+    icon: <Cut kind="students" size={20} />,
   },
   {
     id: 'classes',
     label: 'کلاس‌ها',
     description: 'مدیریت گروه‌های کلاسی',
     keywords: 'پایه گروه',
-    icon: GraduationCap,
+    icon: <Cut kind="classes" size={20} />,
   },
   {
     id: 'settings',
     label: 'تنظیمات',
     description: 'ظاهر، حرکت و فضای کاری',
     keywords: 'ترجیحات پوسته',
-    icon: Settings,
+    icon: <Settings className="h-4 w-4" />,
   },
 ];
 
@@ -118,7 +117,7 @@ export default function CommandPalette({
         label: exam.title,
         description: 'آزمون',
         keywords: `آزمون امتحان ${exam.status}`,
-        icon: BookOpen,
+        icon: <Cut kind="exams" size={20} />,
       })),
       ...students.map((student) => ({
         id: `student:${student.id}`,
@@ -126,7 +125,7 @@ export default function CommandPalette({
         label: student.name,
         description: `دانش‌آموز پایه ${student.grade}`,
         keywords: `دانش آموز ${student.nationalId}`,
-        icon: Users,
+        icon: <Cut kind="students" size={20} />,
       })),
       ...classGroups.map((classGroup) => ({
         id: `class:${classGroup.id}`,
@@ -134,7 +133,7 @@ export default function CommandPalette({
         label: classGroup.name,
         description: `کلاس پایه ${classGroup.grade}`,
         keywords: 'کلاس گروه پایه',
-        icon: GraduationCap,
+        icon: <Cut kind="classes" size={20} />,
       })),
     ],
     [exams, students, classGroups],
@@ -289,7 +288,6 @@ export default function CommandPalette({
             <div className="max-h-[55vh] overflow-y-auto p-2" role="listbox">
               {filtered.length ? (
                 filtered.map((command, index) => {
-                  const Icon = command.icon;
                   const isActive = index === activeIndex;
                   return (
                     <button
@@ -308,7 +306,7 @@ export default function CommandPalette({
                       <span
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${isActive ? 'border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]/60 text-[var(--color-accent)]' : 'border-transparent text-[var(--color-text-tertiary)]'}`}
                       >
-                        <Icon className="h-4 w-4" />
+                        {command.icon}
                       </span>
                       <span className="min-w-0">
                         <strong className="block text-label">{command.label}</strong>

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Button, Card, PageHeader } from './UIComponents';
-import { AlertTriangle, BookOpen, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Cut } from './Cut';
 import { useTeacherCollections } from '../contexts/TeacherContext';
 
 type HealthItem = { label: string; count: number };
@@ -76,7 +77,7 @@ export default function QuestionBankHealth() {
     >
       <PageHeader
         level={2}
-        icon={<BookOpen className="h-5 w-5" />}
+        icon={<Cut kind="questions" size={20} />}
         title="سلامت بانک سوالات"
         subtitle="پوشش سوال‌ها بر اساس پایه و ساختار"
       />

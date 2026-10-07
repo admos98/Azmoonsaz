@@ -12,11 +12,10 @@ import {
   Plus,
   Clock,
   ChevronLeft,
-  CalendarDays,
   Upload,
   Eye,
-  BookOpen,
 } from 'lucide-react';
+import { Cut } from '../../components/Cut';
 
 import {
   Badge,
@@ -176,7 +175,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             label="تعداد دانش‌آموزان"
             {...statValue(totalStudents)}
             unit="نفر"
-            icon={<Users className="w-4 h-4" />}
+            icon={<Cut kind="students" size={20} />}
             tone="accent"
           />
 
@@ -187,7 +186,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             {...statValue(localQuestions.length)}
             unit="سوال"
             footnote="منطبق با کتب درسی جدید"
-            icon={<BookOpen className="w-4 h-4" />}
+            icon={<Cut kind="questions" size={20} />}
             tone="success"
           />
 
@@ -201,7 +200,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
               activeExams > 0 ? 'هم‌اکنون درگاه پاسخ فعال است' : 'هیچ آزمونی در حال برگزاری نیست'
             }
             footnoteTone={activeExams > 0 ? 'warning' : 'neutral'}
-            icon={<Clock className="w-4 h-4" />}
+            icon={<Cut kind="exams" size={20} />}
             tone="warning"
           />
 
@@ -219,7 +218,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 : 'در انتظار تصحیح: هیچ'
             }
             footnoteTone={pendingGradings > 0 ? 'danger' : 'success'}
-            icon={<CheckSquare className="w-4 h-4" />}
+            icon={<Cut kind="grading" size={20} />}
             tone={pendingGradings > 0 ? 'danger' : 'success'}
           />
 
@@ -230,7 +229,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             {...statValue(scheduledExams)}
             unit="مورد"
             footnote="برنامه‌ریزی آغاز در روزهای آتی"
-            icon={<CalendarDays className="w-4 h-4" />}
+            icon={<Cut kind="scheduled" size={20} />}
             tone="accent"
           />
         </div>

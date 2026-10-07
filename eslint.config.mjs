@@ -29,4 +29,63 @@ export default tseslint.config(
       'no-useless-assignment': 'warn',
     },
   },
+  // ── D.7 ratchet (chrome-only Cut migration) ─────────────────────────────
+  // These surfaces have migrated to <Cut>; the named glyphs may never come
+  // back. The set of banned names can only GROW as more surfaces migrate —
+  // lucide stays legal for glyphs that have no cut (Home, Plus, Settings …)
+  // and in content files.
+  {
+    files: ['src/components/CommandPalette.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'lucide-react',
+              importNames: ['BookOpen', 'Users', 'GraduationCap'],
+              message:
+                'Migrated surface — use <Cut kind="exams|students|classes"> (Art Master Plan C.1/D.7). Never re-add a lucide glyph here.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/components/QuestionBankHealth.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'lucide-react',
+              importNames: ['BookOpen'],
+              message:
+                'Migrated surface — use <Cut kind="questions"> (Art Master Plan C.1/D.7).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/pages/teacher/Dashboard.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'lucide-react',
+              importNames: ['BookOpen', 'CalendarDays'],
+              message:
+                'Migrated surface — use <Cut kind="questions|scheduled"> (Art Master Plan C.1/D.7).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

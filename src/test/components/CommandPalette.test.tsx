@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import CommandPalette from '../../components/CommandPalette';
+import { ThemeProvider } from '../../contexts/ThemeContext';
 
 // The palette reads live entities from the shared teacher collections cache.
 vi.mock('../../contexts/TeacherContext', () => ({
@@ -27,13 +28,17 @@ vi.mock('../../contexts/TeacherContext', () => ({
 // The palette is controlled by the Topbar now — this harness stands in for it.
 function Harness({ onNavigate }: { onNavigate: (destination: string) => void }) {
   const [open, setOpen] = useState(false);
+  // Command rows render <Cut> icons — Cut reads useTheme (same contract as
+  // the app root), so the harness stands in for the provider too.
   return (
-    <CommandPalette
-      onNavigate={onNavigate}
-      open={open}
-      setOpen={setOpen}
-      initialQuery=""
-    />
+    <ThemeProvider>
+      <CommandPalette
+        onNavigate={onNavigate}
+        open={open}
+        setOpen={setOpen}
+        initialQuery=""
+      />
+    </ThemeProvider>
   );
 }
 
