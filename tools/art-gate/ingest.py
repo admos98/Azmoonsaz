@@ -58,30 +58,54 @@ MIN_ALPHA = 0.05
 # exact Euclidean morphology on the keyed alpha mask with a per-asset float
 # radius, then σ=0.7 re-fringe. EDT distances come in float rings — tune the
 # radius in 0.2 steps against tools/art-gate/measure.py, never by eye.
-# 01-students regen drew +39% heavier than its siblings (ratio 17.1e-3 vs
-# ~12.5 band) — thin it back into the ≤15% spread gate.
+# Sign: POSITIVE = thin by r px, NEGATIVE = dilate by |r| px (ink only —
+# gold fills and wash keep their coverage).
+#   01-students regen drew +39% heavier than siblings (17.1e-3 vs ~12.5
+#   band) -> thin back to the shipped 12.32. Cuts converge to a 30e-3
+#   optical band (icon slots are 20–28px — lighter reads invisible);
+#   absence family converges to 22e-3.
 STROKE_DELTA = {
     "01-students": 2.0,
+    "cut-1": -5.75,
+    "cut-2": -0.6,
+    "cut-3": 6.7,
+    "cut-4": 2.0,
+    "cut-5": 1.5,
+    "cut-6": -2.8,
+    "abs-1-404": 0.65,
+    "abs-2-session-expired": 0.25,
+    "abs-3-import-failed": -2.0,
+    "abs-4-no-results": 0.0,
 }
 
 
 def normalize_strokes(alpha, best_idx, r):
-    """Thin ink strokes by r px of exact-Euclidean ring distance.
+    """Signed exact-Euclidean morphology on the ink class (idx 0).
 
-    Only the ink class (idx 0) is touched — gold fills and the wash plane
-    keep their coverage; the σ=0.7 gaussian restores the anti-alias fringe
-    the binary erosion cut off.
+    r > 0: strip r distance rings from stroke edges (thin).
+    r < 0: grow |r| rings outward (dilate) — grown pixels join the ink
+    class so the recolor table follows them into dark. Gold (idx 1) is
+    never overwritten. σ=0.7 gaussian restores the AA fringe either way.
+    Returns (alpha, best_idx).
     """
-    if r <= 0:
-        return alpha
+    if r == 0:
+        return alpha, best_idx
     core = (best_idx == 0) & (alpha > 0.5)
     if not core.any():
-        return alpha
-    edt = distance_transform_edt(core)
-    keep = core & (edt > r)
-    out = np.where(best_idx == 0, 0.0, alpha)  # drop old ink core + fringe
-    out = np.where(keep, alpha, out)           # restore surviving core
-    return gaussian_filter(out, 0.7)
+        return alpha, best_idx
+    if r > 0:
+        edt = distance_transform_edt(core)
+        keep = core & (edt > r)
+        out = np.where(best_idx == 0, 0.0, alpha)  # drop old ink + fringe
+        out = np.where(keep, alpha, out)           # restore surviving core
+        return gaussian_filter(out, 0.7), best_idx
+    d = -r
+    edt_out = distance_transform_edt(~core)
+    ring = (~core) & (edt_out <= d) & (best_idx != 1)  # never consume gold
+    soft = np.clip(d - edt_out + 0.5, 0.0, 1.0)
+    out = np.where(ring, soft, alpha)
+    new_idx = np.where(ring, 0, best_idx).astype(np.int8)
+    return gaussian_filter(out, 0.7), new_idx
 
 
 def process(src_path, stem, light_dir, dark_dir):
@@ -114,7 +138,7 @@ def process(src_path, stem, light_dir, dark_dir):
     alpha = np.where(is_bg | (best_a < MIN_ALPHA), 0.0, best_a)
     # snap solid ink/gold cores, keep AA fringe and the wash's soft ramp
     alpha = np.where((best_idx != 2) & (alpha > 0.7), 1.0, alpha)
-    alpha = normalize_strokes(alpha, best_idx, STROKE_DELTA.get(stem, 0.0))
+    alpha, best_idx = normalize_strokes(alpha, best_idx, STROKE_DELTA.get(stem, 0.0))
 
     light_rgb = np.stack([INK_L, GOLD_L, WASH_L])[best_idx].astype(np.uint8)
     dark_rgb = np.stack([INK_D, GOLD_D, WASH_D])[best_idx].astype(np.uint8)
