@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -26,6 +26,18 @@ import { useExamGuard } from '../../features/exam-guard/useExamGuard';
 import { Watermark } from '../../features/exam-guard/Watermark';
 
 type Phase = 'login' | 'ready' | 'take' | 'submitted';
+
+// Wave B: Turnstile join check — renders only when the site key is deployed;
+// the server enforces only when its secret is deployed (both or neither).
+const TURNSTILE_SITE_KEY = String(import.meta.env.VITE_TURNSTILE_SITE_KEY || '').trim();
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: Record<string, unknown>) => void;
+    };
+  }
+}
 
 type SafeExam = {
   id: string;
@@ -87,6 +99,8 @@ function friendlyApiError(error: unknown): string {
       too_many_requests: 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید.',
       session_not_active: 'نشست آزمون فعال نیست یا قبلاً ارسال شده است.',
       invalid_session: 'نشست آزمون نامعتبر است. دوباره وارد آزمون شوید.',
+      exam_invalidated: 'شرکت شما در این آزمون مسدود شده است. برای پیگیری با دبیر تماس بگیرید.',
+      turnstile_invalid: 'احراز هویت امنیتی تکمیل نشد. لطفاً دوباره تلاش کنید.',
     };
     return map[code] || 'خطایی در ارتباط با سرور رخ داد.';
   }
@@ -117,6 +131,31 @@ export default function SecureExamPortal({
   // Wave A: copy/print/tab-switch deterrence, active only while questions
   // are on screen (take phase).
   const guard = useExamGuard(phase === 'take');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY || phase !== 'login') return;
+    const container = turnstileRef.current;
+    if (!container) return;
+    const renderWidget = () => {
+      window.turnstile?.render(container, {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: (value: string) => setTurnstileToken(value),
+        'expired-callback': () => setTurnstileToken(''),
+      });
+    };
+    if (document.getElementById('cf-turnstile-script')) {
+      renderWidget();
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'cf-turnstile-script';
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    script.async = true;
+    script.onload = renderWidget;
+    document.head.appendChild(script);
+  }, [phase]);
 
   useEffect(() => {
     if (!token) return;
@@ -139,6 +178,7 @@ export default function SecureExamPortal({
       const response = await apiPost<StartResponse>('/api/student/start-session', {
         examCode,
         nationalId,
+        ...(TURNSTILE_SITE_KEY ? { turnstileToken } : {}),
       });
       setToken(response.token);
       setExam(response.exam);
@@ -190,7 +230,11 @@ export default function SecureExamPortal({
     try {
       const response = await apiPost<{ ok: boolean; savedAt: string }>(
         '/api/student/save-answer',
-        { questionId, answer: { value } },
+        {
+          questionId,
+          answer: { value },
+          ...(guard.total > 0 ? { proctor: guard.flags } : {}),
+        },
         { Authorization: 'Bearer ' + token },
       );
       setSavedAt(response.savedAt);
@@ -243,7 +287,11 @@ export default function SecureExamPortal({
     setError('');
     setLoading(true);
     try {
-      await apiPost('/api/student/submit', {}, { Authorization: 'Bearer ' + token });
+      await apiPost(
+        '/api/student/submit',
+        guard.total > 0 ? { proctor: guard.flags } : {},
+        { Authorization: 'Bearer ' + token },
+      );
       clearQueueForToken(token);
       setPhase('submitted');
     } catch (err) {
@@ -320,9 +368,16 @@ export default function SecureExamPortal({
                 className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
               />
             </label>
+            {TURNSTILE_SITE_KEY && (
+              <div ref={turnstileRef} className="flex justify-center" />
+            )}
             <button
               type="submit"
-              disabled={loading || nationalId.length !== 10}
+              disabled={
+                loading ||
+                nationalId.length !== 10 ||
+                Boolean(TURNSTILE_SITE_KEY && !turnstileToken)
+              }
               className="w-full rounded-xl btn-glass btn-glass--primary py-3 text-label font-black flex items-center justify-center gap-2"
             >
               {loading ? (

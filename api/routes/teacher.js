@@ -702,9 +702,69 @@ async function handleTeacherExams(req, res) {
 }
 
 async function handleTeacherSubmissions(req, res) {
-  if (!requireMethod(req, res, ['GET'])) return;
+  if (!requireMethod(req, res, ['GET', 'POST'])) return;
   const teacher = await requireTeacher(req, res);
   if (!teacher) return;
+  if (req.method === 'POST') {
+    // Wave B — invalidation policy (user decision): first strike = warning
+    // + clean retake (answers wiped, fresh window, warning on record);
+    // second strike = permanent block on that exam (status 'invalidated').
+    const body = req.body || {};
+    const sessionId = String(body.submissionId || body.sessionId || '').trim();
+    if (!sessionId) return json(res, 400, { error: 'missing_submission_id' });
+    const owned = await requireOwnedSession(teacher, sessionId);
+    if (owned.error) return json(res, 403, safeError(owned.error, 'submission_not_owned'));
+    const { data: state, error: stateError } = await teacher.admin
+      .from('student_exam_sessions')
+      .select('id, status, warning_count, attempt_count')
+      .eq('id', sessionId)
+      .maybeSingle();
+    if (stateError || !state)
+      return json(res, 500, safeError(stateError, 'invalidate_lookup_failed'));
+    if (state.status === 'invalidated') return json(res, 409, { error: 'already_invalidated' });
+    const strikes = Number(state.warning_count || 0);
+    if (strikes < 1) {
+      const { error: wipeError } = await teacher.admin
+        .from('student_answers')
+        .delete()
+        .eq('session_id', sessionId);
+      if (wipeError) return json(res, 500, safeError(wipeError, 'invalidate_wipe_failed'));
+      const { error: resetError } = await teacher.admin
+        .from('student_exam_sessions')
+        .update({
+          status: 'ongoing',
+          started_at: new Date().toISOString(),
+          submitted_at: null,
+          warning_count: 1,
+          attempt_count: Number(state.attempt_count || 1) + 1,
+        })
+        .eq('id', sessionId);
+      if (resetError) return json(res, 500, safeError(resetError, 'invalidate_reset_failed'));
+      await auditLog(teacher.admin, {
+        actorType: 'teacher',
+        actorId: teacher.id,
+        action: 'session_warned',
+        entityType: 'session',
+        entityId: sessionId,
+        metadata: { examId: owned.session.exam_id },
+      });
+      return json(res, 200, { ok: true, action: 'warned', warningCount: 1 });
+    }
+    const { error: blockError } = await teacher.admin
+      .from('student_exam_sessions')
+      .update({ status: 'invalidated' })
+      .eq('id', sessionId);
+    if (blockError) return json(res, 500, safeError(blockError, 'invalidate_block_failed'));
+    await auditLog(teacher.admin, {
+      actorType: 'teacher',
+      actorId: teacher.id,
+      action: 'session_invalidated',
+      entityType: 'session',
+      entityId: sessionId,
+      metadata: { examId: owned.session.exam_id, warningCount: strikes },
+    });
+    return json(res, 200, { ok: true, action: 'blocked', warningCount: strikes });
+  }
   const examId = String(req.query.examId || '').trim();
   const { data: exams, error: examsError } = await teacher.admin
     .from('exams')

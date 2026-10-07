@@ -86,10 +86,10 @@ describe('GET /api/teacher/submissions', () => {
     expect(body.submissions.some((s) => s.id === 'sess-foreign')).toBe(false);
   });
 
-  it('rejects non-GET with 405', async () => {
+  it('rejects unsupported methods with 405 (POST is now the invalidate action)', async () => {
     setTeacher(makeAdmin());
     const res = createRes();
-    await handleTeacherSubmissions(createReq({ method: 'POST' }) as never, res as never);
+    await handleTeacherSubmissions(createReq({ method: 'PUT' }) as never, res as never);
     expect(res.statusCode).toBe(405);
   });
 });

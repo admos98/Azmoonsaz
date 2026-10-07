@@ -55,6 +55,29 @@ function sanitizeBody(body) {
   return result;
 }
 
+/**
+ * Wave B: deterministic answer verdict against a stored answer key.
+ * Returns { correct: boolean } when the question is machine-gradable,
+ * or null when it needs a teacher (subjective / no usable key).
+ * Only `correctAnswer` participates — fill-blank/matching/ordering are
+ * teacher-graded until the student portal can render them.
+ */
+export function gradeAnswerValue(answerKey, value) {
+  if (!answerKey || typeof answerKey !== 'object') return null;
+  const key = answerKey.correctAnswer;
+  if (Array.isArray(key)) {
+    // multiple_choice stores the full correct-id list.
+    if (key.length === 0) return null;
+    if (value === undefined || value === null || value === '') return { correct: false };
+    return { correct: key.map((id) => String(id)).includes(String(value)) };
+  }
+  if (typeof key === 'string' && key.trim().length > 0) {
+    if (value === undefined || value === null) return { correct: false };
+    return { correct: String(value).trim() === key.trim() };
+  }
+  return null;
+}
+
 export function stripTeacherOnlyFields(value) {
   if (Array.isArray(value)) return value.map(stripTeacherOnlyFields);
   if (!value || typeof value !== 'object') return value;

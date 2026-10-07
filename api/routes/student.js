@@ -4,6 +4,7 @@ import { validateIranianNationalId, normalizeNationalId, nationalIdHash } from '
 import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
 import { createStudentSessionToken, verifyStudentSessionToken } from '../_lib/studentSession.js';
 import { getBearerToken } from '../_lib/auth.js';
+import { verifyTurnstile } from '../_lib/turnstile.js';
 import {
   safeExamForStudent,
   safeQuestionForStudent,
@@ -12,8 +13,102 @@ import {
   getSessionTimeWindow,
   sanitizeStudentAnswer,
   applyExamShuffles,
+  gradeAnswerValue,
 } from '../_lib/examSecurity.js';
 import { tokenTtlForSession, isUuid } from '../_lib/utils.js';
+
+// Wave B: proctor counters — whitelisted keys, integer-bounded, NO PII
+// (F-21 lesson: counters only, never IP/UA/free text).
+const PROCTOR_KEYS = [
+  'tabHidden',
+  'windowBlur',
+  'copyAttempt',
+  'contextMenu',
+  'printAttempt',
+  'shortcutBlocked',
+  'fullscreenExit',
+];
+
+function normalizeProctorFlags(input) {
+  if (!input || typeof input !== 'object') return null;
+  const out = {};
+  for (const key of PROCTOR_KEYS) {
+    const value = Number(input[key]);
+    if (Number.isFinite(value) && value > 0) out[key] = Math.min(Math.floor(value), 9999);
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+// Client sends CUMULATIVE totals per page-session; max() keeps the merge
+// idempotent across repeated reports and reloads (counters restart at 0).
+function mergeProctorFlags(current, incoming) {
+  const merged = { ...(current && typeof current === 'object' ? current : {}) };
+  for (const [key, value] of Object.entries(incoming)) {
+    if (!PROCTOR_KEYS.includes(key)) continue;
+    merged[key] = Math.max(Number(merged[key]) || 0, value);
+  }
+  return merged;
+}
+
+/**
+ * Wave B: server-side auto-grade pass at submit. Compares stored `{ value }`
+ * answers against the stored answer key and writes `__grading` — the student
+ * client never sees the key, and a teacher's manual grade always wins.
+ * Best-effort: a grading failure never fails the submit itself (the paper
+ * stays teacher-gradable).
+ */
+async function autoGradeSession(supabase, sessionId, examId) {
+  try {
+    const { data: eqRows, error: eqError } = await supabase
+      .from('exam_questions')
+      .select('question_id, points')
+      .eq('exam_id', examId);
+    if (eqError) throw eqError;
+    if (!eqRows || eqRows.length === 0) return;
+    const questionIds = eqRows.map((row) => row.question_id);
+    const { data: questions, error: qError } = await supabase
+      .from('questions')
+      .select('id, points, answer_key')
+      .in('id', questionIds);
+    if (qError) throw qError;
+    const { data: answers, error: aError } = await supabase
+      .from('student_answers')
+      .select('id, question_id, answer')
+      .eq('session_id', sessionId);
+    if (aError) throw aError;
+    const questionById = new Map((questions || []).map((q) => [q.id, q]));
+    const pointsById = new Map(eqRows.map((row) => [row.question_id, row.points]));
+    for (const row of answers || []) {
+      const question = questionById.get(row.question_id);
+      if (!question) continue;
+      const answer = row.answer && typeof row.answer === 'object' ? row.answer : {};
+      const previous = answer.__grading;
+      if (previous && previous.gradedBy !== 'auto') continue; // teacher grade wins
+      const verdict = gradeAnswerValue(question.answer_key, answer.value);
+      if (!verdict) continue; // not machine-gradable — teacher grades it
+      const points = Number(pointsById.get(row.question_id) ?? question.points ?? 0);
+      const score = verdict.correct && Number.isFinite(points) && points > 0 ? points : 0;
+      const { error: updateError } = await supabase
+        .from('student_answers')
+        .update({
+          answer: {
+            ...answer,
+            __grading: {
+              scoreGained: score,
+              isCorrect: verdict.correct,
+              gradedAt: new Date().toISOString(),
+              gradedBy: 'auto',
+            },
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', row.id);
+      if (updateError) throw updateError;
+    }
+  } catch (error) {
+    console.error('auto_grade_failed', error?.message || error);
+  }
+}
 
 async function handleStudentStartSession(req, res) {
   if (!requireMethod(req, res, ['POST'])) return;
@@ -41,6 +136,14 @@ async function handleStudentStartSession(req, res) {
       { limit: 10, windowMs: 60_000 },
     );
     if (!identityRate.ok) return json(res, 429, { error: 'too_many_requests' });
+    // Wave B: Turnstile join check — no-op unless TURNSTILE_SECRET_KEY is set.
+    // verifyTurnstile fail-closes when configured, so bots never inherit uptime.
+    const turnstileOk = await verifyTurnstile(
+      String(body.turnstileToken || ''),
+      process.env.TURNSTILE_SECRET_KEY,
+      ip,
+    );
+    if (!turnstileOk) return json(res, 403, { error: 'turnstile_invalid' });
     const { data: exam, error: examError } = await supabase
       .from('exams')
       .select(
@@ -87,9 +190,15 @@ async function handleStudentStartSession(req, res) {
     if (existingError) throw existingError;
     let session = existing;
     if (session && ['submitted', 'graded', 'expired', 'invalidated'].includes(session.status)) {
-      return json(res, 409, {
-        error: session.status === 'expired' ? 'exam_time_expired' : 'exam_already_finalized',
-      });
+      // Distinct code only AFTER credentials validate (F-12 still holds —
+      // this reveals nothing about exams the caller isn't a member of).
+      const statusError =
+        session.status === 'expired'
+          ? 'exam_time_expired'
+          : session.status === 'invalidated'
+            ? 'exam_invalidated'
+            : 'exam_already_finalized';
+      return json(res, 409, { error: statusError });
     }
     if (session) {
       // Personal window (started_at + duration + grace). Once it passes, freeze
@@ -147,6 +256,13 @@ async function handleStudentExamPayload(req, res) {
   const payload = verifyStudentSessionToken(token);
   if (!payload || payload.type !== 'student_exam')
     return json(res, 401, { error: 'invalid_session' });
+  // Wave B: a valid token could loop-fetch the full paper — bound it.
+  // 20/min covers legitimate reloads with wide margin.
+  const rate = await checkRateLimit('exam-payload:' + payload.sid, {
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!rate.ok) return json(res, 429, { error: 'too_many_requests' });
   try {
     const supabase = getSupabaseAdmin();
     const { data: session, error: sessionError } = await supabase
@@ -227,7 +343,7 @@ async function handleStudentSaveAnswer(req, res) {
     const { data: session, error: sessionError } = await supabase
       .from('student_exam_sessions')
       .select(
-        'id, exam_id, student_id, status, started_at, exam:exams(id, status, mode, starts_at, ends_at, duration_minutes)',
+        'id, exam_id, student_id, status, started_at, proctor_flags, exam:exams(id, status, mode, starts_at, ends_at, duration_minutes)',
       )
       .eq('id', payload.sid)
       .eq('exam_id', payload.eid)
@@ -258,6 +374,19 @@ async function handleStudentSaveAnswer(req, res) {
       { onConflict: 'session_id,question_id' },
     );
     if (upsertError) throw upsertError;
+    // Wave B: piggyback proctor counters on the save cadence (max-merge,
+    // best-effort — a flag-save hiccup must never lose the student's answer).
+    const proctor = normalizeProctorFlags(body.proctor);
+    if (proctor) {
+      try {
+        await supabase
+          .from('student_exam_sessions')
+          .update({ proctor_flags: mergeProctorFlags(session.proctor_flags, proctor) })
+          .eq('id', session.id);
+      } catch (flagError) {
+        console.error('proctor_flags_save_failed', flagError?.message || flagError);
+      }
+    }
     json(res, 200, { ok: true, savedAt: new Date().toISOString() });
   } catch {
     json(res, 500, { error: 'save_answer_failed' });
@@ -277,7 +406,7 @@ async function handleStudentSubmit(req, res) {
     const { data: current, error: readError } = await supabase
       .from('student_exam_sessions')
       .select(
-        'id, exam_id, student_id, status, started_at, exam:exams(id, status, mode, starts_at, ends_at, duration_minutes)',
+        'id, exam_id, student_id, status, started_at, proctor_flags, exam:exams(id, status, mode, starts_at, ends_at, duration_minutes)',
       )
       .eq('id', payload.sid)
       .eq('exam_id', payload.eid)
@@ -301,6 +430,20 @@ async function handleStudentSubmit(req, res) {
       .maybeSingle();
     if (sessionError) throw sessionError;
     if (!session) return json(res, 409, { error: 'session_not_active_or_already_submitted' });
+    // Wave B: grade the paper server-side the moment it is in (best-effort),
+    // then take one last proctor reading from the submit payload.
+    await autoGradeSession(supabase, payload.sid, payload.eid);
+    const proctor = normalizeProctorFlags((req.body || {}).proctor);
+    if (proctor) {
+      try {
+        await supabase
+          .from('student_exam_sessions')
+          .update({ proctor_flags: mergeProctorFlags(current.proctor_flags, proctor) })
+          .eq('id', payload.sid);
+      } catch (flagError) {
+        console.error('proctor_flags_save_failed', flagError?.message || flagError);
+      }
+    }
     json(res, 200, { ok: true, session });
   } catch {
     json(res, 500, { error: 'submit_failed' });
