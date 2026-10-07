@@ -32,7 +32,7 @@ const normalizeDigits = (value: unknown) =>
   String(value ?? '').replace(/[۰-۹٠-٩]/g, (digit) => {
     const persian = '۰۱۲۳۴۵۶۷۸۹'.indexOf(digit);
     if (persian >= 0) return String(persian);
-    return String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit));
+    return String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)); // persian-ok — normalization charmap, not copy
   });
 const read = (row: UnknownRow, names: readonly string[]) => {
   const key = Object.keys(row).find((candidate) => names.includes(normalizeHeader(candidate)));

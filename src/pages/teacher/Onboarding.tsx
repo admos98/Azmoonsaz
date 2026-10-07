@@ -104,7 +104,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             <div
               className="h-full bg-[var(--color-accent-solid)] transition-[width]"
               style={{
-                width: `${((Number(Boolean(schoolName.trim())) + Number(Boolean((subject !== 'سایر' ? subject : customSubject).trim()))) / 2) * 100}%`,
+                width: `${((Number(Boolean(schoolName.trim())) + Number(Boolean((subject !== 'سایر' ? subject : customSubject).trim()))) / 2) * 100}%`, // persian-ok — CSS width template, not copy
               }}
             />
           </div>

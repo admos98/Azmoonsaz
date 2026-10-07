@@ -451,7 +451,7 @@ export default function Questions() {
     setFormPoints(2);
     setFormText('');
     setFormTitle('');
-    setFormTagsString('کنکوری, نهایی');
+    setFormTagsString('کنکوری, نهایی'); // persian-ok — tags separator is Latin ',' (split/join)
     setFormExplanation('');
     setFormSampleAnswer('');
     setFormImageUrl('');
