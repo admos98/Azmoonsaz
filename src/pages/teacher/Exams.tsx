@@ -23,6 +23,7 @@ import {
   StatusBadge,
 } from '../../components/UIComponents';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
+import { PanelCrest } from '../../components/PanelCrest';
 import { Exam } from '../../types';
 import { examService } from '../../services/api';
 import { useToast } from '../../hooks/useToast';
@@ -232,6 +233,7 @@ export default function Exams({
       </div>
 
       {/* Grid List representation of Exams */}
+      <PanelCrest kind="exams" state={filteredExams.length > 0 ? 'filled' : 'empty'}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="exams-grid-wrapper">
         <AnimatePresence initial={false}>
           {filteredExams.length > 0 ? (
@@ -384,6 +386,7 @@ export default function Exams({
           )}
         </AnimatePresence>
       </div>
+      </PanelCrest>
     </div>
   );
 }

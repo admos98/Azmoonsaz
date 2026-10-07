@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TeacherProfile from '../../pages/teacher/TeacherProfile';
+import { ThemeProvider } from '../../contexts/ThemeContext';
 
 const uploadAvatar = vi.fn();
 const save = vi.fn();
@@ -44,6 +45,15 @@ vi.mock('../../lib/supabasePublic', () => ({
   getSupabasePublicClient: () => ({ auth: { updateUser: (...args: unknown[]) => updateUser(...args) } }),
 }));
 
+// the page now hosts a PanelCrest rail → EmptyStateArt reads useTheme,
+// which requires the provider (same contract as the app root)
+const renderProfile = () =>
+  render(
+    <ThemeProvider>
+      <TeacherProfile />
+    </ThemeProvider>,
+  );
+
 describe('TeacherProfile draft integrity', () => {
   beforeEach(() => {
     uploadAvatar.mockReset();
@@ -55,7 +65,7 @@ describe('TeacherProfile draft integrity', () => {
 
   it('keeps unsaved biography text after an avatar upload', async () => {
     uploadAvatar.mockResolvedValue('https://example.com/avatar.webp');
-    const { container } = render(<TeacherProfile />);
+    const { container } = renderProfile();
     const bio = screen.getByPlaceholderText('معرفی کوتاه برای نمایش در کنار آزمون‌ها');
     await userEvent.type(bio, 'متن ذخیره‌نشده');
     const input = container.querySelector<HTMLInputElement>('input[type="file"]');
@@ -66,7 +76,7 @@ describe('TeacherProfile draft integrity', () => {
   });
 
   it('rejects mismatched password confirmation without calling auth', async () => {
-    render(<TeacherProfile />);
+    renderProfile();
     await userEvent.type(screen.getByLabelText('رمز عبور جدید'), 'secret123');
     await userEvent.type(screen.getByLabelText('تکرار رمز عبور جدید'), 'secret124');
     await userEvent.click(screen.getByRole('button', { name: /تغییر رمز عبور/ }));
@@ -75,7 +85,7 @@ describe('TeacherProfile draft integrity', () => {
   });
 
   it('rejects a password under 6 characters without calling auth', async () => {
-    render(<TeacherProfile />);
+    renderProfile();
     await userEvent.type(screen.getByLabelText('رمز عبور جدید'), 'abc');
     await userEvent.type(screen.getByLabelText('تکرار رمز عبور جدید'), 'abc');
     await userEvent.click(screen.getByRole('button', { name: /تغییر رمز عبور/ }));
@@ -85,7 +95,7 @@ describe('TeacherProfile draft integrity', () => {
 
   it('changes the password through supabase.auth.updateUser and clears the fields', async () => {
     updateUser.mockResolvedValue({ error: null });
-    render(<TeacherProfile />);
+    renderProfile();
     const newPw = screen.getByLabelText('رمز عبور جدید');
     const confirmPw = screen.getByLabelText('تکرار رمز عبور جدید');
     await userEvent.type(newPw, 'secret123');
@@ -107,7 +117,7 @@ describe('TeacherProfile draft integrity', () => {
       className: `کلاس ${index + 1}`,
       subject: 'ریاضی',
     }));
-    render(<TeacherProfile />);
+    renderProfile();
     expect(screen.getAllByLabelText('حذف این کلاس از برنامه')).toHaveLength(5);
   });
 });

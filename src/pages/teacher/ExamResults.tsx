@@ -41,6 +41,7 @@ import {
 import { useToast } from '../../hooks/useToast';
 import { logger } from '../../lib/logger';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
+import { PanelCrest } from '../../components/PanelCrest';
 import { toPersianDigits } from '../../utils/persian';
 import { gradingService } from '../../services/api';
 import { ProctorFlags } from '../../features/exam-guard/ProctorFlags';
@@ -673,6 +674,10 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
               className="lens rounded-3xl p-6 overflow-hidden space-y-4"
               id="section-structured-submissions"
             >
+              <PanelCrest
+                kind="grading"
+                state={filteredRows.length > 0 ? 'filled' : 'empty'}
+              >
               <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-2">
                 <div>
                   <h3 className="text-label font-bold text-[var(--color-text-primary)]">
@@ -884,6 +889,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                   );
                 }}
               />
+              </PanelCrest>
             </div>
           </motion.div>
         ) : (

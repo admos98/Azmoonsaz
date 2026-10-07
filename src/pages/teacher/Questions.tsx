@@ -48,6 +48,7 @@ import {
   TextLink,
 } from '../../components/UIComponents';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
+import { PanelCrest } from '../../components/PanelCrest';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
@@ -1013,6 +1014,7 @@ export default function Questions() {
 
       {/* QUESTION REPRESENTATION (CARD GRAPHICS OR ROW GRAPHICS) */}
       <div id="questions-pool-canvas">
+        <PanelCrest kind="questions" state={filteredQuestions.length > 0 ? 'filled' : 'empty'}>
         <AnimatePresence mode="popLayout" initial={false}>
           {filteredQuestions.length > 0 ? (
             viewMode === 'card' ? (
@@ -1318,6 +1320,7 @@ export default function Questions() {
             </div>
           )}
         </AnimatePresence>
+        </PanelCrest>
       </div>
 
       {/* REUSABLE live preview question modal — library chrome */}

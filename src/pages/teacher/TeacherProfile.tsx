@@ -9,6 +9,7 @@ import {
   Tabs,
   Textarea,
 } from '../../components/UIComponents';
+import { PanelCrest } from '../../components/PanelCrest';
 import {
   Camera,
   CalendarDays,
@@ -460,6 +461,7 @@ export default function TeacherProfile({
           </Card>
 
           <Card glassLayer="light" className="relative rounded-3xl">
+            <PanelCrest kind="scheduled" state={schedule.length > 0 ? 'filled' : 'empty'}>
             <PageHeader
               level={2}
               icon={<CalendarDays className="h-5 w-5" />}
@@ -590,6 +592,7 @@ export default function TeacherProfile({
             >
               افزودن کلاس به برنامه
             </Button>
+          </PanelCrest>
           </Card>
         </div>
 

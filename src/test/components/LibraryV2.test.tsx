@@ -32,6 +32,7 @@ import {
 } from '../../components/UIComponents';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { BubbleLoader } from '../../components/BubbleLoader';
+import { PanelCrest } from '../../components/PanelCrest';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 
 describe('PageHeader', () => {
@@ -518,6 +519,36 @@ describe('Micro controls — TextLink / IconButton / PillButton (F-6 primitives)
     expect(img.getAttribute('aria-hidden')).toBe('true');
     expect(img.getAttribute('width')).toBe('96');
     expect(img.getAttribute('height')).toBe('96');
+  });
+
+  it('PanelCrest reserves the rail in both states (V2 zero-shift)', () => {
+    const { container, rerender } = render(
+      <ThemeProvider>
+        <PanelCrest kind="grading" state="filled">
+          <div id="body">محتوا</div>
+        </PanelCrest>
+      </ThemeProvider>,
+    );
+    const root = container.querySelector('.panel-crest')!;
+    expect(root.getAttribute('data-state')).toBe('filled');
+    expect(root.querySelector('#body')).toBeTruthy();
+    const rail = root.querySelector('.panel-crest__rail')!;
+    expect(rail.getAttribute('aria-hidden')).toBe('true');
+    expect(rail.querySelector('img')!.getAttribute('src')).toMatch(
+      /^\/empty-art\/(light|dark)\/04-grading\.png$/,
+    );
+    // empty keeps the SAME structure — only data-state flips (the rail
+    // column is reserved in both states; CSS does the opacity handoff)
+    rerender(
+      <ThemeProvider>
+        <PanelCrest kind="grading" state="empty">
+          <div id="body">محتوا</div>
+        </PanelCrest>
+      </ThemeProvider>,
+    );
+    expect(container.querySelector('.panel-crest')!.getAttribute('data-state')).toBe('empty');
+    expect(container.querySelector('.panel-crest__rail img')).toBeTruthy();
+    expect(container.querySelector('#body')).toBeTruthy();
   });
 
   it('EmptyState renders art above the title; compact stays icon-only', () => {

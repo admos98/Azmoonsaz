@@ -16,7 +16,7 @@ import { useTheme } from '../contexts/ThemeContext';
  * Static by design: pulse-discipline applies to illustrations too (no
  * loops, nothing for data-motion to quiet).
  */
-type ArtKind = 'students' | 'questions' | 'exams' | 'grading' | 'scheduled' | 'classes';
+export type ArtKind = 'students' | 'questions' | 'exams' | 'grading' | 'scheduled' | 'classes';
 
 const ART_FILES: Record<ArtKind, string> = {
   students: '01-students',
@@ -42,7 +42,7 @@ export function EmptyStateArt({ kind, size = 160 }: EmptyStateArtProps) {
       aria-hidden="true"
       width={size}
       height={size}
-      className="block"
+      className="block empty-state-art"
       draggable={false}
     />
   );

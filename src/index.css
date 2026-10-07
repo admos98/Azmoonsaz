@@ -1091,6 +1091,58 @@ select::-webkit-calendar-picker-indicator {
   line-height: 1.2;
 }
 
+/* ─── PanelCrest ─── identity rail (V2): content column + crest column at
+   ≥lg. The column is reserved in BOTH states — empty↔filled swaps only
+   --crest-op, so zero layout shift is the acceptance test. Below lg the
+   rail folds away (single column) and small screens stay untouched.
+   Filled = watermark (60% light / 75% dark); empty = full strength — the
+   rail carries the illustration the content column used to center. */
+.panel-crest {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.panel-crest__rail {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .panel-crest {
+    grid-template-columns: minmax(0, 1fr) 136px;
+    column-gap: 8px;
+  }
+  .panel-crest__rail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* empty ≥lg: the rail carries the motif — hide the content column's
+     centered copy so there is exactly one illustration. Below lg the rail
+     folds away and the centered art stays (the CSS keeps both paths). */
+  .panel-crest[data-state='empty'] .panel-crest__content .empty-state-art {
+    display: none;
+  }
+}
+.panel-crest__rail img {
+  width: 112px;
+  height: 112px;
+  opacity: var(--crest-op, 1);
+  transform: translateY(-2%); /* optical: sit a touch high, like the centered 1K */
+  transition: opacity 160ms ease;
+}
+.panel-crest[data-state='filled'] {
+  --crest-op: 0.6;
+}
+:root[data-theme='dark'] .panel-crest[data-state='filled'] {
+  --crest-op: 0.75;
+}
+:root[data-motion='reduce'] .panel-crest__rail img {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-crest__rail img {
+    transition: none;
+  }
+}
+
 /* ─── Skeleton: one sweep, then rest ───
    V3 language: a wash plane (accent-soft at 35% light / 50% dark) crossed
    by ONE sweep pass, right→left (the RTL reading direction), then it goes

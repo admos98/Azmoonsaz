@@ -20,6 +20,7 @@ import { formatPersianNumber } from '../../services/persianHelpers';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 import { BubbleLoader } from '../../components/BubbleLoader';
+import { PanelCrest } from '../../components/PanelCrest';
 
 export default function Classes() {
   // The class list rides the shared cache — this page used to refetch the
@@ -170,6 +171,7 @@ export default function Classes() {
         </div>
       ) : (
         <Card className="overflow-hidden border-[var(--color-glass-light-stroke)] shadow-sm">
+          <PanelCrest kind="classes" state={classes.length > 0 ? 'filled' : 'empty'}>
           <Table
             headers={[
               { key: 'name', label: 'نام کلاس' },
@@ -240,6 +242,7 @@ export default function Classes() {
               </Card>
             )}
           />
+          </PanelCrest>
         </Card>
       )}
 

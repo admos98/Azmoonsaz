@@ -38,6 +38,7 @@ import {
   PillButton,
   SearchInput,
 } from '../../components/UIComponents';
+import { PanelCrest } from '../../components/PanelCrest';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
@@ -617,6 +618,7 @@ export default function Students() {
 
       {/* Main Student Representation Area (Responsive Table vs Mobile Cards) */}
       <div className="lens rounded-3xl overflow-hidden" id="students-grid-box">
+        <PanelCrest kind="students" state={filteredStudents.length > 0 ? 'filled' : 'empty'}>
         {/* Desktop View (Table Layout) */}
         <div className="hidden md:block overflow-x-auto text-right">
           <table className="w-full text-caption" id="students-desk-table">
@@ -896,6 +898,7 @@ export default function Students() {
             )}
           </AnimatePresence>
         </div>
+        </PanelCrest>
       </div>
 
       {/* Manual Add / Edit Modal — library chrome: scrim, veil, halo, focus trap */}

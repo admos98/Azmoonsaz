@@ -799,4 +799,35 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/:root\[data-motion='reduce'\] \.skeleton::after\s*{\s*animation:\s*none/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) {\s*.goldpop,\s*.skeleton,\s*.skeleton::after/);
   });
+
+  it('V2 panel crest — reserved rail column, both states, art handoff', () => {
+    // single column base; rail column reserved ≥lg in BOTH states
+    expect(css).toMatch(
+      /\.panel-crest\s*{\s*display:\s*grid;\s*grid-template-columns:\s*minmax\(0, 1fr\);/,
+    );
+    expect(css).toMatch(
+      /@media \(min-width: 1024px\) {\s*\.panel-crest {\s*grid-template-columns:\s*minmax\(0, 1fr\) 136px;/,
+    );
+    expect(css).toMatch(/\.panel-crest\[data-state='filled'\] {\s*--crest-op:\s*0\.6/);
+    expect(css).toMatch(
+      /:root\[data-theme='dark'\] \.panel-crest\[data-state='filled'\] {\s*--crest-op:\s*0\.75/,
+    );
+    // empty ≥lg: the content column's centered copy hides — one illustration
+    expect(css).toMatch(
+      /\.panel-crest\[data-state='empty'\] \.panel-crest__content \.empty-state-art {\s*display:\s*none/,
+    );
+    // six hosts wired, one motif each
+    const hosts: Record<string, string> = {
+      Students: 'students',
+      ExamResults: 'grading',
+      Exams: 'exams',
+      Questions: 'questions',
+      TeacherProfile: 'scheduled',
+      Classes: 'classes',
+    };
+    for (const [name, kind] of Object.entries(hosts))
+      expect(component(`src/pages/teacher/${name}.tsx`)).toMatch(
+        new RegExp(`<PanelCrest[\\s\\S]{0,90}kind="${kind}"`),
+      );
+  });
 });
