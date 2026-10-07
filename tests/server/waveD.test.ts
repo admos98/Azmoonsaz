@@ -122,7 +122,8 @@ describe('F-26: exam create refuses foreign question ids', () => {
       exam_allowed_classes: { rows: [] },
       exam_questions: {
         onResult: (ctx) => {
-          if (ctx.op === 'insert') linked.push(...(ctx.payload as unknown as unknown[]));
+          if (ctx.op === 'insert')
+            linked.push(...(ctx.payload as unknown as Record<string, unknown>[]));
           return { data: [], error: null };
         },
       },

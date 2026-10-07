@@ -933,15 +933,16 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
                 />
 
                 <div className="flex justify-end">
-                  <button
-                    type="button"
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="px-4 py-2"
+                    icon={<ShieldAlert className="w-4 h-4" />}
                     onClick={() => setConfirmInvalidate(true)}
                     disabled={invalidateBusy}
-                    className="rounded-xl btn-glass btn-glass--danger px-4 py-2 text-caption font-black inline-flex items-center gap-2"
                   >
-                    <ShieldAlert className="w-4 h-4" />
                     {invalidateBusy ? 'در حال اعمال...' : 'اقدام انضباطی (هشدار / مسدودسازی)'}
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="pane px-4 py-2.5 rounded-2xl flex items-center gap-4 text-caption">
