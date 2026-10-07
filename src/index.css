@@ -1940,3 +1940,32 @@ button {
   --btn-tint-mix: 16%;
   transform: none;
 }
+
+/* ==========================================================
+   Wave A — exam hardening (SecureExamPortal)
+   ========================================================== */
+
+/* Print kill-switch: the guard hook adds .exam-guard-active to <html>
+   while an exam is live, so Ctrl+P / menu print yields a blank page
+   outside the app and never renders questions on paper. */
+@media print {
+  html.exam-guard-active,
+  html.exam-guard-active body {
+    display: none !important;
+  }
+}
+
+/* Attribution watermark: slow drift so a static screenshot cannot be
+   cropped to drop it cleanly. Rotation lives ONLY in the keyframes so
+   the base element has no conflicting transform. */
+@keyframes exam-watermark-drift {
+  from {
+    transform: rotate(-18deg) translate3d(0, 0, 0);
+  }
+  to {
+    transform: rotate(-18deg) translate3d(-2.5%, 2.5%, 0);
+  }
+}
+.exam-watermark {
+  animation: exam-watermark-drift 14s ease-in-out infinite alternate;
+}

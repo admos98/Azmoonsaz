@@ -22,6 +22,8 @@ import {
 } from '../../services/offlineAnswerQueue';
 import { ConfirmDialog, PillButton, TextLink } from '../../components/UIComponents';
 import { ExamCountdown } from '../../components/ExamCountdown';
+import { useExamGuard } from '../../features/exam-guard/useExamGuard';
+import { Watermark } from '../../features/exam-guard/Watermark';
 
 type Phase = 'login' | 'ready' | 'take' | 'submitted';
 
@@ -112,6 +114,9 @@ export default function SecureExamPortal({
   const [queuedCount, setQueuedCount] = useState(0);
   const [sessionStartedAt, setSessionStartedAt] = useState<string | null>(null);
   const [timeExpired, setTimeExpired] = useState(false);
+  // Wave A: copy/print/tab-switch deterrence, active only while questions
+  // are on screen (take phase).
+  const guard = useExamGuard(phase === 'take');
 
   useEffect(() => {
     if (!token) return;
@@ -149,6 +154,13 @@ export default function SecureExamPortal({
   const handleLoadPayload = async () => {
     setError('');
     setLoading(true);
+    // Best-effort fullscreen, still inside the click gesture. Unsupported or
+    // denied browsers simply continue — exits are counted as a proctor flag.
+    try {
+      void document.documentElement.requestFullscreen?.();
+    } catch {
+      /* not supported — exam proceeds windowed */
+    }
     try {
       const response = await apiPost<PayloadResponse>(
         '/api/student/exam-payload',
@@ -357,8 +369,27 @@ export default function SecureExamPortal({
           </div>
         )}
 
+        {phase === 'take' && exam && student && (
+          <Watermark
+            label={`${student.name} — کد آزمون ${exam.examCode} — ${exam.title}`}
+          />
+        )}
+
         {phase === 'take' && exam && (
           <div className="space-y-5">
+            {guard.total > 0 && (
+              <div
+                role="status"
+                className="lens rounded-2xl p-3 border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)]/40 text-[var(--color-warning)] text-caption font-black flex items-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>
+                  رویداد غیرعادی ثبت شد (کپی، خروج از صفحه یا چاپ):{' '}
+                  {toPersianDigits(guard.total)} مورد — این رویدادها به دبیر
+                  گزارش می‌شود.
+                </span>
+              </div>
+            )}
             <div className="pane rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-0 z-10">
               <div>
                 <h2 className="font-black text-[var(--color-text-primary)]">{exam.title}</h2>
@@ -441,7 +472,7 @@ export default function SecureExamPortal({
               </div>
             )}
 
-            <div inert={timeExpired}>
+            <div inert={timeExpired} className="select-none">
               {questions.map((question, index) => (
                 <section key={question.id} className="lens rounded-3xl p-5 md:p-6 space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-glass-light-stroke)] pb-3">
