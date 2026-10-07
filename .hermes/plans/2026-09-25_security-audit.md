@@ -102,7 +102,7 @@ Independently re-verified: route/auth matrix (11/11 teacher + 4/4 student + 2/2 
 
 ### New findings this sweep
 
-**Remediation 2026-10-06:** F-26 ✅ / F-27 ✅ / N-07 ✅ (code pushed `6ff58b4`, tests in `waveD.test.ts`); N-08 ✅ / N-10 ✅ (migrations `20261006000008` + `20261006000009` written — **live push pending green**); N-09 accepted-risk (historical migrations stay immutable; live DB already rewritten).
+**Remediation 2026-10-06:** F-26 ✅ / F-27 ✅ / N-07 ✅ (code pushed `6ff58b4`, tests in `waveD.test.ts`); N-08 ✅ / N-10 ✅ — migrations `20261006000008` + `20261006000009` **applied + read-back verified live 2026-10-06** (13/13 tables ENABLE+FORCE; both question-images policies `foldername`-scoped with correct USING/WITH CHECK); advisors = only N-04 HIBP warn, 0 errors. N-09 accepted-risk (historical migrations stay immutable; live DB already rewritten).
 
 | ID   | Sev  | Finding | Location |
 | ---- | ---- | ------- | -------- |
@@ -124,7 +124,7 @@ Status after resume:
 - **Wave A ✅ pushed `eb2400c`** — `useExamGuard` (copy/cut/contextmenu/selectstart/shortcuts/tab-hidden/blur/print/fullscreen counters), attribution watermark, print kill-switch CSS, fullscreen attempt, student warning banner. Tests: `ExamGuard.test.tsx` (+7).
 - **Wave B ✅ pushed `1871b46`, migration `20261006000007` applied + verified LIVE** — server auto-grade at submit (`gradeAnswerValue` + `autoGradeSession`, teacher grade wins), `exam-payload` 20/min, proctor ingestion (whitelist + max-merge, no PII), warn-then-block `POST /api/teacher/submissions`, `exam_invalidated` code, Turnstile fail-closed join check. Live verified on `azmoon-three.vercel.app`: columns present, CSP includes challenges.cloudflare.com, site key baked in bundle, probe → `403 turnstile_invalid`. Turnstile keys live in Vercel (`VITE_TURNSTILE_SITE_KEY` Config / `TURNSTILE_SECRET_KEY` Secret). Tests: `waveB.test.ts`.
 - **Wave C ✅ pushed `d43b36d`** — `ProctorFlags` teacher view + invalidate button/ConfirmDialog in `ExamResults`, GET submissions maps `proctorFlags/warningCount/attemptCount`, `gradingService.invalidateSubmission`, StatusBadge + status union extended (`expired`/`invalidated`). Tests: `ProctorFlags.test.tsx` (+4), server GET-mapping (+1).
-- **Wave D code ✅ pushed `6ff58b4`** — F-26 ownership gate on exam create + teacher-scoped `hydrateExam` join; F-27 scoped `resolveClassGroupIds` array path; N-07 caps at 8 write sites; migrations `20261006000008` (FORCE RLS ×11) + `20261006000009` (question-images path scoping) written, **live push PENDING user green**. Tests: `waveD.test.ts` (+8). Server 104/104, browser 188/188, all gates green.
+- **Wave D code ✅ pushed `6ff58b4`** — F-26 ownership gate on exam create + teacher-scoped `hydrateExam` join; F-27 scoped `resolveClassGroupIds` array path; N-07 caps at 8 write sites; migrations `20261006000008` (FORCE RLS ×11) + `20261006000009` (question-images path scoping) **applied + verified live 2026-10-06** (13/13 forced, storage policies scoped; advisors: single N-04 warn only). Tests: `waveD.test.ts` (+8). Server 104/104, browser 188/188, all gates green.
 
 ### Original brainstorm notes (pre-wave decisions)
 
