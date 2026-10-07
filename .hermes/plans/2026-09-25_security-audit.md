@@ -102,6 +102,8 @@ Independently re-verified: route/auth matrix (11/11 teacher + 4/4 student + 2/2 
 
 ### New findings this sweep
 
+**Remediation 2026-10-06:** F-26 ✅ / F-27 ✅ / N-07 ✅ (code pushed `6ff58b4`, tests in `waveD.test.ts`); N-08 ✅ / N-10 ✅ (migrations `20261006000008` + `20261006000009` written — **live push pending green**); N-09 accepted-risk (historical migrations stay immutable; live DB already rewritten).
+
 | ID   | Sev  | Finding | Location |
 | ---- | ---- | ------- | -------- |
 | F-26 | P2   | **IDOR via FK (A01):** exam create accepts arbitrary `questionIds` (only `isUuid` filter, no ownership check) → `exam_questions` links foreign questions; `hydrateExam` then fetches them without `teacher_id` scope and maps `answer_key`/`isCorrect`/`matchingPairs` → cross-tenant question **content + answer key** disclosure given a leaked question UUID (UUIDs not enumerable, so P2 not P1). Student `exam-payload` similarly serves foreign question content (keys stripped). | `api/routes/teacher.js:641-655`, `api/_lib/utils.js:244-247` |
@@ -116,7 +118,15 @@ Verified clean this sweep: signup enumeration (byte-identical response both bran
 
 ---
 
-## Exam-hardening workstream — PAUSED 2026-10-06 (resume tomorrow)
+## Exam-hardening workstream — Waves A–D code complete (2026-10-06)
+
+Status after resume:
+- **Wave A ✅ pushed `eb2400c`** — `useExamGuard` (copy/cut/contextmenu/selectstart/shortcuts/tab-hidden/blur/print/fullscreen counters), attribution watermark, print kill-switch CSS, fullscreen attempt, student warning banner. Tests: `ExamGuard.test.tsx` (+7).
+- **Wave B ✅ pushed `1871b46`, migration `20261006000007` applied + verified LIVE** — server auto-grade at submit (`gradeAnswerValue` + `autoGradeSession`, teacher grade wins), `exam-payload` 20/min, proctor ingestion (whitelist + max-merge, no PII), warn-then-block `POST /api/teacher/submissions`, `exam_invalidated` code, Turnstile fail-closed join check. Live verified on `azmoon-three.vercel.app`: columns present, CSP includes challenges.cloudflare.com, site key baked in bundle, probe → `403 turnstile_invalid`. Turnstile keys live in Vercel (`VITE_TURNSTILE_SITE_KEY` Config / `TURNSTILE_SECRET_KEY` Secret). Tests: `waveB.test.ts`.
+- **Wave C ✅ pushed `d43b36d`** — `ProctorFlags` teacher view + invalidate button/ConfirmDialog in `ExamResults`, GET submissions maps `proctorFlags/warningCount/attemptCount`, `gradingService.invalidateSubmission`, StatusBadge + status union extended (`expired`/`invalidated`). Tests: `ProctorFlags.test.tsx` (+4), server GET-mapping (+1).
+- **Wave D code ✅ pushed `6ff58b4`** — F-26 ownership gate on exam create + teacher-scoped `hydrateExam` join; F-27 scoped `resolveClassGroupIds` array path; N-07 caps at 8 write sites; migrations `20261006000008` (FORCE RLS ×11) + `20261006000009` (question-images path scoping) written, **live push PENDING user green**. Tests: `waveD.test.ts` (+8). Server 104/104, browser 188/188, all gates green.
+
+### Original brainstorm notes (pre-wave decisions)
 
 **Scope agreed (brainstorm delivered, user approved direction):** Wave A client deterrence → Wave B server integrity → Wave C teacher proctor view → Wave D sweep-2 fixes (F-26/F-27, N-07/N-08/N-10).
 
