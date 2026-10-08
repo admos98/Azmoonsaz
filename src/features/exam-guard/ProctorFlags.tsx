@@ -1,5 +1,6 @@
 import { ShieldAlert } from 'lucide-react';
 import { toPersianDigits } from '../../utils/persian';
+import { PROCTOR_FLAG_LABELS } from './proctorFlagLabels';
 
 /**
  * Wave C: teacher-facing proctor report for one submission.
@@ -7,15 +8,6 @@ import { toPersianDigits } from '../../utils/persian';
  * what the guard hook counted: tab switches, copy attempts, print attempts.
  * Null when there is nothing to report.
  */
-export const PROCTOR_FLAG_LABELS: Record<string, string> = {
-  tabHidden: 'ترک صفحه آزمون',
-  windowBlur: 'خروج از فوکوس پنجره',
-  copyAttempt: 'تلاش برای کپی',
-  contextMenu: 'بازکردن منوی راست‌کلیک',
-  printAttempt: 'تلاش برای چاپ',
-  shortcutBlocked: 'میان‌بر کلیدی مسدودشده',
-  fullscreenExit: 'خروج از حالت تمام‌صفحه',
-};
 
 export function ProctorFlags({
   flags,

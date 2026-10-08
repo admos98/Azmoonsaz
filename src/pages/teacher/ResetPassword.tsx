@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { GraduationCap, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import { IconButton, Input, TextLink } from '../../components/UIComponents';
+import { IconButton, Input, TextLink } from '../../ui';
 import { getSupabasePublicClient } from '../../lib/supabasePublic';
 
 interface ResetPasswordProps {

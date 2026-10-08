@@ -24,7 +24,7 @@ import {
   Modal,
   StatusBadge,
   Tabs,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { TheMark, MarkBubble } from '../../components/TheMark';
 import { useTheme, type ThemePreference } from '../../contexts/ThemeContext';
 import { useMotionPreference, type MotionPreference } from '../../contexts/MotionContext';

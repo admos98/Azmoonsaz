@@ -19,7 +19,7 @@
     "check:contrast": "node tools/check-contrast.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "eslint src/",
+    "lint": "eslint src/ --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "typecheck:server": "tsc -p tsconfig.server.json",
     "format": "prettier --write src/",
@@ -39,7 +39,8 @@
     "cleanup:generated": "node tools/cleanup-generated.mjs",
     "predeploy": "npm run lint && npm run build && npm run verify:prod && npm run deploy:check",
     "test:e2e": "npx playwright test",
-    "check:a11y-buttons": "node tools/check-icon-buttons.mjs"
+    "check:a11y-buttons": "node tools/check-icon-buttons.mjs",
+    "check:sizes": "node tools/check-sizes.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",

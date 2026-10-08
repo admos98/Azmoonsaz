@@ -1,0 +1,362 @@
+/* Theme blocks — :root recipe + dark appearance + compat layer. Split from src/index.css — edit here, never in the @import shim. */
+
+/* ─── Liquid Glass recipe — ported from glass-lab.html (user-tuned values) ───
+   Single source of truth for every glass surface: veil, halo, panel fill,
+   hairline, shadow. Change a value here → the whole app follows. */
+:root {
+  color-scheme: light;
+  /* Runtime-only variables live outside @theme so Tailwind cannot inline the
+     light value into utilities that must change without a rebuild. */
+  /* Inset wells (inputs, tiles-on-glass). 0.9 was white putty — the user
+     called light-theme panels "very white filled, no glass or transparency
+     at all". 0.58 keeps the well clearly visible (it pops from the panel)
+     while the material below still reads. */
+  --ui-inset-fill: rgba(250, 248, 245, 0.58);
+
+  /* Full-screen veil (Control-Center style backdrop behind popups) */
+  /* Full-screen veil blur. Separate token from --glass-bg-blur on purpose:
+     dimming the whole screen and glassing an in-page card are different jobs,
+     and the screen one is what should stay subtle. */
+  --glass-bg-blur: 8px;
+  --glass-veil-blur: 4px;
+  /* iOS materials read at ~1.4–1.5× saturation: richer colour, still the
+     SAME hues as the raw backdrop. 1.7 read as candy next to the page. */
+  --glass-bg-sat: 1.5;
+  --glass-scrim-a: 0.15;
+  /* Neutral, not blue. The veil covers the WHOLE screen behind a panel, so any
+     blue here multiplies across the entire page — this is what made the
+     background look bluer the moment a panel opened. */
+  --glass-scrim-color: 56 60 68;
+
+  /* Area halo — RETIRED. The halo was a painted dark blob (rgb(26 28 34 / 0.22)
+     + blur) behind every floating panel — a shadow by another name. iOS panels
+     cast nothing; separation comes from blur + refracted rim. */
+
+  /* Panel fill — set BOTH alphas to 0 for a fully transparent (pure glass) fill.
+     Trimmed from 0.22/0.12: the fill must tint, never coat — at 0.22 the dark
+     theme's equivalent read as gray putty. 0.20/0.10 + the dim layer below
+     keeps the panel ON the page while the backdrop shows through it. */
+  /* Panel fill — CLEAR glass, faint frost. iOS 26 panels show ~85-90% of the
+     backdrop; the "weight" comes from the edge lens + blur, not the coat.
+     0.14/0.09 read as transparent-with-a-floating-ring once the plate got real
+     structure; 0.20/0.13 keeps a defined pane while the field reads through. */
+  --glass-p-a1: 0.2;
+  --glass-p-a2: 0.13;
+  /* Strong-tier fill boost (glx-strong over glx): iOS menu material sits near
+     80% opacity, so floating panels read as solid objects over busy content.
+     Tokenised so dark can take a smaller boost — the dark backdrop is already
+     dim, and 0.4+0.24 = 0.64 alpha of a near-black tint read as "nearly
+     black, static" on the hero (user report). */
+  --glass-p-boost1: 0.24;
+  --glass-p-boost2: 0.17;
+  --glass-p-angle: 108deg;
+  --glass-p-tint: 255 255 255;
+  --glass-p-blur: 16px;
+  --glass-p-sat: 1.5;
+  /* Panel radius: overlays use rounded-3xl (32px) — the token below was a
+     dead 28px drift and is gone; the radius ramp in @theme is the source. */
+  --glass-p-bw: 1px;
+  /* Hairline under the rim — RETIRED (alpha 0). A fixed-colour border is the
+     "static line with static colour" the pixel audit measured (rim↔bg corr ~0
+     on ours vs +0.6 on iOS). The rim is now the refracted background itself;
+     the border width stays for layout and forced-colors, colour is gone. */
+  --glass-p-ba: 0;
+  --glass-p-bc: 26 28 34;
+  /* Dimming base — the panel's floor sits a step BELOW the page so the glass
+     reads as an object lying on top of it (user spec: "dim the panel a little
+     so it appears on top, not flat"). Nearly invisible token; the lift it
+     creates is what the rim light then catches. Dark zeroes it (already dark). */
+  --glass-dim-tint: 31 29 41;
+  --glass-dim-a1: 0.1;
+  --glass-dim-a2: 0.05;
+  /* Frosted grain — RETIRED per user spec: Apple never uses grain. The fill
+     is now perfectly smooth — sharpness, hierarchy and depth come from the
+     blur, the rim light and the fill step, not from noise. */
+
+  /* Rim fade — the soft inner glow that melts light into the panel over
+     ~5–7px (the unmasked element shadow on glx/glx-strong). The painted
+     ring (.glass-edge, its tokens and the pointer flare) is RETIRED: rims
+     now come from the lens filter's saturate pass, and every surface is a
+     member of the named family (lens/pane/frost/field/drop). */
+  --glass-rim-fade: 0.2;
+
+  /* Text micro-shadow — imperceptible ambient that keeps labels readable over
+     busy glass without hiding the backdrop. */
+  --glass-text-ambient: 255 255 255;
+  --glass-text-ambient-a: 0.5;
+
+  /* ── The material family — the design language ──────────────────────────
+     Six named materials, one library, single source of truth:
+
+       lens      full kube.io material: bend + reflective rim + dim + blur 1×
+                 (menus, notifications, palette, modals, hero, page sections)
+       pane      nested panel: reflective rim, NO bend, blur 2×
+       frost     quiet box: static painted rim, no bend, blur 2×
+       field     inputs & dropdowns: no rim, no bend, keeps its own base fill
+       drop      circular droplet behind icon buttons: bend + reflective rim,
+                 NO dim, blur 0.5px
+       btn-glass kube-style glass button: glass + faint semantic tint
+                 (colored glass, not plastic); no refraction — labels crisp
+
+     lens/pane/drop rim, saturation and dim are FILTER OUTPUT (#lens,
+     #pane, #drop in index.html — playground renderFilter() chains),
+     nothing painted on top. Blur stays in the CSS chain (blur() ==
+     feGaussianBlur, runs before displacement) so each material holds its
+     own blur number.
+
+     LIGHT = the kube.io replica tune, 1:1 from the playground export
+     (surface convex_squircle, bezel 14, thickness 72, radius 21,
+     refraction 0.5, blur 1.0, specular 0.34/5/-55deg, rgb-dim 0.15).
+     The dark theme changes exactly ONE number: --lens-dim. */
+  --lens-dim: 0.1; /* rgb-dim — per-channel wash IN the lens/pane filters */
+  /* Floating menu material — hamburger/notif panels read against the DENSEST
+     content (hero type, busy cards). Apple's menus sit near 80% opacity:
+     deeper dim + heavier blur than resting panels, still glass. These only
+     re-dress the filter MARKUP (map cache is dim-blind) and the plain-chain
+     fallback below. */
+  /* Menu material — deeper dim + heavier blur than resting panels, still
+     glass. Round-1 1H: light 0.14 -> 0.2 — with the menu open you should
+     PERCEIVE something behind it without being able to READ it (the hero
+     h1 was legible through the panel and competed with menu labels).
+     Colour, contour and shape still bleed; glyphs drop under the reading
+     threshold. Dark keeps 0.14 via its override below. */
+  --lens-menu-dim: 0.2;
+  --lens-menu-blur: 6px;
+  --dim-tint: 103 100 112; /* dim wash target (mid-grey) + fallback fill */
+  --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
+  --lens-blur: 1px; /* Blur Level 1.0px (kube tune) */
+  --pane-blur: calc(var(--lens-blur) * 2); /* nested: twice the lens blur */
+  --frost-blur: calc(var(--lens-blur) * 2);
+  --field-blur: calc(var(--lens-blur) * 2);
+  --drop-blur: 0.5px; /* a notch under lens — a small droplet stays crisp */
+
+  /* ── Apple signature curve — continuous (superellipse) corners ──────────────
+     A plain border-radius draws a circular arc with a tangent break where
+     the arc meets the straight edge. Apple's corners keep CURVATURE
+     CONTINUITY (a superellipse). --corner-exp is the single knob, shared
+     with the lens engine — glassController reads it so the refracted rim
+     follows the SAME curve the panel is painted with (circular maps on
+     superellipse corners = the rim visibly drifting off the panel corner).
+     PARAMETERIZATION NOTE (hit-tested in Chromium 153): `superellipse(k)`
+     paints |x|^n+|y|^n=1 with n = 2^k — k=1 IS the circle (Chromium even
+     serializes `round` back out as superellipse(1)); k=3 paints n=8. The
+     engine's mapMath raises to 2^k to match. k=2 is Apple's squircle
+     (n=4): continuous curvature with no tangent break. k=3 renders n=8,
+     which reads as a near-rectangle with tiny rounds — visibly sharp.
+     Browsers without corner-shape degrade to round automatically, and the
+     engine drops its maps to k=1 so the rim degrades with the paint. */
+  --corner-exp: 2;
+  --corner-shape: superellipse(var(--corner-exp));
+
+  /* ── lens/pane/drop physics params (kube.io chain) — SOURCE OF TRUTH:
+     the runtime engine (src/glass/glassController.ts) computes the
+     feDisplacementMap scale from bezel/thickness/refraction/scale-ratio
+     directly (≈ 40.3px at these defaults → ±20.1px peak pull). These tokens
+     remain the declared targets (--lens-max-displacement = the approved
+     playground ceiling, ±21.8px) and feed tools/gen-glass-maps.py. The old
+     static index.html filter is gone: external feImage hrefs never render
+     inside backdrop-filter (engine audit C2), and one pre-baked map
+     stretched over every panel size displaced the whole panel (C3).
+     Change here → the engine picks it up on its next sync pass. */
+  --lens-surface: convex_squircle;
+  --lens-bezel: 14px;
+  --lens-thickness: 66px;
+  --lens-refraction-level: 0.7;
+  --lens-scale-ratio: 1;
+  --lens-spec-opacity: 0.2;
+  --lens-spec-saturation: 4;
+  --lens-spec-angle: -60deg;
+  /* Rim thickness — the specular ring's half-width in CSS px (the rim paints
+     2×peak wide: the white glint AND the saturated backdrop reflection the
+     ring masks). Was 1px/2px total; the app tune widens it +2px. */
+  --lens-spec-peak: 1px;
+  --lens-radius: 21px;
+  --lens-size: 326px 64px;
+  --lens-max-displacement: 43.67px;
+  --drop-size: 44px 44px;
+  --drop-radius: 22px; /* perfect circle */
+  --drop-max-displacement: 5px;
+
+  /* ── kube-style glass button ── */
+  --btn-blur: 6px;
+  --btn-tint-mix: 16%; /* faint semantic tint — colored GLASS, not paint */
+  --btn-edge-a: 0.22; /* outer hairline rim */
+  --btn-lift-a: 0.45; /* lit top edge */
+
+  /* Inner bloom — iOS rims spill light just inside the panel: a hairline of
+     light under the top rim that melts downward. Paint-only (inset shadows,
+     no filter). Dark dims both values so panels keep their soft sheen. */
+  --glass-bloom-line-a: 0.24;
+  --glass-bloom-a: 0.38;
+
+  /* Drop shadow (lifted). iOS 26 liquid glass carries NO resting drop shadow
+     — separation comes from the rim light, the fill step and, on overlays,
+     the veil. Zeroed in light mode on purpose; dark keeps a whisper so
+     near-black panels still read against the near-black page. */
+  --glass-sh-a: 0;
+  /* Overlay elevation (menus/modals) — consumed only by glx-strong; light 0. */
+  --glass-sh-strong-a: 0;
+
+  /* Option rows that sit ON a glass panel (settings selectors). A row resting
+     on glass is NOT glass itself — iOS grouped-list style: a quiet fill, a
+     hairline, and a gold-tinted selected state. Tokens swap per theme. */
+  --pref-row-bg: rgba(255, 255, 255, 0.5);
+  --pref-row-bg-hover: rgba(255, 255, 255, 0.72);
+  --pref-row-border: rgba(26, 26, 46, 0.08);
+  --pref-row-sel-bg: rgba(245, 179, 1, 0.14);
+  --pref-row-sel-border: rgba(245, 179, 1, 0.5);
+  --pref-row-sheen: rgba(255, 255, 255, 0.35);
+
+  /* Content rendered on permanently dark/brand surfaces in either theme. */
+  --color-on-dark-subtle: rgba(255, 255, 255, 0.035);
+}
+
+/* Resolved dark appearance. Components consume the same semantic tokens in both
+   themes, so system and explicit preferences stay visually consistent. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ui-inset-fill: rgba(64, 60, 78, 0.62);
+  /* dark inset wells: 0.94 was an opaque slab ("filled with what?"). */
+  --color-page-bg: #131220;
+  --color-paper-warm: #131220;
+  --page-plate: url('/backgrounds/bg-d-dark.svg');
+  --color-surface: #252334;
+  --color-surface-secondary: #2e2b40;
+  --color-ink-field: #12111c;
+  --color-ink-stroke: #716d80;
+
+  --color-glass-light-fill: rgba(52, 49, 66, 0.72);
+  --color-glass-light-stroke: rgba(255, 255, 255, 0.12);
+  --color-glass-light-sheen: rgba(255, 255, 255, 0.08);
+  --color-glass-light-bottom: rgba(0, 0, 0, 0.35);
+  --color-glass-panel-fill: rgba(58, 54, 74, 0.66);
+  --color-inset-fill: rgba(64, 60, 78, 0.62);
+  --color-inset-side-sheen: rgba(255, 255, 255, 0.045);
+  --color-inset-side-shade: rgba(0, 0, 0, 0.16);
+  --color-glass-shadow: rgba(0, 0, 0, 0.42);
+  --color-glass-shadow-strong: rgba(0, 0, 0, 0.58);
+
+  --color-ink: #f5f6fa;
+  --color-gold: #f8c542;
+  --color-gold-soft: #382d10;
+  /* gold as content: bright gold reads on dark (11:1 on page-bg) */
+  --color-gold-ink: #f8c542;
+  --color-gold-glow: rgba(248, 197, 66, 0.18);
+
+  /* Hero focal pane — DARK carries no paint. It used to be a 0.97-opaque
+     near-black gradient: with the strong fill stacked on top the plate bloom
+     never composed through and the hero measured as a flat slab (left field
+     21 vs floor 18). Transparent like light — depth comes from the glass
+     itself (rim + card-level fill + the bloom behind). */
+  --color-hero-pane: transparent;
+  --color-accent: #dcd9e6;
+  --color-accent-hover: #ffffff;
+  --color-accent-soft: #322f47;
+  --color-accent-solid: #5b5880;
+  --color-accent-solid-hover: #6d6a96;
+  --color-text-on-solid: #ffffff;
+
+  --color-success: #67e3b1;
+  --color-success-solid: #087b59;
+  --color-success-soft: #12392d;
+  --color-warning: #ffc461;
+  --color-warning-solid: #985500;
+  --color-warning-soft: #3f2d10;
+  --color-danger: #ff9696;
+  --color-danger-solid: #b91c1c;
+  --color-danger-soft: #431d22;
+  --color-info: #91bcff;
+  --color-info-solid: #2759bd;
+  --color-info-soft: #182f55;
+
+  --color-text-primary: #f4f5f8;
+  --color-text-secondary: #c6c3d1;
+  /* Dark hierarchy inverts: hints sit DIMMER than secondary (closer to the
+     page), again with a deliberate gap between the two grays. */
+  --color-text-tertiary: #8c8998;
+  --color-text-on-dark: #f9fafb;
+  --color-text-on-dark-secondary: #d1d5db;
+
+  /* Focus ring: gold on dark (5.64:1 on page-bg). Light theme keeps ink
+     — see the base token comment. */
+  --color-focus-ring: rgba(245, 179, 1, 0.72);
+
+  /* Menu bleed pinned at the original amplitude (1H): dark menus already
+     passed the perceive-but-don't-read test — only light moves. */
+  --lens-menu-dim: 0.14;
+
+  --glass-scrim-a: 0.35;
+  --glass-scrim-color: 0 0 0;
+  /* Dark fill — the glass DIMS the backdrop like smoked glass; the colour
+     comes from the saturated blur behind it, not from gray paint. The old
+     52-49-66 tint at 0.56 over a 0.16-alpha white grain composited into the
+     gray felt the user photographed ("filled with what?"). Near-black navy
+     tint at 0.40 lets the topo lines through, saturated, as colored light. */
+  /* 0.40 -> 0.36: the iOS-dark band is +25..+70 luminance over the floor;
+     at 0.40 (+ the old +0.24 strong boost) panels measured as a static
+     near-black slab. The lighter fill lets the plate's structure through. */
+  --glass-p-a1: 0.36;
+  --glass-p-a2: 0.28;
+  --glass-p-tint: 16 15 28;
+  /* dark strong boost: menus/modals float over the BUSIEST content (a white
+     heading, an accent button) — at 0.18 a solid white block behind the menu
+     transmitted as a blurred band +83 luminance over the panel floor (the
+     "extra line behind the dark panels"). 0.36+0.34 = 0.70 with the 26px body
+     blur measures +35 — the backdrop stops reading as a line. Cards (glx)
+     take NO boost; they stay at a1. */
+  --glass-p-boost1: 0.34;
+  --glass-p-boost2: 0.26;
+  /* Dark body blur — glx-strong only (glx uses --glass-bg-blur). iOS dark
+     materials blur heavier than light; 22px still let the band through (+44),
+     26px cuts it. */
+  --glass-p-blur: 26px;
+  /* dark keeps no grain — see the retired token note in :root */
+  --glass-p-ba: 0;
+  --glass-p-bc: 255 255 255;
+  /* Dark has no dimming base — the page is already the dark floor. */
+  --glass-dim-tint: 0 0 0;
+  --glass-dim-a1: 0;
+  --glass-dim-a2: 0;
+  --glass-text-ambient: 0 0 0;
+  --glass-text-ambient-a: 0.45;
+
+  --glass-rim-fade: 0.12;
+  /* Dark keeps the soft material: the top specular is dimmer — a slow sheen
+     instead of a crisp curve. The 0.10 hairline painted a static full-width
+     white STRIPE across the top of every dark panel (hero/menus/notif — user
+     report): 0.05 keeps the barely-there top lift without the line; the wide
+     bloom drops with it. */
+  --glass-bloom-line-a: 0.05;
+  --glass-bloom-a: 0.05;
+  /* iOS 26 rule: glass carries NO resting drop shadow, dark included. A dark
+     panel over a dark page separates via the rim, the fill step and the deeper
+     plate behind it — a shadow on glass is the moulded-plastic cue. The deep
+     plate now supplies the floor lift the whisper was faking. */
+  --glass-sh-a: 0;
+  --glass-sh-color: 0 0 0;
+  --glass-sh-strong-a: 0;
+
+  /* Option rows on dark glass — translucent white, not opaque purple */
+  --pref-row-bg: rgba(255, 255, 255, 0.055);
+  --pref-row-bg-hover: rgba(255, 255, 255, 0.09);
+  --pref-row-border: rgba(255, 255, 255, 0.09);
+  --pref-row-sel-bg: rgba(248, 197, 66, 0.11);
+  --pref-row-sel-border: rgba(248, 197, 66, 0.5);
+  --pref-row-sheen: rgba(255, 255, 255, 0.12);
+
+  /* ── Material family (dark) — the kube tune, EXCEPT dim:
+     the one number that changes is --lens-dim (user: 0.07 for dark,
+     inside the allowed 0.05–0.08 band). Blur, fill and physics params
+     inherit the light values. drop has no dim at all (it lives only
+     in the lens/pane filters). */
+  --lens-dim: 0.07;
+}
+
+/* Compatibility layer for older utility-coded surfaces while they are migrated
+   to semantic tokens screen by screen. */
+:root[data-theme='dark'] :where(.bg-white, .bg-white\/90, .bg-white\/80) {
+  background-color: var(--color-surface) !important;
+}
+:root[data-theme='dark'] :where(.border-gray-100, .border-gray-200, .border-slate-200) {
+  border-color: var(--color-glass-light-stroke) !important;
+}

@@ -38,6 +38,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readBundledCss } from './css-concat.mjs';
 
 const root = join(fileURLToPath(new URL('../', import.meta.url)), '.');
 const sourceRoot = join(root, 'src');
@@ -83,7 +84,8 @@ for (const path of files) {
 }
 
 // Rule 4 — glx-inset must never carry backdrop-filter.
-const css = readFileSync(join(root, 'src/index.css'), 'utf8');
+// styles/ split: assert on the concatenated chain (index.css is an @import shim).
+const css = readBundledCss();
 const insetBlock = css.match(/@utility glx-inset \{([\s\S]*?)\n\}/);
 if (insetBlock && insetBlock[1].includes('backdrop-filter')) {
   violations.push('[inset-blur] src/index.css — @utility glx-inset gained a backdrop-filter. It is the control material; blur there multiplies across every input, badge and row. Move the surface to .glx instead.');

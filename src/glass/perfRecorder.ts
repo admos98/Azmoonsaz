@@ -565,6 +565,9 @@ export function installPerfRecorder(): void {
   // A global "record everything from now" for the impatient:
   //   __perf.start()   ... do things ...   __perf.dump()
   // plus the panel for the point-and-click path.
+  // Intentional single log: the recorder only installs behind ?perf=1 and this
+  // tells the operator how to drive it. No PII, no hot path.
+  // eslint-disable-next-line no-console -- dev-only armed notice, not a stray log
   console.info('[perf] recorder armed — press Record, or use __perf.start() / __perf.stop()');
 }
 

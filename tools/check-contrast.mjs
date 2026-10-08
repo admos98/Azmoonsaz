@@ -23,9 +23,12 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readBundledCss } from './css-concat.mjs';
 
 const root = join(fileURLToPath(new URL('../', import.meta.url)), '.');
-const css = readFileSync(join(root, 'src', 'index.css'), 'utf8');
+// styles/ split: assert on the concatenated chain (index.css is now an
+// @import shim — Vite bundles it identically).
+const css = readBundledCss();
 
 /* ── token extraction ─────────────────────────────────────────────────── */
 // Selector-scoped, not position-scoped: `.login-shell` legitimately

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { EmptyState, Modal, Table, Toast } from '../../components/UIComponents';
+import { EmptyState, Modal, Table, Toast } from '../../ui';
 
 function ModalHarness() {
   const [open, setOpen] = useState(false);

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Cut } from './Cut';
 import { normalizePersianText } from '../utils/persian';
-import { TextLink } from './UIComponents';
+import { TextLink } from '../ui';
 import { usePersistentPreference } from '../hooks/usePersistentPreference';
 import { preloadTeacherPage } from '../utils/teacherPageLoaders';
 import { useTeacherCollections } from '../contexts/TeacherContext';

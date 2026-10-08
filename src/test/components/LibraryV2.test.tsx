@@ -29,7 +29,7 @@ import {
   Toast,
   ToastStack,
   Toggle,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { BubbleLoader } from '../../components/BubbleLoader';
 import { PanelCrest } from '../../components/PanelCrest';

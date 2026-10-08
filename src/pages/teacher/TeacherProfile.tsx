@@ -8,7 +8,7 @@ import {
   PageHeader,
   Tabs,
   Textarea,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { PanelCrest } from '../../components/PanelCrest';
 import { Cut } from '../../components/Cut';
 import {

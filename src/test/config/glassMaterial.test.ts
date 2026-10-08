@@ -8,16 +8,16 @@
  * These tests pin the token values that fix each finding, so a regression
  * fails the suite instead of shipping unnoticed.
  *
- * Values live in src/index.css (single source of truth). If you change a value
- * here, you are changing the material contract — re-run the pixel evidence
+ * Values live in src/styles/ (single source of truth, via the index.css
+ * @import chain). If you change a value here, you are changing the material
  * pipeline and update the audit doc.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-
-const root = join(__dirname, '../../..');
-const cssRaw = readFileSync(join(root, 'src/index.css'), 'utf8');
+import { repoRoot as root, component } from '../sourceReader';
+import { readBundledCss } from '../cssConcat';
+const cssRaw = readBundledCss();
 const html = readFileSync(join(root, 'index.html'), 'utf8');
 /** The boot script moved out of index.html into /public/boot.js: Vercel's CSP
  *  (script-src 'self') blocked the inline copy in production, so data-lens /
@@ -42,17 +42,6 @@ function token(name: string, scope = ':root'): string | null {
     if (decl) out = decl[1].trim();
   }
   return out;
-}
-
-/** Component source, line-comments stripped so doc mentions of retired
- *  classes don't trip the absence gates. */
-function component(path: string): string {
-  return readFileSync(join(root, path), 'utf8')
-    .replace(/\r/g, '') // autocrlf checkouts are CRLF; // strips need line ends
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .map((l) => l.replace(/^\s*\/\/.*$/, ''))
-    .join('\n');
 }
 
 describe('glass material contract (pixel-audit gates)', () => {
@@ -308,7 +297,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(dash).toMatch(/w-\[20rem\] h-\[20rem\] max-w-full max-h-full/);
     expect(dash).toMatch(/w-60 h-60 max-w-full max-h-full/);
     expect(dash).not.toMatch(/w-\[28rem\]/);
-    const ui = component('src/components/UIComponents.tsx');
+    const ui = component('src/ui');
     expect(ui).not.toMatch(/area-blur/);
     // and the utilities are dead in CSS too
     expect(css).not.toMatch(/@utility area-blur/);
@@ -392,7 +381,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(quietRule).not.toMatch(/background|box-shadow/);
     // and no material paints a rim in markup: Card maps light→lens, strong→pane
     // (rims come from the filters) and edgeClass is permanently empty
-    const ui = component('src/components/UIComponents.tsx');
+    const ui = component('src/ui');
     expect(ui).toMatch(/light: 'lens'/);
     expect(ui).toMatch(/strong: 'pane'/);
     expect(ui).toMatch(/const edgeClass = '';/);
@@ -609,7 +598,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     // modal X reads dismiss: red glass rest, near-solid red + white glyph hover
     expect(css).toMatch(/\.btn-glass--danger\.modal-close\s*{\s*--btn-tint-mix:\s*28%/);
     expect(css).toMatch(/\.btn-glass--danger\.modal-close:hover,[\s\S]*?--btn-tint-mix:\s*72%/);
-    expect(component('src/components/UIComponents.tsx')).toMatch(/btn-glass--danger modal-close/);
+    expect(component('src/ui/Modal.tsx')).toMatch(/btn-glass--danger modal-close/);
     // notif + palette X carry the same red dismiss treatment (bare grey read
     // as disabled next to the red modal X)
     expect(component('src/components/Topbar.tsx')).toMatch(/btn-glass--danger modal-close/);
@@ -731,7 +720,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(
       /:root\[data-theme='dark'\]\s*\{[\s\S]*?--color-focus-ring: rgba\(245, 179, 1, 0\.72\)/,
     );
-    const ui = component('src/components/UIComponents.tsx');
+    const ui = component('src/ui');
     expect(ui).not.toMatch(/focus-visible:outline-\[var\(--color-accent\)\]/);
     // 4 = FOCUS_RING const definition + Button + Toggle (both hardcoded
     // accent before) + DataTable (already on the token); the three new
@@ -783,7 +772,7 @@ describe('glass material contract (pixel-audit gates)', () => {
       expect(component(f), `${f} should no longer spin a ring`).not.toMatch(/animate-spin/);
     }
     // inline button slots keep the compact ring (bubbles don't fit a w-4)
-    expect(component('src/components/UIComponents.tsx')).toMatch(
+    expect(component('src/ui/Button.tsx')).toMatch(
       /Loader2 className="w-4 h-4 animate-spin/,
     );
   });

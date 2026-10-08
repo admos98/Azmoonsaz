@@ -1,0 +1,144 @@
+/* Material family — lens/pane/frost/field/drop utilities. Split from src/index.css — edit here, never in the @import shim. */
+
+/* ─── The material family — the design language ──────────────────────────
+   Six materials, every surface in the app is one of them:
+
+     lens      bend + reflective rim + dim + blur 1×  (#lens / #lens-dark)
+     pane      reflective rim, NO bend, blur 2×       (#pane / #pane-dark)
+     frost     static painted rim, no bend, blur 2×   (pure CSS — everywhere)
+     field     no rim, no bend, keeps its host fill   (pure CSS — everywhere)
+     drop      circular: bend + reflective rim, no dim, blur 0.5px (#drop)
+     btn-glass glass + faint semantic tint, no refraction (below)
+
+   rim/sat/dim for lens/pane/drop are FILTER OUTPUT (playground chain,
+   ZERO DIFFERENCE from public/playground) — these utilities paint no rim,
+   no bloom, no text-shadow, no CSS saturate. Blur stays in the CSS chain
+   (blur() == feGaussianBlur, runs before the url). --glass-fill is the
+   playground's glassBg: 0 on capable devices, the CSS fill that stands in
+   when lite/off strip backdrop-filter. field composes ON a host fill
+   class (glx-strong/glx-inset/glx) and never bends — the glx gates
+   exclude .field for that reason. */
+@utility lens {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--lens-blur));
+}
+/* Floating menu material (hamburger panels, notif): heavier frost + deeper
+   dim than resting panels — menus float over the DENSEST content and must
+   read as objects, not smears (user: "a bit more blur and dimming… still
+   feel glass"). Universal — not dark-only; the dark tune keeps a notch more
+   blur. The engine re-dresses the filter markup from these tokens (maps are
+   dim/blur-blind), and the plain-chain fallback matches until it attaches. */
+.lens.lens--menu {
+  --lens-dim: var(--lens-menu-dim);
+  backdrop-filter: blur(var(--lens-menu-blur));
+}
+:root[data-theme='dark'] .lens.lens--menu {
+  backdrop-filter: blur(calc(var(--lens-menu-blur) + 2px));
+}
+/* Light-only menu blur cut: 6px -> 5px on the densest panels. 1px is
+   imperceptible side-by-side on a 280px menu; blur cost scales with radius
+   so the hottest surface gets ~15% cheaper. Dark keeps 6+2 (dark pixels are
+   already cheap to raster). Scoped override — the shared token is untouched
+   so dark and the engine's chainOf() need no changes. */
+:root:not([data-theme='dark']) .lens.lens--menu {
+  backdrop-filter: blur(5px);
+}
+/* Floating menu containment: hover transitions inside the dropdowns used to
+   invalidate style/paint up the tree (Topbar -> header -> page). contain:
+   layout paint walls that off to the dropdown subtree — zero visual change,
+   pure invalidation scoping. Applied to the two floating containers
+   (hamburger wrapper, notif wrapper). NOT style containment (unneeded) and
+   NOT strict/size (would collapse the auto-sized panels). */
+@utility contain-menu {
+  contain: layout paint;
+}
+
+@utility pane {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--pane-blur));
+}
+
+@utility frost {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--frost-blur));
+  /* static rim — painted once, never samples the backdrop (quiet boxes;
+     the reflective rim lives only in the lens/pane/drop filters) */
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.13),
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 10px 24px -20px rgb(255 255 255 / var(--glass-bloom-a));
+}
+
+@utility field {
+  /* the host class keeps the base fill; field only adds the frosted
+     blur — no rim, no bend: inputs/dropdowns read as tinted glass */
+  backdrop-filter: blur(var(--field-blur));
+}
+
+@utility drop {
+  border-radius: var(--radius-full);
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--drop-blur));
+}
+/* where the bend can't run (probe off), the droplet keeps a static ring */
+:root:not([data-lens='on']) .drop {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
+}
+
+/* Same edge for the main materials on the engines the SVG bend can't reach
+   (Safari < 138, Firefox, older Chromium). Two stacked rings: a thin
+   static light rim at the very edge, and just inside it a saturated live
+   rim. Box-shadows follow border-radius natively, so no mask, no corner
+   artifact, no per-frame cost. The inner rim is a ::after pseudo on a
+   1px-inset rounded ring — it re-samples the raw page backdrop with a
+   blur+saturation, painting the background colors back at the edge.
+   Where the bend runs (data-lens='on') none of this applies; the filter
+   graph paints the rim instead. */
+:root:not([data-lens='on']) .lens,
+:root:not([data-lens='on']) .pane,
+:root:not([data-lens='on']) .glx,
+:root:not([data-lens='on']) .glx-strong,
+:root:not([data-lens='on']) .glx-dark {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 0 14px -6px rgb(255 255 255 / var(--glass-rim-fade));
+}
+
+:root:not([data-lens='on']) .lens::after,
+:root:not([data-lens='on']) .pane::after,
+:root:not([data-lens='on']) .glx::after,
+:root:not([data-lens='on']) .glx-strong::after,
+:root:not([data-lens='on']) .glx-dark::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Saturated rim: re-sample the page backdrop, soften + saturate. */
+  backdrop-filter: blur(3px) saturate(1.6);
+  -webkit-backdrop-filter: blur(3px) saturate(1.6);
+  padding: 1.5px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* Panels hosting the rim pseudo need a positioning context. */
+:root:not([data-lens='on']) .lens,
+:root:not([data-lens='on']) .pane,
+:root:not([data-lens='on']) .glx,
+:root:not([data-lens='on']) .glx-strong,
+:root:not([data-lens='on']) .glx-dark {
+  position: relative;
+}
+
+/* runtime engine: per-panel filters replace the static fallback once the
+   boot gate allows url() — the plain blur on the utility above is the
+   no-engine path; .lg-root marks a top-level panel (never de-nested). */

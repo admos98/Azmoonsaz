@@ -26,7 +26,7 @@ import {
   Table,
   StatCard,
   TextLink,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { TheMark } from '../../components/TheMark';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';

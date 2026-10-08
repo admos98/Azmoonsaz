@@ -8,7 +8,7 @@ import { ArrowRight, ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
 import { Exam } from '../../types';
 import { examService } from '../../services/api';
-import { Dropdown, Input, PillButton, Textarea, Toggle } from '../../components/UIComponents';
+import { Dropdown, Input, PillButton, Textarea, Toggle } from '../../ui';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 
 interface NewExamProps {

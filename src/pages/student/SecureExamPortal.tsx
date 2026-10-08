@@ -20,7 +20,7 @@ import {
   clearQueueForToken,
   getQueuedAnswers,
 } from '../../services/offlineAnswerQueue';
-import { ConfirmDialog, PillButton, TextLink } from '../../components/UIComponents';
+import { ConfirmDialog, PillButton, TextLink } from '../../ui';
 import { ExamCountdown } from '../../components/ExamCountdown';
 import { useExamGuard } from '../../features/exam-guard/useExamGuard';
 import { Watermark } from '../../features/exam-guard/Watermark';

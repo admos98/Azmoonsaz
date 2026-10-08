@@ -118,7 +118,7 @@ for (const [name, where] of defined) {
     dead.push(`${name}  (defined at ${where})`);
   }
 }
-const DEAD_TOKEN_BASELINE = 43; // 2026-10-05 audit state — only down from here
+const DEAD_TOKEN_BASELINE = 35; // 2026-10-09 dead-token sweep (43 → 35) — only down from here
 
 if (rawRadius.length) {
   console.error(`\u2717 Radius ratchet FAILED: ${rawRadius.length} raw radius value(s) — use the --radius-* tokens:\n`);

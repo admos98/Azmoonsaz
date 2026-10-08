@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useExamSettingsState } from '../../features/exam-settings/useExamSettingsState';
 import {
   Save,
   Clock,
@@ -36,11 +37,11 @@ import {
   Textarea,
   TextLink,
   Toggle,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { Seal } from '../../components/Seal';
 import { useToast } from '../../hooks/useToast';
 import { formatPersianDate, normalizePersianText, toPersianDigits } from '../../utils/persian';
-import { isoToWallClock, wallClockToIso } from '../../utils/tehranClock';
+import { wallClockToIso } from '../../utils/tehranClock';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 
@@ -50,92 +51,58 @@ interface ExamSettingsProps {
   onBack: () => void;
 }
 
-/** Today (local clock) as YYYY-MM-DD — defaults must not be frozen demo
-    dates; scheduling itself is evaluated against Date.now() below. */
-const todayYmd = (() => {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-})();
-
 export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps) {
-  // 1. Core Scheduling States
-  // Wall clock fields are the editor's source of truth. Legacy exams have no
-  // startDate/startHour in settings — recover their Tehran wall clock from the
-  // persisted instant instead of silently defaulting to "today".
-  const startClock = isoToWallClock(exam.settings.startTime);
-  const endClock = isoToWallClock(exam.settings.endTime);
-  const [startDate, setStartDate] = useState<string>(
-    exam.settings.startDate || startClock?.date || todayYmd,
-  );
-  const [startHour, setStartHour] = useState<string>(
-    exam.settings.startHour || startClock?.hour || '08:30',
-  );
-  const [endDate, setEndDate] = useState<string>(
-    exam.settings.endDate || endClock?.date || todayYmd,
-  );
-  const [endHour, setEndHour] = useState<string>(
-    exam.settings.endHour || endClock?.hour || '10:30',
-  );
-  const [durationMinutes, setDurationMinutes] = useState<number>(
-    exam.settings.durationMinutes || exam.duration || 60,
-  );
-
-  // 2. Student Access States
-  const [allowedClasses, setAllowedClasses] = useState<string[]>(
-    exam.settings.allowedClasses || exam.classGroupIds || [],
-  );
-  const [requireNationalId, setRequireNationalId] = useState<boolean>(
-    exam.settings.requireNationalId ?? true,
-  );
-  const [entryCode, setEntryCode] = useState<string>(exam.settings.entryCode || '');
+  // Editor state lives in a single useReducer (schedule / access / rules /
+  // publish slices). Initializers are byte-identical to the old useState
+  // defaults; bound setters keep every JSX call site untouched.
+  const {
+    state: {
+      startDate,
+      startHour,
+      endDate,
+      endHour,
+      durationMinutes,
+      allowedClasses,
+      requireNationalId,
+      entryCode,
+      maxAttempts,
+      limitToSpecificStudents,
+      allowedStudents,
+      autoSubmit,
+      allowBacktrack,
+      showOneQuestionPerPage,
+      autoSaveAnswers,
+      shuffleQuestions,
+      shuffleOptions,
+      beastMode,
+      resultsDisplayMode,
+      startInstructions,
+      examStatus,
+    },
+    dispatch,
+    setStartDate,
+    setStartHour,
+    setEndDate,
+    setEndHour,
+    setDurationMinutes,
+    setRequireNationalId,
+    setEntryCode,
+    setMaxAttempts,
+    setLimitToSpecificStudents,
+    setAutoSubmit,
+    setAllowBacktrack,
+    setShowOneQuestionPerPage,
+    setAutoSaveAnswers,
+    setShuffleQuestions,
+    setShuffleOptions,
+    setBeastMode,
+    setResultsDisplayMode,
+    setStartInstructions,
+    setExamStatus,
+  } = useExamSettingsState(exam);
   // Classes and students ride the shared collections cache — no private fetch.
   const { classGroups, students: allStudents } = useTeacherCollections();
-  const [maxAttempts, setMaxAttempts] = useState<number>(exam.settings.maxAttempts || 1);
-  const [limitToSpecificStudents, setLimitToSpecificStudents] = useState<boolean>(
-    !!(exam.settings.allowedStudents && exam.settings.allowedStudents.length > 0),
-  );
-  const [allowedStudents, setAllowedStudents] = useState<string[]>(
-    exam.settings.allowedStudents || [],
-  );
   const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
-
-  // 3. Exam Behavior Options
-  const [autoSubmit, setAutoSubmit] = useState<boolean>(exam.settings.autoSubmit ?? true);
-  const [allowBacktrack, setAllowBacktrack] = useState<boolean>(
-    exam.settings.allowBacktrack ?? true,
-  );
-  const [showOneQuestionPerPage, setShowOneQuestionPerPage] = useState<boolean>(
-    exam.settings.showOneQuestionPerPage ?? false,
-  );
-  const [autoSaveAnswers, setAutoSaveAnswers] = useState<boolean>(
-    exam.settings.autoSaveAnswers ?? true,
-  );
-  const [shuffleQuestions, setShuffleQuestions] = useState<boolean>(
-    exam.settings.shuffleQuestions ?? false,
-  );
-  const [shuffleOptions, setShuffleOptions] = useState<boolean>(
-    exam.settings.shuffleOptions ?? false,
-  );
-  const [beastMode, setBeastMode] = useState<boolean>(exam.settings.beastMode ?? false);
-
-  // 4. Results Display Configuration
-  // 'immediate_score' | 'immediate_score_answers' | 'after_approval' | 'none'
-  const [resultsDisplayMode, setResultsDisplayMode] = useState<
-    'immediate_score' | 'immediate_score_answers' | 'after_approval' | 'none'
-  >(
-    exam.settings.resultsDisplayMode ||
-      (exam.settings.showImmediateResults ? 'immediate_score_answers' : 'after_approval'),
-  );
-
-  // 5. Start Guidelines Instruction Intro Text
-  const [startInstructions, setStartInstructions] = useState<string>(
-    exam.settings.startInstructions ||
-      'دبیر گرامی یادداشت ابتدایی را جهت هدایت ذهن آماده کرده است:\n۱. لطفاً پیش از کلیک بر روی دکمه شروع آزمون، از پایداری ترافیک اینترنت خود اطمینان کامل حاصل کنید.\n۲. هرگونه سوییچ یا جابه‌جایی روی سایر نرم‌افزارهای دسکتاپ یا تب‌های مرورگر ثبت شده و تخلف محسوب می‌گردد.\n۳. زمان اجرای آزمون محدود است و پاسخ‌ها به صورت مستمر و پیوسته در ابر ذخیره می‌شوند.',
-  );
-
-  // 6. Syncing States On Component mount
-  const [examStatus, setExamStatus] = useState<Exam['status']>(exam.status || 'draft');
   // Join link is DERIVED from the server-issued exam code — the old client-
   // minted AZMOON-7-XXXXXX link never matched exam_code in the DB, so it 404'd.
   const examLink = exam.examCode ? `/secure-exam/${exam.examCode}` : '';
@@ -172,38 +139,21 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
   // Class selection handler
   const handleToggleClass = (classId: string) => {
-    if (allowedClasses.includes(classId)) {
-      setAllowedClasses(allowedClasses.filter((id) => id !== classId));
-      // Remove students that are no longer in allowed classes
-      const relatedStudents = allStudents
-        .filter((s) => s.classGroupId === classId)
-        .map((s) => s.id);
-      setAllowedStudents(allowedStudents.filter((sid) => !relatedStudents.includes(sid)));
-    } else {
-      setAllowedClasses([...allowedClasses, classId]);
-    }
+    const relatedStudents = allStudents
+      .filter((s) => s.classGroupId === classId)
+      .map((s) => s.id);
+    dispatch({ type: 'toggleClass', classId, relatedStudentIds: relatedStudents });
   };
 
   // Student selection handler
   const handleToggleStudent = (studentId: string) => {
-    if (allowedStudents.includes(studentId)) {
-      setAllowedStudents(allowedStudents.filter((id) => id !== studentId));
-    } else {
-      setAllowedStudents([...allowedStudents, studentId]);
-    }
+    dispatch({ type: 'toggleStudent', studentId });
   };
 
   // Checkbox/Toggle toggler helpers
   const handleSelectAllStudentsForClass = (classId: string) => {
     const classStudents = allStudents.filter((s) => s.classGroupId === classId).map((s) => s.id);
-    const allSelected = classStudents.every((sId) => allowedStudents.includes(sId));
-
-    if (allSelected) {
-      setAllowedStudents(allowedStudents.filter((sId) => !classStudents.includes(sId)));
-    } else {
-      const union = Array.from(new Set([...allowedStudents, ...classStudents]));
-      setAllowedStudents(union);
-    }
+    dispatch({ type: 'selectAllForClass', classStudentIds: classStudents });
   };
 
   // Real-time student calculation list
@@ -235,13 +185,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
   // Recommended template applier
   const handleApplyOfficialRecommendations = () => {
-    setMaxAttempts(1);
-    setResultsDisplayMode('after_approval');
-    setAutoSubmit(true);
-    setShowOneQuestionPerPage(true);
-    setAllowBacktrack(false);
-    setBeastMode(true);
-    setRequireNationalId(true);
+    dispatch({ type: 'applyOfficialRecommendations' });
 
     setShowRecommendationsApplied(true);
     setTimeout(() => {

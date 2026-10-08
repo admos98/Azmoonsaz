@@ -7,7 +7,7 @@ import { studentService } from '../../services/api';
 import { ClassGroup, Student, StudentImportFailure } from '../../types';
 import { isValidIranianNationalId } from './nationalId';
 import type { StudentImportIssue, StudentImportRow } from './parseStudentFile';
-import { Button, IconButton, Modal } from '../../components/UIComponents';
+import { Button, IconButton, Modal } from '../../ui';
 import { BubbleLoader } from '../../components/BubbleLoader';
 
 /* The parsers (xlsx + papaparse, ~121 KB gz together) are the heaviest thing

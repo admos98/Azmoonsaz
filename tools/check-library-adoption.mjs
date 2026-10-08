@@ -16,7 +16,7 @@
  *      buttons are library Button variants. Reintroducing them re-forks the
  *      visual language.
  *
- *   3. THE DESIGN SYSTEM NEVER RELOADS. UIComponents must not call
+ *   3. THE DESIGN SYSTEM NEVER RELOADS. src/ui/* must not call
  *      window.location.reload() — empty states take an onRetry prop.
  *
  *   4. RAW-ELEMENT RATCHET. The counts below are the record for the phase
@@ -51,7 +51,7 @@ const RATCHET = {
   // 140 -> 76: F-6 migration to TextLink / IconButton / PillButton moved 63
   // raw buttons into the library (2026-10-04). Lower in the migrating
   // commit; never raise to pass CI.
-  button: 76, // <button in src/pages + src/components (excl. UIComponents) + src/features
+  button: 76, // <button in src/pages + src/components (excl. src/ui) + src/features
   input: 40,
   select: 2,
   textarea: 1,
@@ -146,7 +146,7 @@ const files = [];
 const isPageOrComponent = (rel) =>
   (rel.startsWith('src/pages/') || rel.startsWith('src/components/') || rel.startsWith('src/features/')) &&
   !rel.startsWith('src/pages/dev/'); // dev-only material lab is exempt
-const isLibrary = (rel) => rel === 'src/components/UIComponents.tsx';
+const isLibrary = (rel) => rel.startsWith('src/ui/');
 const isTest = (rel) => rel.includes('/test/') || /\.test\./.test(rel);
 
 for (const file of files) {
@@ -177,7 +177,7 @@ for (const file of files) {
   if (isLibrary(rel)) {
     lines.forEach((line, i) => {
       if (/window\.location\.reload\(\)/.test(line)) {
-        violations.push(`${rel}:${i + 1} — UIComponents calls window.location.reload()`);
+        violations.push(`${rel}:${i + 1} — src/ui calls window.location.reload()`);
       }
     });
   }
@@ -201,7 +201,7 @@ for (const [key, baseline] of Object.entries(RATCHET)) {
   const actual = ratchetCounts[key] ?? 0;
   if (actual > baseline) {
     violations.push(
-      `ratchet ${key}: ${actual} > baseline ${baseline} — new raw <${key}> elements are banned; use the library (UIComponents)`
+      `ratchet ${key}: ${actual} > baseline ${baseline} — new raw <${key}> elements are banned; use the library (src/ui)`
     );
   }
 }
@@ -212,7 +212,7 @@ for (const [cat, baseline] of Object.entries(CATEGORY_RATCHET)) {
   if (actual > baseline) {
     violations.push(
       `ratchet button/${cat}: ${actual} > baseline ${baseline} — use the matching primitive ` +
-        `(TextLink / IconButton / PillButton in UIComponents) or Button`
+        `(TextLink / IconButton / PillButton in src/ui) or Button`
     );
   }
 }
@@ -222,7 +222,7 @@ if (violations.length > 0) {
   for (const v of violations) console.error('  ' + v);
   console.error(
     '\nRules: no window.confirm/alert outside allowlist · no .btn-soft/.btn-brand · ' +
-      'no reload() in UIComponents · raw <button>/<input>/<select>/<textarea> counts may not rise.'
+      'no reload() in src/ui · raw <button>/<input>/<select>/<textarea> counts may not rise.'
   );
   process.exit(1);
 }

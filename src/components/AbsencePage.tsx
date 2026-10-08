@@ -1,4 +1,4 @@
-import { Button } from './UIComponents';
+import { Button } from '../ui';
 import { AbsenceArt, type AbsenceKind } from './AbsenceArt';
 
 /**

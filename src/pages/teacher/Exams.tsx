@@ -21,7 +21,7 @@ import {
   PageHeader,
   PillButton,
   StatusBadge,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { PanelCrest } from '../../components/PanelCrest';
 import { Exam } from '../../types';

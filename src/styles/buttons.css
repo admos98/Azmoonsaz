@@ -1,0 +1,308 @@
+/* Glass buttons — btn-glass circuit, variants, press, menu/modal X. Split from src/index.css — edit here, never in the @import shim. */
+
+/* Registered custom properties — the button's moving parts. An unregistered
+   custom property SNAPS between values; a registered <angle>/<color>/<percentage>
+   TWEENS, which is what makes the tint cross-fade and the light circuit paint
+   every frame instead of jumping. -55deg == the family's baked specular angle
+   (--lens-spec-angle), so a resting button lights exactly like a panel. */
+@property --btn-light-angle {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: -55deg;
+}
+@property --btn-tint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+@property --btn-tint-mix {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 16%;
+}
+@property --btn-sheen-a {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+/* ─── kube-style glass button — glass + faint semantic tint ──────────────
+   Colored GLASS, not plastic: a translucent tint layer under a lit top
+   edge, hairline rim, soft lift. NO refraction — the bend lives on panels,
+   never behind content, so labels and icons stay razor-crisp. Variants
+   tint from the semantic color tokens at --btn-tint-mix (16% = a wash,
+   the color of the glass, not paint on it). Text stays theme ink: the
+   glass is pale in both themes, so theme ink always reads.
+
+   HOVER (the normal state from now on — user spec): the button never
+   changes SIZE; only the gradient ANGLE starts a slow 360° circuit, so
+   the light appears to round the button (3s/turn, linear, hovered or
+   keyboard-focused, paused under reduced-motion).
+   PUSH: the tint turns up (--btn-tint-mix -> 34%): a bit more prominent.
+   Transparent (--bare) buttons materialize on GOLD, The Mark's brand
+   colour (docs/brand-the-mark.md): faint gold wash at hover, stronger
+   on push. */
+@utility btn-glass {
+  --btn-tint: transparent;
+  --btn-sheen-a: 1;
+  background:
+    linear-gradient(
+      var(--btn-light-angle),
+      rgb(255 255 255 / calc(0.1 * var(--btn-sheen-a))),
+      rgb(255 255 255 / calc(0.03 * var(--btn-sheen-a)))
+    ),
+    color-mix(in srgb, var(--btn-tint) var(--btn-tint-mix), transparent);
+  border: 1px solid rgb(255 255 255 / var(--btn-edge-a));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--btn-lift-a)),
+    inset 0 -8px 14px -10px rgb(255 255 255 / 0.35),
+    0 1px 2px rgb(0 0 0 / 0.1);
+  color: var(--color-text-primary);
+  backdrop-filter: blur(var(--btn-blur)) saturate(1.4);
+  /* NO backdrop-filter transition: interpolating a filter list re-renders the
+     filter EVERY FRAME for the transition's duration — and the engine's
+     attach (plain chain -> +url(#id)) would trigger a useless 180ms
+     per-frame refilter on every button at boot. The light circuit animates
+     --btn-light-angle (a registered <angle>); it needs no filter tween. */
+  transition:
+    --btn-tint 180ms ease-out,
+    --btn-tint-mix 180ms ease-out,
+    --btn-sheen-a 180ms ease-out,
+    --btn-light-angle 180ms ease-out,
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out,
+    color 180ms ease-out,
+    transform 80ms ease-out,
+    filter 140ms ease-out;
+}
+/* the light circuit: -55deg -> 305deg is exactly one full turn, so the loop
+   restarts on the same frame it finished (seamless). Size untouched.
+   THREE turns, not infinite: a parked cursor (or stuck touch-hover) would
+   otherwise drive compositor frames forever, re-running every url() surface
+   at 60fps. The end state IS the rest state (305 ≡ -55), so when the circuit
+   stops nobody can tell — and re-hover replays it. */
+.btn-glass:hover,
+.btn-glass:focus-visible {
+  filter: brightness(1.06);
+  animation: btn-light-round 3s linear 3;
+}
+@keyframes btn-light-round {
+  from {
+    --btn-light-angle: -55deg;
+  }
+  to {
+    --btn-light-angle: 305deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-glass:hover,
+  .btn-glass:focus-visible {
+    animation: none;
+  }
+}
+:root[data-motion='reduce'] .btn-glass:hover,
+:root[data-motion='reduce'] .btn-glass:focus-visible {
+  animation: none;
+}
+/* touch: a tap HOLDS :hover after the finger lifts, so the infinite circuit
+   would loop forever on phones/tablets — one stuck button keeps the
+   compositor dirty and forces every url() surface to re-render each frame.
+   No-hover devices get the brightness bump only; desktop hover is untouched. */
+@media (hover: none) {
+  .btn-glass:hover {
+    animation: none;
+  }
+}
+/* pulse discipline: Tailwind's animate-pulse loops opacity forever, and one
+   looping opacity anywhere on the page keeps the compositor requesting
+   frames — which re-runs every url() surface at 60fps even when the user sits
+   still. THREE blinks, then rest: opacity returns to 1 = the static look, so
+   the badge/icon reads identical at rest and the page goes back to zero
+   frames. */
+.animate-pulse {
+  animation-iteration-count: 3;
+}
+/* bubble-row loader — THE one sanctioned infinite loop (exception record for
+   the cap above; do not copy the loop pattern elsewhere). Four outline
+   bubbles, the gold "answered" fill hops 1→2→3→4 at 180ms/step — the brand
+   grammar (a bubble fills when it's answered) in motion. Transient block/
+   page loading only; inline button slots keep the compact ring. Reduced
+   motion / data-motion='reduce' parks it on the third bubble — the resting
+   brand state. */
+.bubble-loader {
+  display: inline-flex;
+  gap: 6px;
+}
+.bubble-loader i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-ink);
+  animation: bubble-cycle 720ms steps(1) infinite;
+  animation-delay: calc(var(--i) * 180ms);
+}
+@keyframes bubble-cycle {
+  0% {
+    background: var(--color-gold);
+  }
+  25%,
+  100% {
+    background: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bubble-loader i {
+    animation: none;
+  }
+  .bubble-loader i:nth-child(3) {
+    background: var(--color-gold);
+  }
+}
+[data-motion='reduce'] .bubble-loader i {
+  animation: none;
+}
+[data-motion='reduce'] .bubble-loader i:nth-child(3) {
+  background: var(--color-gold);
+}
+/* push: the tint becomes more prominent (the variant's resting mix -> 34%) */
+.btn-glass:active {
+  --btn-tint-mix: 34%;
+  filter: brightness(0.96);
+  transform: translateY(0.5px);
+}
+.btn-glass:disabled {
+  opacity: 0.45;
+  filter: none;
+  animation: none;
+}
+/* PRIMARY = brand solid (The Mark doc: "Ink carries solid fills"). The old
+   24% wash didn't carry — a focal CTA needs a real body in both themes.
+   The solid REPLACES the glass stack by design: no tint layer, no sheen
+   gradient, no light circuit (its angle animation would have nothing to
+   paint — cancelled below rather than burning style-recalcs for 9s a hover).
+   Press keeps the shared translateY+brightness. Contrast: light
+   accent-solid + white = 12.49:1, dark = 6.66:1 — no new tokens. */
+.btn-glass--primary {
+  --btn-tint: transparent;
+  --btn-tint-mix: 0%;
+  background: var(--color-accent-solid);
+  color: var(--color-text-on-solid);
+  border-color: transparent;
+}
+.btn-glass--primary:hover,
+.btn-glass--primary:focus-visible {
+  animation: none;
+}
+.btn-glass--danger {
+  --btn-tint: var(--color-danger-solid);
+}
+.btn-glass--success {
+  --btn-tint: var(--color-success-solid);
+}
+.btn-glass--gold {
+  --btn-tint: var(--color-gold);
+}
+/* selected chips/segmented controls — the accent's own glass (selected state
+   of toggles; pairs with --bare for the resting side) */
+.btn-glass--accent {
+  --btn-tint: var(--color-accent-solid);
+}
+/* neutral glass (secondary / outline): no tint, quieter rim */
+.btn-glass--quiet {
+  --btn-tint-mix: 0%;
+  --btn-edge-a: 0.16;
+}
+/* transparent ghost: NO body at rest — but it is still a button, so the
+   hover/push states materialize it as gold GLASS (The Mark brand tint:
+   faint wash at hover, stronger on push). --btn-sheen-a scales the white
+   body to zero so the material can fade in instead of popping. */
+.btn-glass--bare {
+  --btn-sheen-a: 0;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  color: var(--color-text-tertiary);
+}
+/* press FIRST, hover after: the late hover block must keep winning on
+   mouse-press (hover+active both match → 8%), while keyboard-press —
+   no :hover — still lands on the 26% push. Same cascade as the old
+   two-block layout. */
+.btn-glass--bare:active {
+  --btn-tint-mix: 26%;
+}
+/* ONE bare hover block (F-7: the second block used to re-open the same
+   selector with 8% + transitions; merged — final values are identical).
+   The gold wash materializes the ghost body on hover/focus; the menu-item
+   hover rides the same rule (scoped color below stays the later winner). */
+.btn-glass--bare:hover,
+.btn-glass--bare:focus-visible {
+  --btn-tint: var(--color-gold);
+  --btn-tint-mix: 8%;
+  --btn-sheen-a: 1;
+  border-color: rgb(255 255 255 / var(--btn-edge-a));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--btn-lift-a)),
+    inset 0 -8px 14px -10px rgb(255 255 255 / 0.35),
+    0 1px 2px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(var(--btn-blur)) saturate(1.4);
+  color: var(--color-text-primary);
+  transition:
+    --btn-tint 120ms ease-out,
+    --btn-tint-mix 120ms ease-out,
+    --btn-sheen-a 120ms ease-out,
+    --btn-light-angle 120ms ease-out,
+    border-color 120ms ease-out,
+    box-shadow 120ms ease-out,
+    color 120ms ease-out,
+    transform 80ms ease-out,
+    filter 120ms ease-out;
+}
+/* hamburger menu items read on the DENSEST glass (lens--menu): tertiary-on-
+   tinted-glass measured grey-on-grey, so menu items carry the brand ink at
+   rest (theme-aware: near-black light, near-white dark). The gold WASH still
+   materializes on hover via the bare rule above; this later rule keeps the
+   ink readable while hovered. Scoped to the hamburger panels — dropdown
+   options and other bare buttons keep their quiet tertiary rest. */
+[id^='hamburger-panel-'] .btn-glass--bare {
+  color: var(--color-ink);
+}
+/* menu hover runs ONE light turn, not three: a parked cursor on a menu item
+   otherwise drives compositor frames (and full url() re-runs on the densest
+   panels) for 9s per hover. One 3s sweep reads the same — the circuit ends at
+   the rest angle either way — and re-hover replays it. Scoped to the floating
+   menu panels; page buttons keep their 3 turns. */
+[id^='hamburger-panel-'] .btn-glass:hover,
+[id='notification-dropdown'] .btn-glass:hover,
+[role='listbox'] .btn-glass:hover {
+  animation-iteration-count: 1;
+}
+/* modal X: red glass at rest so it reads as dismiss, near-solid red fill +
+   white glyph on hover so it stands out. Scoped to .modal-close — other
+   danger buttons keep the quiet 16% wash. */
+.btn-glass--danger.modal-close {
+  --btn-tint-mix: 28%;
+}
+.btn-glass--danger.modal-close:hover,
+.btn-glass--danger.modal-close:focus-visible {
+  --btn-tint-mix: 72%;
+  color: #fff;
+}
+/* a bare that NEVER materializes — no gold wash, no light circuit, no press
+   tint. Only its rest state, the CSS transition, and its own shape morph
+   (TheMarkHamburger → X on menu open). Used by the burger button per spec. */
+.btn-glass--still:hover,
+.btn-glass--still:focus-visible {
+  animation: none;
+  filter: none;
+  --btn-tint: transparent;
+  --btn-tint-mix: 16%;
+  --btn-sheen-a: 0;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  color: var(--color-text-tertiary);
+}
+.btn-glass--still:active {
+  --btn-tint-mix: 16%;
+  transform: none;
+}

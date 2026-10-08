@@ -36,7 +36,7 @@ import {
   PageHeader,
   PillButton,
   SearchInput,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { PanelCrest } from '../../components/PanelCrest';
 import { AbsenceArt } from '../../components/AbsenceArt';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';

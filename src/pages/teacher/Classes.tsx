@@ -13,7 +13,7 @@ import {
   Dropdown,
   Modal,
   Table,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { classService } from '../../services/api';
 import { ClassGroup } from '../../types';
 import { formatPersianNumber } from '../../services/persianHelpers';

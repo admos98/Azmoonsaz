@@ -21,7 +21,11 @@ import {
   Sliders,
   CloudLightning,
 } from 'lucide-react';
-import { Question, QuestionType, QuestionPart, RubricCriterion } from '../../types';
+import { Question, type QuestionType } from '../../types';
+import type { RichQuestion } from '../../features/question-bank/types';
+import { useQuestionForm } from '../../features/question-bank/useQuestionForm';
+import { useQuestionFilters } from '../../features/question-bank/useQuestionFilters';
+import { useQuestionDelete } from '../../features/question-bank/useQuestionDelete';
 /* The drawer preview renderer is code-split: it is the heaviest tree in the
    add/edit modal (full question render + nested panels), and mounting it in
    the same commit as the modal open animation janked the open. The chunk
@@ -45,26 +49,15 @@ import {
   SearchInput,
   Textarea,
   TextLink,
-} from '../../components/UIComponents';
+} from '../../ui';
 import { AbsenceArt } from '../../components/AbsenceArt';
 import { PanelCrest } from '../../components/PanelCrest';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
-import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
-import { formatPersianDate, normalizePersianText, toPersianDigits } from '../../utils/persian';
+import { formatPersianDate, toPersianDigits } from '../../utils/persian';
 import { getTypeNameInPersian } from '../../utils/question-type-labels';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
-
-// Local enhanced interface to handle optional tags, chapters, difficulty, and completeness statuses
-interface RichQuestion extends Question {
-  difficulty?: 'easy' | 'medium' | 'hard'; // آسان، متوسط، سخت
-  tags?: string[]; // برچسب‌ها
-  section?: string; // بخش / فصل
-  completenessStatus?: 'complete' | 'incomplete'; // وضعیت کامل بودن
-  explanation?: string; // توضیح پاسخ تشریحی / پاسخ کاغذی
-  sampleAnswer?: string; // پاسخ نمونه تشریحی
-}
 
 export default function Questions() {
   const { showToast, toastElement } = useToast();
@@ -74,7 +67,7 @@ export default function Questions() {
     questions: rawQuestions,
     status,
     upsertQuestion,
-    removeQuestion,
+    removeQuestion: _removeQuestion,
   } = useTeacherCollections();
   const loading = status.questions === 'loading';
 
@@ -96,6 +89,43 @@ export default function Questions() {
   const [showAddEditDrawer, setShowAddEditDrawer] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'add' | 'edit'>('add');
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
+
+  // Add/edit drawer form state lives in the question-bank feature (extracted
+  // verbatim from this page). Setters below feed openEditDrawer and
+  // handleSaveQuestion further down.
+  const {
+    formGrade, setFormGrade,
+    formSubject, setFormSubject,
+    formSection, setFormSection,
+    formType, setFormType,
+    formDifficulty, setFormDifficulty,
+    formPoints, setFormPoints,
+    formText, setFormText,
+    formTitle, setFormTitle,
+    formTagsString, setFormTagsString,
+    formExplanation, setFormExplanation,
+    formSampleAnswer, setFormSampleAnswer,
+    formImageUrl, setFormImageUrl,
+    formOptions, setFormOptions,
+    formCorrectTrueFalse, setFormCorrectTrueFalse,
+    formFillBlanks, setFormFillBlanks,
+    formMatchingPairs, setFormMatchingPairs,
+    formOrderingItems, setFormOrderingItems,
+    formRubrics, setFormRubrics,
+    formParts, setFormParts,
+    questionFormSnapshot: _questionFormSnapshot,
+    guardQuestionDraft: _guardQuestionDraft,
+    closeQuestionEditor,
+    handleImageUpload,
+    addOptionRow,
+    removeOptionRow,
+    handleOptionCorrectChange,
+    addRubricRow,
+    removeRubricRow,
+    addPartRow,
+    removePartRow,
+    resetFormValues,
+  } = useQuestionForm(showAddEditDrawer, setShowAddEditDrawer, showToast);
   /* Preview mounts one frame past drawer open (see drawer-live-visual): the
      open animation's first frame commits the light form tree only, then the
      heavy renderer tree builds while the panel grows (transform-only,
@@ -130,214 +160,26 @@ export default function Questions() {
   // measurement internally; call sites only capture the trigger element.
   const previewTriggerRef = useRef<HTMLElement | null>(null);
   const drawerTriggerRef = useRef<HTMLElement | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = usePersistentPreference<'newest' | 'oldest' | 'title'>(
-    'questions:sort',
-    'newest',
-    (value): value is 'newest' | 'oldest' | 'title' =>
-      value === 'newest' || value === 'oldest' || value === 'title',
-  );
-  const [pageSize, setPageSize] = usePersistentPreference<number>(
-    'questions:page-size',
-    20,
-    (value): value is number => value === 10 || value === 20 || value === 50,
-  );
-  const [currentPage, setCurrentPage] = useState(1);
 
-  // Filters state
-  const [selectedGrade, setSelectedGrade, resetSelectedGrade] = usePersistentPreference(
-    'questions:grade',
-    'all',
-  );
-  const [selectedSubject, setSelectedSubject, resetSelectedSubject] = usePersistentPreference(
-    'questions:subject',
-    'all',
-  );
-  const [selectedSection, setSelectedSection, resetSelectedSection] = usePersistentPreference(
-    'questions:section',
-    'all',
-  );
-  const [selectedType, setSelectedType, resetSelectedType] = usePersistentPreference(
-    'questions:type',
-    'all',
-  );
-  const [selectedDifficulty, setSelectedDifficulty, resetSelectedDifficulty] =
-    usePersistentPreference('questions:difficulty', 'all');
-  const [selectedTag, setSelectedTag, resetSelectedTag] = usePersistentPreference(
-    'questions:tag',
-    'all',
-  );
-  const [selectedStatus, setSelectedStatus, resetSelectedStatus] = usePersistentPreference(
-    'questions:status',
-    'all',
-  );
-  const urlFiltersReady = useRef(false);
+  // Filter/sort/pagination + filtered view live in the question-bank feature
+  // (extracted verbatim from this page).
+  const {
+    searchQuery, setSearchQuery,
+    sortOrder, setSortOrder,
+    pageSize, setPageSize,
+    currentPage: _currentPage, setCurrentPage,
+    selectedGrade, setSelectedGrade,
+    selectedSubject, setSelectedSubject,
+    selectedSection, setSelectedSection,
+    selectedType, setSelectedType,
+    selectedDifficulty, setSelectedDifficulty,
+    selectedTag, setSelectedTag,
+    selectedStatus, setSelectedStatus,
+    clearAllFilters, hasActiveFilters,
+    filteredQuestions, visibleQuestions, totalPages, safePage,
+  } = useQuestionFilters(questions);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const setIfPresent = (key: string, setter: (value: string) => void) => {
-      const value = params.get(key);
-      if (value) setter(value);
-    };
-    setIfPresent('q', setSearchQuery);
-    setIfPresent('grade', setSelectedGrade);
-    setIfPresent('subject', setSelectedSubject);
-    setIfPresent('section', setSelectedSection);
-    setIfPresent('type', setSelectedType);
-    setIfPresent('difficulty', setSelectedDifficulty);
-    setIfPresent('tag', setSelectedTag);
-    setIfPresent('status', setSelectedStatus);
-    const urlSort = params.get('sort');
-    if (urlSort === 'newest' || urlSort === 'oldest' || urlSort === 'title') setSortOrder(urlSort);
-    const urlPageSize = Number(params.get('pageSize'));
-    if (urlPageSize === 10 || urlPageSize === 20 || urlPageSize === 50) setPageSize(urlPageSize);
-    urlFiltersReady.current = true;
-  }, [
-    setPageSize,
-    setSelectedDifficulty,
-    setSelectedGrade,
-    setSelectedSection,
-    setSelectedStatus,
-    setSelectedSubject,
-    setSelectedTag,
-    setSelectedType,
-    setSortOrder,
-  ]);
 
-  useEffect(() => {
-    if (!urlFiltersReady.current) return;
-    const params = new URLSearchParams(window.location.search);
-    const values: Record<string, string> = {
-      q: searchQuery,
-      grade: selectedGrade,
-      subject: selectedSubject,
-      section: selectedSection,
-      type: selectedType,
-      difficulty: selectedDifficulty,
-      tag: selectedTag,
-      status: selectedStatus,
-      sort: sortOrder,
-      pageSize: String(pageSize),
-    };
-    Object.entries(values).forEach(([key, value]) => {
-      if (
-        !value ||
-        value === 'all' ||
-        (key === 'sort' && value === 'newest') ||
-        (key === 'pageSize' && value === '20')
-      )
-        params.delete(key);
-      else params.set(key, value);
-    });
-    const query = params.toString();
-    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
-  }, [
-    pageSize,
-    searchQuery,
-    selectedDifficulty,
-    selectedGrade,
-    selectedSection,
-    selectedStatus,
-    selectedSubject,
-    selectedTag,
-    selectedType,
-    sortOrder,
-  ]);
-
-  const [formGrade, setFormGrade] = useState('هفتم');
-  const [formSubject, setFormSubject] = useState('علوم تجربی');
-  const [formSection, setFormSection] = useState('فصل اول');
-  const [formType, setFormType] = useState<QuestionType>('single_choice');
-  const [formDifficulty, setFormDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [formPoints, setFormPoints] = useState<number>(2);
-  const [formText, setFormText] = useState('');
-  const [formTitle, setFormTitle] = useState('');
-  const [formTagsString, setFormTagsString] = useState('پیش_فرض');
-  const [formExplanation, setFormExplanation] = useState('');
-  const [formSampleAnswer, setFormSampleAnswer] = useState('');
-  const [formImageUrl, setFormImageUrl] = useState('');
-
-  // Choice Options builder state
-  const [formOptions, setFormOptions] = useState<
-    Array<{ id: string; text: string; isCorrect: boolean; imageUrl?: string }>
-  >([
-    { id: 'o1', text: 'گزینه الف', isCorrect: true, imageUrl: '' },
-    { id: 'o2', text: 'گزینه ب', isCorrect: false, imageUrl: '' },
-    { id: 'o3', text: 'گزینه ج', isCorrect: false, imageUrl: '' },
-    { id: 'o4', text: 'گزینه د', isCorrect: false, imageUrl: '' },
-  ]);
-
-  // True/False correct state
-  const [formCorrectTrueFalse, setFormCorrectTrueFalse] = useState<boolean>(true);
-
-  // Fill Blanks key words
-  const [formFillBlanks, setFormFillBlanks] = useState<string[]>(['']);
-
-  // Matchings pairs state
-  const [formMatchingPairs, setFormMatchingPairs] = useState<
-    Array<{ left: string; right: string }>
-  >([{ left: 'سمت چپ ۱', right: 'سمت راست ۱' }]);
-
-  // Ordering list state
-  const [formOrderingItems, setFormOrderingItems] = useState<string[]>(['مرحله نخست', 'مرحله دوم']);
-
-  // Rubrics Criterion checklist
-  const [formRubrics, setFormRubrics] = useState<RubricCriterion[]>([
-    {
-      id: 'r1',
-      title: 'به شیوایی مفهوم پرداخته باشد',
-      description: 'نگارش بدون غلط دستوری',
-      maxPoints: 1.5,
-    },
-  ]);
-
-  // Parts / subquestions state (for Reading Comprehension & Cloze Test)
-  const [formParts, setFormParts] = useState<QuestionPart[]>([
-    {
-      id: 'part-1',
-      text: 'مینی سوال الف',
-      type: 'single_choice',
-      options: [
-        { id: 'p1-o1', text: 'گزینه صحیح', isCorrect: true },
-        { id: 'p1-o2', text: 'گزینه فرعی', isCorrect: false },
-      ],
-      correctAnswer: 'p1-o1',
-    },
-  ]);
-
-  const questionFormSnapshot = JSON.stringify([
-    formGrade,
-    formSubject,
-    formSection,
-    formType,
-    formDifficulty,
-    formPoints,
-    formText,
-    formTitle,
-    formTagsString,
-    formExplanation,
-    formSampleAnswer,
-    formImageUrl,
-    formOptions,
-    formCorrectTrueFalse,
-    formFillBlanks,
-    formMatchingPairs,
-    formOrderingItems,
-    formRubrics,
-    formParts,
-  ]);
-  const [savedQuestionFormSnapshot, setSavedQuestionFormSnapshot] = useState(questionFormSnapshot);
-  const drawerWasOpenRef = useRef(false);
-  useEffect(() => {
-    if (showAddEditDrawer && !drawerWasOpenRef.current) {
-      setSavedQuestionFormSnapshot(questionFormSnapshot);
-    }
-    drawerWasOpenRef.current = showAddEditDrawer;
-  }, [showAddEditDrawer, questionFormSnapshot]);
-  const guardQuestionDraft = useUnsavedChanges(
-    showAddEditDrawer && questionFormSnapshot !== savedQuestionFormSnapshot,
-  );
-  const closeQuestionEditor = () => guardQuestionDraft(() => setShowAddEditDrawer(false));
 
   // Unique list generators for filter indicators
   const uniqueSubjects = Array.from(new Set(questions.map((q) => q.category).filter(Boolean)));
@@ -348,135 +190,6 @@ export default function Questions() {
 
   // Image upload handler: FileReader → dataURL, stored on the question
   // (main imageUrl / option imageUrl) and persisted through questionToBody.
-  const handleImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    target: 'main' | { optIndex: number },
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        if (target === 'main') {
-          setFormImageUrl(dataUrl);
-        } else if ('optIndex' in target) {
-          const updated = [...formOptions];
-          updated[target.optIndex].imageUrl = dataUrl;
-          setFormOptions(updated);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Quick action options modifications
-  const addOptionRow = () => {
-    const nextChar = formOptions.length + 1;
-    setFormOptions([
-      ...formOptions,
-      {
-        id: `o-new-${Date.now()}`,
-        text: `گزینه شماره ${nextChar}`,
-        isCorrect: false,
-        imageUrl: '',
-      },
-    ]);
-  };
-
-  const removeOptionRow = (idx: number) => {
-    if (formOptions.length <= 2) {
-      showToast('سوال چندگزینه‌ای حداقل دو گزینه لازم دارد.', 'warning');
-      return;
-    }
-    setFormOptions(formOptions.filter((_, i) => i !== idx));
-  };
-
-  const handleOptionCorrectChange = (index: number) => {
-    if (formType === 'single_choice' || formType === 'image_based') {
-      setFormOptions(
-        formOptions.map((opt, i) => ({
-          ...opt,
-          isCorrect: i === index,
-        })),
-      );
-    } else {
-      // Multiple correct allows toggling independently
-      const updated = [...formOptions];
-      updated[index].isCorrect = !updated[index].isCorrect;
-      setFormOptions(updated);
-    }
-  };
-
-  // Rubrics Criteria handlers
-  const addRubricRow = () => {
-    setFormRubrics([
-      ...formRubrics,
-      {
-        id: `r-${Date.now()}`,
-        title: 'معیار نمره‌دهی جدید',
-        description: 'شرح ملاک ارزیابی دبیر',
-        maxPoints: 1.0,
-      },
-    ]);
-  };
-
-  const removeRubricRow = (id: string) => {
-    setFormRubrics(formRubrics.filter((r) => r.id !== id));
-  };
-
-  // Subquestion parts handlers
-  const addPartRow = () => {
-    setFormParts([
-      ...formParts,
-      {
-        id: `part-${Date.now()}`,
-        text: 'زیرسوال جدید',
-        type: 'single_choice',
-        options: [{ id: 'po1', text: 'گزینه اول', isCorrect: true }],
-      },
-    ]);
-  };
-
-  const removePartRow = (idx: number) => {
-    setFormParts(formParts.filter((_, i) => i !== idx));
-  };
-
-  // Form Reset Trigger
-  const resetFormValues = () => {
-    setFormGrade('هفتم');
-    setFormSubject('علوم تجربی');
-    setFormSection('فصل اول');
-    setFormType('single_choice');
-    setFormDifficulty('medium');
-    setFormPoints(2);
-    setFormText('');
-    setFormTitle('');
-    setFormTagsString('کنکوری, نهایی'); // persian-ok — tags separator is Latin ',' (split/join)
-    setFormExplanation('');
-    setFormSampleAnswer('');
-    setFormImageUrl('');
-    setFormOptions([
-      { id: 'o1', text: 'گزینه الف', isCorrect: true, imageUrl: '' },
-      { id: 'o2', text: 'گزینه ب', isCorrect: false, imageUrl: '' },
-      { id: 'o3', text: 'گزینه ج', isCorrect: false, imageUrl: '' },
-      { id: 'o4', text: 'گزینه د', isCorrect: false, imageUrl: '' },
-    ]);
-    setFormCorrectTrueFalse(true);
-    setFormFillBlanks(['']);
-    setFormMatchingPairs([{ left: '', right: '' }]);
-    setFormOrderingItems(['اول', 'دوم']);
-    setFormRubrics([
-      { id: 'r1', title: 'صحت روابط علمی', description: 'توضیح کافی معیار', maxPoints: 1.5 },
-    ]);
-    setFormParts([
-      {
-        id: 'part-1',
-        text: 'زیر بهر مینی سوال',
-        type: 'single_choice',
-        options: [{ id: 'po1', text: 'بخش اول', isCorrect: true }],
-      },
-    ]);
-  };
 
   // Create Question Trigger
   const openCreateDrawer = () => {
@@ -620,70 +333,11 @@ export default function Questions() {
     }
   };
 
-  // ConfirmDialog state for question deletion
-  const [questionToDelete, setQuestionToDelete] = useState<{ id: string; name: string } | null>(
-    null,
-  );
+  // Question deletion lives in the question-bank feature (extracted verbatim
+  // from this page).
+  const { questionToDelete, handleDeleteQuestion, confirmDeleteQuestion, cancelDelete } =
+    useQuestionDelete(showToast);
 
-  const handleDeleteQuestion = (id: string, name: string) => {
-    setQuestionToDelete({ id, name });
-  };
-
-  const confirmDeleteQuestion = async () => {
-    if (!questionToDelete) return;
-    try {
-      await questionService.deleteQuestion(questionToDelete.id);
-      removeQuestion(questionToDelete.id);
-      showToast('سوال حذف شد.', 'success');
-    } catch (_err) {
-      const failedQuestion = questionToDelete;
-      showToast('سؤال حذف نشد؛ دوباره تلاش کنید.', 'error', {
-        label: 'تلاش دوباره',
-        onClick: () => setQuestionToDelete(failedQuestion),
-      });
-    } finally {
-      setQuestionToDelete(null);
-    }
-  };
-
-  // Filter application pipeline
-  const normalizedSearch = normalizePersianText(searchQuery);
-  const filteredQuestions = questions.filter((q) => {
-    const matchesSearch =
-      !normalizedSearch ||
-      [q.title, q.text, q.category, ...(q.tags || [])].some((value) =>
-        normalizePersianText(value).includes(normalizedSearch),
-      );
-
-    const matchesGrade = selectedGrade === 'all' || q.grade === selectedGrade;
-    const matchesSubject = selectedSubject === 'all' || q.category === selectedSubject;
-    const matchesSection = selectedSection === 'all' || q.section === selectedSection;
-    const matchesType = selectedType === 'all' || q.type === selectedType;
-    const matchesDifficulty = selectedDifficulty === 'all' || q.difficulty === selectedDifficulty;
-    const matchesTag = selectedTag === 'all' || q.tags?.includes(selectedTag);
-    const matchesStatus = selectedStatus === 'all' || q.completenessStatus === selectedStatus;
-
-    return (
-      matchesSearch &&
-      matchesGrade &&
-      matchesSubject &&
-      matchesSection &&
-      matchesType &&
-      matchesDifficulty &&
-      matchesTag &&
-      matchesStatus
-    );
-  });
-
-  const sortedQuestions = [...filteredQuestions].sort((a, b) => {
-    if (sortOrder === 'title') return a.title.localeCompare(b.title, 'fa');
-    const aTime = new Date(a.createdAt || 0).getTime();
-    const bTime = new Date(b.createdAt || 0).getTime();
-    return sortOrder === 'oldest' ? aTime - bTime : bTime - aTime;
-  });
-  const totalPages = Math.max(1, Math.ceil(sortedQuestions.length / pageSize));
-  const safePage = Math.min(currentPage, totalPages);
-  const visibleQuestions = sortedQuestions.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   if (loading) {
     return (
@@ -916,29 +570,13 @@ export default function Questions() {
         </div>
 
         {/* Clear Filter tags */}
-        {(searchQuery ||
-          selectedGrade !== 'all' ||
-          selectedSubject !== 'all' ||
-          selectedSection !== 'all' ||
-          selectedType !== 'all' ||
-          selectedDifficulty !== 'all' ||
-          selectedTag !== 'all' ||
-          selectedStatus !== 'all') && (
+        {hasActiveFilters && (
           <div className="flex justify-start pt-2 border-t border-[var(--color-glass-light-stroke)]">
             <PillButton
               fill="danger-soft"
               size="lg"
               radius="lg"
-              onClick={() => {
-                setSearchQuery('');
-                resetSelectedGrade();
-                resetSelectedSubject();
-                resetSelectedSection();
-                resetSelectedType();
-                resetSelectedDifficulty();
-                resetSelectedTag();
-                resetSelectedStatus();
-              }}
+              onClick={clearAllFilters}
               className="hover:bg-[var(--color-danger-soft)]/40 transition-all"
             >
               حذف فیلترها و نمایش همگانی
@@ -2205,7 +1843,7 @@ export default function Questions() {
         confirmText="حذف قطعی"
         variant="danger"
         onConfirm={confirmDeleteQuestion}
-        onCancel={() => setQuestionToDelete(null)}
+        onCancel={cancelDelete}
       />
     </div>
   );

@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { GraduationCap, Building2, BookOpen } from 'lucide-react';
 import { authService } from '../../services/api';
-import { Dropdown, Input } from '../../components/UIComponents';
+import { Dropdown, Input } from '../../ui';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 
 interface OnboardingProps {

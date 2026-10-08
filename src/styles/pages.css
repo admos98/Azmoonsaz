@@ -1,0 +1,367 @@
+/* Page surfaces — dashboard hero, login shell, density, focus, touch. Split from src/index.css — edit here, never in the @import shim. */
+
+/* ─── Profile hub and information architecture ───
+   (Second-system classes .profile-* / .segmented-control / .schedule-card /
+   .empty-quiet were absorbed into the component library — see phase 3b.) */
+
+/* Dashboard reordering: two matched five-tile widgets, then two equal operational panels. */
+#stats-grid-layouts > :last-child {
+  grid-column: 1 / -1;
+}
+#stats-grid-layouts > *,
+#quick-action-btns > * {
+  min-height: 112px;
+}
+#dashboard-core-split > section,
+#dashboard-core-split > div {
+  min-width: 0;
+}
+
+/* Hero positioning. Desktop retains requested upper-left Mark and lower-left actions;
+   mobile returns both to a non-overlapping composition. */
+#dashboard-hero-banner {
+  min-height: 245px;
+}
+
+/* The hero's colours are fully token-driven — no hardcoded slab. Light mode:
+   plain warm glass via `glx`, ink-on-glass text like every other panel.
+   Dark mode: hero-pane is transparent (see the token note) — and the strong
+   tier's menu density is CUT here. At full boost the hero interior crushed
+   the plate bloom (fa 0.70 over the dark plate ≈ page floor everywhere);
+   card-level fill measures +41 luminance at the bloom zone and +13 across
+   the left field — inside the iOS dark band, structure back. */
+:root[data-theme='dark'] #dashboard-hero-banner {
+  --glass-p-boost1: 0;
+  --glass-p-boost2: 0;
+}
+#dashboard-hero-banner {
+  background: var(--color-hero-pane);
+  color: var(--color-text-primary);
+}
+
+#dashboard-hero-banner h2 {
+  color: var(--color-text-primary);
+}
+
+#dashboard-hero-banner p {
+  color: var(--color-text-secondary);
+}
+.dashboard-hero-content {
+  min-height: 181px;
+}
+.dashboard-hero-copy {
+  max-width: min(68%, 720px);
+}
+.dashboard-hero-controls {
+  position: absolute;
+  /* inline-END = physical LEFT in RTL — the actions live bottom-left (user
+     spec); the copy stays right-aligned above them. */
+  inset-inline-end: 24px;
+  bottom: 24px;
+  z-index: 20;
+}
+/* The Mark watermark is tuned per theme: on light glass it sits back as a
+   quiet ink ghost; on the dark pane it is brightened to stay visible. */
+/* The Mark sits ABOVE the actions and spans exactly their width (the
+   controls box shrink-wraps the flex row, so inset-inline:0 = first button's
+   edge to last button's edge). Its size tracks that length: the SVG scales
+   to 100% of the row and keeps its 128.4:44.4 aspect — logo proportion is
+   derived from the buttons, never a fixed chip. */
+.dashboard-hero-mark {
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(100% + 18px);
+  /* 0.1 sat below the object-recognition threshold — four pale donuts.
+     0.22 reads as a confident watermark (1D). */
+  opacity: 0.22;
+  filter: blur(0.5px);
+  pointer-events: none;
+}
+.dashboard-hero-mark svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+:root[data-theme='dark'] .dashboard-hero-mark {
+  opacity: 0.2;
+  /* NO invert: dark --color-ink is already LIGHT (#f5f6fa). The legacy
+     flip-invert was written when ink was dark on this pane — applied now it
+     turned the mark near-black on a near-black hero (measured spread 11 vs
+     38 without it: a flat box, i.e. invisible — QA #46 "its not there").
+     Blur stays: the watermark must read, not smudge. */
+  filter: blur(0.5px);
+}
+.dashboard-hero-actions {
+  display: flex;
+  gap: 12px;
+  /* both buttons share one baseline: icon button and text button align on
+     the same cross-axis, and each label centers in its own box — no drift
+     between the icon row and the text row, stacked or not. */
+  align-items: stretch;
+}
+.dashboard-hero-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Login: supplied art on desktop, compact form-only experience on phones. */
+.login-shell {
+  display: grid;
+  grid-template-columns: minmax(440px, 1.08fr) minmax(400px, 0.92fr);
+  gap: 18px;
+  background: var(--color-login-paper);
+}
+.login-form-column {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-art {
+  position: relative;
+  overflow: hidden;
+  min-height: calc(100vh - 48px);
+  border-radius: var(--radius-3xl);
+  color: var(--color-ink);
+  background-color: var(--color-login-art-paper);
+  background-image: image-set(
+    url('/login-education-light.avif') type('image/avif'),
+    url('/login-education-light.webp') type('image/webp'),
+    url('/login-education-light.jpg') type('image/jpeg')
+  );
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+.login-art-mark {
+  position: absolute;
+  right: 32px;
+  top: 28px;
+}
+/* C.4 auth hero — fluid in the open left half of the art panel, never
+   touching the copy card (44% clears it at every width where the aside
+   exists, 1024px up; the aside itself dies at 900). Hidden below 1024
+   per spec — between 900 and 1023 the photo + copy carry the panel alone. */
+.login-hero {
+  position: absolute;
+  left: 4%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(44%, 640px);
+  height: auto;
+}
+@media (max-width: 1023px) {
+  .login-hero {
+    display: none;
+  }
+}
+.login-art-copy {
+  position: absolute;
+  right: 7%;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 42%;
+  padding: 22px;
+  border: 1px solid var(--color-glass-light-stroke);
+  border-radius: var(--radius-2xl);
+  background: rgba(250, 248, 242, 0.76);
+  backdrop-filter: blur(12px);
+}
+.login-art-copy span {
+  color: var(--color-login-gold-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.login-art-copy h2 {
+  margin: 11px 0;
+  font-size: clamp(25px, 3vw, 40px);
+  font-weight: 800;
+  line-height: 1.4;
+}
+.login-art-copy p {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* Login is a brand-stable LIGHT marketing surface (photographic art panel,
+   never themed — see the token block above). Under data-theme=dark the text
+   tokens flipped INSIDE it → headline, wordmark and CTA rendered white-on-white
+   (audit 2026-09-27). Pin the token set to the light values, scoped to the
+   login shell only, so the whole page behaves as the light-only surface the
+   art always was. */
+:root[data-theme='dark'] .login-shell {
+  --color-ink: #1a1a2e;
+  --color-accent: #343242;
+  --color-accent-solid: #343242;
+  --color-text-on-solid: #ffffff;
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #5e5a68;
+  --color-text-tertiary: #8a8694;
+  --color-glass-light-stroke: rgba(26, 28, 34, 0.12);
+  --ui-inset-fill: rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 900px) {
+  .login-shell {
+    display: flex;
+    background: var(--color-login-paper);
+  }
+  .login-art {
+    display: none;
+  }
+  .login-form-column {
+    width: 100%;
+  }
+  #dashboard-hero-banner {
+    min-height: 390px;
+    padding: 24px;
+  }
+  .dashboard-hero-content {
+    min-height: 342px;
+  }
+  .dashboard-hero-copy {
+    max-width: 100%;
+  }
+  /* phone: controls FLOW under the copy (stack: copy -> mark -> buttons).
+     The desktop composition anchors them absolutely to the panel bottom — at
+     <=900 the full-width copy leaves only ~140px below itself while mark +
+     buttons need ~200px, so the mark overlapped the greeting (phone QA sweep:
+     'phone view panels odd or bad placed'). In flow, the panel simply grows. */
+  .dashboard-hero-controls {
+    position: static;
+    margin-top: 22px;
+  }
+  .dashboard-hero-mark {
+    position: static;
+    margin-bottom: 14px;
+  }
+  .dashboard-hero-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 520px) {
+  .dashboard-hero-actions {
+    grid-template-columns: 1fr;
+  }
+  #stats-grid-layouts > *,
+  #quick-action-btns > * {
+    min-height: 102px;
+  }
+}
+
+/* High-contrast users retain boundaries and focus even when translucent fills are suppressed. */
+@media (forced-colors: active) {
+  :where(button, a[href], input, select, textarea, [role='button'], [role='dialog']) {
+    border: 1px solid ButtonText;
+  }
+
+  :where(button, a[href], input, select, textarea, [role='button'], [role='tab']):focus-visible {
+    outline: 3px solid Highlight;
+  }
+
+  .scrim,
+  .veil-blur {
+    display: none !important;
+  }
+}
+
+@media (max-height: 32rem), (orientation: landscape) and (max-width: 60rem) {
+  [role='dialog'] {
+    max-height: 94dvh;
+  }
+}
+
+/* Shared interaction-state baseline. Component variants may strengthen these signals.
+
+   Programmatic focus lands on view containers and dialogs (tabIndex='-1') so
+   screen readers announce them. Those containers must never paint the
+   Chromium default ring — the blue rectangle that kept photographing itself
+   around panels. Real controls keep the gold focus-visible ring below. */
+[tabindex='-1']:focus,
+[tabindex='-1']:focus-visible {
+  outline: none;
+}
+/* Opt-out for text fields whose container already carries a focus cue —
+   the command palette's field would otherwise ring the whole header row. */
+.no-focus-ring:focus-visible {
+  outline: none;
+}
+:where(
+  button,
+  a[href],
+  input,
+  select,
+  textarea,
+  [role='button'],
+  [role='radio'],
+  [role='tab']
+):focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Press physics — three deliberate tiers (they are NOT one rule):
+   1. raw controls: the global scale-down below, declared in zero-specificity
+      :where() so any component rule outranks it;
+   2. .btn-glass: a 0.5px sink + brightness filter (library identity —
+      outranks #1 by specificity, .btn-glass:active);
+   3. .btn-glass--still: no movement at all (explicit opt-out, .btn-glass--still:active).
+   Components may override with a stronger Tailwind active:scale-*. */
+:where(button, [role='button']):active:not(:disabled, [aria-disabled='true']) {
+  transform: scale(0.98);
+}
+
+:where(button, input, select, textarea):disabled,
+[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+:where(input, select, textarea)[aria-invalid='true'] {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 2px var(--color-danger-soft);
+}
+
+/* Viewport and safe-area resilience for mobile browser chrome and virtual keyboards.
+   Native min-h-dvh replaced the .min-h-screen override (F-10) — Tailwind's own
+   utility now carries the dynamic-viewport height; 100vh fallback no longer
+   needed for our browser floor. */
+
+.command-palette-trigger {
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: max(1rem, env(safe-area-inset-left));
+}
+
+/* break-word, not anywhere (F-10): `anywhere` feeds min-content sizing, so
+   flex/grid children get squeezed by long tokens before wrapping is needed;
+   break-word wraps only on overflow — same visual result, stable layout. */
+body,
+p,
+li,
+label,
+button {
+  overflow-wrap: break-word;
+}
+
+/* Preserve usable touch targets on coarse-pointer devices without inflating desktop density. */
+@media (pointer: coarse) {
+  button,
+  [role='button'],
+  a[href],
+  input[type='checkbox'],
+  input[type='radio'] {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}
+
+/* Data-heavy screens can opt into higher information density without shrinking primary controls. */
+:root[data-density='compact'] table th,
+:root[data-density='compact'] table td {
+  padding-block: 0.55rem;
+}
+
+:root[data-density='compact'] .density-list {
+  gap: 0.5rem;
+}

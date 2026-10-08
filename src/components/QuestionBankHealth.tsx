@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Button, Card, PageHeader } from './UIComponents';
+import { Button, Card, PageHeader } from '../ui';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Cut } from './Cut';
 import { useTeacherCollections } from '../contexts/TeacherContext';

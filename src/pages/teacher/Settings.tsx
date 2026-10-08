@@ -32,7 +32,7 @@ import {
   PageHeader,
   Toggle,
   ConfirmDialog,
-} from '../../components/UIComponents';
+} from '../../ui';
 import PreferenceSelector from '../../components/PreferenceSelector';
 import { useGlassTierPreference, type GlassTier } from '../../components/GlassTierApplier';
 import { useTheme, type ThemePreference } from '../../contexts/ThemeContext';

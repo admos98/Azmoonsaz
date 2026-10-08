@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, CheckCircle2, ArrowRight, KeyRound, Send } from 'lucide-react';
 import { TheMark } from '../../components/TheMark';
-import { IconButton, Input, PillButton, TextLink } from '../../components/UIComponents';
+import { IconButton, Input, PillButton, TextLink } from '../../ui';
 import { authService } from '../../services/api';
 import type { Teacher } from '../../types';
 

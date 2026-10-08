@@ -10,9 +10,11 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readBundledCss } from './css-concat.mjs';
 
 const root = join(fileURLToPath(new URL('../', import.meta.url)), '.');
-const css = readFileSync(join(root, 'src', 'index.css'), 'utf8');
+// styles/ split: assert on the concatenated chain (index.css is an @import shim).
+const css = readBundledCss();
 
 // Roles declared by this design system.
 const declared = new Set(

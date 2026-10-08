@@ -9,7 +9,7 @@
  */
 
 import { useState, useCallback, ReactElement } from 'react';
-import { Toast, ToastStack } from '../components/UIComponents';
+import { Toast, ToastStack } from '../ui';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 

@@ -3,7 +3,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { Cut } from '../../components/Cut';
 import Settings from './Settings';
 import QuestionBankHealth from '../../components/QuestionBankHealth';
-import { Tabs } from '../../components/UIComponents';
+import { Tabs } from '../../ui';
 
 /* The question bank (~2,400 LOC) loads only when its tab opens — the
    settings-only visitor never downloads it. */

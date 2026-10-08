@@ -1,0 +1,152 @@
+/* Base — @layer base reset, page plate, scrollbars, select reset. Split from src/index.css — edit here, never in the @import shim. */
+
+/* ─── Base ───
+   These must live in @layer base. Unlayered CSS beats every layered rule, and
+   Tailwind v4 emits @utility inside @layer utilities — so this bare `*` was
+   overriding `border-color` on all 269 `.glx` surfaces. The glass border has
+   never once been visible, in either theme. It went unnoticed because the lit
+   rim supplied an edge, so nothing looked obviously missing.
+
+   Utilities are meant to be able to override base; that is the point of the
+   layer order. Leaving this unlayered also means any future `glx-*` utility
+   will be silently dead for the same reason. */
+@layer base {
+  * {
+    border-color: transparent;
+    scroll-behavior: smooth;
+  }
+  /* ── Apple signature curve, EVERYWHERE ──
+     corner-shape is inert where border-radius is 0, so the universal
+     selector costs nothing on flat boxes. Circles and pills keep their
+     perfect circle: ONLY the exact Tailwind full-radius utilities are
+     exempt. (A greedy [class*='-full'] also matched `w-full` — the notif
+     panel silently got circular corners while its rim map assumed the
+     superellipse: the double-corner arc on that one panel.) Over-matching
+     is harmless now: .drop is the circular icon-button droplet. */
+  *,
+  *::before,
+  *::after {
+    corner-shape: var(--corner-shape);
+  }
+  [class~='rounded-full'],
+  [class~='rounded-t-full'],
+  [class~='rounded-b-full'],
+  [class~='rounded-s-full'],
+  [class~='rounded-e-full'],
+  [class~='rounded-ss-full'],
+  [class~='rounded-se-full'],
+  [class~='rounded-es-full'],
+  [class~='rounded-ee-full'],
+  .drop,
+  [style*='border-radius: 50%'],
+  [style*='border-radius:50%'],
+  [style*='9999px'] {
+    corner-shape: round;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  font-size: 16px;
+}
+
+:where([dir='ltr'], .ltr) {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base, 0.9375rem);
+  font-weight: 400;
+  line-height: 1.6;
+  direction: rtl;
+  text-align: right;
+  background: var(--color-paper-warm);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(245, 179, 1, 0.3);
+  color: var(--color-ink);
+}
+
+/* ─── Page plate ───
+   One fixed opaque layer under the whole teacher shell, cover + centre: never
+   tiles, never scrolls, never animates (a moving animated field would smear the
+   lens displacement on every glass panel above it). Fixed on the shell, not
+   `body`, so the login page keeps its own artwork untouched; body paints the
+   matching base colour so the seam is invisible during load. Degrade rules
+   below: `off` drops it (opaque paint, harmless visually) and bfcache/print
+   get clean page surfaces. */
+#app-teacher-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--page-plate);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+:root[data-glass='off'] #app-teacher-shell::before {
+  display: none;
+}
+@media (forced-colors: active) {
+  #app-teacher-shell::before {
+    display: none;
+  }
+}
+@media print {
+  #app-teacher-shell::before {
+    display: none;
+  }
+}
+
+:where(button, [role='button']):disabled {
+  cursor: not-allowed;
+}
+
+/* Scrollbars — cross-browser (Chromium + Firefox) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(26, 26, 46, 0.15);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 26, 46, 0.25);
+}
+/* Firefox native scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 26, 46, 0.15) transparent;
+}
+
+/* ─── Base reset for native <select> ─── */
+select {
+  @apply appearance-none;
+  background-image: none;
+}
+select::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+/* Apple's continuous-curvature corner is now GLOBAL (see the --corner-exp
+   tokens in :root + the @layer base rule): every box gets superellipse(k)
+   from ONE knob, and the lens engine reads the same --corner-exp so the
+   refracted rim follows the SAME curve the panel is painted with. The old
+   scoped `corner-shape: squircle` block lived here — it covered only the
+   glass families with a DIFFERENT exponent than the rim maps assumed, which
+   is exactly the "panel curve ≠ rim curve" drift the user reported. */
