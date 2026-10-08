@@ -800,6 +800,18 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) {\s*.goldpop,\s*.skeleton,\s*.skeleton::after/);
   });
 
+  it('C.3 seal — one 240ms sweep draw-in, no loop, reduced motion static', () => {
+    expect(css).toMatch(/\.seal\s*{\s*animation:\s*seal-draw 240ms ease-out both/);
+    expect(css).toMatch(
+      /@keyframes seal-draw\s*{\s*from\s*{\s*clip-path:\s*inset\(0 100% 0 0\)/,
+    );
+    // parked by BOTH reduced-motion paths (attribute first in its group, media last)
+    expect(css).toMatch(/:root\[data-motion='reduce'\] \.seal,\s*:root\[data-motion='reduce'\] \.goldpop/);
+    expect(css).toMatch(/\.skeleton::after,\s*\.seal\s*{\s*animation:\s*none/);
+    // no loop anywhere on the seal
+    expect(cssRaw).not.toMatch(/seal-draw [\d.]+s ease-out infinite/);
+  });
+
   it('V2 panel crest — reserved rail column, both states, art handoff', () => {
     // single column base; rail column reserved ≥lg in BOTH states
     expect(css).toMatch(

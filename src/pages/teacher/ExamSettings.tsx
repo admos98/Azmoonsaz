@@ -37,6 +37,7 @@ import {
   TextLink,
   Toggle,
 } from '../../components/UIComponents';
+import { Seal } from '../../components/Seal';
 import { useToast } from '../../hooks/useToast';
 import { formatPersianDate, normalizePersianText, toPersianDigits } from '../../utils/persian';
 import { isoToWallClock, wallClockToIso } from '../../utils/tehranClock';
@@ -1326,8 +1327,10 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
               </button>
             ) : (
               <div className="space-y-3">
-                <div className="bg-[var(--color-success-solid)]/10 text-[var(--color-success)] border-2 border-[var(--color-success)]/20 rounded-2xl p-3 flex items-start gap-2.5">
-                  <CheckCircle className="w-5 h-5 text-[var(--color-success)] shrink-0 mt-0.5" />
+                <div className="bg-[var(--color-success-solid)]/10 text-[var(--color-success)] border-2 border-[var(--color-success)]/20 rounded-2xl p-4 flex items-center gap-4">
+                  {/* C.3 — the seal is the success mark on full-panel successes
+                      (carried rejection: never inside a one-line toast). */}
+                  <Seal size={96} />
                   <div className="space-y-0.5">
                     <span className="text-micro font-black block">آزمون به جریان منتشر شد!</span>
                     <p className="text-micro text-[var(--color-success)]/90 leading-normal">

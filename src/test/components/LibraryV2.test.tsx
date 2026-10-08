@@ -34,6 +34,7 @@ import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { BubbleLoader } from '../../components/BubbleLoader';
 import { PanelCrest } from '../../components/PanelCrest';
 import { Cut } from '../../components/Cut';
+import { Seal } from '../../components/Seal';
 import { AbsenceArt } from '../../components/AbsenceArt';
 import { AbsencePage } from '../../components/AbsencePage';
 import { ThemeProvider } from '../../contexts/ThemeContext';
@@ -566,6 +567,20 @@ describe('Micro controls — TextLink / IconButton / PillButton (F-6 primitives)
     expect(img.getAttribute('aria-hidden')).toBe('true');
     expect(img.getAttribute('width')).toBe('24');
     expect(img.getAttribute('height')).toBe('24');
+  });
+
+  it('Seal picks the keyed pair, wears the draw-in class, stays out of AT (C.3)', () => {
+    render(
+      <ThemeProvider>
+        <Seal size={96} />
+      </ThemeProvider>,
+    );
+    const img = document.querySelector('img')!;
+    expect(img.getAttribute('src')).toMatch(/^\/empty-art\/seal\/(light|dark)\/seal\.png$/);
+    expect(img.getAttribute('alt')).toBe('');
+    expect(img.getAttribute('aria-hidden')).toBe('true');
+    expect(img.className).toContain('seal');
+    expect(img.getAttribute('width')).toBe('96');
   });
 
   it('AbsenceArt picks the keyed absence pair and stays out of AT (C.2)', () => {

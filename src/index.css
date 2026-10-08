@@ -1183,9 +1183,26 @@ select::-webkit-calendar-picker-indicator {
   animation: skeleton-sweep 1.2s ease-out 1 both;
 }
 
+/* ─── C.3 seal ───
+   One 240ms sweep draw-in (reveal follows the rising lower-left → upper-right
+   sweep the art draws), then static forever — a stamp lands once for the
+   moment it marks. No loop: pulse-discipline applies. */
+.seal {
+  animation: seal-draw 240ms ease-out both;
+}
+@keyframes seal-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
 /* ─── Reduced motion ───
    data-motion is resolved before first paint. The media query remains as a
    CSS-level safety net if JavaScript is unavailable. */
+:root[data-motion='reduce'] .seal,
 :root[data-motion='reduce'] .goldpop,
 :root[data-motion='reduce'] .skeleton,
 :root[data-motion='reduce'] .skeleton::after {
@@ -1202,7 +1219,8 @@ select::-webkit-calendar-picker-indicator {
 @media (prefers-reduced-motion: reduce) {
   .goldpop,
   .skeleton,
-  .skeleton::after {
+  .skeleton::after,
+  .seal {
     animation: none;
   }
   *,

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
+import { ThemeProvider } from '../../contexts/ThemeContext';
 
 const importStudents = vi.fn();
 vi.mock('../../services/api', () => ({
@@ -14,15 +15,19 @@ vi.mock('../../hooks/useOriginFromTrigger', () => ({ useOriginFromTrigger: () =>
 const validCsv = 'name,national_id,class,grade\nسارا محمدی,0000000019,هفتم الف,هفتم';
 
 const renderWizard = (onImported = vi.fn()) => {
+  // The done/failed steps render <Seal>/<AbsenceArt>, which read useTheme —
+  // the harness stands in for the app's ThemeProvider.
   const utils = render(
-    <StudentImportWizard
-      open
-      onClose={vi.fn()}
-      triggerRef={{ current: null }}
-      classGroups={[{ id: 'class-1', name: 'هفتم الف', grade: 'هفتم', studentCount: 0 }]}
-      existingStudents={[]}
-      onImported={onImported}
-    />,
+    <ThemeProvider>
+      <StudentImportWizard
+        open
+        onClose={vi.fn()}
+        triggerRef={{ current: null }}
+        classGroups={[{ id: 'class-1', name: 'هفتم الف', grade: 'هفتم', studentCount: 0 }]}
+        existingStudents={[]}
+        onImported={onImported}
+      />
+    </ThemeProvider>,
   );
   return { ...utils, onImported };
 };
@@ -109,14 +114,16 @@ describe('StudentImportWizard', () => {
 
   it('reports an unknown class instead of silently choosing another class', async () => {
     const { container } = render(
-      <StudentImportWizard
-        open
-        onClose={vi.fn()}
-        triggerRef={{ current: null }}
-        classGroups={[{ id: 'class-1', name: 'هفتم الف', grade: 'هفتم', studentCount: 0 }]}
-        existingStudents={[]}
-        onImported={vi.fn()}
-      />,
+      <ThemeProvider>
+        <StudentImportWizard
+          open
+          onClose={vi.fn()}
+          triggerRef={{ current: null }}
+          classGroups={[{ id: 'class-1', name: 'هفتم الف', grade: 'هفتم', studentCount: 0 }]}
+          existingStudents={[]}
+          onImported={vi.fn()}
+        />
+      </ThemeProvider>,
     );
     const file = new File(
       ['name,national_id,class,grade\nسارا محمدی,0000000019,هشتم ب,هشتم'],

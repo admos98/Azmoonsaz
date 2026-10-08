@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
+import { AlertTriangle, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import { AbsenceArt } from '../../components/AbsenceArt';
+import { Seal } from '../../components/Seal';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 import { studentService } from '../../services/api';
 import { ClassGroup, Student, StudentImportFailure } from '../../types';
@@ -358,7 +359,8 @@ export default function StudentImportWizard({
         <div role="status" className="space-y-4 py-2 text-center">
           <div>
             {importResult.imported > 0 ? (
-              <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-[var(--color-success)]" />
+              /* C.3 — full-panel success wears the seal (never a toast). */
+              <Seal size={96} className="mx-auto mb-3" />
             ) : (
               <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-[var(--color-danger)]" />
             )}
