@@ -15,13 +15,15 @@ export type AbsenceKind =
   | 'not-found'
   | 'session-expired'
   | 'import-failed'
-  | 'no-results';
+  | 'no-results'
+  | 'no-classes';
 
 const ABSENCE_FILES: Record<AbsenceKind, string> = {
   'not-found': 'abs-1-404',
   'session-expired': 'abs-2-session-expired',
   'import-failed': 'abs-3-import-failed',
   'no-results': 'abs-4-no-results',
+  'no-classes': 'abs-5-no-classes',
 };
 
 interface AbsenceArtProps {

@@ -597,6 +597,20 @@ describe('Micro controls — TextLink / IconButton / PillButton (F-6 primitives)
     expect(img.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('AbsenceArt maps no-classes to the abs-5 key (C.5 onboarding)', () => {
+    render(
+      <ThemeProvider>
+        <AbsenceArt kind="no-classes" size={112} />
+      </ThemeProvider>,
+    );
+    const img = document.querySelector('img')!;
+    expect(img.getAttribute('src')).toMatch(
+      /^\/empty-art\/absence\/(light|dark)\/abs-5-no-classes\.png$/,
+    );
+    expect(img.getAttribute('width')).toBe('112');
+    expect(img.getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('AbsencePage carries art + title + action (C.2 hosts)', () => {
     const onAction = vi.fn();
     render(

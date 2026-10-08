@@ -7,15 +7,16 @@ import type { ArtKind } from './EmptyStateArt';
  * cropped from the 1254px parent), keyed per theme like EmptyStateArt —
  * the theme pair is a file pick, not a runtime recolor.
  *
- * Sizes: 20 / 24 / 28 only — the three slots the icon family was drawn
- * for. `aria-hidden` always: a cut decorates an existing label, the text
+ * Sizes: 20 / 24 / 28 — the three slots the icon family was drawn for —
+ * plus 56 for the one empty-state host (notifications, C.5). `aria-hidden`
+ * always: a cut decorates an existing label, the text
  * carries the meaning (same contract as the crest rail).
  *
  * Migration order: nav → quick-actions → dropdowns → panel headers.
  * lucide stays where no cut exists (Dashboard home, Plus, Settings …) —
  * never invent a one-off glyph.
  */
-type CutSize = 20 | 24 | 28;
+type CutSize = 20 | 24 | 28 | 56;
 
 const CUT_FILES: Record<ArtKind, string> = {
   questions: 'cut-1', // gold = the third answer bubble

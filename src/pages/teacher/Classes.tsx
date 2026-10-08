@@ -21,6 +21,7 @@ import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 import { BubbleLoader } from '../../components/BubbleLoader';
 import { PanelCrest } from '../../components/PanelCrest';
+import { AbsenceArt } from '../../components/AbsenceArt';
 
 export default function Classes() {
   // The class list rides the shared cache — this page used to refetch the
@@ -241,6 +242,15 @@ export default function Classes() {
                 </div>
               </Card>
             )}
+            emptyTitle="هنوز کلاسی ندارید"
+            emptyDesc="اولین کلاس خود را بسازید تا دانش‌آموزان را دسته‌بندی کنید."
+            emptyArt={<AbsenceArt kind="no-classes" size={112} />}
+            emptyAction={
+              <Button variant="primary" size="sm" onClick={() => handleOpenModal()}>
+                <Plus className="w-4 h-4" />
+                افزودن کلاس جدید
+              </Button>
+            }
           />
           </PanelCrest>
         </Card>

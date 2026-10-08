@@ -8,6 +8,7 @@ import { Search, Bell, X } from 'lucide-react';
 import { useTeacher, useTeacherCollections } from '../contexts/TeacherContext';
 import { formatPersianNumber } from '../services/persianHelpers';
 import { TheMark } from './TheMark';
+import { Cut } from './Cut';
 import { usePersistentPreference } from '../hooks/usePersistentPreference';
 import CommandPalette from './CommandPalette';
 
@@ -805,8 +806,13 @@ export default function Topbar({
                     در حال بارگذاری...
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="p-6 text-center text-[var(--color-text-secondary)]">
-                    هیچ اعلانی نیست.
+                  /* C.5: the bubble row at empty-state scale — neutral, not
+                     absent (parent grammar: title/description carry it). */
+                  <div className="p-6 flex flex-col items-center gap-3 text-center">
+                    <Cut kind="questions" size={56} />
+                    <p className="text-[var(--color-text-secondary)]">
+                      هیچ اعلانی نیست.
+                    </p>
                   </div>
                 ) : (
                   notifications.map((n) => (
