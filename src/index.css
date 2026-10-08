@@ -1371,6 +1371,23 @@ select::-webkit-calendar-picker-indicator {
   right: 32px;
   top: 28px;
 }
+/* C.4 auth hero — fluid in the open left half of the art panel, never
+   touching the copy card (44% clears it at every width where the aside
+   exists, 1024px up; the aside itself dies at 900). Hidden below 1024
+   per spec — between 900 and 1023 the photo + copy carry the panel alone. */
+.login-hero {
+  position: absolute;
+  left: 4%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(44%, 640px);
+  height: auto;
+}
+@media (max-width: 1023px) {
+  .login-hero {
+    display: none;
+  }
+}
 .login-art-copy {
   position: absolute;
   right: 7%;

@@ -100,6 +100,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   return (
     <div className="login-shell min-h-dvh p-4 sm:p-6">
       <aside className="login-art" aria-hidden="true">
+        {/* C.4 auth hero — the brand's first impression, beside the form.
+            The login surface is light-pinned (never themed, like the photo
+            behind it), so the LIGHT key is the only correct one here. */}
+        <img
+          className="login-hero"
+          src="/empty-art/hero/light/hero.png"
+          alt=""
+          width={640}
+          height={640}
+          draggable={false}
+        />
         <div className="login-art-mark">
           <TheMark variant="row" size={72} animated={false} />
         </div>

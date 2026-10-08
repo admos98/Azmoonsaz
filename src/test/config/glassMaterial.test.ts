@@ -812,6 +812,18 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(cssRaw).not.toMatch(/seal-draw [\d.]+s ease-out infinite/);
   });
 
+  it('C.4 login hero — light-pinned key, fluid in the art panel, hidden <1024', () => {
+    // login is a never-themed light surface: the LIGHT key, statically
+    const login = component('src/pages/teacher/Login.tsx');
+    expect(login).toMatch(/src="\/empty-art\/hero\/light\/hero\.png"/);
+    expect(login).toMatch(/className="login-hero"/);
+    // fluid, non-overlapping placement + the >=1024-only gate
+    expect(css).toMatch(/\.login-hero\s*{[^}]*width:\s*min\(44%, 640px\)/);
+    expect(css).toMatch(
+      /@media \(max-width: 1023px\) {\s*.login-hero {\s*display: none/,
+    );
+  });
+
   it('V2 panel crest — reserved rail column, both states, art handoff', () => {
     // single column base; rail column reserved ≥lg in BOTH states
     expect(css).toMatch(
