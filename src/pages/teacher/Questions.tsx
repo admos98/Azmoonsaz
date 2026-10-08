@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  HelpCircle,
   PlusCircle,
   Image as ImageIcon,
   Grid,
@@ -47,7 +46,7 @@ import {
   Textarea,
   TextLink,
 } from '../../components/UIComponents';
-import { EmptyStateArt } from '../../components/EmptyStateArt';
+import { AbsenceArt } from '../../components/AbsenceArt';
 import { PanelCrest } from '../../components/PanelCrest';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
@@ -1311,9 +1310,10 @@ export default function Questions() {
           ) : (
             /* EMPTY FILTERED QUESTIONS STATE */
             <div id="empty-questions">
+              {/* C.2 abs-4 — no filter match: the absence piece, not the
+                  neutral parent motif (which means "bank is empty"). */}
               <EmptyState
-                icon={<HelpCircle className="w-8 h-8" />}
-                art={<EmptyStateArt kind="questions" />}
+                art={<AbsenceArt kind="no-results" size={160} />}
                 title="هیچ سوالی با فیلترهای بالا همخوانی ندارد"
                 description="می‌توانید فیلترهای جستجو، سطح سختی یا نوع سوالات را تغییر دهید یا نسبت به افزودن سوال جدید به مخزن اقدام کنید."
               />

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
+import { AbsenceArt } from '../../components/AbsenceArt';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 import { studentService } from '../../services/api';
 import { ClassGroup, Student, StudentImportFailure } from '../../types';
@@ -232,9 +233,11 @@ export default function StudentImportWizard({
       {error && (
         <div
           role="alert"
-          className="flex gap-2 rounded-xl bg-[var(--color-danger-soft)] p-3 text-caption text-[var(--color-danger)]"
+          className="flex items-center gap-3 rounded-xl bg-[var(--color-danger-soft)] p-3 text-caption text-[var(--color-danger)]"
         >
-          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {/* C.2 abs-3 — the import-failed piece carries the moment; the
+              message beside it carries the meaning. */}
+          <AbsenceArt kind="import-failed" size={56} />
           {error}
         </div>
       )}

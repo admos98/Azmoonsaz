@@ -34,6 +34,8 @@ import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { BubbleLoader } from '../../components/BubbleLoader';
 import { PanelCrest } from '../../components/PanelCrest';
 import { Cut } from '../../components/Cut';
+import { AbsenceArt } from '../../components/AbsenceArt';
+import { AbsencePage } from '../../components/AbsencePage';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 
 describe('PageHeader', () => {
@@ -564,6 +566,43 @@ describe('Micro controls — TextLink / IconButton / PillButton (F-6 primitives)
     expect(img.getAttribute('aria-hidden')).toBe('true');
     expect(img.getAttribute('width')).toBe('24');
     expect(img.getAttribute('height')).toBe('24');
+  });
+
+  it('AbsenceArt picks the keyed absence pair and stays out of AT (C.2)', () => {
+    render(
+      <ThemeProvider>
+        <AbsenceArt kind="no-results" size={160} />
+      </ThemeProvider>,
+    );
+    const img = document.querySelector('img')!;
+    expect(img.getAttribute('src')).toMatch(
+      /^\/empty-art\/absence\/(light|dark)\/abs-4-no-results\.png$/,
+    );
+    expect(img.getAttribute('alt')).toBe('');
+    expect(img.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('AbsencePage carries art + title + action (C.2 hosts)', () => {
+    const onAction = vi.fn();
+    render(
+      <ThemeProvider>
+        <AbsencePage
+          kind="not-found"
+          title="صفحه‌ای پیدا نشد"
+          description="نشانی درست نیست."
+          actionLabel="بازگشت به داشبورد"
+          onAction={onAction}
+        />
+      </ThemeProvider>,
+    );
+    expect(
+      document.querySelector('img[src^="/empty-art/absence/"]'),
+    ).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'صفحه‌ای پیدا نشد',
+    );
+    fireEvent.click(screen.getByRole('button'));
+    expect(onAction).toHaveBeenCalledTimes(1);
   });
 
   it('EmptyState renders art above the title; compact stays icon-only', () => {

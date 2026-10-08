@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy, useCallback } from 'react';
 import { TeacherProvider } from './contexts/TeacherContext';
 import type { Teacher } from './types';
 import Topbar from './components/Topbar';
 import { BubbleLoader } from './components/BubbleLoader';
+import { AbsencePage } from './components/AbsencePage';
 import Login from './pages/teacher/Login';
 import Onboarding from './pages/teacher/Onboarding';
 import ResetPassword from './pages/teacher/ResetPassword';
 import { authService } from './services/api';
 import { getSupabasePublicClient } from './lib/supabasePublic';
-import { teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
+import { isKnownTeacherPath, teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
 import { requestAppNavigation } from './hooks/useUnsavedChanges';
 import { mountGlassEngine } from './glass/glassController';
@@ -77,6 +78,12 @@ function BootScreen({ label }: { label: string }) {
 export default function App() {
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
   const [authInitializing, setAuthInitializing] = useState(true);
+  /** A session we HAD just went away — C.2 session-expired interstitial
+   *  instead of a silent drop to the Login page. */
+  const [sessionExpired, setSessionExpired] = useState(false);
+  /** Mirrors isTeacherLoggedIn for the auth listener: detecting the
+   *  logged-in → out TRANSITION needs a ref (updaters must stay pure). */
+  const loggedInRef = useRef(false);
   const [isOnboarded, setIsOnboarded] = useState(true);
   /** Profile fetched during boot or handed over by Login. `undefined` tells
    *  TeacherProvider to fetch for itself (self-heal / post-onboarding). */
@@ -103,6 +110,7 @@ export default function App() {
       const { data } = await supabase.auth.getSession();
       if (!active) return;
       setIsTeacherLoggedIn(Boolean(data.session));
+      loggedInRef.current = Boolean(data.session);
       if (data.session && window.location.pathname === '/') {
         window.history.replaceState(null, '', '/teacher/dashboard');
         setCurrentPath('/teacher/dashboard');
@@ -123,6 +131,11 @@ export default function App() {
     void bootstrap();
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
+      // Losing a session we HAD is the C.2 absence moment — interstitial,
+      // not a silent drop to Login. Signing back in clears it.
+      if (session) setSessionExpired(false);
+      else if (loggedInRef.current) setSessionExpired(true);
+      loggedInRef.current = Boolean(session);
       setIsTeacherLoggedIn(Boolean(session));
       setAuthInitializing(false);
     });
@@ -206,6 +219,8 @@ export default function App() {
     setBootTeacher(teacher);
     setIsOnboarded(teacher.isOnboarded ?? true);
     setIsTeacherLoggedIn(true);
+    loggedInRef.current = true;
+    setSessionExpired(false);
   };
 
   /** Return point for the student portal (its "بازگشت" affordance). */
@@ -310,6 +325,20 @@ export default function App() {
   }
 
   if (!isTeacherLoggedIn) {
+    // Session expired mid-use (C.2): the interstitial explains WHY before
+    // Login shows. A recovery link in the URL keeps priority — it is an
+    // explicit intent, not an expiry.
+    if (sessionExpired && !isPasswordReset) {
+      return (
+        <AbsencePage
+          kind="session-expired"
+          title="نشست شما به پایان رسید"
+          description="برای ادامهٔ کار دوباره وارد حساب خود شوید."
+          actionLabel="ورود دوباره"
+          onAction={() => setSessionExpired(false)}
+        />
+      );
+    }
     if (isPasswordReset) {
       return (
         <ResetPassword
@@ -336,6 +365,19 @@ export default function App() {
     );
   }
 
+  // C.2 route 404 — unknown paths no longer fall through to the dashboard.
+  if (!isKnownTeacherPath(currentPath)) {
+    return (
+      <AbsencePage
+        kind="not-found"
+        title="صفحه‌ای پیدا نشد"
+        description="نشانی درست نیست یا این صفحه جابه‌جا شده است."
+        actionLabel="بازگشت به داشبورد"
+        onAction={() => navigateTeacher('dashboard')}
+      />
+    );
+  }
+
   return (
     <TeacherProvider initialTeacher={bootTeacher}>
       <WorkspacePreferenceApplier />
@@ -358,6 +400,9 @@ export default function App() {
             currentTab={currentTab}
             onTabChange={navigateTeacher}
             onLogout={() => {
+              // Intentional sign-out: flag the ref FIRST so the SIGNED_OUT
+              // event does not read as an unexpected expiry.
+              loggedInRef.current = false;
               void authService.logoutTeacher().finally(() => {
                 setIsTeacherLoggedIn(false);
                 setBootTeacher(undefined);

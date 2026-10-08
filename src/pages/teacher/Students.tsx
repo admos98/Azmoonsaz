@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Users,
   PlusCircle,
   Filter,
   Trash2,
@@ -39,6 +38,7 @@ import {
   SearchInput,
 } from '../../components/UIComponents';
 import { PanelCrest } from '../../components/PanelCrest';
+import { AbsenceArt } from '../../components/AbsenceArt';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
@@ -777,9 +777,10 @@ export default function Students() {
                 ) : (
                   <tr>
                     <td colSpan={7} className="p-4 md:p-6">
+                      {/* C.2 abs-4 — filtered to nothing: an absence, not a
+                          neutral empty (compact dropped so the art shows). */}
                       <EmptyState
-                        compact
-                        icon={<Users className="w-6 h-6" />}
+                        art={<AbsenceArt kind="no-results" size={112} />}
                         title="دانش‌آموزی یافت نشد"
                         description="هیچ دانش‌آموزی همسان با فیلترهای بالا یافت نگردید."
                       />
@@ -891,7 +892,7 @@ export default function Students() {
               })
             ) : (
               <EmptyState
-                compact
+                art={<AbsenceArt kind="no-results" size={112} />}
                 title="موردی یافت نشد"
                 description="هیچ موردی منطبق با فیلترها و مقادیر بالا یافت نشد."
               />
