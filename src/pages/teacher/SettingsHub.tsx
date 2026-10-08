@@ -1,5 +1,6 @@
 import { Suspense, lazy, useState } from 'react';
-import { HelpCircle, SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
+import { Cut } from '../../components/Cut';
 import Settings from './Settings';
 import QuestionBankHealth from '../../components/QuestionBankHealth';
 import { Tabs } from '../../components/UIComponents';
@@ -35,7 +36,7 @@ export default function SettingsHub({
         <Tabs
           tabs={[
             { id: 'system', label: 'تنظیمات', icon: <SlidersHorizontal aria-hidden="true" /> },
-            { id: 'questions', label: 'بانک سوالات', icon: <HelpCircle aria-hidden="true" /> },
+            { id: 'questions', label: 'بانک سوالات', icon: <Cut kind="questions" size={20} /> },
           ]}
           activeTab={tab}
           onChange={(id) => activate(id as SettingsTab)}

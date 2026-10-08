@@ -16,14 +16,12 @@ import {
   CalendarDays,
   Eye,
   EyeOff,
-  GraduationCap,
   Lock,
   Plus,
   Save,
   School,
   Trash2,
   UserRound,
-  Users,
 } from 'lucide-react';
 import { useTeacher } from '../../contexts/TeacherContext';
 import { teacherProfileService } from '../../services/api';
@@ -668,8 +666,8 @@ export default function TeacherProfile({
 function ProfileHeader({ tab, setTab }: { tab: ProfileTab; setTab: (tab: ProfileTab) => void }) {
   const tabs: Array<{ id: ProfileTab; label: string; icon: React.ReactNode }> = [
     { id: 'overview', label: 'پروفایل', icon: <UserRound className="h-4 w-4" /> },
-    { id: 'students', label: 'دانش‌آموزان', icon: <Users className="h-4 w-4" /> },
-    { id: 'classes', label: 'کلاس‌ها', icon: <GraduationCap className="h-4 w-4" /> },
+    { id: 'students', label: 'دانش‌آموزان', icon: <Cut kind="students" size={20} /> },
+    { id: 'classes', label: 'کلاس‌ها', icon: <Cut kind="classes" size={20} /> },
   ];
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">

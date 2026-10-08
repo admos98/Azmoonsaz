@@ -88,4 +88,40 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['src/pages/teacher/SettingsHub.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'lucide-react',
+              importNames: ['HelpCircle'],
+              message:
+                'Migrated surface — use <Cut kind="questions"> (Art Master Plan C.1/D.7).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/pages/teacher/TeacherProfile.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'lucide-react',
+              importNames: ['Users', 'GraduationCap'],
+              message:
+                'Migrated surface — use <Cut kind="students|classes"> (Art Master Plan C.1/D.7).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
