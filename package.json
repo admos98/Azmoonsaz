@@ -8,6 +8,7 @@
     "build": "vite build",
     "check:bundle": "node tools/check-bundle.mjs",
     "check:art": "node tools/art-gate/check-art.mjs",
+    "art:icons": "python tools/art-gate/make-icons.py",
     "art:sheet": "python tools/art-gate/sheet.py",
     "check:theme": "node tools/check-theme-tokens.mjs",
     "check:typography": "node tools/check-typography.mjs",

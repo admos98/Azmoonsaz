@@ -13,7 +13,7 @@
  * pipeline and update the audit doc.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = join(__dirname, '../../..');
@@ -853,5 +853,67 @@ describe('glass material contract (pixel-audit gates)', () => {
       expect(component(`src/pages/teacher/${name}.tsx`)).toMatch(
         new RegExp(`<PanelCrest[\\s\\S]{0,90}kind="${kind}"`),
       );
+  });
+
+  it('C.5 second-surface empties — notifications CUT-1 @56, classes abs-5 + CTA', () => {
+    // notifications: the bubble row at empty scale, neutral grammar (text carries)
+    const topbar = component('src/components/Topbar.tsx');
+    expect(topbar).toMatch(/<Cut kind="questions" size=\{56\} \/>/);
+    expect(topbar).toMatch(/هیچ اعلانی نیست\./);
+    // teacher-without-classes: the absence variant on the table empty + onboarding CTA
+    const classes = component('src/pages/teacher/Classes.tsx');
+    expect(classes).toMatch(/emptyArt=\{<AbsenceArt kind="no-classes" size=\{112\} \/>/);
+    expect(classes).toMatch(/emptyTitle="هنوز کلاسی ندارید"/);
+    expect(classes).toMatch(/emptyAction=\{[\s\S]{0,220}handleOpenModal/);
+    // 56 is the sanctioned empty-state slot; the three icon slots stay the core
+    expect(component('src/components/Cut.tsx')).toMatch(
+      /type CutSize = 20 \| 24 \| 28 \| 56;/,
+    );
+    // keyed pairs on disk — both themes for every new C.5 asset
+    for (const p of [
+      'public/empty-art/absence/light/abs-5-no-classes.png',
+      'public/empty-art/absence/dark/abs-5-no-classes.png',
+      'public/empty-art/neutral/light/closed-box.png',
+      'public/empty-art/neutral/dark/closed-box.png',
+    ])
+      expect(existsSync(join(root, p)), p).toBe(true);
+  });
+
+  it('C.6 favicon/PWA — CUT-1 derived onto the plum plate, manifest, old svg gone', () => {
+    // index.html links the derived PNG set + manifest, no off-brand svg icon
+    expect(html).toMatch(
+      /<link rel="icon" type="image\/png" sizes="48x48" href="\/favicon.png"/,
+    );
+    expect(html).toMatch(
+      /<link rel="apple-touch-icon" sizes="180x180" href="\/apple-touch-icon.png"/,
+    );
+    expect(html).toMatch(/<link rel="manifest" href="\/manifest.webmanifest"/);
+    expect(html).not.toMatch(/favicon\.svg/);
+    expect(existsSync(join(root, 'public/favicon.svg'))).toBe(false);
+    // manifest: brand plate, both maskable icons
+    const manifest = JSON.parse(
+      readFileSync(join(root, 'public/manifest.webmanifest'), 'utf8'),
+    );
+    expect(manifest.theme_color).toBe('#221E4A');
+    expect(manifest.background_color).toBe('#221E4A');
+    expect(manifest.icons.map((i: { sizes: string }) => i.sizes)).toEqual([
+      '192x192',
+      '512x512',
+    ]);
+    expect(
+      manifest.icons.every((i: { purpose: string }) => i.purpose.includes('maskable')),
+    ).toBe(true);
+    // derivation pins: dark-key cut-1 (cream strokes read on the plum plate)
+    const script = readFileSync(join(root, 'tools/art-gate/make-icons.py'), 'utf8');
+    expect(script).toMatch(/"cuts", "dark", "cut-1\.png"/);
+    expect(script).toMatch(/PLUM = \(34, 30, 74, 255\)/);
+    // generated files on disk
+    for (const p of [
+      'public/favicon.png',
+      'public/apple-touch-icon.png',
+      'public/icon-192.png',
+      'public/icon-512.png',
+    ])
+      expect(existsSync(join(root, p)), p).toBe(true);
   });
 });
