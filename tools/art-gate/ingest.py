@@ -40,6 +40,10 @@ JOBS = [
     ("absence", f"{BATCH}/absence/abs-2-session-expired.png",  "abs-2-session-expired"),
     ("absence", f"{BATCH}/newer/finals/abs-3-import-failed.png", "abs-3-import-failed"),
     ("absence", f"{BATCH}/newer/finals/abs-4-no-results.png",   "abs-4-no-results"),
+    # C.5 round-4 batch: CUT-6 under the ABSENCE RULE (teacher-without-classes)
+    ("absence", f"{BATCH}/finals/no-classes.png",               "abs-5-no-classes"),
+    # C.5 trash/archive standby: the only zero-gold neutral (own family band)
+    ("neutral", f"{BATCH}/finals/closed-box.png",               "closed-box"),
     ("seal",   f"{BATCH}/seal.png", "seal"),
     ("hero",   f"{BATCH}/hero.png", "hero"),
 ]
@@ -76,6 +80,8 @@ STROKE_DELTA = {
     "abs-2-session-expired": 0.25,
     "abs-3-import-failed": -2.0,
     "abs-4-no-results": 0.0,
+    "abs-5-no-classes": 1.5,
+    "closed-box": 0.0,
 }
 
 
@@ -173,7 +179,12 @@ def process(src_path, stem, light_dir, dark_dir):
 def main():
     want = sys.argv[1] if len(sys.argv) > 1 else "all"
     for family, src, stem in JOBS:
-        if want not in ("all", family):
+        # match by family OR stem — sources of retired rounds go stale, and
+        # a single new asset must ingest without re-running the whole batch
+        if want not in ("all", family, stem):
+            continue
+        if not os.path.exists(src):
+            print(f"SKIP {stem:24s} source missing: {src}")
             continue
         if family == "parent":
             light, dark = os.path.join(OUT, "light"), os.path.join(OUT, "dark")
