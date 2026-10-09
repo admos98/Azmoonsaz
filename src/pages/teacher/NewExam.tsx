@@ -157,9 +157,9 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
             <ArrowRight className="w-5 h-5" />
           </button>
           <div>
-            <h3 className="text-label font-black text-[var(--color-text-primary)]">
+            <h1 className="text-label font-black text-[var(--color-text-primary)]">
               طراح هوشمند و گام‌به‌گام آزمون
-            </h3>
+            </h1>
             <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
               تخصیص سوالات به همراه بارگذاری همزمان پارامترهای تدارکاتی
             </p>
@@ -190,9 +190,9 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       {step === 1 && (
         <div className="p-6 md:p-8 space-y-6 text-right">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3">
-            <h4 className="text-caption font-black text-[var(--color-text-primary)]">
+            <h2 className="text-caption font-black text-[var(--color-text-primary)]">
               گام اول: مشخصات و مقطع تحصیلی آزمون
-            </h4>
+            </h2>
             <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
               عنوان آزمون و مرجع درسی را برای ثبت در نظام نمرات دانش‌آموزی تنظیم نمایید.
             </p>
@@ -296,9 +296,9 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
         <div className="p-6 md:p-8 space-y-6 text-right">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3 flex justify-between items-center">
             <div>
-              <h4 className="text-caption font-black text-[var(--color-text-primary)]">
+              <h2 className="text-caption font-black text-[var(--color-text-primary)]">
                 گام دوم: گزینش سوالات تالیفی یا بانک ملی
-              </h4>
+              </h2>
               <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
                 تک‌تک گزینه‌ها را علامت بزنید تا در برگه جایگیری شوند.
               </p>
@@ -368,9 +368,9 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       {step === 3 && (
         <div className="p-6 md:p-8 space-y-6 text-right">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3">
-            <h4 className="text-caption font-black text-[var(--color-text-primary)]">
+            <h2 className="text-caption font-black text-[var(--color-text-primary)]">
               گام سوم: محدوده‌گذاری زمانی و ابزار ضد تقلب
-            </h4>
+            </h2>
             <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
               سیستم‌ها و قوانین تصحیح و backtracking را فعال نمایید.
             </p>
@@ -459,9 +459,9 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
         <div className="p-6 md:p-8 space-y-6 text-right">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3 flex items-center justify-between">
             <div>
-              <h4 className="text-caption font-black text-[var(--color-text-primary)]">
+              <h2 className="text-caption font-black text-[var(--color-text-primary)]">
                 گام پایانی: مرور کلی ساختار آزمون
-              </h4>
+              </h2>
               <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
                 تنظیمات را بررسی کنید و سپس کدهای ورود را منتشر کنید.
               </p>

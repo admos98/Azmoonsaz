@@ -338,6 +338,13 @@ describe('BubbleLoader (the sanctioned loop)', () => {
     expect(loader.querySelectorAll('i')).toHaveLength(4);
   });
 
+  it('role=status is implicitly a polite live region (no explicit aria-live needed)', () => {
+    // role="status" maps to aria-live="polite" + aria-atomic="true" —
+    // pin the role, not the redundant attributes.
+    render(<BubbleLoader />);
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
   it('decorative mode is aria-hidden with no live role (outer region owns the message)', () => {
     const { container } = render(<BubbleLoader label={null} />);
     const loader = container.querySelector('.bubble-loader')!;

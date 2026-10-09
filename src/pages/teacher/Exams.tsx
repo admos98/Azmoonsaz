@@ -268,9 +268,9 @@ export default function Exams({
                     </span>
                   </div>
 
-                  <h3 className="text-caption font-bold text-[var(--color-text-primary)] leading-snug line-clamp-1">
+                  <h2 className="text-caption font-bold text-[var(--color-text-primary)] leading-snug line-clamp-1">
                     {ex.title}
-                  </h3>
+                  </h2>
                   <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed line-clamp-2 h-[34px]">
                     {ex.description || 'توضیحاتی برای این آزمون ثبت نگردیده است.'}
                   </p>

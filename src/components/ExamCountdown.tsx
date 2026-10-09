@@ -41,10 +41,15 @@ export const ExamCountdown = memo(function ExamCountdown({
 
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
+  // Announcement discipline: screen-reader users need "۱۲ دقیقه", not a
+  // ticking second. The label updates at minute boundaries only; visual
+  // seconds stay aria-hidden. role="timer" has an implicit off live region.
+  const minuteLabel = `زمان باقی‌مانده ${toPersianDigits(mins)} دقیقه`;
   return (
     <div
       role="timer"
-      aria-label={`زمان باقی‌مانده ${toPersianDigits(mins)} دقیقه و ${toPersianDigits(secs)} ثانیه`}
+      aria-label={minuteLabel}
+      aria-live="off"
       className={`px-3 py-1.5 rounded-xl font-bold font-mono text-caption md:text-label flex items-center gap-1.5 ${seconds < 300 ? 'bg-[var(--color-danger-soft)]/40 border border-[var(--color-danger)]/20 text-[var(--color-danger)] animate-pulse' : 'bg-[var(--color-glass-light-fill)] text-[var(--color-text-secondary)]'}`}
     >
       <Clock className="w-4 h-4" aria-hidden="true" />

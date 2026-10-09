@@ -672,7 +672,7 @@ function ProfileHeader({ tab, setTab }: { tab: ProfileTab; setTab: (tab: Profile
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 className="text-heading-2 font-black">مرکز دبیر و کلاس‌ها</h1>
+        <h2 className="text-heading-2 font-black">مرکز دبیر و کلاس‌ها</h2>
         <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
           پروفایل، دانش‌آموزان و برنامه تدریس در یک مکان
         </p>

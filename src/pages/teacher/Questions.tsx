@@ -414,9 +414,9 @@ export default function Questions() {
       <div className="lens p-6 rounded-3xl space-y-4" id="filters-container">
         <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-2.5 mb-2">
           <Sliders className="w-4 h-4 text-[var(--color-accent)]" />
-          <h4 className="text-caption font-bold text-[var(--color-text-secondary)]">
+          <h2 className="text-caption font-bold text-[var(--color-text-secondary)]">
             جستجوی موضوعی و پالایش هوشمند سوالات
-          </h4>
+          </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -693,10 +693,10 @@ export default function Questions() {
 
                         {/* Title block */}
                         <div>
-                          <h4 className="font-bold text-[var(--color-text-primary)] text-caption lines-1 flex items-center gap-1.5">
+                          <p className="font-bold text-[var(--color-text-primary)] text-caption lines-1 flex items-center gap-1.5">
                             <Bookmark className="w-3.5 h-3.5 text-[var(--color-accent)]" />
                             <span>{q.title}</span>
-                          </h4>
+                          </p>
                           <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed mt-1.5 line-clamp-2">
                             {q.text}
                           </p>

@@ -24,10 +24,10 @@
     "typecheck:server": "tsc -p tsconfig.server.json",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
-    "check": "npm run typecheck && npm run typecheck:server && npm run lint && npm run check:theme && npm run check:tokens && npm run check:contrast && npm run check:glass && npm run check:library && npm run check:typography && npm run check:persian && npm run check:a11y-buttons && npm run check:art && npm run build",
+    "check": "npm run typecheck && npm run typecheck:server && npm run lint && npm run check:theme && npm run check:tokens && npm run check:contrast && npm run check:glass && npm run check:library && npm run check:typography && npm run check:persian && npm run check:a11y-buttons && npm run check:headings && npm run check:art && npm run build",
     "test": "vitest run && vitest run --config vitest.server.config.ts",
     "test:watch": "vitest",
-    "gate": "npm run typecheck && npm run typecheck:server && npm run lint && npm run test && npm run check:theme && npm run check:tokens && npm run check:contrast && npm run check:glass && npm run check:library && npm run check:typography && npm run check:persian && npm run check:a11y-buttons && npm run check:art && npm run build && npm run check:bundle",
+    "gate": "npm run typecheck && npm run typecheck:server && npm run lint && npm run test && npm run check:theme && npm run check:tokens && npm run check:contrast && npm run check:glass && npm run check:library && npm run check:typography && npm run check:persian && npm run check:a11y-buttons && npm run check:headings && npm run check:art && npm run build && npm run check:bundle",
     "check:env": "node tools/check-env.mjs",
     "hash:national-id": "node tools/hash-national-id.mjs",
     "dev:vercel": "npx vercel dev",
@@ -40,6 +40,7 @@
     "predeploy": "npm run lint && npm run build && npm run verify:prod && npm run deploy:check",
     "test:e2e": "npx playwright test",
     "check:a11y-buttons": "node tools/check-icon-buttons.mjs",
+    "check:headings": "node tools/check-headings.mjs",
     "check:sizes": "node tools/check-sizes.mjs"
   },
   "dependencies": {
@@ -63,6 +64,7 @@
     "@types/papaparse": "^5.3.15",
     "@types/react": "^19.3.0",
     "@vitejs/plugin-react": "5.0.4",
+    "axe-core": "^4.14.0",
     "esbuild": "^0.25.0",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
@@ -75,6 +77,7 @@
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.70.0",
     "vite": "^6.4.4",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "vitest-axe": "^0.1.0"
   }
 }

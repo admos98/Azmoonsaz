@@ -255,6 +255,22 @@ export default function Topbar({
     }, 230);
   }, []);
 
+  // Focus restore — when the menu finishes closing, keyboard users land back
+  // on the trigger instead of body. Effect, not timeout body: the refs rule
+  // forbids ref access inside callbacks treated as render-time. The was-open
+  // ref guards mount (both flags start false — no steal on page load).
+  const menuWasOpen = useRef(false);
+  useEffect(() => {
+    if (showHamburgerMenu || menuClosing) {
+      menuWasOpen.current = true;
+      return;
+    }
+    if (menuWasOpen.current) {
+      menuWasOpen.current = false;
+      hamburgerRef.current?.focus();
+    }
+  }, [showHamburgerMenu, menuClosing]);
+
   useEffect(() => {
     if (!showHamburgerMenu) return;
     const onKey = (e: KeyboardEvent) => {
@@ -288,6 +304,19 @@ export default function Topbar({
       setNotifClosing(false);
     }, 230);
   }, []);
+
+  // Focus restore — same pattern as the hamburger menu above.
+  const notifWasOpen = useRef(false);
+  useEffect(() => {
+    if (showNotifications || notifClosing) {
+      notifWasOpen.current = true;
+      return;
+    }
+    if (notifWasOpen.current) {
+      notifWasOpen.current = false;
+      bellRef.current?.focus();
+    }
+  }, [showNotifications, notifClosing]);
 
   // --- Notifications ---
   const openNotifications = useCallback(() => {
@@ -663,7 +692,8 @@ export default function Topbar({
             </div>
 
             {/* Panel 3: Management options */}
-            <div
+            <nav
+              aria-label="ناوبری اصلی"
               className="lens lens--menu rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(2),
@@ -685,6 +715,7 @@ export default function Topbar({
                     onTabChange('dashboard');
                     closeMenu();
                   }}
+                  aria-current={currentTab === 'dashboard' ? 'page' : undefined}
                 >
                   <span>داشبورد مدیریتی</span>
                 </button>
@@ -695,14 +726,16 @@ export default function Topbar({
                     onTabChange('profile');
                     closeMenu();
                   }}
+                  aria-current={currentTab === 'profile' ? 'page' : undefined}
                 >
                   <span>پروفایل، دانش‌آموزان و کلاس‌ها</span>
                 </button>
               </div>
-            </div>
+            </nav>
 
             {/* Panel 4: Exam panel + settings */}
-            <div
+            <nav
+              aria-label="ناوبری آزمون‌ها و تنظیمات"
               className="lens lens--menu rounded-2xl overflow-hidden"
               style={{
                 transformOrigin: computeHamburgerTransformOrigin(3),
@@ -724,6 +757,7 @@ export default function Topbar({
                     onTabChange('exams');
                     closeMenu();
                   }}
+                  aria-current={currentTab.startsWith('exams') ? 'page' : undefined}
                 >
                   <span>آزمون‌ها</span>
                 </button>
@@ -738,6 +772,7 @@ export default function Topbar({
                     onTabChange('settings');
                     closeMenu();
                   }}
+                  aria-current={currentTab === 'settings' ? 'page' : undefined}
                 >
                   <span>تنظیمات</span>
                 </button>
@@ -752,7 +787,7 @@ export default function Topbar({
                   <span>خروج از سامانه</span>
                 </button>
               </div>
-            </div>
+            </nav>
           </div>
         </>
       )}

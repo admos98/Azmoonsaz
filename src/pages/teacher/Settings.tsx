@@ -156,7 +156,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-5">
-          <h3 className="text-label font-bold text-[var(--color-text-primary)]">ظاهر برنامه</h3>
+          <h2 className="text-label font-bold text-[var(--color-text-primary)]">ظاهر برنامه</h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             حالت سیستم با تغییر تنظیمات دستگاه، خودکار به‌روز می‌شود.
           </p>
@@ -171,7 +171,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-5">
-          <h3 className="text-label font-bold text-[var(--color-text-primary)]">میزان حرکت</h3>
+          <h2 className="text-label font-bold text-[var(--color-text-primary)]">میزان حرکت</h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             درخواست کاهش حرکت در تنظیمات دستگاه همیشه در اولویت است.
           </p>
@@ -186,9 +186,9 @@ export default function Settings() {
 
       <Card>
         <div className="mb-5">
-          <h3 className="text-label font-bold text-[var(--color-text-primary)]">
+          <h2 className="text-label font-bold text-[var(--color-text-primary)]">
             کیفیت شیشه‌ای (Liquid Glass)
-          </h3>
+          </h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             حالت خودکار مانند سیستم‌عامل توان دستگاه را می‌سنجد؛ انتخاب دستی همیشه در اولویت است.
           </p>
@@ -239,7 +239,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-5">
-          <h3 className="text-label font-bold text-[var(--color-text-primary)]">تراکم اطلاعات</h3>
+          <h2 className="text-label font-bold text-[var(--color-text-primary)]">تراکم اطلاعات</h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             حالت فشرده فقط فاصله فهرست‌ها و جدول‌ها را کاهش می‌دهد و اندازه ناحیه‌های لمسی اصلی را
             حفظ می‌کند.
@@ -256,9 +256,9 @@ export default function Settings() {
       <Card>
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h3 className="text-label font-bold text-[var(--color-text-primary)]">
+            <h2 className="text-label font-bold text-[var(--color-text-primary)]">
               بازنشانی فضای کاری
-            </h3>
+            </h2>
             <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
               فیلترها، نوع نمایش و تراکم ذخیره‌شده در این مرورگر پاک می‌شوند؛ ظاهر و میزان حرکت
               تغییر نمی‌کنند.
@@ -282,7 +282,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-4">
-          <h3 className="text-label font-bold text-[var(--color-text-primary)]">اعلان‌ها</h3>
+          <h2 className="text-label font-bold text-[var(--color-text-primary)]">اعلان‌ها</h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             اعلان‌های آزمون فعال فوری نمایش داده می‌شوند؛ پاسخ‌برگ‌ها در گروه اطلاع‌رسانی قرار
             می‌گیرند.
@@ -308,10 +308,10 @@ export default function Settings() {
 
       {/* Runtime Status Card */}
       <Card>
-        <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-5">
+        <h2 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-5">
           <Server className="w-4 h-4 text-[var(--color-accent)]" />
           وضعیت سیستم
-        </h3>
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center gap-3 p-4 bg-[var(--color-glass-light-fill)] rounded-2xl">
@@ -355,10 +355,10 @@ export default function Settings() {
       </Card>
 
       <Card>
-        <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-3">
+        <h2 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-3">
           <Shield className="w-4 h-4 text-[var(--color-gold-ink)]" />
           راهنمای امنیت آزمون
-        </h3>
+        </h2>
         <p className="text-caption text-[var(--color-text-secondary)] leading-7">
           برای آزمون‌های رسمی می‌توانید قفل مرورگر، ثبت خروج از صفحه و ارسال خودکار پاسخ‌برگ را از
           تنظیمات همان آزمون فعال کنید. پیش از انتشار، حالت پیش‌نمایش را بررسی کنید.
@@ -367,10 +367,10 @@ export default function Settings() {
 
       {/* App Info Card */}
       <Card>
-        <h3 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
+        <h2 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
           <Info className="w-4 h-4 text-[var(--color-accent)]" />
           درباره برنامه
-        </h3>
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
           <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
             <p className="text-micro text-[var(--color-text-tertiary)] font-bold">نام سامانه</p>

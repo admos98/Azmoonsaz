@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { EmptyState, Modal, Table, Toast } from '../../ui';
+import { EmptyState, Modal, Table, Toast, ToastStack } from '../../ui';
 
 function ModalHarness() {
   const [open, setOpen] = useState(false);
@@ -20,11 +20,30 @@ function ModalHarness() {
 }
 
 describe('shared accessibility smoke checks', () => {
-  it('uses announcement priority appropriate to toast severity', () => {
-    const { rerender } = render(<Toast message="ذخیره شد" type="success" duration={60_000} />);
-    expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
-    rerender(<Toast message="ذخیره نشد" type="error" duration={60_000} />);
-    expect(screen.getByRole('alert')).toHaveAttribute('aria-live', 'assertive');
+  it('announces toasts through the single stack region, not per-toast', () => {
+    // Live-region map: the STACK is the one polite region for the toast
+    // concern; individual Toasts carry no live region of their own.
+    render(
+      <ToastStack>
+        <Toast message="ذخیره شد" type="success" duration={60_000} />
+        <Toast message="اطلاع" type="info" duration={60_000} />
+      </ToastStack>,
+    );
+    const regions = screen.getAllByRole('status');
+    expect(regions).toHaveLength(1);
+    expect(regions[0]).toHaveAttribute('aria-live', 'polite');
+    expect(regions[0]).toHaveAttribute('aria-atomic', 'true');
+  });
+
+  it('escalates error toasts via alert role without a second live region', () => {
+    render(
+      <ToastStack>
+        <Toast message="ذخیره نشد" type="error" duration={60_000} />
+      </ToastStack>,
+    );
+    // role="alert" is implicitly assertive — no explicit aria-live needed.
+    expect(screen.getByRole('alert')).not.toHaveAttribute('aria-live');
+    expect(screen.getAllByRole('status')).toHaveLength(1);
   });
 
   it('makes overflow tables keyboard reachable and labelled', () => {

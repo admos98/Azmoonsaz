@@ -409,9 +409,9 @@ export default function Students() {
       >
         <AlertTriangle className="w-5 h-5 text-[var(--color-warning)] shrink-0 mt-0.5" />
         <div className="space-y-1 text-right">
-          <h4 className="text-caption font-bold text-[var(--color-warning)]/80">
+          <p className="text-caption font-bold text-[var(--color-warning)]/80">
             هشدار صیانت از اطلاعات حساس سجلی دانش‌آموزان
-          </h4>
+          </p>
           <p className="text-micro text-[var(--color-warning)] leading-relaxed">
             کد ملی اطلاعات حساس محسوب می‌شود. از اشتراک‌گذاری فایل دانش‌آموزان با افراد غیرمجاز
             خودداری کنید. تمامی کدملی‌ها و پاسخ‌برگ‌های ارسالی همگام با سامانه امتحانات استعدادهای
@@ -813,9 +813,9 @@ export default function Students() {
                           {student.name.charAt(0)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-[var(--color-text-primary)] text-caption">
+                          <p className="font-bold text-[var(--color-text-primary)] text-caption">
                             {student.name}
-                          </h4>
+                          </p>
                           <span className="text-micro text-[var(--color-text-tertiary)]">
                             شناسه: {student.id}
                           </span>

@@ -122,9 +122,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
             <span className="text-[var(--color-text-secondary)] text-micro font-bold tracking-wide px-0 py-1 block w-fit opacity-80">
               {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
-            <h2 className="text-heading-2 md:text-display font-black mt-3 leading-tight text-[var(--color-text-primary)]">
+            <h1 className="text-heading-2 md:text-display font-black mt-3 leading-tight text-[var(--color-text-primary)]">
               سلام، استاد {greetingName ? `${greetingName} ` : ''}عزیز
-            </h2>
+            </h1>
             <p className="text-caption md:text-label mt-2 max-w-2xl leading-relaxed text-[var(--color-text-secondary)]">
               {formatPersianNumber(activeExams)} آزمون فعال و {formatPersianNumber(pendingGradings)}{' '}
               پاسخ‌برگ در صف تصحیح.
@@ -236,9 +236,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
         {/* 3. Quick Actions Row */}
         <div className="relative lens p-6 rounded-2xl text-right" id="quick-actions-section">
-          <h3 className="text-label font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+          <h2 className="text-label font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
             <span>اقدامات سریع</span>
-          </h3>
+          </h2>
 
           <div className="grid grid-cols-2 gap-3.5" id="quick-action-btns">
             <button
@@ -342,9 +342,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <div className="lens p-6 rounded-3xl" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-label font-bold text-[var(--color-text-primary)]">
+                <h2 className="text-label font-bold text-[var(--color-text-primary)]">
                   آزمون‌های فعال و پیش‌رو
-                </h3>
+                </h2>
                 <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
                   سنجش‌های در حال آماده‌سازی یا فعال کنونی
                 </p>
@@ -370,9 +370,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-caption font-bold text-[var(--color-text-primary)]">
+                          <h3 className="text-caption font-bold text-[var(--color-text-primary)]">
                             {ex.title}
-                          </h4>
+                          </h3>
                           <Badge variant={ex.settings.mode === 'official' ? 'warning' : 'slate'}>
                             {ex.settings.mode === 'official' ? 'رسمی' : 'تمرینی'}
                           </Badge>
@@ -436,9 +436,9 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <div className="lens rounded-3xl overflow-hidden" id="section-recent-submissions">
             <div className="p-6 border-b border-[var(--color-glass-light-stroke)] flex justify-between items-center">
               <div>
-                <h3 className="text-label font-bold text-[var(--color-text-primary)]">
+                <h2 className="text-label font-bold text-[var(--color-text-primary)]">
                   آخرین پاسخ‌برگ‌های ارسال شده دانش‌آموزان
-                </h3>
+                </h2>
                 <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
                   سنجش‌های زنده با قابلیت تصحیح سریع معلم
                 </p>

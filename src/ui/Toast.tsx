@@ -52,9 +52,7 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000, action
   return (
     <div
       className={`pointer-events-auto pane flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-xl px-4 py-3 text-label font-bold transition-all duration-300 ${styles[type]} ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
-      role={type === 'error' || type === 'warning' ? 'alert' : 'status'}
-      aria-live={type === 'error' || type === 'warning' ? 'assertive' : 'polite'}
-      aria-atomic="true"
+      role={type === 'error' || type === 'warning' ? 'alert' : undefined}
     >
       {icons[type]}
       <span>{message}</span>

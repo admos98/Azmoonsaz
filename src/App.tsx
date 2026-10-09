@@ -381,6 +381,14 @@ export default function App() {
   return (
     <TeacherProvider initialTeacher={bootTeacher}>
       <WorkspacePreferenceApplier />
+      {/* Skip link — first focusable in the app. Visually hidden until
+          keyboard focus; the global focus-visible ring announces it. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-[300] focus:rounded-xl focus:bg-[var(--color-accent-solid)] focus:px-4 focus:py-2 focus:text-caption focus:font-bold focus:text-[var(--color-text-on-solid)]"
+      >
+        پرش به محتوا
+      </a>
       {/* id="app-teacher-shell" is the anchor for the page-plate ::before
           (fixed, z-0). The shell itself must stay transparent so the plate
           reads; leaving the bg-[--color-page-bg] utility here would re-paint
@@ -413,7 +421,8 @@ export default function App() {
           />
 
           {/* Dynamic Page Router — floats above bg stage */}
-          <div className="p-4 lg:p-8 flex-1 bg-transparent" id="router-view-box">
+          <main className="p-4 lg:p-8 flex-1 bg-transparent" id="router-view-box" aria-label="محتوای اصلی">
+            <div id="main-content" tabIndex={-1} className="outline-none">
             <Suspense
               fallback={
                 <div className="space-y-6" id="page-skeleton">
@@ -433,7 +442,8 @@ export default function App() {
             >
               {renderTeacherContent()}
             </Suspense>
-          </div>
+            </div>
+          </main>
         </div>
       </div>
     </TeacherProvider>

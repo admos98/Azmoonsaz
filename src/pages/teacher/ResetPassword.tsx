@@ -91,17 +91,17 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
               <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
             </div>
-            <h1 className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+            <p className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
               آزمون‌ساز
-            </h1>
+            </p>
           </div>
           <div className="lens rounded-3xl shadow-2xl p-8 text-center space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full">
               <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
             </div>
-            <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+            <h1 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
               رمز عبور با موفقیت تغییر کرد
-            </h2>
+            </h1>
             <p className="text-label text-[var(--color-text-tertiary)]">
               حالا می‌توانید با رمز جدید وارد شوید.
             </p>
@@ -126,14 +126,14 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
               <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
             </div>
-            <h1 className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+            <p className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
               آزمون‌ساز
-            </h1>
+            </p>
           </div>
           <div className="lens rounded-3xl shadow-2xl p-8 text-center space-y-4">
-            <p className="text-label text-[var(--color-danger)]">
+            <h1 className="text-label font-bold text-[var(--color-danger)]">
               {error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}
-            </p>
+            </h1>
             <TextLink size="md" bold onClick={onDone}>
               بازگشت به ورود
             </TextLink>
@@ -150,10 +150,10 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4 shadow-lg shadow-lg">
             <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
           </div>
-          <h1 className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+          <p className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
             آزمون‌ساز
-          </h1>
-          <p className="text-label text-[var(--color-text-tertiary)] mt-1">تغییر رمز عبور</p>
+          </p>
+          <h1 className="text-label text-[var(--color-text-tertiary)] mt-1">تغییر رمز عبور</h1>
         </div>
 
         <div className="lens rounded-3xl shadow-2xl p-8">
