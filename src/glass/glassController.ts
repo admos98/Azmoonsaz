@@ -41,6 +41,23 @@
  *
  * The playground's physics survive intact: same mapMath, same curvature
  * exponent (n = 2^k, Chromium-verified), same specular arc, same bezel ring.
+ *
+ * ── Lever A: the bend is viewport-gated (2026-10-09) ──────────────────────
+ * A ?perf=1 drive on /teacher/dashboard showed 13fps scroll vs 36fps still
+ * with 73/80 worst frames carrying NO longtask: pure raster cost. Four lens
+ * panels held ~2M px of live url() area — a full viewport of ~10-primitive
+ * SVG graph per scroll frame — while one 1204x261 panel sat fully offscreen
+ * still burning its filter. The engine observed resize + DOM only, so
+ * offscreen panels kept their bend forever.
+ *
+ * An IntersectionObserver (300px pre-dress margin) parks offscreen panels:
+ * inline url() chain cleared, lastQuickKey forgotten. Re-entry re-dresses
+ * from the MAP_TABLE/FILTERS hit path (string ops, sub-frame — zero worker
+ * rebuild), and the margin means the bend is attached before pixels turn
+ * visible. Resting in-view output is byte-identical: zero visual loss by
+ * construction. A flush-time rect check is authoritative (IO timing can't be
+ * trusted at boot); a dress-time guard covers worker maps resolving while
+ * offscreen.
  */
 
 import {
@@ -87,6 +104,7 @@ let mounted = false;
 let resizeObserver: ResizeObserver | null = null;
 let attrObserver: MutationObserver | null = null;
 let domObserver: MutationObserver | null = null;
+let viewObserver: IntersectionObserver | null = null;
 let container: SVGDefsElement | null = null;
 let seq = 0;
 
@@ -233,6 +251,29 @@ function undressNested(el: HTMLElement): void {
   byEl.delete(el);
 }
 
+/* ── Lever A: viewport-gated bend (zero visual loss) ─────────────────────
+ * Offscreen panels keep blur-only; the url() re-attaches on re-entry from
+ * the MAP_TABLE/FILTERS hit path (string ops, sub-frame). */
+const VIEW_MARGIN = 300;
+
+/** True when any part of the element lies within the viewport expanded by
+ *  VIEW_MARGIN. Authoritative at flush time — IO timing can't be trusted at
+ *  boot (entries fire after first paint). Read-only: stays in PHASE A. */
+function isInExtendedViewport(el: HTMLElement): boolean {
+  const r = el.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const vw = window.innerWidth;
+  return r.bottom > -VIEW_MARGIN && r.top < vh + VIEW_MARGIN && r.right > -VIEW_MARGIN && r.left < vw + VIEW_MARGIN;
+}
+
+/** Park an offscreen panel: clear the inline url() chain, forget the key so
+ *  re-entry re-dresses. Guarded: no style write when already parked. */
+function parkOffscreen(el: HTMLElement): void {
+  if (el.style.backdropFilter) el.style.backdropFilter = '';
+  if (el.dataset.lastQuickKey) delete el.dataset.lastQuickKey;
+  byEl.delete(el);
+}
+
 function chainOf(el: Element, cs: CSSStyleDeclaration): string {
   const lensBlur = cssNum(cs, '--lens-blur', 1);
   const sat = (v: number) => (v === 1 ? '' : ` saturate(${v})`);
@@ -347,6 +388,14 @@ function flushSync(): void {
       undressNested(el);
       continue;
     }
+    // Lever A: offscreen panels park on blur-only. Checked BEFORE
+    // getComputedStyle so an offscreen panel costs one rect (same layout
+    // pass as the box read below), never a style resolve + worker build.
+    // parkOffscreen is a guarded style clear — no layout.
+    if (!isInExtendedViewport(el)) {
+      parkOffscreen(el);
+      continue;
+    }
     const w = el.offsetWidth;
     const h = el.offsetHeight;
     if (w < 2 || h < 2) continue;
@@ -382,6 +431,14 @@ function dressPanel(t: PendingPanel, entry: BucketEntry): void {
   // the stylesheet de-nest rule — undress instead.
   if (isNestedGlass(el)) {
     undressNested(el);
+    return;
+  }
+  // Lever A twin: worker maps may resolve while the panel scrolled offscreen
+  // (the request posted in-view, the message lands out-of-view). Dressing now
+  // would burn a filter on invisible pixels — park (cache stays, re-entry
+  // re-dresses from the hit path) instead.
+  if (!isInExtendedViewport(el)) {
+    parkOffscreen(el);
     return;
   }
   const mapKey = `${kind}|${w}x${h}|${Math.round(radius)}`;
@@ -555,13 +612,20 @@ function readParams(cs: CSSStyleDeclaration): LensParams {
 
 /** Drop filters whose panels unmounted. Iterates OUR Set, never the DOM tree. */
 function pruneDead(): void {
-  if (!container) return;
-  const liveIds = new Set<string>();
+  // Unobserve + untrack runs even when no filter was ever built: unmount is
+  // about observer retention, not filter markup.
   for (const el of Array.from(tracked)) {
     if (!el.isConnected) {
       tracked.delete(el);
-      continue;
+      // Stop observing the dead node: the observers hold strong refs, so
+      // without this a removed panel is retained until the next resync.
+      resizeObserver?.unobserve(el);
+      viewObserver?.unobserve(el);
     }
+  }
+  if (!container) return;
+  const liveIds = new Set<string>();
+  for (const el of tracked) {
     const id = byEl.get(el);
     if (id) liveIds.add(id);
   }
@@ -584,6 +648,7 @@ export function resyncGlass(): void {
   if (!glassAllowed()) return;
   document.querySelectorAll<HTMLElement>(GLASS_SELECTOR).forEach((el) => {
     resizeObserver?.observe(el);
+    viewObserver?.observe(el);
     queueSync(el);
   });
 }
@@ -625,6 +690,25 @@ export function mountGlassEngine(): void {
     attributeFilter: ['data-theme', 'data-glass'],
   });
 
+  // Lever A: viewport gate. Entry re-queues (re-dress is a cache hit, no
+  // worker build); EXIT parks immediately — guarded style clear, no layout,
+  // so an offscreen panel stops burning its filter on the same frame it
+  // leaves the 300px band instead of waiting for the next resize/DOM queue.
+  // Entries arriving while !mounted or glass-off are safe: queueSync is
+  // already a no-op there, and parkOffscreen on an undressed panel writes
+  // nothing.
+  viewObserver = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const el = e.target as HTMLElement;
+        if (!el.isConnected) continue;
+        if (e.isIntersecting) queueSync(el);
+        else parkOffscreen(el);
+      }
+    },
+    { rootMargin: `${VIEW_MARGIN}px 0px` },
+  );
+
   // Only elements that actually APPEARED are enqueued. No querySelectorAll,
   // no whole-document sweep — this observer used to be the largest single
   // source of forced layouts in the app.
@@ -648,10 +732,12 @@ export function mountGlassEngine(): void {
         if (!el || el.nodeType !== 1) continue;
         if (el.matches?.(GLASS_SELECTOR)) {
           resizeObserver?.observe(el as HTMLElement);
+          viewObserver?.observe(el as HTMLElement);
           queueSync(el as HTMLElement);
         }
         for (const inner of el.querySelectorAll?.(GLASS_SELECTOR) ?? []) {
           resizeObserver?.observe(inner as HTMLElement);
+          viewObserver?.observe(inner as HTMLElement);
           queueSync(inner as HTMLElement);
         }
       }
@@ -670,6 +756,8 @@ export function unmountGlassEngine(): void {
   attrObserver = null;
   domObserver?.disconnect();
   domObserver = null;
+  viewObserver?.disconnect();
+  viewObserver = null;
   mapWorker?.terminate();
   mapWorker = null;
   workerDead = false;

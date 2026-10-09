@@ -581,6 +581,24 @@ describe('glass material contract (pixel-audit gates)', () => {
     // filter cost, holding their scroll footprint (intrinsic-size auto).
     expect(css).toMatch(/@utility cv-card\s*\{[^}]*content-visibility:\s*auto/s);
     expect(css).toMatch(/contain-intrinsic-size:\s*auto/);
+    // Lever A: the bend is viewport-gated — an IntersectionObserver parks
+    // offscreen panels on blur-only (inline url() cleared, key forgotten),
+    // entry re-dresses from the MAP_TABLE cache hit (no worker rebuild).
+    // Resting in-view output is byte-identical: zero visual loss by
+    // construction. The flush-time rect + dress-time guards cover IO timing
+    // gaps and worker maps resolving while offscreen.
+    const gate = readFileSync(join(root, 'src/glass/glassController.ts'), 'utf8');
+    expect(gate).toMatch(/IntersectionObserver/);
+    expect(gate).toMatch(/VIEW_MARGIN/);
+    expect(gate).toMatch(/isInExtendedViewport/);
+    expect(gate).toMatch(/parkOffscreen/);
+    // dead panels are unobserved (observers hold strong refs — without this a
+    // removed panel is retained)
+    expect(gate).toMatch(/viewObserver\?\.unobserve\(el\)/);
+    expect(gate).toMatch(/resizeObserver\?\.unobserve\(el\)/);
+    // the two below-fold dashboard sections ride containment
+    expect(component('src/pages/teacher/Dashboard.tsx')).toMatch(/id="section-upcoming-exams"[\s\S]{0,120}cv-card|cv-card[\s\S]{0,120}id="section-upcoming-exams"/);
+    expect(component('src/pages/teacher/Dashboard.tsx')).toMatch(/id="section-recent-submissions"[\s\S]{0,120}cv-card|cv-card[\s\S]{0,120}id="section-recent-submissions"/);
     // push: the tint turns up (resting 16% -> 34%)
     expect(token('--btn-tint-mix')).toBe('16%');
     expect(css).toMatch(/\.btn-glass:active\s*{\s*--btn-tint-mix:\s*34%/);
