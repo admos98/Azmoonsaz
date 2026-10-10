@@ -430,7 +430,7 @@ export default function SecureExamPortal({
               <h1 className="text-label font-black text-[var(--color-text-primary)]">
                 درگاه امن آزمون (آلفا نسخه ۲)
               </h1>
-              <p className="text-micro text-[var(--color-text-tertiary)]">
+              <p className="text-micro text-[var(--color-text-secondary)]">
                 مجهز به ذخیره‌ساز هوشمند آفلاین در قطعی اینترنت
               </p>
             </div>
@@ -457,7 +457,7 @@ export default function SecureExamPortal({
             <div className="text-center space-y-2">
               <Lock className="w-12 h-12 mx-auto text-[var(--color-accent)]" />
               <h2 className="font-black text-[var(--color-text-primary)]">ورود امن دانش‌آموز</h2>
-              <p className="text-caption text-[var(--color-text-tertiary)] leading-relaxed">
+              <p className="text-caption text-[var(--color-text-secondary)] leading-relaxed">
                 کد ملی در مرورگر ذخیره نمی‌شود؛ اعتبارسنجی و تطبیق آن فقط در بک‌اند انجام می‌شود.
               </p>
             </div>

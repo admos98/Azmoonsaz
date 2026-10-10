@@ -1804,7 +1804,7 @@ export default function Questions() {
                               setFormRubrics(updated);
                             }}
                             placeholder="ملاک نیم‌نمره چیست..."
-                            className="w-full glx field px-2 py-1 rounded text-micro text-[var(--color-text-tertiary)]"
+                            className="w-full glx field px-2 py-1 rounded text-micro text-[var(--color-text-secondary)]"
                           />
                         </div>
                       </div>

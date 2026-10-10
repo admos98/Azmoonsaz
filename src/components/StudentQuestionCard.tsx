@@ -226,7 +226,7 @@ function FillBlankInput({
     <div className="space-y-2.5">
       {Array.from({ length: Math.max(1, blankCount) }).map((_, i) => (
         <label key={i} className="flex items-center gap-2">
-          <span className="text-micro font-bold text-[var(--color-text-tertiary)] shrink-0">
+          <span className="text-micro font-bold text-[var(--color-text-secondary)] shrink-0">
             جای خالی {toPersianDigits(i + 1)}:
           </span>
           <input
@@ -347,12 +347,12 @@ function OrderingInput({
   };
   return (
     <div className="space-y-2">
-      <p className="text-micro text-[var(--color-text-tertiary)] font-bold">
+      <p className="text-micro text-[var(--color-text-secondary)] font-bold">
         با دکمه‌ها ترتیب درست را بچینید (بالا = اول):
       </p>
       {current.map((item, i) => (
         <div key={`${item}-${i}`} className="flex items-center gap-2 pane rounded-xl px-3 py-2">
-          <span className="text-micro font-black text-[var(--color-text-tertiary)] shrink-0">
+          <span className="text-micro font-black text-[var(--color-text-secondary)] shrink-0">
             {toPersianDigits(i + 1)}
           </span>
           <span className="flex-1 text-caption font-bold text-[var(--color-text-primary)]">{item}</span>

@@ -1049,7 +1049,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  placeholder="توضیحات و قوانین ورود به برگه را در اینجا بنویسید..."
  className="rounded-2xl"
  />
- <div className="flex justify-between items-center text-micro text-[var(--color-text-tertiary)]">
+ <div className="flex justify-between items-center text-micro text-[var(--color-text-secondary)]">
  <span>دستور فوق درست قبل شرکت دانش‌آموز بر مانیتور او هک خواهد شد.</span>
  <span>تعداد کل کاراکتر: {toPersianDigits(startInstructions.length)} حرف</span>
  </div>

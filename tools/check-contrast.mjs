@@ -161,6 +161,21 @@ for (const [themeName, tokens] of [
 /* ── F-2 ratchet: tertiary at sub-14px roles must not grow ────────────── */
 // Counted per className string containing BOTH text-tertiary and a
 // sub-14px role (text-micro / text-caption, bare or variant-prefixed).
+/* ── usage roles: tertiary must never carry body/instructional text ──── */
+// Token pairs pass while a route uses the hint tier for real reading text.
+// Any text-micro/text-caption element carrying INSTRUCTIONAL phrasing must
+// use secondary or stronger — tertiary at sub-14px is hints/metadata only.
+// Instructional markers (Persian): questions the UI asks the student/teacher
+// to read and act on (placeholders, guidance, privacy notes, labels that
+// carry meaning). Checked per className string co-hosting BOTH text-tertiary
+// and a sub-14px role: the element fails if its file ALSO contains an
+// instructional marker within 3 lines above the className.
+const INSTRUCTIONAL_MARKERS = [
+  'placeholder=',
+  'بنویسید',
+  'بچینید',
+  'جای خالی',
+];
 const TERTIARY_MICRO_BASELINE = 182;
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -171,16 +186,26 @@ function walk(dir, out = []) {
   return out;
 }
 let cohost = 0;
+const usageViolations = [];
 for (const file of walk(join(root, 'src'))) {
   const src = readFileSync(file, 'utf8');
-  for (const m of src.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)) {
-    const cls = m[1] || m[2] || '';
+  const lines = src.split('\n');
+  lines.forEach((line, idx) => {
+    const matches = [...line.matchAll(/className=/g)];
+    if (matches.length === 0) return;
+    const cls = line;
     if (
       cls.includes('text-tertiary') &&
-      /(?<![\w-])text-(micro|caption|xs)\b/.test(cls)
-    )
+      /text-(micro|caption|xs)/.test(cls)
+    ) {
       cohost++;
-  }
+      const window = lines.slice(Math.max(0, idx - 3), idx + 1).join('\n');
+      const marker = INSTRUCTIONAL_MARKERS.find((k) => window.includes(k));
+      if (marker) {
+        usageViolations.push(`${file}:${idx + 1} tertiary@sub-14px carries instructional text (${marker})`);
+      }
+    }
+  });
 }
 const ratchetOk = cohost <= TERTIARY_MICRO_BASELINE;
 rows.push(
@@ -190,6 +215,11 @@ if (!ratchetOk)
   failures.push(
     `F-2 ratchet: ${cohost} tertiary sites at sub-14px roles > baseline ${TERTIARY_MICRO_BASELINE} — new tiny-tertiary text added`,
   );
+const usageOk = usageViolations.length === 0;
+rows.push(
+  `${usageOk ? 'PASS' : 'FAIL'}  usage tertiary@sub-14px instructional sites = ${usageViolations.length} (must be 0)`,
+);
+for (const v of usageViolations) failures.push(`usage role: ${v}`);
 
 /* ── report ───────────────────────────────────────────────────────────── */
 for (const row of rows) console.log(row);
