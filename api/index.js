@@ -20,7 +20,7 @@ import {
   handleTeacherFinalizeSubmission,
 } from './routes/teacher.js';
 import { handleOnboardingStatus, handleOnboarding } from './routes/auth.js';
-import { handleTeacherImageUploadUrl, handleTeacherImageRead, handleTeacherImageCleanup } from './routes/images.js';
+import { handleTeacherImageUploadUrl, handleTeacherImageRead, handleTeacherImageCleanup, handleTeacherImageMigrate } from './routes/images.js';
 
 function routePath(req) {
   // Vercel usually provides req.query.path for api/[...path].js,
@@ -63,6 +63,7 @@ const routes = {
   'teacher/images/upload-url': handleTeacherImageUploadUrl,
   'teacher/images/read': handleTeacherImageRead,
   'teacher/images/cleanup': handleTeacherImageCleanup,
+  'teacher/images/migrate': handleTeacherImageMigrate,
 };
 
 export default async function handler(req, res) {

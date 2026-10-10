@@ -128,6 +128,19 @@ export const s3ImageStore = {
   },
 
   /**
+   * Server-side object write (legacy migration only — browsers never use
+   * this; they PUT direct to signed URLs).
+   */
+  async putObject({ key, teacherId, bytes, contentType = 'image/webp' }) {
+    assertKeyOwnedByTeacher(key, teacherId);
+    const { client: s3, bucket } = getClient();
+    await s3.send(
+      new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: contentType }),
+    );
+    return { ok: true, key };
+  },
+
+  /**
    * List owned object keys under the teacher's own folder (cleanup scans).
    * Bounded: at most 2000 keys.
    */

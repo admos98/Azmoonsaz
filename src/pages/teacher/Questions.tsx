@@ -81,6 +81,7 @@ export default function Questions() {
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [cleaningImages, setCleaningImages] = useState(false);
+  const [migratingImages, setMigratingImages] = useState(false);
 
   // Orphan image sweep: reaps mint-then-abandon strays (drawer canceled,
   // upload succeeded but no question was ever saved). Bounded server-side
@@ -108,6 +109,36 @@ export default function Questions() {
       showToast('پاک‌سازی تصاویر ممکن نشد. دوباره تلاش کنید.', 'error');
     } finally {
       setCleaningImages(false);
+    }
+  };
+
+  // Legacy image migration: moves grandfathered data:/external rows into the
+  // private store (server fetches/decodes, SSRF-guarded, 10/call). Re-run
+  // until nothing migrates — then remote pixels stop loading entirely.
+  const handleMigrateImages = async () => {
+    if (migratingImages) return;
+    setMigratingImages(true);
+    try {
+      const result = await teacherPost<{
+        ok: boolean;
+        migrated: { questionId: string; path: string; key: string }[];
+        skipped: { questionId: string; path: string; reason: string }[];
+      }>('/api/teacher/images/migrate', {});
+      const done = result?.migrated?.length || 0;
+      const skipped = result?.skipped?.length || 0;
+      if (done > 0 && skipped > 0) {
+        showToast(`انتقال تصاویر: ${toPersianDigits(done)} مورد منتقل شد، ${toPersianDigits(skipped)} مورد نیازمند بررسی است.`, 'warning');
+      } else if (done > 0) {
+        showToast(`${toPersianDigits(done)} تصویر قدیمی به فضای امن منتقل شد.`, 'success');
+      } else if (skipped > 0) {
+        showToast('تصویری منتقل نشد؛ موارد باقی‌مانده نیازمند بررسی است.', 'warning');
+      } else {
+        showToast('تصویر قدیمی برای انتقال پیدا نشد.', 'info');
+      }
+    } catch {
+      showToast('انتقال تصاویر ممکن نشد. دوباره تلاش کنید.', 'error');
+    } finally {
+      setMigratingImages(false);
     }
   };
 
@@ -449,6 +480,17 @@ export default function Questions() {
             className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro font-bold cursor-pointer disabled:opacity-50 shrink-0"
           >
             {cleaningImages ? 'در حال پاک‌سازی…' : 'پاک‌سازی تصاویر بلااستفاده'}
+          </button>
+
+          {/* Legacy image migration — moves grandfathered rows into the store */}
+          <button
+            type="button"
+            onClick={() => void handleMigrateImages()}
+            disabled={migratingImages}
+            title="انتقال تصاویر قدیمی به فضای امن"
+            className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro font-bold cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {migratingImages ? 'در حال انتقال…' : 'انتقال تصاویر قدیمی'}
           </button>
         </div>
       </div>

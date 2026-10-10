@@ -15,6 +15,7 @@ import {
   handleTeacherImageUploadUrl,
   handleTeacherImageRead,
   handleTeacherImageCleanup,
+  handleTeacherImageMigrate,
 } from '../../api/routes/images.js';
 import { handleTeacherQuestions } from '../../api/routes/teacher.js';
 import { handleStudentExamPayload } from '../../api/routes/student.js';
@@ -348,6 +349,111 @@ describe('POST /api/teacher/images/cleanup', () => {
     vi.mocked(checkRateLimit).mockResolvedValueOnce({ ok: false } as never);
     const res = createRes();
     await handleTeacherImageCleanup(post('/api/teacher/images/cleanup', {}), res);
+    expect(res.statusCode).toBe(429);
+    expect(res.body).toEqual({ error: 'too_many_requests' });
+  });
+});
+
+describe('POST /api/teacher/images/migrate', () => {
+  const DATA_URL =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+  function migrateApi(rows: unknown[]) {
+    const updates: { id: string; body: unknown }[] = [];
+    const api = {
+      updates,
+      from: (table: string) => {
+        if (table === 'questions') {
+          const chain: Record<string, unknown> = {};
+          chain.select = () => chain;
+          chain.eq = () => chain;
+          chain.limit = () => Promise.resolve({ data: rows, error: null });
+          chain.update = (payload: { body: unknown }) => ({
+            eq: (col: string, val: string) => ({
+              eq: () => {
+                updates.push({ id: val, body: (payload as { body: unknown }).body });
+                return Promise.resolve({ data: null, error: null });
+              },
+            }),
+          });
+          return chain;
+        }
+        return {};
+      },
+      storage: {
+        from: () => ({
+          upload: async (key: string) => {
+            (api as { uploaded?: string[] }).uploaded = [
+              ...((api as { uploaded?: string[] }).uploaded || []),
+              key,
+            ];
+            return { error: null };
+          },
+        }),
+      },
+    };
+    return api;
+  }
+
+  it('migrates base64 rows to teacher-scoped keys and rewrites bodies', async () => {
+    const api = migrateApi([
+      { id: 'q1', body: { text: 't', imageUrl: DATA_URL, options: [{ id: 'o1', imageUrl: DATA_URL }] } },
+      { id: 'q2', body: { text: 'clean' } },
+    ]);
+    teacherWith(api as never);
+    vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+    const res = createRes();
+    await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      ok: boolean;
+      migrated: { questionId: string; path: string; key: string }[];
+      skipped: unknown[];
+    };
+    expect(body.ok).toBe(true);
+    expect(body.migrated).toHaveLength(2);
+    expect(body.skipped).toEqual([]);
+    for (const m of body.migrated) {
+      expect(m.questionId).toBe('q1');
+      expect(m.key.startsWith(`${TEACHER_ID}/`)).toBe(true);
+      expect(m.key.endsWith('.webp')).toBe(true);
+    }
+    // Body rewritten to keys, not base64.
+    expect(api.updates).toHaveLength(1);
+    expect(JSON.stringify(api.updates[0].body)).not.toContain('data:image');
+  });
+
+  it('skips unfetchable values with reasons and migrates siblings', async () => {
+    const api = migrateApi([
+      {
+        id: 'q1',
+        body: {
+          text: 't',
+          imageUrl: 'https://169.254.169.254/latest/meta-data/',
+          options: [{ id: 'o1', imageUrl: DATA_URL }],
+        },
+      },
+    ]);
+    teacherWith(api as never);
+    vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+    const res = createRes();
+    await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      migrated: { questionId: string; path: string }[];
+      skipped: { questionId: string; path: string; reason: string }[];
+    };
+    expect(body.migrated).toHaveLength(1);
+    expect(body.migrated[0].path).toBe('options.0.imageUrl');
+    expect(body.skipped).toHaveLength(1);
+    expect(body.skipped[0].reason).toBe('unfetchable_or_too_large');
+  });
+
+  it('returns 429 when the strict migrate budget is exhausted', async () => {
+    teacherWith(createAdmin({}));
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({ ok: false } as never);
+    const res = createRes();
+    await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
     expect(res.statusCode).toBe(429);
     expect(res.body).toEqual({ error: 'too_many_requests' });
   });

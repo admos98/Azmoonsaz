@@ -204,6 +204,13 @@ npx supabase db push
 | `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` | Only when `IMAGE_STORE_PROVIDER=s3` | S3 credentials (set in Vercel, never `VITE_`). While unset, the server logs once and stays on Supabase. Also extend `connect-src` + `img-src` in `vercel.json` with the S3 origin. |
 | `S3_REGION` / `S3_FORCE_PATH_STYLE` | No | Defaults `default` / `true`. |
 
+Legacy image migration: grandfathered `data:`/external rows are moved into
+the private store via `POST /api/teacher/images/migrate` (SSRF-guarded,
+10 values/call, own questions only) or the «انتقال تصاویر قدیمی» button in
+the question bank. Only after migrate reports zero remaining legacy rows
+should CSP `img-src` in `vercel.json` drop bare `https:`/`data:` —
+tightening early breaks rendering for teachers who have not migrated yet.
+
 ---
 
 ## Audit & Quality

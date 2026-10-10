@@ -119,6 +119,21 @@ export const supabaseImageStore = {
   },
 
   /**
+   * Server-side object write (legacy migration only — browsers never use
+   * this; they PUT direct to signed URLs). Bytes are decoded/fetched and
+   * size-checked by the caller before reaching here.
+   */
+  async putObject({ key, teacherId, bytes, contentType = 'image/webp' }) {
+    assertKeyOwnedByTeacher(key, teacherId);
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.storage
+      .from(QUESTION_IMAGES_BUCKET)
+      .upload(key, bytes, { contentType, upsert: false });
+    if (error) throw error;
+    return { ok: true, key };
+  },
+
+  /**
    * List owned object keys under the teacher's own folder (cleanup scans).
    * Bounded: at most 2000 keys — the free tier cannot hold more anyway.
    */
