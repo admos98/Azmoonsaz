@@ -17,7 +17,7 @@ import { toPersianDigits } from '../../utils/persian';
 import {
   queueAnswerOffline,
   flushQueuedAnswers,
-  clearQueueForToken,
+  clearQueueForExam,
   getQueuedAnswers,
 } from '../../services/offlineAnswerQueue';
 import {
@@ -198,13 +198,13 @@ export default function SecureExamPortal({
   useEffect(() => {
     if (!token) return;
     const updateQueueCount = () => {
-      const q = getQueuedAnswers().filter((item) => item.token === token);
+      const q = getQueuedAnswers(examCode);
       setQueuedCount(q.length);
     };
     updateQueueCount();
     const interval = setInterval(updateQueueCount, 3000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [token, examCode]);
 
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
 
@@ -353,7 +353,7 @@ export default function SecureExamPortal({
         return;
       }
       logger.warn('Network save failed. Queuing answer offline:', err);
-      queueAnswerOffline(token, questionId, value);
+      queueAnswerOffline(examCode, questionId, value);
       setSavedAt('ذخیره به‌صورت آفلاین (در انتظار همگام‌سازی شبکه)');
     } finally {
       setSaving(false);
@@ -364,7 +364,7 @@ export default function SecureExamPortal({
     setSyncing(true);
     setError('');
     try {
-      const result = await flushQueuedAnswers();
+      const result = await flushQueuedAnswers(examCode, token);
       if (result.remainingCount === 0) {
         setSavedAt('تمام پاسخ‌های آفلاین با موفقیت به سرور همگام شد.');
       } else {
@@ -388,7 +388,7 @@ export default function SecureExamPortal({
   const handleConfirmSync = async () => {
     setConfirmStage(null);
     await handleSyncQueued();
-    if (getQueuedAnswers().filter((q) => q.token === token).length > 0) {
+    if (getQueuedAnswers(examCode).length > 0) {
       setError('خطا: ابتدا از اتصال اینترنت خود اطمینان حاصل کنید تا پاسخ‌های آفلاین همگام شوند.');
       return;
     }
@@ -405,7 +405,7 @@ export default function SecureExamPortal({
         guard.total > 0 ? { proctor: guard.flags } : {},
         { Authorization: 'Bearer ' + token },
       );
-      clearQueueForToken(token);
+      clearQueueForExam(examCode);
       clearPersistedExamSession(examCode);
       setPhase('submitted');
     } catch (err) {

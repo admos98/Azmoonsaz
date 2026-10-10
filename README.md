@@ -8,7 +8,7 @@ A full-stack Iranian education exam platform — build, manage, and take exams o
 
 **For teachers:** Create exams from a question bank, assign them to class groups, set time windows and access controls, review submissions, and grade both auto-graded and descriptive questions.
 
-**For students:** Authenticate with national ID + entry code, take timed exams with anti-cheat measures, answer offline if the connection drops, and receive instant results for auto-graded sections.
+**For students:** Authenticate with national ID + entry code, take timed exams with anti-cheat measures, answer offline if the connection drops, and review submissions with the teacher (scores are assigned during grading — the portal shows no instant scores).
 
 ---
 

@@ -8,54 +8,156 @@ import { logger } from '../lib/logger';
 
 export type QueuedAnswerValue = string | boolean | string[] | Record<string, unknown>;
 
+/**
+ * T4: entries carry NO bearer token. The token lives in the portal's state
+ * (memory) and is passed to flush — exactly like the online save path. Rows
+ * are keyed by exam code + question id, so a shared-device user recovers
+ * answer TEXT at worst, never a still-valid session.
+ *
+ * Session-scoped storage: in-memory first (dies with reload), sessionStorage
+ * backup (dies with the tab). localStorage is never used.
+ */
 export interface QueuedAnswer {
-  token: string;
+  examCode: string;
   questionId: string;
   value: QueuedAnswerValue;
   queuedAt: string;
   retryCount: number;
 }
 
-const STORAGE_KEY = 'azmoonsaz_offline_answers_v2';
+const STORAGE_KEY = 'examforge_offline_answers_v1';
+const LEGACY_STORAGE_KEY = 'azmoonsaz_offline_answers_v2';
 
-export function getQueuedAnswers(): QueuedAnswer[] {
+// In-memory primary: survives re-renders, dies with the page.
+let memoryQueue: QueuedAnswer[] = [];
+let migratedLegacy = false;
+
+function safeSessionStorage(): Storage | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (typeof window === 'undefined' || !window.sessionStorage) return null;
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One-time migration: a v2 localStorage queue (with bearer tokens) left by
+ * an older client is dropped, never imported. Answers re-queue naturally on
+ * the next failed save with the live in-memory token.
+ */
+function dropLegacyQueue(): void {
+  if (migratedLegacy) return;
+  migratedLegacy = true;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
+function persistBackup(queue: QueuedAnswer[]): void {
+  const storage = safeSessionStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(STORAGE_KEY, JSON.stringify(queue));
+  } catch (err) {
+    logger.warn('Failed to persist offline answers queue:', err);
+  }
+}
+
+function readBackup(): QueuedAnswer[] {
+  const storage = safeSessionStorage();
+  if (!storage) return [];
+  try {
+    const raw = storage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (q): q is QueuedAnswer =>
+        q &&
+        typeof q === 'object' &&
+        typeof q.examCode === 'string' &&
+        typeof q.questionId === 'string' &&
+        !('token' in q),
+    );
   } catch (err) {
     logger.warn('Failed to read offline answers queue:', err);
     return [];
   }
 }
 
-function saveQueue(queue: QueuedAnswer[]): void {
+function currentQueue(): QueuedAnswer[] {
+  dropLegacyQueue();
+  if (memoryQueue.length > 0) return [...memoryQueue];
+  // Reload with the tab still alive: restore the session backup into memory.
+  memoryQueue = readBackup();
+  return [...memoryQueue];
+}
+
+function replaceQueue(queue: QueuedAnswer[]): void {
+  memoryQueue = [...queue];
+  persistBackup(memoryQueue);
+}
+
+/** Test-only reset: clears memory, backup, and the legacy-migration flag. */
+export function __resetQueueForTests(): void {
+  memoryQueue = [];
+  migratedLegacy = false;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
-  } catch (err) {
-    logger.warn('Failed to persist offline answers queue:', err);
+    window.sessionStorage?.removeItem(STORAGE_KEY);
+    window.localStorage?.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    /* best-effort */
   }
 }
 
-export function queueAnswerOffline(token: string, questionId: string, value: QueuedAnswerValue): void {
-  const queue = getQueuedAnswers();
-  const filtered = queue.filter((q) => !(q.token === token && q.questionId === questionId));
-  filtered.push({ token, questionId, value, queuedAt: new Date().toISOString(), retryCount: 0 });
-  saveQueue(filtered);
+export function getQueuedAnswers(examCode?: string): QueuedAnswer[] {
+  const queue = currentQueue();
+  if (!examCode) return queue;
+  const code = String(examCode).trim().toUpperCase();
+  return queue.filter((q) => q.examCode === code);
 }
 
-export async function flushQueuedAnswers(): Promise<{
+export function queueAnswerOffline(
+  examCode: string,
+  questionId: string,
+  value: QueuedAnswerValue,
+): void {
+  const code = String(examCode || '').trim().toUpperCase();
+  if (!code || !questionId) return;
+  const queue = currentQueue().filter((q) => !(q.examCode === code && q.questionId === questionId));
+  queue.push({ examCode: code, questionId, value, queuedAt: new Date().toISOString(), retryCount: 0 });
+  replaceQueue(queue);
+}
+
+/**
+ * Flush with the caller's live bearer token (memory, never stored).
+ * Only this exam's entries are attempted; other exams' rows are untouched.
+ */
+export async function flushQueuedAnswers(
+  examCode: string,
+  token: string,
+): Promise<{
   syncedCount: number;
   remainingCount: number;
   droppedCount: number;
 }> {
-  const queue = getQueuedAnswers();
-  if (queue.length === 0) return { syncedCount: 0, remainingCount: 0, droppedCount: 0 };
+  const code = String(examCode || '').trim().toUpperCase();
+  const mine = currentQueue().filter((q) => q.examCode === code);
+  const others = currentQueue().filter((q) => q.examCode !== code);
+  if (mine.length === 0 || !token) {
+    return { syncedCount: 0, remainingCount: mine.length, droppedCount: 0 };
+  }
 
   const remaining: QueuedAnswer[] = [];
   let syncedCount = 0;
   let droppedCount = 0;
 
-  for (const item of queue) {
+  for (const item of mine) {
     try {
       await apiPost(
         '/api/student/save-answer',
@@ -63,7 +165,7 @@ export async function flushQueuedAnswers(): Promise<{
           questionId: item.questionId,
           answer: { value: item.value },
         },
-        { Authorization: 'Bearer ' + item.token },
+        { Authorization: 'Bearer ' + token },
       );
       syncedCount++;
     } catch (err) {
@@ -93,11 +195,12 @@ export async function flushQueuedAnswers(): Promise<{
     }
   }
 
-  saveQueue(remaining);
+  replaceQueue([...others, ...remaining]);
   return { syncedCount, remainingCount: remaining.length, droppedCount };
 }
 
-export function clearQueueForToken(token: string): void {
-  const queue = getQueuedAnswers().filter((q) => q.token !== token);
-  saveQueue(queue);
+/** Drop this exam's queued rows — call on submit. */
+export function clearQueueForExam(examCode: string): void {
+  const code = String(examCode || '').trim().toUpperCase();
+  replaceQueue(currentQueue().filter((q) => q.examCode !== code));
 }
