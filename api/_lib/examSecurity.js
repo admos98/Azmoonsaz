@@ -20,8 +20,11 @@ const QUESTION_BODY_WHITELIST = new Set([
   'options',
   'parts',
   // F-05: `orderingItems` / `matchingPairs` are the canonical correct
-  // order/mapping — never sent to students. When a student UI needs them,
-  // send a per-session scrambled copy and keep the canonical key server-side.
+  // order/mapping — never sent to students. The per-session scrambled copies
+  // (`displayItems` / `displayPairs`) ARE sent; answers reference displayed
+  // positions and grading maps them back through the same seeded order.
+  'displayItems',
+  'displayPairs',
 ]);
 
 const OPTION_WHITELIST = new Set(['id', 'text', 'imageUrl']);
@@ -75,6 +78,69 @@ export function gradeAnswerValue(answerKey, value) {
     if (value === undefined || value === null) return { correct: false };
     return { correct: String(value).trim() === key.trim() };
   }
+  return null;
+}
+
+/**
+ * Typed auto-grading for the student-renderer answer shapes (T1).
+ *
+ * Returns `{ correct }` when the question is machine-gradable, `null` when
+ * a teacher must grade (subjective types, missing keys). Never throws on
+ * hostile input — unparseable values grade as incorrect, never crash.
+ *
+ * Grading policy per type:
+ * - true_false: boolean equality against the key.
+ * - fill_blank: positional string compare, trimmed + case-insensitive
+ *   (Persian answers vary in spacing/case, not meaning).
+ * - matching: every canonical left maps to its canonical right.
+ * - ordering: exact sequence equality against the canonical items.
+ * - short_answer: trimmed case-insensitive compare when a key exists.
+ * - long_answer / cloze / reading_comprehension / unknown: null (teacher).
+ */
+export function gradeTypedAnswer(question, value) {
+  const type = question?.type;
+  const key = question?.answer_key && typeof question.answer_key === 'object' ? question.answer_key : {};
+  const body = question?.body && typeof question.body === 'object' ? question.body : {};
+  if (value === undefined || value === null || value === '') return { correct: false };
+
+  if (type === 'true_false') {
+    const expected = key.correctAnswer;
+    if (typeof expected !== 'boolean') return null;
+    return { correct: value === expected };
+  }
+
+  if (type === 'fill_blank') {
+    const blanks = Array.isArray(key.correctFillBlanks) ? key.correctFillBlanks : [];
+    if (blanks.length === 0) return null;
+    if (!Array.isArray(value) || value.length !== blanks.length) return { correct: false };
+    const norm = (s) => String(s ?? '').trim().toLowerCase();
+    return { correct: blanks.every((blank, i) => norm(value[i]) === norm(blank)) };
+  }
+
+  if (type === 'matching') {
+    const pairs = Array.isArray(body.matchingPairs) ? body.matchingPairs : [];
+    if (pairs.length === 0) return null;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return { correct: false };
+    return {
+      correct: pairs.every(
+        (pair) => String(value[pair.left] ?? '').trim() === String(pair.right ?? '').trim(),
+      ),
+    };
+  }
+
+  if (type === 'ordering') {
+    const items = Array.isArray(body.orderingItems) ? body.orderingItems : [];
+    if (items.length === 0) return null;
+    if (!Array.isArray(value) || value.length !== items.length) return { correct: false };
+    return { correct: items.every((item, i) => String(value[i]).trim() === String(item).trim()) };
+  }
+
+  if (type === 'short_answer') {
+    const expected = key.correctAnswer;
+    if (typeof expected !== 'string' || expected.trim().length === 0) return null;
+    return { correct: String(value).trim().toLowerCase() === expected.trim().toLowerCase() };
+  }
+
   return null;
 }
 
@@ -289,6 +355,12 @@ function shuffledArray(array, random) {
  * Seeded per (session, question): a reload yields the same order, different
  * students get different orders, and answers stay keyed by id so grading is
  * order-independent. Flags live in `exams.settings`.
+ *
+ * Matching/ordering need the same anti-copy treatment as options: a stable
+ * per-session scramble is sent as `displayPairs` / `displayItems`, while the
+ * canonical `matchingPairs` / `orderingItems` key stays server-side (stripped
+ * by sanitizeBody). Answers reference the DISPLAYED positions, so grading
+ * maps them back through the same seeded order before comparing.
  */
 export function applyExamShuffles(questions, exam, sessionId) {
   const settings = exam && typeof exam === 'object' && exam.settings ? exam.settings : {};
@@ -296,18 +368,79 @@ export function applyExamShuffles(questions, exam, sessionId) {
   if (settings.shuffleQuestions && Array.isArray(result) && result.length > 1) {
     result = shuffledArray(result, seededRandom(`${sessionId}|questions`));
   }
-  if (settings.shuffleOptions && Array.isArray(result)) {
+  if (Array.isArray(result)) {
     result = result.map((question) => {
-      const options = question?.body?.options;
-      if (!Array.isArray(options) || options.length < 2) return question;
-      return {
-        ...question,
-        body: {
-          ...question.body,
-          options: shuffledArray(options, seededRandom(`${sessionId}|options|${question.id}`)),
-        },
-      };
+      const body = question?.body;
+      if (!body || typeof body !== 'object') return question;
+      let nextBody = body;
+      if (settings.shuffleOptions) {
+        const options = body.options;
+        if (Array.isArray(options) && options.length > 1) {
+          nextBody = {
+            ...nextBody,
+            options: shuffledArray(options, seededRandom(`${sessionId}|options|${question.id}`)),
+          };
+        }
+        for (const part of Array.isArray(nextBody.parts) ? nextBody.parts : []) {
+          if (Array.isArray(part?.options) && part.options.length > 1) {
+            part.options = shuffledArray(
+              part.options,
+              seededRandom(`${sessionId}|options|${question.id}|${part.id}`),
+            );
+          }
+        }
+      }
+      // Matching: scramble display pairs per session, keep canonical key.
+      const pairs = body.matchingPairs;
+      if (Array.isArray(pairs) && pairs.length > 0) {
+        nextBody = {
+          ...nextBody,
+          displayPairs: shuffledArray(pairs, seededRandom(`${sessionId}|pairs|${question.id}`)),
+        };
+      }
+      // Ordering: scramble display items per session, keep canonical key.
+      const items = body.orderingItems;
+      if (Array.isArray(items) && items.length > 0) {
+        nextBody = {
+          ...nextBody,
+          displayItems: shuffledArray(items, seededRandom(`${sessionId}|items|${question.id}`)),
+        };
+      }
+      return nextBody === body ? question : { ...question, body: nextBody };
     });
   }
   return result;
+}
+
+/**
+ * Map a matching answer on DISPLAYED positions back to canonical form.
+ * The student sends `{ leftIndex: rightText }` against the scrambled display
+ * pairs; grading compares canonical `left -> right` mappings.
+ */
+export function resolveMatchingAnswer(question, displayPairs, value) {
+  if (!question || !Array.isArray(displayPairs) || !value || typeof value !== 'object') return null;
+  const canonical = Array.isArray(question.body?.matchingPairs)
+    ? question.body.matchingPairs
+    : question.matchingPairs;
+  if (!Array.isArray(canonical)) return null;
+  const resolved = {};
+  for (const [leftIndex, rightText] of Object.entries(value)) {
+    const pair = displayPairs[Number(leftIndex)];
+    if (!pair || typeof rightText !== 'string') continue;
+    resolved[pair.left] = rightText;
+  }
+  return resolved;
+}
+
+/**
+ * Map an ordering answer on DISPLAYED positions back to canonical item order.
+ * The student sends an array of item texts in their chosen order; grading
+ * compares against the canonical `orderingItems` sequence.
+ */
+export function resolveOrderingAnswer(question, value) {
+  const canonical = Array.isArray(question?.body?.orderingItems)
+    ? question.body.orderingItems
+    : question?.orderingItems;
+  if (!Array.isArray(canonical) || !Array.isArray(value)) return null;
+  return value.filter((item) => typeof item === 'string');
 }

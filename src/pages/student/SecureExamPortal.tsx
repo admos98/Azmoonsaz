@@ -27,6 +27,7 @@ import {
 } from '../../services/studentSessionStore';
 import { ConfirmDialog, PillButton, TextLink } from '../../ui';
 import { ExamCountdown } from '../../components/ExamCountdown';
+import StudentQuestionCard, { type StudentAnswerValue } from '../../components/StudentQuestionCard';
 import { useExamGuard } from '../../features/exam-guard/useExamGuard';
 import { Watermark } from '../../features/exam-guard/Watermark';
 
@@ -65,6 +66,15 @@ type SafeQuestion = {
     text?: string;
     imageUrl?: string;
     options?: { id: string; text: string; imageUrl?: string }[];
+    parts?: {
+      id: string;
+      text: string;
+      type: string;
+      imageUrl?: string;
+      options?: { id: string; text: string; imageUrl?: string }[];
+    }[];
+    displayPairs?: { left: string; right: string }[];
+    displayItems?: string[];
   };
   points: number;
   sectionTitle?: string;
@@ -144,7 +154,9 @@ export default function SecureExamPortal({
     restoredSession?.student ? { id: '', ...restoredSession.student, grade: '' } : null,
   );
   const [questions, setQuestions] = useState<SafeQuestion[]>([]);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Answers are per-type values: string (choice/text), boolean (true/false),
+  // string[] (multiple/ordering/fill-blank), record (matching, cloze parts).
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(restoredSession !== null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -237,11 +249,14 @@ export default function SecureExamPortal({
     if (response.student) setStudent(response.student);
     setQuestions(response.questions || []);
     // Restore previously saved answers (value-only map from the server).
+    // Values keep their per-type shape (string/array/record) — the typed
+    // renderer restores each input from its own shape.
     const saved = response.savedAnswers;
     if (saved && typeof saved === 'object') {
-      const restored: Record<string, string> = {};
+      const restored: Record<string, unknown> = {};
       for (const [questionId, value] of Object.entries(saved)) {
-        if (typeof value === 'string') restored[questionId] = value;
+        if (value === undefined) continue;
+        restored[questionId] = value;
       }
       setAnswers(restored);
     } else {
@@ -306,7 +321,7 @@ export default function SecureExamPortal({
     }).finally(() => setLoading(false));
   }, [restoredSession]);
 
-  const handleSaveAnswer = async (questionId: string, value: string) => {
+  const handleSaveAnswer = async (questionId: string, value: StudentAnswerValue) => {
     if (timeExpired) {
       setError('زمان آزمون به پایان رسید؛ پاسخ جدیدی ذخیره نمی‌شود.');
       return;
@@ -628,63 +643,14 @@ export default function SecureExamPortal({
 
             <div inert={timeExpired} className="select-none">
               {questions.map((question, index) => (
-                <section key={question.id} className="lens rounded-3xl p-5 md:p-6 space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-glass-light-stroke)] pb-3">
-                    <h3 className="font-black text-[var(--color-text-primary)] text-label">
-                      سوال {toPersianDigits(index + 1)}: {question.title}
-                    </h3>
-                    <span className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 rounded-xl px-3 py-1 text-caption font-black">
-                      {toPersianDigits(question.points)} نمره
-                    </span>
-                  </div>
-                  <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
-                    {question.body?.text || 'متن سوال موجود نیست.'}
-                  </p>
-                  {question.body?.imageUrl && (
-                    <div className="my-3">
-                      <img
-                        loading="lazy"
-                        decoding="async"
-                        src={question.body!.imageUrl}
-                        alt="پیوست سوال"
-                        className="max-h-64 rounded-2xl object-cover border border-[var(--color-glass-light-stroke)] shadow-xs"
-                      />
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {(question.body?.options || []).map((option) => {
-                      const selected = answers[question.id] === option.id;
-                      return (
-                        <button
-                          type="button"
-                          key={option.id}
-                          onClick={() => handleSaveAnswer(question.id, option.id)}
-                          aria-pressed={selected}
-                          className={
-                            (selected
-                              ? 'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)] text-[var(--color-accent)] shadow-xs font-black '
-                              : 'border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)] ') +
-                            'rounded-2xl border p-4 text-right text-caption transition-all flex items-center justify-between cursor-pointer'
-                          }
-                        >
-                          <span>{option.text}</span>
-                          {option.imageUrl && (
-                            <img
-                              loading="lazy"
-                              decoding="async"
-                              src={option.imageUrl}
-                              alt="گزینه"
-                              className="w-10 h-10 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] ml-2"
-                            />
-                          )}
-                          <span className="font-mono text-micro text-[var(--color-text-tertiary)] font-bold frost px-2 py-0.5 rounded-md">
-                            {option.id}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </section>
+                <StudentQuestionCard
+                  key={question.id}
+                  question={question}
+                  index={index}
+                  answer={answers[question.id]}
+                  onAnswer={handleSaveAnswer}
+                  disabled={timeExpired}
+                />
               ))}
             </div>
           </div>

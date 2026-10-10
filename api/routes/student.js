@@ -15,6 +15,7 @@ import {
   extractSavedAnswerValue,
   applyExamShuffles,
   gradeAnswerValue,
+  gradeTypedAnswer,
 } from '../_lib/examSecurity.js';
 import { tokenTtlForSession, isUuid } from '../_lib/utils.js';
 import {
@@ -75,7 +76,7 @@ async function autoGradeSession(supabase, sessionId, examId) {
     const questionIds = eqRows.map((row) => row.question_id);
     const { data: questions, error: qError } = await supabase
       .from('questions')
-      .select('id, points, answer_key')
+      .select('id, type, points, answer_key, body')
       .in('id', questionIds);
     if (qError) throw qError;
     const { data: answers, error: aError } = await supabase
@@ -91,7 +92,10 @@ async function autoGradeSession(supabase, sessionId, examId) {
       const answer = row.answer && typeof row.answer === 'object' ? row.answer : {};
       const previous = answer.__grading;
       if (previous && previous.gradedBy !== 'auto') continue; // teacher grade wins
-      const verdict = gradeAnswerValue(question.answer_key, answer.value);
+      // Typed grading first (true/false, fill-blank, matching, ordering);
+      // falls back to the legacy correctAnswer check for choice types.
+      const verdict =
+        gradeTypedAnswer(question, answer.value) ?? gradeAnswerValue(question.answer_key, answer.value);
       if (!verdict) continue; // not machine-gradable — teacher grades it
       const points = Number(pointsById.get(row.question_id) ?? question.points ?? 0);
       const score = verdict.correct && Number.isFinite(points) && points > 0 ? points : 0;

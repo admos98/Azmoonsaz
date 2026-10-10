@@ -6,10 +6,12 @@
 import { apiPost, ApiError } from '../lib/apiClient';
 import { logger } from '../lib/logger';
 
+export type QueuedAnswerValue = string | boolean | string[] | Record<string, unknown>;
+
 export interface QueuedAnswer {
   token: string;
   questionId: string;
-  value: string;
+  value: QueuedAnswerValue;
   queuedAt: string;
   retryCount: number;
 }
@@ -34,7 +36,7 @@ function saveQueue(queue: QueuedAnswer[]): void {
   }
 }
 
-export function queueAnswerOffline(token: string, questionId: string, value: string): void {
+export function queueAnswerOffline(token: string, questionId: string, value: QueuedAnswerValue): void {
   const queue = getQueuedAnswers();
   const filtered = queue.filter((q) => !(q.token === token && q.questionId === questionId));
   filtered.push({ token, questionId, value, queuedAt: new Date().toISOString(), retryCount: 0 });
