@@ -14,6 +14,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { QuestionType, QuestionPart, RubricCriterion } from '../../types';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
+import { uploadQuestionImageFile, ImageUploadError } from '../../services/imageStoreClient';
 
 export function useQuestionForm(
   showAddEditDrawer: boolean,
@@ -115,26 +116,38 @@ export function useQuestionForm(
     );
     const closeQuestionEditor = () => guardQuestionDraft(() => setShowAddEditDrawer(false));
   
-    // Image upload handler: FileReader → dataURL, stored on the question
-    // (main imageUrl / option imageUrl) and persisted through questionToBody.
+    // Image upload pipeline: shrink in browser → PUT bytes DIRECT to the
+    // store (never through Vercel) → persist ONLY the opaque storage key.
+    // Legacy rows load untouched (grandfathered); fresh pixels enter only
+    // through this pipeline (server rejects data:/https: on save).
     const handleImageUpload = async (
       e: React.ChangeEvent<HTMLInputElement>,
-      target: 'main' | { optIndex: number },
+      target: 'main' | { optIndex: number } | { partIndex: number },
     ) => {
       const file = e.target.files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const dataUrl = event.target?.result as string;
-          if (target === 'main') {
-            setFormImageUrl(dataUrl);
-          } else if ('optIndex' in target) {
-            const updated = [...formOptions];
-            updated[target.optIndex].imageUrl = dataUrl;
-            setFormOptions(updated);
-          }
-        };
-        reader.readAsDataURL(file);
+      // Reset so the same file can be re-chosen after an error.
+      e.target.value = '';
+      if (!file) return;
+      try {
+        const key = await uploadQuestionImageFile(file);
+        if (target === 'main') {
+          setFormImageUrl(key);
+        } else if ('optIndex' in target) {
+          const updated = [...formOptions];
+          if (!updated[target.optIndex]) return;
+          updated[target.optIndex].imageUrl = key;
+          setFormOptions(updated);
+        } else if ('partIndex' in target) {
+          const updated = [...formParts];
+          if (!updated[target.partIndex]) return;
+          updated[target.partIndex] = { ...updated[target.partIndex], imageUrl: key };
+          setFormParts(updated);
+        }
+      } catch (err) {
+        showToast(
+          err instanceof ImageUploadError ? err.message : 'بارگذاری تصویر ممکن نشد. دوباره تلاش کنید.',
+          'error',
+        );
       }
     };
   

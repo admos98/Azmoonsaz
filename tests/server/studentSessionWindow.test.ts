@@ -6,6 +6,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  handleStudentExamPayload,
   handleStudentSaveAnswer,
   handleStudentSubmit,
   handleStudentStartSession,
@@ -15,6 +16,7 @@ import { checkRateLimit } from '../../api/_lib/rateLimit.js';
 import { createStudentSessionToken } from '../../api/_lib/studentSession.js';
 import {
   sanitizeStudentAnswer,
+  extractSavedAnswerValue,
   getSessionTimeWindow,
   getExamAvailabilityWithGrace,
 } from '../../api/_lib/examSecurity.js';
@@ -99,6 +101,30 @@ describe('sanitizeStudentAnswer (F-01)', () => {
   });
 });
 
+describe('extractSavedAnswerValue (refresh recovery: value-only, no grading)', () => {
+  it('returns the raw value and never grading state', () => {
+    expect(extractSavedAnswerValue({ value: 'B' })).toBe('B');
+    expect(
+      extractSavedAnswerValue({
+        value: 'B',
+        __grading: { scoreGained: 4, isCorrect: true, gradedBy: 'auto' },
+      }),
+    ).toBe('B');
+    expect(extractSavedAnswerValue({ value: true })).toBe(true);
+    expect(extractSavedAnswerValue({ value: 3 })).toBe(3);
+    expect(extractSavedAnswerValue({ value: ['a', 'b'] })).toEqual(['a', 'b']);
+  });
+
+  it('returns undefined when there is nothing to restore', () => {
+    expect(extractSavedAnswerValue(null)).toBeUndefined();
+    expect(extractSavedAnswerValue('B')).toBeUndefined();
+    expect(extractSavedAnswerValue({})).toBeUndefined();
+    expect(extractSavedAnswerValue({ __grading: { scoreGained: 4 } })).toBeUndefined();
+    expect(extractSavedAnswerValue({ value: '' })).toBeUndefined();
+    expect(extractSavedAnswerValue({ value: { nested: true } })).toBeUndefined();
+  });
+});
+
 describe('window helpers (F-02)', () => {
   it('session deadline = started_at + duration + grace', () => {
     const session = { started_at: minutesAgo(50) };
@@ -118,8 +144,18 @@ describe('window helpers (F-02)', () => {
     expect(getSessionTimeWindow({}, examRow).status).toBe(422);
   });
 
+  it('answer writes use a strict deadline — grace is submit-only', () => {
+    const inGrace = { started_at: minutesAgo(62) }; // 2m past duration, inside 5m grace
+    expect(getSessionTimeWindow(inGrace, examRow).ok).toBe(true); // submit path keeps grace
+    expect(getSessionTimeWindow(inGrace, examRow, new Date(), { grace: false })).toEqual({
+      ok: false,
+      status: 410,
+      error: 'exam_time_expired',
+    });
+  });
+
   it('grace applies only to clock-based end — teacher intent stays strict', () => {
-    // Window closed 2 minutes ago (stored active): grace allows save/flush.
+    // Window closed 2 minutes ago (stored active): grace allows submit.
     expect(getExamAvailabilityWithGrace({ ...examRow, ends_at: minutesAgo(2) }).ok).toBe(true);
     // Window closed 10 minutes ago: past grace.
     expect(getExamAvailabilityWithGrace({ ...examRow, ends_at: minutesAgo(10) }).error).toBe(
@@ -193,6 +229,17 @@ describe('POST /api/student/save-answer', () => {
     expect(upserts).toHaveLength(0);
     expect(admin.calls).not.toContain('student_answers');
   });
+
+  it('rejects saves 2 minutes past the deadline even though submit grace is open', async () => {
+    // 60m duration, started 62m ago: inside the 5m submit grace, but answer
+    // writes must stop exactly at the deadline.
+    const { upserts } = makeAdmin(minutesAgo(62));
+    const res = createRes();
+    await handleStudentSaveAnswer(saveReq({ value: 'B' }) as never, res as never);
+    expect(res.statusCode).toBe(410);
+    expect((res.body as { error: string }).error).toBe('exam_time_expired');
+    expect(upserts).toHaveLength(0);
+  });
 });
 
 describe('POST /api/student/submit', () => {
@@ -227,6 +274,97 @@ describe('POST /api/student/submit', () => {
     expect((res.body as { error: string }).error).toBe('exam_time_expired');
     expect(updates).toHaveLength(0);
     expect(admin.calls.filter((t) => t === 'student_exam_sessions')).toHaveLength(1);
+  });
+
+  it('still accepts the final submit 2 minutes past the deadline (submit-only grace)', async () => {
+    const { updates } = makeAdmin(minutesAgo(62));
+    const res = createRes();
+    await handleStudentSubmit(bearerReq('/api/student/submit', {}) as never, res as never);
+    expect(res.statusCode).toBe(200);
+    expect(
+      updates.some((u) => (u as { status?: string }).status === 'submitted'),
+    ).toBe(true);
+  });
+});
+
+describe('GET exam paper after refresh (exam-payload restores saved answers)', () => {
+  const Q1 = '55555555-5555-4555-8555-555555555555';
+  const Q2 = '66666666-6666-4666-8666-666666666666';
+
+  function makePayloadAdmin() {
+    const admin = createAdmin({
+      student_exam_sessions: { single: sessionRow(minutesAgo(10)) },
+      exams: { single: examRow },
+      students: {
+        single: { id: STUDENT_ID, full_name: 'دانش‌آموز نمونه', grade: 'هفتم' },
+      },
+      exam_questions: {
+        rows: [
+          { question_id: Q1, section_title: '', position: 0, points: 2 },
+          { question_id: Q2, section_title: '', position: 1, points: 2 },
+        ],
+      },
+      questions: {
+        rows: [
+          {
+            id: Q1,
+            type: 'single_choice',
+            grade: 'هفتم',
+            subject: 'ریاضی',
+            title: 'سوال ۱',
+            body: { text: 'متن', options: [{ id: 'A', text: 'الف' }] },
+            points: 2,
+          },
+          {
+            id: Q2,
+            type: 'single_choice',
+            grade: 'هفتم',
+            subject: 'ریاضی',
+            title: 'سوال ۲',
+            body: { text: 'متن', options: [{ id: 'A', text: 'الف' }] },
+            points: 2,
+          },
+        ],
+      },
+      student_answers: {
+        rows: [
+          {
+            question_id: Q1,
+            answer: {
+              value: 'A',
+              __grading: { scoreGained: 2, isCorrect: true, gradedBy: 'auto' },
+            },
+          },
+          { question_id: Q2, answer: {} }, // blank stays blank
+        ],
+      },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(admin as never);
+  }
+
+  it('returns value-only savedAnswers keyed by question id', async () => {
+    makePayloadAdmin();
+    const res = createRes();
+    await handleStudentExamPayload(
+      bearerReq('/api/student/exam-payload', {}) as never,
+      res as never,
+    );
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      ok: boolean;
+      questions: Array<{ id: string }>;
+      student: { id: string; name: string; grade: string } | null;
+      savedAnswers: Record<string, unknown>;
+    };
+    expect(body.ok).toBe(true);
+    // Display name echo for refresh recovery (name only, no identity material).
+    expect(body.student).toEqual({ id: STUDENT_ID, name: 'دانش‌آموز نمونه', grade: 'هفتم' });
+    expect(body.questions.map((q) => q.id).sort()).toEqual([Q1, Q2].sort());
+    // Q1 restores the raw value only — no grading keys leak through.
+    expect(body.savedAnswers[Q1]).toBe('A');
+    expect(JSON.stringify(body)).not.toContain('__grading');
+    // Q2 was blank — no restore key at all.
+    expect(Q2 in body.savedAnswers).toBe(false);
   });
 });
 

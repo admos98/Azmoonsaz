@@ -7,6 +7,7 @@ import React from 'react';
 import { Check, Award, Info } from 'lucide-react';
 import { Question, QuestionType, QuestionPart, RubricCriterion } from '../types';
 import { toPersianDigits } from '../utils/persian';
+import { ResolvedImage } from './QuestionImage';
 
 interface QuestionRendererProps {
   question: Partial<Question> & {
@@ -117,13 +118,11 @@ export default function QuestionRenderer({
         {/* Main Image Banner If Available */}
         {question.imageUrl && (
           <div className="mt-2.5 relative group inline-block max-w-full">
-            <img
-              loading="lazy"
-              decoding="async"
-              src={question.imageUrl}
+            <ResolvedImage
+              value={question.imageUrl}
               alt="ضمیمه سوال"
-              referrerPolicy="no-referrer"
-              className="rounded-xl max-h-64 object-contain max-w-full pane"
+              className="rounded-xl max-h-64 max-w-full pane"
+              imgClassName="rounded-xl max-h-64 object-contain max-w-full pane"
             />
             <span className="absolute bottom-2 right-2 bg-black/30 text-[var(--color-text-on-solid)] rounded-md px-2 py-0.5 text-micro font-mono">
               پیوست اصلی تصویر سوال
@@ -179,13 +178,11 @@ export default function QuestionRenderer({
                       {/* Option-specific Image attachment if exists */}
                       {opt.imageUrl && (
                         <div className="mt-2 block">
-                          <img
-                            loading="lazy"
-                            decoding="async"
-                            src={opt.imageUrl}
+                          <ResolvedImage
+                            value={opt.imageUrl}
                             alt={`تصویر گزینه ${letters[index] || index}`}
-                            referrerPolicy="no-referrer"
-                            className="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 object-contain w-full  bg-[var(--color-surface)] shadow-3xs"
+                            className="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 w-full bg-[var(--color-surface)]"
+                            imgClassName="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 object-contain w-full bg-[var(--color-surface)] shadow-3xs"
                           />
                         </div>
                       )}
@@ -412,13 +409,11 @@ export default function QuestionRenderer({
             {/* Optional Passage Photo support */}
             {question.imageUrl && (
               <div className="mt-2 text-right">
-                <img
-                  loading="lazy"
-                  decoding="async"
-                  src={question.imageUrl}
+                <ResolvedImage
+                  value={question.imageUrl}
                   alt="پیوست درک مطلب"
-                  referrerPolicy="no-referrer"
-                  className="rounded-xl border border-[var(--color-glass-light-stroke)] max-h-48 object-contain  bg-[var(--color-surface)] shadow-3xs"
+                  className="rounded-xl border border-[var(--color-glass-light-stroke)] max-h-48 bg-[var(--color-surface)]"
+                  imgClassName="rounded-xl border border-[var(--color-glass-light-stroke)] max-h-48 object-contain bg-[var(--color-surface)] shadow-3xs"
                 />
               </div>
             )}
@@ -450,6 +445,18 @@ export default function QuestionRenderer({
                       )}
                     </div>
 
+                    {/* Part image if any exists */}
+                    {part.imageUrl && (
+                      <div className="mr-5">
+                        <ResolvedImage
+                          value={part.imageUrl}
+                          alt="پیوست مینی‌سوال"
+                          className="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 bg-[var(--color-surface)]"
+                          imgClassName="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 object-contain bg-[var(--color-surface)]"
+                        />
+                      </div>
+                    )}
+
                     {/* Part options if any exists */}
                     {part.options && part.options.length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-caption mr-5">
@@ -465,6 +472,16 @@ export default function QuestionRenderer({
                               }`}
                             >
                               {oIdx + 1}. {opt.text}
+                              {opt.imageUrl && (
+                                <div className="mt-1.5">
+                                  <ResolvedImage
+                                    value={opt.imageUrl}
+                                    alt={`تصویر گزینه ${oIdx + 1}`}
+                                    className="rounded-md border border-[var(--color-glass-light-stroke)] max-h-24 bg-[var(--color-surface)]"
+                                    imgClassName="rounded-md border border-[var(--color-glass-light-stroke)] max-h-24 object-contain bg-[var(--color-surface)]"
+                                  />
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -518,6 +535,16 @@ export default function QuestionRenderer({
                               }`}
                             >
                               {opt.text}
+                              {opt.imageUrl && (
+                                <span className="block mt-1">
+                                  <ResolvedImage
+                                    value={opt.imageUrl}
+                                    alt="تصویر گزینه"
+                                    className="rounded-md border border-[var(--color-glass-light-stroke)] max-h-20 bg-[var(--color-surface)]"
+                                    imgClassName="rounded-md border border-[var(--color-glass-light-stroke)] max-h-20 object-contain bg-[var(--color-surface)]"
+                                  />
+                                </span>
+                              )}
                             </span>
                           );
                         })}

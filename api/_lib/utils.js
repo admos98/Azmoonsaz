@@ -4,6 +4,7 @@
 
 import { randomInt } from 'node:crypto';
 import { stripTeacherOnlyFields, deriveExamStatus, sessionDeadlineMs } from './examSecurity.js';
+import { isImageStoreKey } from './imageStore.js';
 
 export function safeError(error, fallback) {
   const response = { error: fallback };
@@ -66,26 +67,63 @@ export function deriveAnswerKey(question) {
   };
 }
 
-export function questionToBody(question) {
-  const cleanOptions = Array.isArray(question.options)
-    ? question.options.map(({ isCorrect, ...option }) => option)
-    : undefined;
-  const cleanParts = Array.isArray(question.parts)
-    ? question.parts.map((part) => {
-        const { correctAnswer, ...rest } = part;
-        return {
-          ...rest,
-          options: Array.isArray(part.options)
-            ? part.options.map(({ isCorrect, ...option }) => option)
-            : part.options,
-        };
-      })
-    : undefined;
+/**
+ * Image fields accept exactly three shapes: empty (no image), a
+ * provider-agnostic storage key (`<teacherUuid>/<uuid>.webp`), or — only when
+ * byte-identical to the stored value — a grandfathered legacy URL (base64 /
+ * external https from the old form). Anything else is a 400: the new upload
+ * pipeline is the only way fresh pixels enter the database.
+ */
+function cleanImageField(incoming, existing) {
+  const next = incoming === undefined || incoming === null ? '' : String(incoming);
+  if (next === '') return undefined;
+  if (existing !== undefined && next === String(existing)) return String(existing) || undefined;
+  if (!isImageStoreKey(next)) {
+    const error = new Error('image_must_be_uploaded');
+    error.status = 400;
+    throw error;
+  }
+  return next;
+}
+
+function cleanOptionImages(options, prevOptions) {
+  if (!Array.isArray(options)) return undefined;
+  const prevById = new Map(
+    (Array.isArray(prevOptions) ? prevOptions : [])
+      .filter((o) => o && typeof o === 'object')
+      .map((o) => [o.id, o.imageUrl]),
+  );
+  return options.map(({ isCorrect, ...option }) => ({
+    ...option,
+    imageUrl: cleanImageField(option.imageUrl, prevById.get(option.id)),
+  }));
+}
+
+function cleanPartImages(parts, prevParts) {
+  if (!Array.isArray(parts)) return undefined;
+  const prevById = new Map(
+    (Array.isArray(prevParts) ? prevParts : [])
+      .filter((p) => p && typeof p === 'object')
+      .map((p) => [p.id, p]),
+  );
+  return parts.map((part) => {
+    const { correctAnswer, ...rest } = part;
+    const prev = prevById.get(part.id) || {};
+    return {
+      ...rest,
+      imageUrl: cleanImageField(rest.imageUrl, prev.imageUrl),
+      options: cleanOptionImages(part.options, prev.options),
+    };
+  });
+}
+
+export function questionToBody(question, existingBody = null) {
+  const prev = existingBody && typeof existingBody === 'object' ? existingBody : {};
   return stripTeacherOnlyFields({
     text: question.text || '',
-    imageUrl: question.imageUrl,
-    options: cleanOptions,
-    parts: cleanParts,
+    imageUrl: cleanImageField(question.imageUrl, prev.imageUrl),
+    options: cleanOptionImages(question.options, prev.options),
+    parts: cleanPartImages(question.parts, prev.parts),
     matchingPairs: question.matchingPairs,
     orderingItems: question.orderingItems,
     // Display metadata the teacher fills in the drawer — persisted in body

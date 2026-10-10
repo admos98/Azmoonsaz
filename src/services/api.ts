@@ -18,10 +18,7 @@ import { logger } from '../lib/logger';
 import { getSupabasePublicClient } from '../lib/supabasePublic';
 import { publicEnv } from '../config/env';
 import { teacherGet, teacherPost, getTeacherAccessToken } from './teacherApi';
-import {
-  uploadQuestionImage as storageUploadQuestionImage,
-  uploadTeacherAvatar,
-} from './storageService';
+import { uploadTeacherAvatar } from './storageService';
 
 export const authService = {
   async loginTeacher(email: string, password = ''): Promise<Teacher> {
@@ -242,20 +239,6 @@ export const questionService = {
   async deleteQuestion(id: string): Promise<boolean> {
     await teacherPost('/api/teacher/questions', { action: 'delete', id });
     return true;
-  },
-
-  async uploadQuestionImage(questionId: string, base64OrFile: File | string): Promise<string> {
-    let file: File;
-    if (base64OrFile instanceof File) {
-      file = base64OrFile;
-    } else if (typeof base64OrFile === 'string') {
-      const res = await fetch(base64OrFile);
-      const blob = await res.blob();
-      file = new File([blob], `question_${questionId}.png`, { type: blob.type || 'image/png' });
-    } else {
-      throw new Error('Invalid image input: expected File or base64 string');
-    }
-    return storageUploadQuestionImage(file);
   },
 };
 

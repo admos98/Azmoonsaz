@@ -103,7 +103,7 @@ api/                         # Vercel Serverless API
 ### Exam Lifecycle
 - **Build:** Multi-step wizard — title/grade → pick questions from bank → configure settings → preview → publish
 - **Assign:** Target specific class groups, set start/end windows, generate entry codes
-- **Take:** Student enters national ID + code → timed exam → anti-cheat (tab switch detection, fullscreen lock) → auto-submit on timeout
+- **Take:** Student enters national ID + code → timed exam → proctor-signal detection (tab switch, copy, fullscreen exit — counted and reported to the teacher) → answer writes stop exactly at the deadline; the final submit stays open 5 extra minutes so it can still land
 - **Grade:** Auto-graded MCQ + manual grading for descriptive questions with rubrics
 - **Review:** Per-question stats, score distribution, export-ready results
 
@@ -114,12 +114,13 @@ api/                         # Vercel Serverless API
 - Student sessions scoped per exam with entry code verification
 - Exam content locked during active session (no pre-fetching)
 - Cross-instance rate limiting via Supabase (prevents per-Vercel-instance bypass)
-- Anti-cheat: tab-switch warnings, fullscreen enforcement, one-device-per-login
+- Anti-cheat: tab-switch/copy/fullscreen-exit signals are counted and reported to the teacher (deterrence + attribution, not device lockdown — browsers expose no screenshot or device-binding API)
+- Question images: teachers upload through a single pipeline (browser shrink → signed direct-PUT, bytes never touch Vercel) into a private store under teacher-scoped keys; students receive short-lived signed URLs inside the exam paper only, deleting a question deletes its orphaned image objects, and a «پاک‌سازی تصاویر بلااستفاده» sweep in the question bank reaps mint-then-abandon strays
 
 ### Offline Resilience
-- Student answers are saved to localStorage during the exam
-- If the network drops, answers queue locally and sync when connection returns
-- Exam state survives page refresh
+- While the exam is open, each answer saves to the server immediately; if the network drops, answers queue locally and sync when the connection returns (queued entries are cleared on successful sync or final submit)
+- Refresh recovery: reloading the page in the same tab re-fetches the paper and restores previously saved answers automatically (the login token lives in session storage, never on disk; the national ID is never stored client-side)
+- Final server rejections (deadline passed, session closed) are dropped from the queue, not retried — the server is the deadline authority
 
 ### Persian-First
 - All UI text in Persian (RTL layout)
@@ -199,6 +200,9 @@ npx supabase db push
 | `VITE_SUPABASE_ANON_KEY` | Yes | Supabase anonymous/public key |
 | `VITE_API_URL` | No | API base path (default: `/api`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server only | Supabase admin key (set in Vercel) |
+| `IMAGE_STORE_PROVIDER` | No | `supabase` (default) or `s3` for any SigV4 S3-compatible store (Parspack, Arvan). Switch requires no code or database changes — objects keep identical keys. |
+| `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` / `S3_BUCKET` | Only when `IMAGE_STORE_PROVIDER=s3` | S3 credentials (set in Vercel, never `VITE_`). While unset, the server logs once and stays on Supabase. Also extend `connect-src` + `img-src` in `vercel.json` with the S3 origin. |
+| `S3_REGION` / `S3_FORCE_PATH_STYLE` | No | Defaults `default` / `true`. |
 
 ---
 

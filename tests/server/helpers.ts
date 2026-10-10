@@ -133,6 +133,10 @@ export function createAdmin(tables: Record<string, TableConfig> = {}): FakeAdmin
           state.filters[column] = value;
           return builder;
         },
+        neq(column: string, value: unknown) {
+          state.filters[`__neq_${column}`] = value;
+          return builder;
+        },
         in(column: string, values: unknown) {
           state.filters[column] = values;
           return builder;

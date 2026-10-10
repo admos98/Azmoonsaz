@@ -53,6 +53,7 @@ import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { toPersianDigits } from '../../utils/persian';
 import { getTypeNameInPersian } from '../../utils/question-type-labels';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
+import { ResolvedImage, QuestionImageInput } from '../../components/QuestionImage';
 
 interface ExamPreviewProps {
  exam: Exam;
@@ -767,13 +768,11 @@ export default function ExamPreview({
 
  {q.imageUrl && (
  <div className="max-w-md pane rounded-2xl p-2 relative group inline-block">
- <img
- loading="lazy"
- decoding="async"
- src={q.imageUrl}
+ <ResolvedImage
+ value={q.imageUrl}
  alt="سوال پیوست"
- referrerPolicy="no-referrer"
- className="max-h-56 rounded-xl object-contain bg-[var(--color-surface)] transition-all shadow-3xs"
+ className="max-h-56 max-w-md"
+ imgClassName="max-h-56 rounded-xl object-contain bg-[var(--color-surface)] transition-all shadow-3xs"
  />
  <span className="absolute bottom-3 right-3 bg-black/30 text-[var(--color-text-on-solid)] rounded-md px-2 py-0.5 text-micro">
  تصویر ضمیمه سوال
@@ -858,13 +857,11 @@ export default function ExamPreview({
 
  {opt.imageUrl && (
  <div className="mt-2 block max-w-xs">
- <img
- loading="lazy"
- decoding="async"
- src={opt.imageUrl}
+ <ResolvedImage
+ value={opt.imageUrl}
  alt="گزینه"
- referrerPolicy="no-referrer"
- className="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 object-contain bg-[var(--color-surface)] w-full"
+ className="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 w-full bg-[var(--color-surface)]"
+ imgClassName="rounded-lg border border-[var(--color-glass-light-stroke)] max-h-32 object-contain bg-[var(--color-surface)] w-full"
  />
  </div>
  )}
@@ -1558,58 +1555,17 @@ export default function ExamPreview({
  />
  </div>
 
- {/* Image URL / media upload simulation */}
+ {/* Image upload — pipeline only (no URL pasting, no presets) */}
  <div className="space-y-2 pane p-3.5 rounded-2xl">
  <span className="text-micro text-[var(--color-text-tertiary)] font-bold block">
  تصویر یا نمودار پیوست سوال:
  </span>
- <div className="flex gap-2">
- <Input
- wrapperClassName="flex-1"
- size="sm"
- type="text"
- value={editingQuestion.imageUrl || ''}
- onChange={(e) => setEditingQuestion({ ...editingQuestion, imageUrl: e.target.value })}
- placeholder="آدرس اینترنتی تصویر (http://...) یا فرمت داده‌ها"
+ <div className="flex gap-2 items-center">
+ <QuestionImageInput
+ value={editingQuestion.imageUrl}
+ onChange={(next) => setEditingQuestion({ ...editingQuestion, imageUrl: next || undefined })}
+ notify={showToast}
  />
- {editingQuestion.imageUrl && (
- <PillButton
- fill="danger-soft"
- size="xs"
- radius="lg"
- onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: undefined })}
- className="hover:bg-[var(--color-danger-soft)]/40 transition-all shrink-0"
- >
- حذف
- </PillButton>
- )}
- </div>
- {/* Simulative quick presets to populate mock images safely */}
- <div className="flex flex-wrap gap-1 mt-1 justify-start">
- <span className="text-micro text-[var(--color-text-tertiary)] font-semibold self-center ml-1">
- چند پیوست پیش‌فرض:
- </span>
- {[
- {
- label: 'سلول گیاهی',
- url: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=500&auto=format&fit=crop&q=60',
- },
- {
- label: 'نمودار اهرم‌ها',
- url: 'https://images.unsplash.com/photo-1632571401005-458e9d244591?w=500&auto=format&fit=crop&q=60',
- },
- ].map((preset, pIdx) => (
- <PillButton
- key={pIdx}
- fill="accent-soft"
- size="none"
- radius="md"
- onClick={() => setEditingQuestion({ ...editingQuestion, imageUrl: preset.url })}
- className="px-2 py-0.5 border border-[var(--color-accent-soft)] hover:bg-[var(--color-accent-soft)] transition-all"
- >
- {preset.label}
- </PillButton>
- ))}
  </div>
  </div>
 
@@ -1660,18 +1616,16 @@ export default function ExamPreview({
  placeholder={`متن گزینه ${toPersianDigits(oIdx + 1)} را بنویسید...`}
  />
 
- {/* Image Option helper */}
- <input
- type="text"
- value={opt.imageUrl || ''}
- onChange={(e) => {
+ {/* Image Option helper — pipeline upload only */}
+ <QuestionImageInput
+ value={opt.imageUrl}
+ onChange={(next) => {
  const updatedOpts = (editingQuestion.options || []).map((o) =>
- o.id === opt.id ? { ...o, imageUrl: e.target.value } : o,
+ o.id === opt.id ? { ...o, imageUrl: next } : o,
  );
  setEditingQuestion({ ...editingQuestion, options: updatedOpts });
  }}
- className="glx field border text-micro w-28 px-1 rounded-md"
- placeholder="آدرس تصویر گزینه"
+ notify={showToast}
  />
 
  {/* Remove Option */}
@@ -1896,6 +1850,16 @@ export default function ExamPreview({
  onChange={(e) => updateSubquestionTextInDrawer(part.id, e.target.value)}
  className="w-full glx field border-none p-1.5 rounded-md font-semibold text-[var(--color-text-primary)]"
  placeholder="نمام متن مینی‌سوال..."
+ />
+ <QuestionImageInput
+ value={part.imageUrl}
+ onChange={(next) => {
+ const updatedParts = (editingQuestion.parts || []).map((p) =>
+ p.id === part.id ? { ...p, imageUrl: next } : p,
+ );
+ setEditingQuestion({ ...editingQuestion, parts: updatedParts });
+ }}
+ notify={showToast}
  />
  </div>
  ))}

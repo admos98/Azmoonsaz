@@ -17,17 +17,8 @@ export async function uploadTeacherAvatar(file: File): Promise<string> {
   return data.publicUrl;
 }
 
-export async function uploadQuestionImage(file: File): Promise<string> {
-  const supabase = getSupabasePublicClient();
-  const fileExt = file.name.split('.').pop() || 'png';
-  const fileName = `img_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from('question-images')
-    .upload(fileName, file, { cacheControl: '3600', upsert: false });
-
-  if (uploadError) throw uploadError;
-
-  const { data } = supabase.storage.from('question-images').getPublicUrl(fileName);
-  return data.publicUrl;
-}
+// NOTE: question images no longer upload here. The single path is
+// imageStoreClient.uploadQuestionImageFile → POST /api/teacher/images/upload-url
+// (mint) → PUT bytes direct to the store → persist only the opaque storage key.
+// This keeps bytes off Vercel and keeps provider swaps (Supabase ↔ Parspack S3)
+// to a server-side env flip with identical keys.

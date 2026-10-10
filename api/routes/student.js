@@ -12,10 +12,17 @@ import {
   getExamAvailabilityWithGrace,
   getSessionTimeWindow,
   sanitizeStudentAnswer,
+  extractSavedAnswerValue,
   applyExamShuffles,
   gradeAnswerValue,
 } from '../_lib/examSecurity.js';
 import { tokenTtlForSession, isUuid } from '../_lib/utils.js';
+import {
+  selectImageStore,
+  substituteImageUrls,
+  collectImageKeys,
+  removeImageKeys,
+} from '../_lib/imageStore.js';
 
 // Wave B: proctor counters — whitelisted keys, integer-bounded, NO PII
 // (F-21 lesson: counters only, never IP/UA/free text).
@@ -315,11 +322,61 @@ async function handleStudentExamPayload(req, res) {
     // so a reload keeps the same order. Answers are keyed by id — grading is
     // order-independent.
     const orderedQuestions = applyExamShuffles(safeQuestions, exam, session.id);
+    // Image keys → short-lived signed URLs: the student client never sees
+    // storage keys. TTL covers the personal window + submit grace. A mint
+    // failure must not break the paper — strip key-shaped values (legacy
+    // URLs keep rendering) rather than 500 or leaking opaque keys.
+    let resolvedQuestions = orderedQuestions;
+    try {
+      const needed = new Set();
+      for (const q of orderedQuestions) for (const k of collectImageKeys(q?.body)) needed.add(k);
+      if (needed.size > 0) {
+        const { store } = await selectImageStore();
+        const ttl = Math.min(
+          12 * 3600,
+          Math.max(1, Number(exam?.duration_minutes) || 60) * 60 + 600,
+        );
+        const urls = await store.mintReadUrlUnchecked({ keys: [...needed], expiresIn: ttl });
+        resolvedQuestions = orderedQuestions.map((q) => substituteImageUrls(q, urls));
+      }
+    } catch {
+      resolvedQuestions = orderedQuestions.map((q) => removeImageKeys(q));
+    }
+    // Refresh recovery: return the student's own saved values (value-only, no
+    // grading state) so the paper reloads with answers intact.
+    const { data: savedRows, error: savedError } = await supabase
+      .from('student_answers')
+      .select('question_id, answer')
+      .eq('session_id', session.id);
+    if (savedError) throw savedError;
+    const savedAnswers = {};
+    for (const row of savedRows || []) {
+      if (!row || !row.question_id) continue;
+      const value = extractSavedAnswerValue(row.answer);
+      if (value !== undefined) savedAnswers[row.question_id] = value;
+    }
+    // Display name for refresh recovery: bound by the verified token
+    // (sid/eid/stid matched above), name only — never identity material.
+    let student = null;
+    try {
+      const { data: studentRow } = await supabase
+        .from('students')
+        .select('id, full_name, grade')
+        .eq('id', payload.stid)
+        .maybeSingle();
+      if (studentRow) {
+        student = { id: studentRow.id, name: studentRow.full_name, grade: studentRow.grade };
+      }
+    } catch {
+      // Name is a display nicety — the paper restores without it.
+    }
     json(res, 200, {
       ok: true,
       exam: safeExamForStudent(exam),
       session: { id: session.id, startedAt: session.started_at },
-      questions: orderedQuestions,
+      student,
+      questions: resolvedQuestions,
+      savedAnswers,
     });
   } catch {
     json(res, 500, { error: 'exam_payload_failed' });
@@ -352,9 +409,12 @@ async function handleStudentSaveAnswer(req, res) {
     if (sessionError) throw sessionError;
     if (!session || session.status !== 'ongoing')
       return json(res, 403, { error: 'session_not_active' });
-    const availability = getExamAvailabilityWithGrace(session.exam);
+    // Answer writes end EXACTLY at the deadline: strict on both the exam
+    // window and the personal window. The 5-minute grace is submit-only
+    // (the final submit must still land after the clock stops).
+    const availability = getExamAvailability(session.exam);
     if (!availability.ok) return json(res, availability.status, { error: availability.error });
-    const windowCheck = getSessionTimeWindow(session, session.exam);
+    const windowCheck = getSessionTimeWindow(session, session.exam, new Date(), { grace: false });
     if (!windowCheck.ok) return json(res, windowCheck.status, { error: windowCheck.error });
     const { data: examQuestion, error: eqError } = await supabase
       .from('exam_questions')

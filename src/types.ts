@@ -88,6 +88,7 @@ export interface QuestionPart {
   type: QuestionType;
   options?: QuestionOption[];
   correctAnswer?: string | string[];
+  imageUrl?: string;
 }
 
 export interface RubricCriterion {

@@ -1,0 +1,470 @@
+/**
+ * Image pipeline handler coverage (no network, no database):
+ *  - upload-url mints a teacher-scoped key and returns the Supabase token shape
+ *  - read resolves owned keys, filters foreign/evil values, caps batch size
+ *  - question delete removes orphaned objects but keeps shared ones; object
+ *    failures never fail the delete
+ *  - question create/update enforce the image gate at the handler boundary
+ *  - student exam-payload substitutes signed URLs, never leaks keys, and
+ *    strips keys (keeping legacy URLs) when minting fails
+ *  - orphan cleanup deletes unreferenced objects, keeps referenced ones, and
+ *    answers 429 when its strict budget is exhausted
+ */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  handleTeacherImageUploadUrl,
+  handleTeacherImageRead,
+  handleTeacherImageCleanup,
+} from '../../api/routes/images.js';
+import { handleTeacherQuestions } from '../../api/routes/teacher.js';
+import { handleStudentExamPayload } from '../../api/routes/student.js';
+import { getSupabaseAdmin } from '../../api/_lib/supabaseAdmin.js';
+import { checkRateLimit } from '../../api/_lib/rateLimit.js';
+import { requireTeacher } from '../../api/_lib/teacherAuth.js';
+import { createStudentSessionToken } from '../../api/_lib/studentSession.js';
+import { createAdmin, createReq, createRes } from './helpers.js';
+
+vi.mock('../../api/_lib/teacherAuth.js', () => ({ requireTeacher: vi.fn() }));
+vi.mock('../../api/_lib/rateLimit.js', () => ({ checkRateLimit: vi.fn() }));
+vi.mock('../../api/_lib/supabaseAdmin.js', () => ({ getSupabaseAdmin: vi.fn() }));
+
+type Teacher = Awaited<ReturnType<typeof requireTeacher>>;
+
+const TEACHER_ID = '11111111-1111-4111-8111-111111111111';
+const TEACHER_B = '22222222-2222-4222-8222-222222222222';
+const KEY_OWN = `${TEACHER_ID}/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee.webp`;
+const KEY_OPT = `${TEACHER_ID}/bbbbbbbb-bbbb-4ccc-8ddd-eeeeeeeeeeee.webp`;
+const KEY_PART = `${TEACHER_ID}/cccccccc-cccc-4ccc-8ccc-cccccccccccc.webp`;
+const KEY_FOREIGN = `${TEACHER_B}/dddddddd-dddd-4ddd-8ddd-dddddddddddd.webp`;
+const LEGACY_URL = 'https://example.com/legacy.png';
+
+const EXAM_ID = '33333333-3333-4333-8333-333333333333';
+const STUDENT_ID = '44444444-4444-4333-8333-444444444444';
+const SESSION_ID = '55555555-5555-4555-8555-555555555555';
+const Q1 = '66666666-6666-4666-8666-666666666666';
+const Q2 = '77777777-7777-4777-8777-777777777777';
+const Q_DEL = '88888888-8888-4888-8888-888888888888';
+const Q_OTHER = '99999999-9999-4999-8999-999999999999';
+
+const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+const minutesAhead = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
+
+const teacherWith = (admin: ReturnType<typeof createAdmin>) => {
+  vi.mocked(requireTeacher).mockResolvedValue({
+    id: TEACHER_ID,
+    email: 'teacher@test.dev',
+    admin,
+  } as unknown as Teacher);
+};
+
+const post = (url: string, body: Record<string, unknown>) =>
+  createReq({ method: 'POST', url, body, headers: { authorization: 'Bearer t' } });
+
+// Fake object store behind getSupabaseAdmin().storage — the real Supabase
+// driver runs against it, so mint/upload/delete shapes are covered.
+let removedKeys: string[] = [];
+// Fake signatures must be opaque: real signed URLs are query strings that do
+// NOT embed the key, and "never leak raw keys" is what the payload test asserts.
+let signCounter = 0;
+function fakeSign(keys: string[]) {
+  return {
+    data: keys.map((k) => ({ path: k, signedUrl: 'https://signed.test/img-' + signCounter++ })),
+    error: null,
+  };
+}
+let signedReadImpl: (keys: string[]) => { data?: unknown; error?: unknown } = fakeSign;
+const storageApi = {
+  from: () => ({
+    createSignedUploadUrl: async () => ({
+      data: { signedUrl: 'https://store.test/up?token=tok', token: 'tok' },
+      error: null,
+    }),
+    createSignedUrls: async (keys: string[]) => signedReadImpl(keys),
+    remove: async (keys: string[]) => {
+      removedKeys.push(...keys);
+      return { error: null };
+    },
+  }),
+};
+
+beforeEach(() => {
+  process.env.STUDENT_ID_PEPPER = 'test-pepper-'.padEnd(64, '0');
+  delete process.env.IMAGE_STORE_PROVIDER;
+  delete process.env.S3_ENDPOINT;
+  delete process.env.S3_ACCESS_KEY;
+  delete process.env.S3_SECRET_KEY;
+  delete process.env.S3_BUCKET;
+  removedKeys = [];
+  signCounter = 0;
+  signedReadImpl = fakeSign;
+  vi.mocked(requireTeacher).mockReset();
+  vi.mocked(checkRateLimit).mockReset();
+  vi.mocked(checkRateLimit).mockResolvedValue({ ok: true } as never);
+  vi.mocked(getSupabaseAdmin).mockReset();
+  vi.mocked(getSupabaseAdmin).mockReturnValue({ storage: storageApi } as never);
+});
+
+describe('POST /api/teacher/images/upload-url', () => {
+  it('mints a teacher-scoped key with the Supabase token shape', async () => {
+    teacherWith(createAdmin({}));
+    const res = createRes();
+    await handleTeacherImageUploadUrl(post('/api/teacher/images/upload-url', { contentType: 'image/webp' }), res);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as Record<string, unknown>;
+    expect(body.ok).toBe(true);
+    expect(typeof body.key).toBe('string');
+    expect(String(body.key).startsWith(`${TEACHER_ID}/`)).toBe(true);
+    expect(String(body.key).endsWith('.webp')).toBe(true);
+    expect(body.uploadToken).toBe('tok');
+    expect(body.bucket).toBe('question-images');
+    expect(typeof body.uploadUrl).toBe('string');
+  });
+
+  it('rejects unsupported content types before minting', async () => {
+    teacherWith(createAdmin({}));
+    const res = createRes();
+    await handleTeacherImageUploadUrl(post('/api/teacher/images/upload-url', { contentType: 'image/gif' }), res);
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: 'unsupported_image_type' });
+  });
+
+  it('returns 429 when the mint budget is exhausted', async () => {
+    teacherWith(createAdmin({}));
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({ ok: false } as never);
+    const res = createRes();
+    await handleTeacherImageUploadUrl(post('/api/teacher/images/upload-url', {}), res);
+    expect(res.statusCode).toBe(429);
+    expect(res.body).toEqual({ error: 'too_many_requests' });
+  });
+});
+
+describe('POST /api/teacher/images/read', () => {
+  it('resolves owned keys and filters foreign, evil, and duplicate values', async () => {
+    teacherWith(createAdmin({}));
+    const res = createRes();
+    await handleTeacherImageRead(
+      post('/api/teacher/images/read', { keys: [KEY_OWN, KEY_OWN, KEY_FOREIGN, 'https://evil/x', ''] }),
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    const body = res.body as { ok: boolean; urls: Record<string, string> };
+    expect(body.ok).toBe(true);
+    expect(Object.keys(body.urls)).toEqual([KEY_OWN]);
+    expect(String(body.urls[KEY_OWN])).toMatch(/^https:\/\/signed\.test\/img-\d+$/);
+  });
+
+  it('answers empty urls without touching the store', async () => {
+    teacherWith(createAdmin({}));
+    const res = createRes();
+    await handleTeacherImageRead(post('/api/teacher/images/read', { keys: [] }), res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ ok: true, urls: {} });
+  });
+});
+
+describe('question delete image cascade', () => {
+  function deleteAdmin(doomedBody: unknown, siblingBodies: unknown[]) {
+    return createAdmin({
+      questions: {
+        onResult: (ctx) => {
+          if (ctx.op === 'delete') return { data: [], error: null };
+          if (ctx.op === 'select') {
+            if (typeof ctx.filters.id === 'string') return { data: { id: Q_DEL, body: doomedBody }, error: null };
+            return {
+              data: siblingBodies.map((body, i) => ({ id: `${Q_OTHER}-${i}`, body })),
+              error: null,
+            };
+          }
+          return undefined;
+        },
+      },
+    });
+  }
+
+  it('deletes orphaned objects and keeps keys still used by siblings', async () => {
+    teacherWith(
+      deleteAdmin(
+        { text: 't', imageUrl: KEY_OWN, options: [{ id: 'o1', imageUrl: KEY_OPT }] },
+        [{ text: 's', options: [{ id: 'o1', imageUrl: KEY_OPT }] }],
+      ),
+    );
+    const res = createRes();
+    await handleTeacherQuestions(post('/api/teacher/questions', { action: 'delete', id: Q_DEL }), res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(removedKeys).toEqual([KEY_OWN]);
+  });
+
+  it('skips the store entirely when the question has no storage keys', async () => {
+    teacherWith(deleteAdmin({ text: 't', imageUrl: LEGACY_URL }, []));
+    const res = createRes();
+    await handleTeacherQuestions(post('/api/teacher/questions', { action: 'delete', id: Q_DEL }), res);
+    expect(res.statusCode).toBe(200);
+    expect(removedKeys).toEqual([]);
+  });
+
+  it('still returns ok when object deletion fails', async () => {
+    teacherWith(deleteAdmin({ text: 't', imageUrl: KEY_OWN }, []));
+    vi.mocked(getSupabaseAdmin).mockReturnValue({
+      storage: {
+        from: () => ({
+          remove: async () => {
+            throw new Error('store down');
+          },
+        }),
+      },
+    } as never);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const res = createRes();
+      await handleTeacherQuestions(post('/api/teacher/questions', { action: 'delete', id: Q_DEL }), res);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({ ok: true });
+      expect(err).toHaveBeenCalled();
+    } finally {
+      err.mockRestore();
+    }
+  });
+});
+
+describe('question create/update image gate', () => {
+  const baseQuestion = {
+    type: 'single_choice',
+    grade: 'هفتم',
+    category: 'ریاضی',
+    text: 'متن سوال',
+    points: 2,
+    options: [{ id: 'o1', text: 'الف', isCorrect: true }],
+  };
+
+  it('create rejects fresh base64 without touching the database', async () => {
+    const admin = createAdmin({});
+    teacherWith(admin);
+    const res = createRes();
+    await handleTeacherQuestions(
+      post('/api/teacher/questions', {
+        action: 'create',
+        question: { ...baseQuestion, imageUrl: 'data:image/png;base64,AAA' },
+      }),
+      res,
+    );
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ error: 'image_must_be_uploaded' });
+    expect(admin.calls).toEqual([]);
+  });
+
+  it('create persists storage keys', async () => {
+    teacherWith(createAdmin({}));
+    const res = createRes();
+    await handleTeacherQuestions(
+      post('/api/teacher/questions', {
+        action: 'create',
+        question: { ...baseQuestion, imageUrl: KEY_OWN },
+      }),
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    expect((res.body as { question: { imageUrl: string } }).question.imageUrl).toBe(KEY_OWN);
+  });
+
+  it('update grandfathers byte-identical legacy values, rejects changed ones', async () => {
+    const admin = createAdmin({
+      questions: { single: { id: Q1, body: { imageUrl: LEGACY_URL, options: [] } } },
+    });
+    teacherWith(admin);
+    const kept = createRes();
+    await handleTeacherQuestions(
+      post('/api/teacher/questions', {
+        action: 'update',
+        question: { ...baseQuestion, id: Q1, imageUrl: LEGACY_URL },
+      }),
+      kept,
+    );
+    expect(kept.statusCode).toBe(200);
+    expect((kept.body as { question: { imageUrl: string } }).question.imageUrl).toBe(LEGACY_URL);
+
+    const changed = createRes();
+    await handleTeacherQuestions(
+      post('/api/teacher/questions', {
+        action: 'update',
+        question: { ...baseQuestion, id: Q1, imageUrl: 'https://example.com/changed.png' },
+      }),
+      changed,
+    );
+    expect(changed.statusCode).toBe(400);
+    expect(changed.body).toEqual({ error: 'image_must_be_uploaded' });
+  });
+});
+
+describe('POST /api/teacher/images/cleanup', () => {
+  const KEY_ORPHAN = `${TEACHER_ID}/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee.webp`;
+  const storedKeys = [KEY_OWN, KEY_OPT, KEY_ORPHAN];
+
+  function cleanupApi() {
+    return {
+      from: (table: string) => {
+        if (table === 'questions') {
+          return {
+            select: () => ({
+              eq: () => ({
+                limit: () =>
+                  Promise.resolve({
+                    data: [
+                      { body: { text: 'q1', imageUrl: KEY_OWN } },
+                      { body: { text: 'q2', options: [{ id: 'o1', imageUrl: KEY_OPT }] } },
+                    ],
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        return { select: () => ({ eq: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }) }) };
+      },
+      storage: {
+        from: () => ({
+          list: async () => ({ data: storedKeys.map((full) => ({ name: full.split('/')[1] })), error: null }),
+          remove: async (keys: string[]) => {
+            removedKeys.push(...keys);
+            return { error: null };
+          },
+        }),
+      },
+    };
+  }
+
+  it('deletes only unreferenced objects and reports scanned/deleted', async () => {
+    teacherWith(cleanupApi() as never);
+    vi.mocked(getSupabaseAdmin).mockReturnValue(cleanupApi() as never);
+    const res = createRes();
+    await handleTeacherImageCleanup(post('/api/teacher/images/cleanup', {}), res);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ ok: true, deleted: [KEY_ORPHAN], failed: [], scanned: 3 });
+    expect(removedKeys).toEqual([KEY_ORPHAN]);
+  });
+
+  it('returns 429 when the strict cleanup budget is exhausted', async () => {
+    teacherWith(createAdmin({}));
+    vi.mocked(checkRateLimit).mockResolvedValueOnce({ ok: false } as never);
+    const res = createRes();
+    await handleTeacherImageCleanup(post('/api/teacher/images/cleanup', {}), res);
+    expect(res.statusCode).toBe(429);
+    expect(res.body).toEqual({ error: 'too_many_requests' });
+  });
+});
+
+describe('student exam-payload image substitution', () => {
+  const examRow = {
+    id: EXAM_ID,
+    exam_code: 'TEST1',
+    teacher_id: TEACHER_ID,
+    status: 'active',
+    mode: 'official',
+    starts_at: minutesAgo(60),
+    ends_at: minutesAhead(60),
+    duration_minutes: 60,
+  };
+  const sessionRow = {
+    id: SESSION_ID,
+    exam_id: EXAM_ID,
+    student_id: STUDENT_ID,
+    status: 'ongoing',
+    started_at: minutesAgo(10),
+    submitted_at: null,
+    exam: examRow,
+  };
+  const token = () =>
+    createStudentSessionToken({ type: 'student_exam', sid: SESSION_ID, eid: EXAM_ID, stid: STUDENT_ID }, 7200);
+
+  function payloadAdmin() {
+    const admin = createAdmin({
+      student_exam_sessions: { single: sessionRow },
+      exams: { single: examRow },
+      students: { single: { id: STUDENT_ID, full_name: 'دانش‌آموز نمونه', grade: 'هفتم' } },
+      exam_questions: {
+        rows: [
+          { question_id: Q1, section_title: '', position: 0, points: 2 },
+          { question_id: Q2, section_title: '', position: 1, points: 2 },
+        ],
+      },
+      questions: {
+        rows: [
+          {
+            id: Q1,
+            type: 'single_choice',
+            grade: 'هفتم',
+            subject: 'ریاضی',
+            title: 'سوال ۱',
+            body: {
+              text: 'متن',
+              imageUrl: KEY_OWN,
+              options: [{ id: 'A', text: 'الف', imageUrl: KEY_OPT }],
+              parts: [{ id: 'p1', text: 'مینی', type: 'single_choice', imageUrl: KEY_PART, options: [] }],
+            },
+            points: 2,
+          },
+          {
+            id: Q2,
+            type: 'single_choice',
+            grade: 'هفتم',
+            subject: 'ریاضی',
+            title: 'سوال ۲',
+            body: { text: 'متن', imageUrl: LEGACY_URL, options: [{ id: 'A', text: 'الف' }] },
+            points: 2,
+          },
+        ],
+      },
+      student_answers: { rows: [] },
+    });
+    return { ...admin, storage: storageApi };
+  }
+
+  const payloadReq = () =>
+    createReq({
+      method: 'POST',
+      url: '/api/student/exam-payload',
+      body: {},
+      headers: { authorization: 'Bearer ' + token() },
+    });
+
+  it('swaps every key for a signed URL and never leaks raw keys', async () => {
+    vi.mocked(getSupabaseAdmin).mockReturnValue(payloadAdmin() as never);
+    const res = createRes();
+    await handleStudentExamPayload(payloadReq(), res as never);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      ok: boolean;
+      questions: Array<{ id: string; body: Record<string, never> }>;
+    };
+    expect(body.ok).toBe(true);
+    const raw = JSON.stringify(body);
+    expect(raw).not.toContain(KEY_OWN);
+    expect(raw).not.toContain(KEY_OPT);
+    expect(raw).not.toContain(KEY_PART);
+    const q1 = body.questions.find((q) => q.id === Q1);
+    const q1json = JSON.stringify(q1);
+    expect((q1json.match(/https:\/\/signed\.test\/img-\d+/g) || []).length).toBe(3);
+    expect(q1json).not.toContain(LEGACY_URL);
+    // Legacy rows keep rendering untouched.
+    const q2 = body.questions.find((q) => q.id === Q2);
+    expect(JSON.stringify(q2)).toContain(LEGACY_URL);
+  });
+
+  it('strips keys but keeps legacy URLs when minting fails', async () => {
+    signedReadImpl = () => {
+      throw new Error('store down');
+    };
+    vi.mocked(getSupabaseAdmin).mockReturnValue(payloadAdmin() as never);
+    const res = createRes();
+    await handleStudentExamPayload(payloadReq(), res as never);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      questions: Array<{ id: string; body: Record<string, unknown> }>;
+    };
+    const raw = JSON.stringify(body);
+    expect(raw).not.toContain(KEY_OWN);
+    expect(raw).not.toContain(KEY_OPT);
+    expect(raw).not.toContain(KEY_PART);
+    expect(raw).toContain(LEGACY_URL);
+  });
+});

@@ -159,7 +159,10 @@ export function getExamAvailability(exam, now = new Date()) {
 
 // --- Student session time window (F-02) ---
 
-/** Grace after any hard deadline so flush/submit can still land (mirrors the token TTL grace). */
+/**
+ * Grace after the hard deadline so the FINAL SUBMIT can still land (mirrors
+ * the token TTL grace). Answer writes never use it — see getSessionTimeWindow.
+ */
 export const SESSION_GRACE_MS = 5 * 60 * 1000;
 
 /**
@@ -175,7 +178,7 @@ export function sessionDeadlineMs(session, exam, { grace = true } = {}) {
 
 /**
  * Availability with end-of-window grace: students whose exam window just
- * closed keep SESSION_GRACE_MS to flush/submit. Teacher intent (stored
+ * closed keep SESSION_GRACE_MS to SUBMIT. Teacher intent (stored
  * completed/archived/draft) and the not-yet-open window stay strict.
  */
 export function getExamAvailabilityWithGrace(exam, now = new Date()) {
@@ -187,9 +190,14 @@ export function getExamAvailabilityWithGrace(exam, now = new Date()) {
   return { ok: true };
 }
 
-/** Personal window check for an in-progress session (grace included). */
-export function getSessionTimeWindow(session, exam, now = new Date()) {
-  const deadlineMs = sessionDeadlineMs(session, exam);
+/**
+ * Personal window check for an in-progress session.
+ * Grace is opt-in (default on) and reserved for the FINAL SUBMIT path plus
+ * rejoin/token mint so that submit can still land. Answer writes must pass
+ * `{ grace: false }` so new answers stop exactly at the deadline.
+ */
+export function getSessionTimeWindow(session, exam, now = new Date(), { grace = true } = {}) {
+  const deadlineMs = sessionDeadlineMs(session, exam, { grace });
   if (!Number.isFinite(deadlineMs)) return { ok: false, status: 422, error: 'session_invalid' };
   if (now.getTime() > deadlineMs) return { ok: false, status: 410, error: 'exam_time_expired' };
   return { ok: true };
@@ -221,6 +229,35 @@ export function sanitizeStudentAnswer(raw) {
     return { value: items };
   }
   return {};
+}
+
+/**
+ * Student-readable answer content: only the raw `{ value }` the student
+ * wrote. Server grading state (`__grading`), teacher comments and any other
+ * keys are stripped — a restore must never leak grading into the client.
+ * Returns `undefined` when there is nothing to restore (blank stays blank).
+ */
+export function extractSavedAnswerValue(answerJson) {
+  if (!answerJson || typeof answerJson !== 'object' || Array.isArray(answerJson)) return undefined;
+  if (!Object.prototype.hasOwnProperty.call(answerJson, 'value')) return undefined;
+  const { value } = answerJson;
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'string') {
+    const trimmed = value.slice(0, MAX_ANSWER_VALUE_CHARS);
+    return trimmed === '' ? undefined : trimmed;
+  }
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value === 'boolean') return value;
+  if (Array.isArray(value)) {
+    const items = value
+      .filter(
+        (item) => typeof item === 'string' || (typeof item === 'number' && Number.isFinite(item)),
+      )
+      .slice(0, MAX_ANSWER_ITEMS)
+      .map((item) => (typeof item === 'string' ? item.slice(0, MAX_ANSWER_VALUE_CHARS) : item));
+    return items.length > 0 ? items : undefined;
+  }
+  return undefined;
 }
 
 // --- Session-seeded display shuffles (F-05) ---

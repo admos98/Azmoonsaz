@@ -20,6 +20,11 @@ import {
   clearQueueForToken,
   getQueuedAnswers,
 } from '../../services/offlineAnswerQueue';
+import {
+  persistExamSession,
+  readPersistedExamSession,
+  clearPersistedExamSession,
+} from '../../services/studentSessionStore';
 import { ConfirmDialog, PillButton, TextLink } from '../../ui';
 import { ExamCountdown } from '../../components/ExamCountdown';
 import { useExamGuard } from '../../features/exam-guard/useExamGuard';
@@ -76,7 +81,9 @@ type PayloadResponse = {
   ok: boolean;
   exam: SafeExam;
   session: { id: string; startedAt: string };
+  student?: SafeStudent | null;
   questions: SafeQuestion[];
+  savedAnswers?: Record<string, unknown>;
 };
 
 interface SecureExamPortalProps {
@@ -111,15 +118,34 @@ export default function SecureExamPortal({
   presetExamCode,
   onBackToTeacher,
 }: SecureExamPortalProps) {
+  // Refresh snapshot, read synchronously at mount (lazy initializers, not an
+  // effect): a reload in the same tab re-fetches the paper without re-login.
+  // The token is tab-scoped (sessionStorage); the national ID is never stored.
+  const [restoredSession] = useState(() => readPersistedExamSession(presetExamCode || ''));
   const [phase, setPhase] = useState<Phase>('login');
   const [examCode, setExamCode] = useState(presetExamCode || 'DEMO7');
   const [nationalId, setNationalId] = useState('');
-  const [token, setToken] = useState('');
-  const [exam, setExam] = useState<SafeExam | null>(null);
-  const [student, setStudent] = useState<SafeStudent | null>(null);
+  const [token, setToken] = useState(restoredSession?.token ?? '');
+  const [exam, setExam] = useState<SafeExam | null>(() =>
+    restoredSession?.exam
+      ? {
+          id: '',
+          examCode: restoredSession.examCode,
+          title: restoredSession.exam.title,
+          grade: '',
+          subject: restoredSession.exam.subject,
+          status: '',
+          mode: '',
+          durationMinutes: 0,
+        }
+      : null,
+  );
+  const [student, setStudent] = useState<SafeStudent | null>(() =>
+    restoredSession?.student ? { id: '', ...restoredSession.student, grade: '' } : null,
+  );
   const [questions, setQuestions] = useState<SafeQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(restoredSession !== null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [confirmStage, setConfirmStage] = useState<'sync-queued' | 'final-submit' | null>(null);
@@ -183,12 +209,47 @@ export default function SecureExamPortal({
       setToken(response.token);
       setExam(response.exam);
       setStudent(response.student);
+      // Persist for refresh recovery: same tab can re-fetch the paper without
+      // re-typing the national ID (which is never stored client-side).
+      persistExamSession({
+        token: response.token,
+        examCode,
+        exam: { title: response.exam.title, subject: response.exam.subject },
+        student: { name: response.student.name },
+      });
       setPhase('ready');
     } catch (err) {
       setError(friendlyApiError(err));
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadPaperWithToken = async (activeToken: string) => {
+    const response = await apiPost<PayloadResponse>(
+      '/api/student/exam-payload',
+      {},
+      { Authorization: 'Bearer ' + activeToken },
+    );
+    setExam(response.exam);
+    // The student object is not persisted (national ID is never stored), so
+    // prefer the server echo when present and fall back to the snapshot.
+    if (response.student) setStudent(response.student);
+    setQuestions(response.questions || []);
+    // Restore previously saved answers (value-only map from the server).
+    const saved = response.savedAnswers;
+    if (saved && typeof saved === 'object') {
+      const restored: Record<string, string> = {};
+      for (const [questionId, value] of Object.entries(saved)) {
+        if (typeof value === 'string') restored[questionId] = value;
+      }
+      setAnswers(restored);
+    } else {
+      setAnswers({});
+    }
+    setSessionStartedAt(response.session?.startedAt || null);
+    setTimeExpired(false);
+    setPhase('take');
   };
 
   const handleLoadPayload = async () => {
@@ -202,22 +263,48 @@ export default function SecureExamPortal({
       /* not supported — exam proceeds windowed */
     }
     try {
-      const response = await apiPost<PayloadResponse>(
-        '/api/student/exam-payload',
-        {},
-        { Authorization: 'Bearer ' + token },
-      );
-      setExam(response.exam);
-      setQuestions(response.questions || []);
-      setSessionStartedAt(response.session?.startedAt || null);
-      setTimeExpired(false);
-      setPhase('take');
+      await loadPaperWithToken(token);
     } catch (err) {
       setError(friendlyApiError(err));
     } finally {
       setLoading(false);
     }
   };
+
+  // Refresh recovery: the effect performs only the async re-fetch — all state
+  // snapshots come from the lazy initializers above, so there is no
+  // set-state-in-effect. An invalid/expired token clears storage and falls
+  // back to login (re-authenticate with the national ID, never persisted).
+  // StrictMode-safe: the ref guards the dev double-effect from firing twice.
+  const rejoinAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (rejoinAttemptedRef.current) return;
+    rejoinAttemptedRef.current = true;
+    if (!restoredSession) return;
+    const persisted = restoredSession;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time rejoin fetch after refresh; syncs with an external system (the API), not derived state
+    loadPaperWithToken(persisted.token).catch((err: unknown) => {
+      // Session gone (submitted/expired/invalidated) — clear the dead token
+      // and land on login. Anything else keeps the ready screen snapshot so
+      // the student can retry without re-typing credentials blindly.
+      if (
+        err instanceof ApiError &&
+        (err.message === 'invalid_session' ||
+          err.message === 'session_not_active' ||
+          err.message === 'session_not_active_or_already_submitted' ||
+          err.message === 'exam_time_expired' ||
+          err.message === 'exam_closed')
+      ) {
+        clearPersistedExamSession(persisted.examCode);
+        setToken('');
+        setPhase('login');
+        setError(friendlyApiError(err));
+      } else {
+        setPhase('ready');
+        setError(friendlyApiError(err));
+      }
+    }).finally(() => setLoading(false));
+  }, [restoredSession]);
 
   const handleSaveAnswer = async (questionId: string, value: string) => {
     if (timeExpired) {
@@ -239,6 +326,17 @@ export default function SecureExamPortal({
       );
       setSavedAt(response.savedAt);
     } catch (err) {
+      // The server ends answer writes exactly at the deadline (grace is
+      // submit-only). A 410 here is final — queuing would only replay a
+      // rejected write, so surface it and freeze the UI instead.
+      if (
+        err instanceof ApiError &&
+        (err.message === 'exam_time_expired' || err.message === 'exam_closed')
+      ) {
+        setTimeExpired(true);
+        setError('زمان آزمون به پایان رسید؛ پاسخ جدیدی ذخیره نمی‌شود.');
+        return;
+      }
       logger.warn('Network save failed. Queuing answer offline:', err);
       queueAnswerOffline(token, questionId, value);
       setSavedAt('ذخیره به‌صورت آفلاین (در انتظار همگام‌سازی شبکه)');
@@ -293,6 +391,7 @@ export default function SecureExamPortal({
         { Authorization: 'Bearer ' + token },
       );
       clearQueueForToken(token);
+      clearPersistedExamSession(examCode);
       setPhase('submitted');
     } catch (err) {
       setError(friendlyApiError(err));

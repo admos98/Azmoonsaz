@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { apiPost } from '../lib/apiClient';
+import { apiPost, ApiError } from '../lib/apiClient';
 import { logger } from '../lib/logger';
 
 export interface QueuedAnswer {
@@ -44,12 +44,14 @@ export function queueAnswerOffline(token: string, questionId: string, value: str
 export async function flushQueuedAnswers(): Promise<{
   syncedCount: number;
   remainingCount: number;
+  droppedCount: number;
 }> {
   const queue = getQueuedAnswers();
-  if (queue.length === 0) return { syncedCount: 0, remainingCount: 0 };
+  if (queue.length === 0) return { syncedCount: 0, remainingCount: 0, droppedCount: 0 };
 
   const remaining: QueuedAnswer[] = [];
   let syncedCount = 0;
+  let droppedCount = 0;
 
   for (const item of queue) {
     try {
@@ -63,6 +65,23 @@ export async function flushQueuedAnswers(): Promise<{
       );
       syncedCount++;
     } catch (err) {
+      // Final server rejections (deadline passed, session closed) are dropped,
+      // not retried — replaying them can never succeed. Everything else
+      // (network loss, 5xx, rate limits) stays queued for the next flush.
+      if (
+        err instanceof ApiError &&
+        (err.message === 'exam_time_expired' ||
+          err.message === 'exam_closed' ||
+          err.message === 'session_not_active' ||
+          err.message === 'session_not_active_or_already_submitted' ||
+          err.message === 'question_not_in_exam')
+      ) {
+        logger.warn(
+          `[Offline Queue] Dropping answer for ${item.questionId}: server rejected it finally (${err.message})`,
+        );
+        droppedCount++;
+        continue;
+      }
       logger.warn(
         `[Offline Queue] Failed to sync answer for ${item.questionId}, keeping in queue:`,
         err,
@@ -73,7 +92,7 @@ export async function flushQueuedAnswers(): Promise<{
   }
 
   saveQueue(remaining);
-  return { syncedCount, remainingCount: remaining.length };
+  return { syncedCount, remainingCount: remaining.length, droppedCount };
 }
 
 export function clearQueueForToken(token: string): void {

@@ -25,4 +25,26 @@ if (!ok) {
   console.error('One or more required environment variables are missing or invalid.');
   process.exit(1);
 }
+
+// Image store provider is optional: Supabase is the default and needs no
+// extra vars. S3 (Parspack/Arvan) activates only when fully configured —
+// warn here, never fail: the server logs once at runtime and stays on Supabase.
+const provider = String(process.env.IMAGE_STORE_PROVIDER || 'supabase').toLowerCase();
+if (provider === 's3') {
+  const missing = ['S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY', 'S3_BUCKET'].filter(
+    (name) => !String(process.env[name] || '').trim(),
+  );
+  if (missing.length > 0) {
+    console.log(
+      'WARN IMAGE_STORE_PROVIDER=s3 is incomplete (missing ' +
+        missing.join(', ') +
+        ') — image uploads stay on Supabase until all four are set.',
+    );
+  } else {
+    console.log('OK   image store provider = s3');
+  }
+} else {
+  console.log('OK   image store provider = supabase (default)');
+}
+
 console.log('Environment looks ready.');

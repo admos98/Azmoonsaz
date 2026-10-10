@@ -35,6 +35,7 @@ import { useQuestionDelete } from '../../features/question-bank/useQuestionDelet
 const QuestionRenderer = lazy(() => import('../../components/QuestionRenderer'));
 const preloadQuestionRenderer = () => import('../../components/QuestionRenderer');
 import { questionService } from '../../services/api';
+import { teacherPost } from '../../services/teacherApi';
 import {
   Button,
   ConfirmDialog,
@@ -52,6 +53,7 @@ import {
 } from '../../ui';
 import { AbsenceArt } from '../../components/AbsenceArt';
 import { PanelCrest } from '../../components/PanelCrest';
+import { ResolvedImage } from '../../components/QuestionImage';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
 import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
@@ -78,6 +80,36 @@ export default function Questions() {
 
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [cleaningImages, setCleaningImages] = useState(false);
+
+  // Orphan image sweep: reaps mint-then-abandon strays (drawer canceled,
+  // upload succeeded but no question was ever saved). Bounded server-side
+  // (200/call, own folder only); re-run until nothing is reported.
+  const handleCleanupImages = async () => {
+    if (cleaningImages) return;
+    setCleaningImages(true);
+    try {
+      const result = await teacherPost<{
+        ok: boolean;
+        deleted: string[];
+        failed: string[];
+        scanned: number;
+      }>('/api/teacher/images/cleanup', {});
+      const deleted = result?.deleted?.length || 0;
+      const failed = result?.failed?.length || 0;
+      if (failed > 0) {
+        showToast(`پاک‌سازی تصاویر: ${toPersianDigits(deleted)} مورد حذف شد، ${toPersianDigits(failed)} مورد ناموفق بود.`, 'warning');
+      } else if (deleted > 0) {
+        showToast(`${toPersianDigits(deleted)} تصویر بلااستفاده پاک شد.`, 'success');
+      } else {
+        showToast('تصویر بلااستفاده‌ای پیدا نشد.', 'info');
+      }
+    } catch {
+      showToast('پاک‌سازی تصاویر ممکن نشد. دوباره تلاش کنید.', 'error');
+    } finally {
+      setCleaningImages(false);
+    }
+  };
 
   // View & UI State
   const [viewMode, setViewMode] = usePersistentPreference<'card' | 'table'>(
@@ -407,6 +439,17 @@ export default function Questions() {
           >
             افزودن سوال جدید
           </Button>
+
+          {/* Orphan image sweep — reaps mint-then-abandon strays */}
+          <button
+            type="button"
+            onClick={() => void handleCleanupImages()}
+            disabled={cleaningImages}
+            title="حذف تصاویر بلااستفاده"
+            className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro font-bold cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {cleaningImages ? 'در حال پاک‌سازی…' : 'پاک‌سازی تصاویر بلااستفاده'}
+          </button>
         </div>
       </div>
 
@@ -1252,7 +1295,7 @@ export default function Questions() {
                   <span>انتخاب فایل تصویر</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
                     className="hidden"
                     onChange={(e) => handleImageUpload(e, 'main')}
                   />
@@ -1260,12 +1303,10 @@ export default function Questions() {
 
                 {formImageUrl ? (
                   <div className="flex items-center gap-2">
-                    <img
-                      loading="lazy"
-                      decoding="async"
-                      src={formImageUrl}
+                    <ResolvedImage
+                      value={formImageUrl}
                       alt="تصویر بارگذاری شده در فرم"
-                      className="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]"
+                      imgClassName="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]"
                     />
                     <TextLink tone="danger" bold onClick={() => setFormImageUrl('')}>
                       حذف پیوست ×
@@ -1277,11 +1318,6 @@ export default function Questions() {
                   </span>
                 )}
               </div>
-              {/* Outline structure for Supabase integration comment per specs */}
-              <p className="text-micro text-[var(--color-accent)] bg-[var(--color-accent-soft)]/30 p-2 rounded-lg italic leading-normal">
-                داده به صورت base64 محلی ذخیره می‌شود. ساختار تابع آماده ارتقای سنکرون به خدمات
-                استوریج ابری Supabase Storage از بستر کلاینت است.
-              </p>
             </div>
 
             {/* 5. TYPE SPECIFIC OPTIONS BUILDERS */}
@@ -1372,19 +1408,17 @@ export default function Questions() {
                               <span>الحاق تصویر</span>
                               <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
                                 className="hidden"
                                 onChange={(e) => handleImageUpload(e, { optIndex: oIdx })}
                               />
                             </label>
                             {opt.imageUrl ? (
                               <div className="flex items-center gap-1.5">
-                                <img
-                                  loading="lazy"
-                                  decoding="async"
-                                  src={opt.imageUrl}
-                                  className="w-6 h-6 rounded object-cover border"
+                                <ResolvedImage
+                                  value={opt.imageUrl}
                                   alt="گزینه"
+                                  imgClassName="w-6 h-6 rounded object-cover border"
                                 />
                                 <TextLink
                                   size="sm"
@@ -1815,6 +1849,48 @@ export default function Questions() {
                           placeholder="گزینه یا عبارت کلید مینی‌سوال"
                           className="w-full glx field px-2 py-1 rounded text-micro font-mono"
                         />
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="text-micro text-[var(--color-text-tertiary)] block">
+                          تصویر مینی‌سوال (اختیاری):
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <label className="px-2 py-1 btn-glass btn-glass--quiet border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro font-bold cursor-pointer shrink-0">
+                            <span>الحاق تصویر</span>
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              className="hidden"
+                              onChange={(e) => handleImageUpload(e, { partIndex: idx })}
+                            />
+                          </label>
+                          {part.imageUrl ? (
+                            <div className="flex items-center gap-1.5">
+                              <ResolvedImage
+                                value={part.imageUrl}
+                                alt="مینی‌سوال"
+                                imgClassName="w-6 h-6 rounded object-cover border"
+                              />
+                              <TextLink
+                                size="sm"
+                                tone="danger"
+                                hover="none"
+                                onClick={() => {
+                                  const updated = [...formParts];
+                                  updated[idx] = { ...updated[idx], imageUrl: undefined };
+                                  setFormParts(updated);
+                                }}
+                              >
+                                حذف
+                              </TextLink>
+                            </div>
+                          ) : (
+                            <span className="text-micro text-[var(--color-text-tertiary)] italic">
+                              عکسی نیست
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
