@@ -53,7 +53,11 @@ export function normalizeStudentPin(input) {
 }
 
 export function validateStudentPin(input) {
-  return /^\d{6}$/.test(normalizeStudentPin(input));
+  const clean = normalizeStudentPin(input);
+  if (!/^\d{6}$/.test(clean)) return false;
+  // Trivial PINs (000000, 777777, …) fall to the first guess — reject them
+  // the same way all-same-digit national IDs are rejected.
+  return !/^(\d)\1{5}$/.test(clean);
 }
 
 export function studentPinHash(studentId, pin) {

@@ -74,6 +74,13 @@ describe('student PIN crypto', () => {
     expect(validateStudentPin('')).toBe(false);
   });
 
+  it('rejects trivial PINs (all-same-digit falls to the first guess)', () => {
+    expect(validateStudentPin('000000')).toBe(false);
+    expect(validateStudentPin('111111')).toBe(false);
+    expect(validateStudentPin('۹۹۹۹۹۹')).toBe(false);
+    expect(validateStudentPin('777777')).toBe(false);
+  });
+
   it('hashes deterministically and separates PINs from national IDs and students', () => {
     const a = studentPinHash(STUDENT_ID, TEST_PIN);
     expect(a).toBe(studentPinHash(STUDENT_ID, TEST_PIN));
@@ -136,6 +143,24 @@ describe('start-session PIN gate (T7)', () => {
     );
     expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({ pinSetupRequired: true });
+  });
+
+  it('trivial PIN setup is refused — back to setup, nothing minted', async () => {
+    const admin = createAdmin({
+      exams: { single: examRow },
+      students: { single: studentRow() },
+      exam_allowed_classes: { rows: [] },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(admin as never);
+    const res = createRes();
+    await handleStudentStartSession(
+      startReq({ pin: '000000', pinConfirm: '000000' }) as never,
+      res as never,
+    );
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ pinSetupRequired: true });
+    expect((res.body as Record<string, unknown>).token).toBeUndefined();
+    expect(admin.calls).not.toContain('student_exam_sessions');
   });
 
   it('valid setup claims the PIN (hash only) and mints the session token', async () => {
@@ -246,7 +271,8 @@ describe('start-session PIN gate (T7)', () => {
 
     vi.mocked(getSupabaseAdmin).mockReturnValue(adminFor() as never);
     const badRes = createRes();
-    await handleStudentStartSession(startReq({ pin: '000000' }) as never, badRes as never);
+    // Non-trivial wrong PIN — exercises the constant-time hash compare path.
+    await handleStudentStartSession(startReq({ pin: '654321' }) as never, badRes as never);
     expect(badRes.statusCode).toBe(403);
     expect(badRes.body).toEqual({ error: 'invalid_credentials' });
 
@@ -274,6 +300,128 @@ describe('start-session PIN gate (T7)', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({ pinSetupRequired: true });
   });
+
+  it('pin_reset-invalidated sessions are re-admitted: answers wiped, fresh window', async () => {
+    const answersDeletes: Record<string, unknown>[] = [];
+    const sessionUpdates: Record<string, unknown>[] = [];
+    const admin = createAdmin({
+      exams: { single: examRow },
+      students: {
+        single: studentRow({
+          pin_hash: studentPinHash(STUDENT_ID, TEST_PIN),
+          pin_must_change: false,
+        }),
+      },
+      exam_allowed_classes: { rows: [] },
+      student_exam_sessions: {
+        onResult: (ctx) => {
+          if (ctx.op === 'update') {
+            sessionUpdates.push(ctx.payload!);
+            return {
+              data: {
+                id: SESSION_ID,
+                status: 'ongoing',
+                started_at: new Date().toISOString(),
+                submitted_at: null,
+              },
+              error: null,
+            };
+          }
+          return {
+            data: {
+              id: SESSION_ID,
+              status: 'invalidated',
+              started_at: minutesAgo(30),
+              submitted_at: null,
+              invalidated_reason: 'pin_reset',
+            },
+            error: null,
+          };
+        },
+      },
+      student_answers: {
+        onResult: (ctx) => {
+          if (ctx.op === 'delete') {
+            answersDeletes.push({ ...ctx.filters });
+            return { data: null, error: null };
+          }
+          return undefined;
+        },
+      },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(admin as never);
+    const res = createRes();
+    await handleStudentStartSession(startReq({ pin: TEST_PIN }) as never, res as never);
+    expect(res.statusCode).toBe(200);
+    expect(typeof (res.body as Record<string, unknown>).token).toBe('string');
+    // Squatter answers died with the re-admit.
+    expect(answersDeletes).toEqual([{ session_id: SESSION_ID }]);
+    expect(sessionUpdates[0]).toMatchObject({
+      status: 'ongoing',
+      submitted_at: null,
+      invalidated_reason: null,
+    });
+  });
+
+  it('proctor-invalidated rows (no pin_reset reason) stay permanently blocked', async () => {
+    const admin = createAdmin({
+      exams: { single: examRow },
+      students: {
+        single: studentRow({
+          pin_hash: studentPinHash(STUDENT_ID, TEST_PIN),
+          pin_must_change: false,
+        }),
+      },
+      exam_allowed_classes: { rows: [] },
+      student_exam_sessions: {
+        single: {
+          id: SESSION_ID,
+          status: 'invalidated',
+          started_at: minutesAgo(30),
+          submitted_at: null,
+          invalidated_reason: null,
+        },
+      },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(admin as never);
+    const res = createRes();
+    await handleStudentStartSession(startReq({ pin: TEST_PIN }) as never, res as never);
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toEqual({ error: 'exam_invalidated' });
+  });
+
+  it('loser of a concurrent session insert rejoins the winner instead of 500ing', async () => {
+    const admin = createAdmin({
+      exams: { single: examRow },
+      students: {
+        single: studentRow({
+          pin_hash: studentPinHash(STUDENT_ID, TEST_PIN),
+          pin_must_change: false,
+        }),
+      },
+      exam_allowed_classes: { rows: [] },
+      student_exam_sessions: {
+        onResult: (ctx) => {
+          if (ctx.op === 'insert') return { data: null, error: { code: '23505' } };
+          return {
+            data: {
+              id: SESSION_ID,
+              status: 'ongoing',
+              started_at: minutesAgo(5),
+              submitted_at: null,
+              invalidated_reason: null,
+            },
+            error: null,
+          };
+        },
+      },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(admin as never);
+    const res = createRes();
+    await handleStudentStartSession(startReq({ pin: TEST_PIN }) as never, res as never);
+    expect(res.statusCode).toBe(200);
+    expect(typeof (res.body as Record<string, unknown>).token).toBe('string');
+  });
 });
 
 describe('teacher reset-pin (T7)', () => {
@@ -288,6 +436,8 @@ describe('teacher reset-pin (T7)', () => {
   it('clears the hash and flags must-change, scoped to the owning teacher', async () => {
     const studentUpdates: Record<string, unknown>[] = [];
     const updateFilters: Record<string, unknown>[] = [];
+    const sessionUpdates: Record<string, unknown>[] = [];
+    const sessionFilters: Record<string, unknown>[] = [];
     const admin = createAdmin({
       students: {
         onResult: (ctx) => {
@@ -311,6 +461,16 @@ describe('teacher reset-pin (T7)', () => {
           return undefined;
         },
       },
+      student_exam_sessions: {
+        onResult: (ctx) => {
+          if (ctx.op === 'update') {
+            sessionUpdates.push(ctx.payload!);
+            sessionFilters.push({ ...ctx.filters });
+            return { data: [], error: null };
+          }
+          return undefined;
+        },
+      },
     });
     teacherWith(admin);
     const res = createRes();
@@ -327,6 +487,11 @@ describe('teacher reset-pin (T7)', () => {
       { pin_hash: null, pin_set_at: null, pin_must_change: true },
     ]);
     expect(updateFilters[0]).toMatchObject({ id: STUDENT_ID, teacher_id: TEACHER_ID });
+    // Ongoing sessions die with the reset — the squatter's bearer is revoked.
+    expect(sessionUpdates).toEqual([
+      { status: 'invalidated', invalidated_reason: 'pin_reset' },
+    ]);
+    expect(sessionFilters[0]).toMatchObject({ student_id: STUDENT_ID, status: 'ongoing' });
     const body = res.body as { student: Record<string, unknown> };
     expect(body.student.pinSet).toBe(false);
     expect(JSON.stringify(body)).not.toContain('pin_hash');

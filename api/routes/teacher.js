@@ -368,6 +368,10 @@ async function handleTeacherStudents(req, res) {
     // T7 — teacher-only PIN reset. The teacher never sees or sets the PIN:
     // this clears the hash and flags pin_must_change, so the student's next
     // login shows the set-PIN screen. Audited (counts only, no PII).
+    // Ongoing sessions die with the reset (reason pin_reset): a squatter's
+    // bearer must not survive, and start-session re-admits exactly those
+    // rows (fresh window, squatter answers wiped). Proctor-blocked rows are
+    // untouched beyond the PIN fields — second-strike stays permanent.
     const id = String(studentBody.id || body.id || '').trim();
     if (!id) return json(res, 400, { error: 'missing_student_id' });
     const { data, error } = await teacher.admin
@@ -378,6 +382,12 @@ async function handleTeacherStudents(req, res) {
       .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at, pin_set_at, pin_must_change')
       .maybeSingle();
     if (error || !data) return json(res, 400, safeError(error, 'student_pin_reset_failed'));
+    const { error: revokeError } = await teacher.admin
+      .from('student_exam_sessions')
+      .update({ status: 'invalidated', invalidated_reason: 'pin_reset' })
+      .eq('student_id', id)
+      .eq('status', 'ongoing');
+    if (revokeError) return json(res, 500, safeError(revokeError, 'student_pin_revoke_failed'));
     await auditLog(teacher.admin, {
       actorType: 'teacher',
       actorId: teacher.id,

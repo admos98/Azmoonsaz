@@ -85,7 +85,7 @@ api/                         # Vercel Serverless API
 │   └── teacher.js           # Teacher endpoints (CRUD for all resources)
 └── _lib/
     ├── auth.js              # Session token creation / verification
-    ├── crypto.js            # Entry code hashing
+    ├── crypto.js            # National-ID + student-PIN hashing (HMAC, peppered)
     ├── env.js               # Server-side env vars
     ├── examSecurity.js      # Exam access validation
     ├── http.js              # Response helpers (json, cors headers)
@@ -190,6 +190,15 @@ Supabase migrations live in `supabase/migrations/`. Apply via:
 npx supabase db push
 ```
 
+> **Release checklist — migrations must land before code.** Start-session and
+> the roster now select `pin_hash` / `pin_set_at` / `pin_must_change`
+> (`20261012000001_student_pin.sql`) and `invalidated_reason`
+> (`20261012000002_pin_reset_invalidation.sql`). Deploying the code first
+> 500s every student login — push migrations, then push code.
+> Verify with `SELECT column_name FROM information_schema.columns WHERE table_name='students'`
+> (expect `pin_hash`, `pin_set_at`, `pin_must_change`) and the same for
+> `student_exam_sessions.invalidated_reason`.
+
 ---
 
 ## Environment Variables
@@ -218,10 +227,11 @@ tightening early breaks rendering for teachers who have not migrated yet.
 A comprehensive audit was conducted on 2026-09-15 covering security, architecture, and code quality. All 16 findings have been resolved. See `.hermes/plans/2026-09-15_comprehensive-audit.md` for the full audit report and fix details.
 
 ### Quality Gates
-- **TypeScript** — strict type checking (0 errors)
-- **ESLint** — flat config with TypeScript + React Hooks rules (0 errors, 217 warnings tracked)
-- **Vitest** — 40 unit tests across 9 test files (utils, services, config, lib, components)
-- **Vite build** — production-optimized, ~259KB gzipped
+- **TypeScript** — strict type checking, client + server (0 errors)
+- **ESLint** — flat config with TypeScript + React Hooks rules (0 errors, 0 warnings)
+- **Vitest** — 274 client + 163 server tests across 52 files; Playwright hermetic E2E (route-intercepted, runs in CI)
+- **Vite build** — production-optimized (~4.7MB dist; vendor-import chunk carries xlsx/papaparse)
+- **Contrast gate** — token pairs + usage roles (tertiary@micro instructional text fails), ratchet enforced
 
 ---
 

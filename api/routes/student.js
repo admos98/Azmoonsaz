@@ -261,13 +261,19 @@ async function handleStudentStartSession(req, res) {
     }
     const { data: existing, error: existingError } = await supabase
       .from('student_exam_sessions')
-      .select('id, status, started_at, submitted_at')
+      .select('id, status, started_at, submitted_at, invalidated_reason')
       .eq('exam_id', exam.id)
       .eq('student_id', student.id)
       .maybeSingle();
     if (existingError) throw existingError;
     let session = existing;
-    if (session && ['submitted', 'graded', 'expired', 'invalidated'].includes(session.status)) {
+    if (
+      session &&
+      (['submitted', 'graded', 'expired'].includes(session.status) ||
+        // A PIN reset re-admits exactly its own rows below; proctor strikes
+        // (NULL/legacy reason) stay permanently blocked.
+        (session.status === 'invalidated' && session.invalidated_reason !== 'pin_reset'))
+    ) {
       // Distinct code only AFTER credentials validate (F-12 still holds —
       // this reveals nothing about exams the caller isn't a member of).
       const statusError =
@@ -277,6 +283,30 @@ async function handleStudentStartSession(req, res) {
             ? 'exam_invalidated'
             : 'exam_already_finalized';
       return json(res, 409, { error: statusError });
+    }
+    if (session && session.status === 'invalidated' && session.invalidated_reason === 'pin_reset') {
+      // Re-admit after a teacher PIN reset: the squatter's answers die here
+      // (cascade-equivalent explicit wipe) and the student gets a fresh
+      // personal window. Update-in-place — never delete+insert — so the
+      // (exam_id, student_id) unique index can't 500 a concurrent rejoin.
+      const { error: wipeError } = await supabase
+        .from('student_answers')
+        .delete()
+        .eq('session_id', session.id);
+      if (wipeError) throw wipeError;
+      const { data: readmitted, error: readmitError } = await supabase
+        .from('student_exam_sessions')
+        .update({
+          status: 'ongoing',
+          started_at: new Date().toISOString(),
+          submitted_at: null,
+          invalidated_reason: null,
+        })
+        .eq('id', session.id)
+        .select('id, status, started_at, submitted_at')
+        .single();
+      if (readmitError) throw readmitError;
+      session = readmitted;
     }
     if (session) {
       // Personal window (started_at + duration + grace). Once it passes, freeze
@@ -308,8 +338,36 @@ async function handleStudentStartSession(req, res) {
         })
         .select('id, status, started_at, submitted_at')
         .single();
-      if (insertError) throw insertError;
-      session = inserted;
+      if (insertError) {
+        // Lost the insert race (unique exam_id+student_id): the winner's row
+        // is ours to rejoin — re-read it instead of 500ing this login.
+        if (insertError.code === '23505') {
+          const { data: raced, error: racedError } = await supabase
+            .from('student_exam_sessions')
+            .select('id, status, started_at, submitted_at, invalidated_reason')
+            .eq('exam_id', exam.id)
+            .eq('student_id', student.id)
+            .single();
+          if (racedError || !raced) throw racedError || new Error('session race re-read failed');
+          if (
+            ['submitted', 'graded', 'expired'].includes(raced.status) ||
+            (raced.status === 'invalidated' && raced.invalidated_reason !== 'pin_reset')
+          ) {
+            const statusError =
+              raced.status === 'expired'
+                ? 'exam_time_expired'
+                : raced.status === 'invalidated'
+                  ? 'exam_invalidated'
+                  : 'exam_already_finalized';
+            return json(res, 409, { error: statusError });
+          }
+          session = raced;
+        } else {
+          throw insertError;
+        }
+      } else {
+        session = inserted;
+      }
     }
     // TTL is anchored to the session clock — re-joining never resets the window.
     const token = createStudentSessionToken(

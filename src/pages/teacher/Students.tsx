@@ -1208,7 +1208,7 @@ export default function Students() {
       <ConfirmDialog
         isOpen={studentToResetPin !== null}
         title="بازنشانی رمز دانش‌آموز"
-        message={`رمز فعلی «${studentToResetPin?.name}» پاک می‌شود و در ورود بعدی از او خواسته می‌شود رمز ۶ رقمی جدید تعیین کند. رمز فعلی برای هیچ‌کس — از جمله شما — قابل مشاهده نیست.`}
+        message={`رمز فعلی «${studentToResetPin?.name}» پاک می‌شود، نشست‌های فعال او بسته می‌شود و در ورود بعدی از او خواسته می‌شود رمز ۶ رقمی جدید تعیین کند. رمز فعلی برای هیچ‌کس — از جمله شما — قابل مشاهده نیست.`}
         confirmText="بازنشانی رمز"
         variant="primary"
         onConfirm={confirmResetPin}
