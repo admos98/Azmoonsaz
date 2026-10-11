@@ -216,9 +216,11 @@ npx supabase db push
 Legacy image migration: grandfathered `data:`/external rows are moved into
 the private store via `POST /api/teacher/images/migrate` (SSRF-guarded,
 10 values/call, own questions only) or the «انتقال تصاویر قدیمی» button in
-the question bank. Only after migrate reports zero remaining legacy rows
-should CSP `img-src` in `vercel.json` drop bare `https:`/`data:` —
-tightening early breaks rendering for teachers who have not migrated yet.
+the question bank. CSP `img-src` in `vercel.json` is tight (`'self' blob:
+https://*.supabase.co` — no `data:`, no open `https:`): on a database with
+legacy rows, run migrate first — tightening blocks grandfathered renders.
+When `IMAGE_STORE_PROVIDER=s3`, extend `img-src` (and `connect-src`) with
+the S3 origin.
 
 ---
 
