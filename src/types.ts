@@ -41,6 +41,8 @@ export interface Student {
   grade: string;
   classGroupId: string;
   status?: 'active' | 'suspended' | 'examining';
+  /** T7: whether the student has set their 6-digit exam PIN (hash never sent). */
+  pinSet?: boolean;
 }
 
 /** A row the bulk import endpoint could not accept (`POST /api/teacher/students/bulk`). */

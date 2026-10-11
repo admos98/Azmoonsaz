@@ -31,7 +31,7 @@ import StudentQuestionCard, { type StudentAnswerValue } from '../../components/S
 import { useExamGuard } from '../../features/exam-guard/useExamGuard';
 import { Watermark } from '../../features/exam-guard/Watermark';
 
-type Phase = 'login' | 'ready' | 'take' | 'submitted';
+type Phase = 'login' | 'pin-setup' | 'ready' | 'take' | 'submitted';
 
 // Wave B: Turnstile join check — renders only when the site key is deployed;
 // the server enforces only when its secret is deployed (both or neither).
@@ -82,9 +82,10 @@ type SafeQuestion = {
 };
 type StartResponse = {
   ok: boolean;
-  token: string;
-  session: { id: string; status: string; started_at: string; submitted_at?: string | null };
-  exam: SafeExam;
+  token?: string;
+  pinSetupRequired?: boolean;
+  session?: { id: string; status: string; started_at: string; submitted_at?: string | null };
+  exam?: SafeExam;
   student: SafeStudent;
 };
 type PayloadResponse = {
@@ -135,6 +136,9 @@ export default function SecureExamPortal({
   const [phase, setPhase] = useState<Phase>('login');
   const [examCode, setExamCode] = useState(presetExamCode || 'DEMO7');
   const [nationalId, setNationalId] = useState('');
+  // T7: 6-digit exam PIN — memory only, never persisted (same as the token).
+  const [pin, setPin] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
   const [token, setToken] = useState(restoredSession?.token ?? '');
   const [exam, setExam] = useState<SafeExam | null>(() =>
     restoredSession?.exam
@@ -208,6 +212,14 @@ export default function SecureExamPortal({
 
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
 
+  // Persian/Arabic digits → ASCII; strip the rest.
+  const normalizePinInput = (value: string) =>
+    value
+      .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+      .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+      .replace(/\D/g, '')
+      .slice(0, 6);
+
   const handleStartSession = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
@@ -216,13 +228,69 @@ export default function SecureExamPortal({
       const response = await apiPost<StartResponse>('/api/student/start-session', {
         examCode,
         nationalId,
+        pin,
         ...(TURNSTILE_SITE_KEY ? { turnstileToken } : {}),
       });
+      if (response.pinSetupRequired) {
+        // First-ever login (or teacher reset): greet, then ask for a new PIN.
+        setStudent(response.student);
+        setPin('');
+        setPinConfirm('');
+        setPhase('pin-setup');
+        return;
+      }
+      if (!response.token || !response.exam) {
+        setError(friendlyApiError(new ApiError('invalid_credentials', 403, {})));
+        return;
+      }
       setToken(response.token);
       setExam(response.exam);
       setStudent(response.student);
       // Persist for refresh recovery: same tab can re-fetch the paper without
       // re-typing the national ID (which is never stored client-side).
+      persistExamSession({
+        token: response.token,
+        examCode,
+        exam: { title: response.exam.title, subject: response.exam.subject },
+        student: { name: response.student.name },
+      });
+      setPhase('ready');
+    } catch (err) {
+      setError(friendlyApiError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetPin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    if (pin.length !== 6 || pin !== pinConfirm) {
+      setError('رمز ۶ رقمی باید دقیقاً ۶ رقم باشد و تکرار آن یکسان باشد.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await apiPost<StartResponse>('/api/student/start-session', {
+        examCode,
+        nationalId,
+        pin,
+        pinConfirm,
+        ...(TURNSTILE_SITE_KEY ? { turnstileToken } : {}),
+      });
+      if (response.pinSetupRequired) {
+        setError('رمز پذیرفته نشد. هر دو فیلد باید دقیقاً یک رمز ۶ رقمی یکسان باشند.');
+        return;
+      }
+      if (!response.token || !response.exam) {
+        setError(friendlyApiError(new ApiError('invalid_credentials', 403, {})));
+        return;
+      }
+      setToken(response.token);
+      setExam(response.exam);
+      setStudent(response.student);
+      setPin('');
+      setPinConfirm('');
       persistExamSession({
         token: response.token,
         examCode,
@@ -482,6 +550,19 @@ export default function SecureExamPortal({
                 className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
               />
             </label>
+            <label className="block space-y-1.5 text-right">
+              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+                رمز ۶ رقمی
+              </span>
+              <input
+                value={pin}
+                onChange={(e) => setPin(normalizePinInput(e.target.value))}
+                placeholder="۶ رقم"
+                inputMode="numeric"
+                autoComplete="off"
+                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
+              />
+            </label>
             {TURNSTILE_SITE_KEY && (
               <div ref={turnstileRef} className="flex justify-center" />
             )}
@@ -490,6 +571,7 @@ export default function SecureExamPortal({
               disabled={
                 loading ||
                 nationalId.length !== 10 ||
+                pin.length !== 6 ||
                 Boolean(TURNSTILE_SITE_KEY && !turnstileToken)
               }
               className="w-full rounded-xl btn-glass btn-glass--primary py-3 text-label font-black flex items-center justify-center gap-2"
@@ -500,6 +582,60 @@ export default function SecureExamPortal({
                 <ShieldCheck className="w-4 h-4" />
               )}
               ورود امن به آزمون
+            </button>
+          </form>
+        )}
+
+        {phase === 'pin-setup' && student && (
+          <form
+            onSubmit={handleSetPin}
+            className="lens rounded-3xl p-6 md:p-8 max-w-xl mx-auto space-y-5"
+          >
+            <div className="text-center space-y-2">
+              <Lock className="w-12 h-12 mx-auto text-[var(--color-accent)]" />
+              <h2 className="font-black text-[var(--color-text-primary)]">سلام، {student.name}</h2>
+              <p className="text-caption text-[var(--color-text-secondary)] leading-relaxed">
+                برای نخستین ورود، یک رمز ۶ رقمی برای خودت انتخاب کن. از این پس با همین رمز وارد
+                آزمون‌ها می‌شوی؛ آن را به خاطر بسپار و به کسی نده.
+              </p>
+            </div>
+            <label className="block space-y-1.5 text-right">
+              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+                رمز ۶ رقمی جدید
+              </span>
+              <input
+                value={pin}
+                onChange={(e) => setPin(normalizePinInput(e.target.value))}
+                placeholder="۶ رقم"
+                inputMode="numeric"
+                autoComplete="new-password"
+                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
+              />
+            </label>
+            <label className="block space-y-1.5 text-right">
+              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
+                تکرار رمز ۶ رقمی
+              </span>
+              <input
+                value={pinConfirm}
+                onChange={(e) => setPinConfirm(normalizePinInput(e.target.value))}
+                placeholder="تکرار ۶ رقم"
+                inputMode="numeric"
+                autoComplete="new-password"
+                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={loading || pin.length !== 6 || pinConfirm.length !== 6}
+              className="w-full rounded-xl btn-glass btn-glass--primary py-3 text-label font-black flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-4 h-4" />
+              )}
+              ثبت رمز و ورود به آزمون
             </button>
           </form>
         )}

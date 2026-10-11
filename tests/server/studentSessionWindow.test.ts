@@ -22,12 +22,14 @@ import {
 } from '../../api/_lib/examSecurity.js';
 import { tokenTtlForSession } from '../../api/_lib/utils.js';
 import { createAdmin, createReq, createRes } from './helpers.js';
+import { studentPinHash } from '../../api/_lib/crypto.js';
 
 vi.mock('../../api/_lib/supabaseAdmin.js', () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock('../../api/_lib/rateLimit.js', () => ({ checkRateLimit: vi.fn() }));
 
 const EXAM_ID = '22222222-2222-4222-8222-222222222222';
 const STUDENT_ID = '33333333-3333-4333-8333-333333333333';
+const TEST_PIN = '123456';
 const SESSION_ID = '44444444-4444-4444-8444-444444444444';
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -380,6 +382,9 @@ describe('POST /api/student/start-session (F-02: clock never resets)', () => {
           grade: 'هفتم',
           class_group_id: null,
           status: 'active',
+          // T7: pre-set PIN so these tests exercise the verify branch.
+          pin_hash: studentPinHash(STUDENT_ID, TEST_PIN),
+          pin_must_change: false,
         },
       },
       exam_allowed_classes: { rows: [] },
@@ -399,7 +404,7 @@ describe('POST /api/student/start-session (F-02: clock never resets)', () => {
     createReq({
       method: 'POST',
       url: '/api/student/start-session',
-      body: { examCode: 'TEST1', nationalId: '0000000019' },
+      body: { examCode: 'TEST1', nationalId: '0000000019', pin: TEST_PIN },
     });
 
   it('issues a token anchored to the original started_at (no fresh TTL)', async () => {
@@ -438,7 +443,7 @@ describe('POST /api/student/start-session (F-12/F-14: uniform failures, teacher 
     createReq({
       method: 'POST',
       url: '/api/student/start-session',
-      body: { examCode: 'TEST1', nationalId: '0000000019' },
+      body: { examCode: 'TEST1', nationalId: '0000000019', pin: TEST_PIN },
     });
 
   it('an unknown exam code answers exactly like wrong credentials', async () => {
@@ -463,6 +468,8 @@ describe('POST /api/student/start-session (F-12/F-14: uniform failures, teacher 
               grade: 'هفتم',
               class_group_id: null,
               status: 'active',
+              pin_hash: studentPinHash(STUDENT_ID, TEST_PIN),
+              pin_must_change: false,
             },
             error: null,
           };

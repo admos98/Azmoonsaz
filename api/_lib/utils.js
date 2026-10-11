@@ -49,6 +49,8 @@ export function mapStudent(row) {
     email: row.email || undefined,
     phoneNumber: row.phone_number || undefined,
     status: row.status || 'active',
+    // T7: PIN-set indicator only — the hash never leaves the server.
+    pinSet: row.pin_set_at != null || (row.pin_hash != null && row.pin_must_change !== true),
   };
 }
 

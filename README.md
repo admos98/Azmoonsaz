@@ -8,7 +8,7 @@ A full-stack Iranian education exam platform — build, manage, and take exams o
 
 **For teachers:** Create exams from a question bank, assign them to class groups, set time windows and access controls, review submissions, and grade both auto-graded and descriptive questions.
 
-**For students:** Authenticate with national ID + entry code, take timed exams with anti-cheat measures, answer offline if the connection drops, and review submissions with the teacher (scores are assigned during grading — the portal shows no instant scores).
+**For students:** Authenticate with national ID + a personal 6-digit exam PIN (chosen on first login, hashed server-side — nobody can read it back), take timed exams with anti-cheat measures, answer offline if the connection drops, and review submissions with the teacher (scores are assigned during grading — the portal shows no instant scores).
 
 ---
 
@@ -103,7 +103,7 @@ api/                         # Vercel Serverless API
 ### Exam Lifecycle
 - **Build:** Multi-step wizard — title/grade → pick questions from bank → configure settings → preview → publish
 - **Assign:** Target specific class groups, set start/end windows, generate entry codes
-- **Take:** Student enters national ID + code → timed exam → proctor-signal detection (tab switch, copy, fullscreen exit — counted and reported to the teacher) → answer writes stop exactly at the deadline; the final submit stays open 5 extra minutes so it can still land
+- **Take:** Student enters national ID + personal 6-digit PIN (first login sets it; forgotten PINs are reset by the teacher — never viewable) → timed exam → proctor-signal detection (tab switch, copy, fullscreen exit — counted and reported to the teacher) → answer writes stop exactly at the deadline; the final submit stays open 5 extra minutes so it can still land
 - **Grade:** Auto-graded MCQ + manual grading for descriptive questions with rubrics
 - **Review:** Per-question stats, score distribution, export-ready results
 
@@ -111,7 +111,7 @@ api/                         # Vercel Serverless API
 - **Teacher signup/login:** Email-first flow — enter email, then password. New emails get a Supabase verification email automatically. Existing emails authenticate with password.
 - **Onboarding gate:** First login requires school name and subject before accessing the dashboard.
 - Teacher authentication via Supabase Auth with access tokens
-- Student sessions scoped per exam with entry code verification
+- Student sessions scoped per exam with national ID + personal 6-digit PIN verification (HMAC-hashed, domain-separated from the national-ID hash — the plaintext PIN is never stored and nobody, including the teacher, can read it back; teachers reset, never view)
 - Exam content locked during active session (no pre-fetching)
 - Cross-instance rate limiting via Supabase (prevents per-Vercel-instance bypass)
 - Anti-cheat: tab-switch/copy/fullscreen-exit signals are counted and reported to the teacher (deterrence + attribution, not device lockdown — browsers expose no screenshot or device-binding API)

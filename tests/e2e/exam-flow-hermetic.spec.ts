@@ -8,6 +8,7 @@ import { test, expect, type Page, type Route } from '@playwright/test';
  *  2. typed inputs render per question type (true/false, fill-blank, text)
  *  3. refresh recovery (token in sessionStorage re-fetches the paper)
  *  4. deadline freeze (410 on save → UI freezes, submit still offered)
+ *  5. (T7) first login offers set-PIN, then enters the exam
  */
 
 const PAPER = {
@@ -71,11 +72,31 @@ const START = {
   student: PAPER.student,
 };
 
-async function mockApi(page: Page, opts: { saveStatus?: number; savedAnswers?: Record<string, unknown> } = {}) {
+const PIN_SETUP = {
+  ok: true,
+  pinSetupRequired: true,
+  student: PAPER.student,
+};
+
+async function mockApi(
+  page: Page,
+  opts: { saveStatus?: number; savedAnswers?: Record<string, unknown>; pinSetupFirst?: boolean } = {},
+) {
   const saved: Record<string, unknown> = { ...(opts.savedAnswers || {}) };
+  let startCalls = 0;
   await page.route('**/api/student/**', async (route: Route) => {
     const url = route.request().url();
     if (url.includes('/api/student/start-session')) {
+      // T7: when pinSetupFirst is set, the first login asks for setup and the
+      // second (with pin+confirm) returns the session.
+      if (opts.pinSetupFirst && startCalls === 0) {
+        startCalls++;
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(PIN_SETUP),
+        });
+      }
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(START) });
     }
     if (url.includes('/api/student/exam-payload')) {
@@ -121,6 +142,8 @@ async function login(page: Page) {
   await page.goto('/secure-exam/DEMO7');
   await expect(page.locator('text=ورود امن دانش‌آموز')).toBeVisible();
   await page.fill('input[placeholder*="مثلاً 1000000001"]', '1000000001');
+  // T7: 6-digit exam PIN (memory only, never persisted).
+  await page.fill('input[placeholder="۶ رقم"]', '123456');
   await page.click('button:has-text("ورود امن به آزمون")');
   await expect(page.locator('button:has-text("دریافت سوالات و شروع آزمون")')).toBeVisible();
 }
@@ -181,5 +204,21 @@ test.describe('Student exam flow (hermetic)', () => {
     await expect(page.locator('text=زمان آزمون به پایان رسید')).toBeVisible();
     // Submit stays offered so the paper can still land (grace is submit-only).
     await expect(page.locator('button:has-text("ارسال نهایی")')).toBeVisible();
+  });
+
+  test('T7: first login offers set-PIN, then enters the exam', async ({ page }) => {
+    await mockApi(page, { pinSetupFirst: true });
+    await page.goto('/secure-exam/DEMO7');
+    await expect(page.locator('text=ورود امن دانش‌آموز')).toBeVisible();
+    await page.fill('input[placeholder*="مثلاً 1000000001"]', '1000000001');
+    await page.fill('input[placeholder="۶ رقم"]', '123456');
+    await page.click('button:has-text("ورود امن به آزمون")');
+
+    // First-ever login → greeted by name, asked to pick a 6-digit PIN.
+    await expect(page.locator('text=سلام، دانش‌آموز نمونه')).toBeVisible();
+    await page.fill('input[placeholder="۶ رقم"]', '123456');
+    await page.fill('input[placeholder="تکرار ۶ رقم"]', '123456');
+    await page.click('button:has-text("ثبت رمز و ورود به آزمون")');
+    await expect(page.locator('button:has-text("دریافت سوالات و شروع آزمون")')).toBeVisible();
   });
 });

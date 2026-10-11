@@ -21,6 +21,7 @@ import { checkRateLimit } from '../../api/_lib/rateLimit.js';
 import { requireTeacher } from '../../api/_lib/teacherAuth.js';
 import { createStudentSessionToken } from '../../api/_lib/studentSession.js';
 import { createAdmin, createReq, createRes } from './helpers.js';
+import { studentPinHash } from '../../api/_lib/crypto.js';
 
 vi.mock('../../api/_lib/supabaseAdmin.js', () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock('../../api/_lib/rateLimit.js', () => ({ checkRateLimit: vi.fn() }));
@@ -31,6 +32,7 @@ type Teacher = Awaited<ReturnType<typeof requireTeacher>>;
 const TEACHER_ID = '11111111-1111-4111-8111-111111111111';
 const EXAM_ID = '22222222-2222-4222-8222-222222222222';
 const STUDENT_ID = '33333333-3333-4333-8333-333333333333';
+const TEST_PIN = '123456';
 const SESSION_ID = '44444444-4444-4444-8444-444444444444';
 const Q1 = '55555555-5555-4555-8555-555555555555';
 const Q2 = '66666666-6666-4666-8666-666666666666';
@@ -368,7 +370,7 @@ describe('start-session: blocked + Turnstile (Wave B)', () => {
     createReq({
       method: 'POST',
       url: '/api/student/start-session',
-      body: { examCode: 'TEST1', nationalId: '0000000019', ...body },
+      body: { examCode: 'TEST1', nationalId: '0000000019', pin: TEST_PIN, ...body },
     });
 
   const fullTables = (sessionState: Record<string, unknown>) => ({
@@ -380,6 +382,9 @@ describe('start-session: blocked + Turnstile (Wave B)', () => {
         grade: '10',
         class_group_id: 'c1',
         status: 'active',
+        // T7: pre-set PIN so these tests exercise the verify branch.
+        pin_hash: studentPinHash(STUDENT_ID, TEST_PIN),
+        pin_must_change: false,
       },
     },
     exam_allowed_classes: { rows: [] },

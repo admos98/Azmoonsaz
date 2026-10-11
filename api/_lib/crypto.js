@@ -35,3 +35,35 @@ export function maskNationalId(input) {
   if (code.length !== 10) return '***';
   return code.slice(0, 3) + '****' + code.slice(7);
 }
+
+/**
+ * T7 — student 6-digit exam PIN. Stored as an HMAC like the national ID:
+ * the plaintext PIN is never persisted and can never be read back — not by
+ * the teacher, not by a DB export. Verification recomputes the HMAC.
+ *
+ * Same pepper, different domain separator ('student_pin:') so a PIN hash
+ * can never collide with a national-ID hash for the same value.
+ */
+export function normalizeStudentPin(input) {
+  return String(input || '')
+    .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+    .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/\D/g, '')
+    .trim();
+}
+
+export function validateStudentPin(input) {
+  return /^\d{6}$/.test(normalizeStudentPin(input));
+}
+
+export function studentPinHash(studentId, pin) {
+  const pepper = process.env.STUDENT_ID_PEPPER;
+  if (!pepper || pepper.length < 32) {
+    throw new Error('STUDENT_ID_PEPPER is missing or too short');
+  }
+  const clean = normalizeStudentPin(pin);
+  return crypto
+    .createHmac('sha256', pepper)
+    .update('student_pin:' + String(studentId || '') + ':' + clean)
+    .digest('hex');
+}

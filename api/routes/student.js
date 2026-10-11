@@ -1,5 +1,7 @@
 import { json, requireMethod, getClientIp } from '../_lib/http.js';
+import crypto from 'node:crypto';
 import { checkRateLimit } from '../_lib/rateLimit.js';
+import { auditLog } from '../_lib/auditLog.js';
 import { validateIranianNationalId, normalizeNationalId, nationalIdHash } from '../_lib/crypto.js';
 import { getSupabaseAdmin } from '../_lib/supabaseAdmin.js';
 import { createStudentSessionToken, verifyStudentSessionToken } from '../_lib/studentSession.js';
@@ -169,7 +171,7 @@ async function handleStudentStartSession(req, res) {
     const availability = getExamAvailability(exam);
     const { data: student, error: studentError } = await supabase
       .from('students')
-      .select('id, full_name, grade, class_group_id, status')
+      .select('id, full_name, grade, class_group_id, status, pin_hash, pin_set_at, pin_must_change')
       // F-14: scope by the exam's teacher — the HMAC hash alone is global, so
       // two teachers importing the same national ID used to collide (maybeSingle
       // 500). DB unique (teacher_id, national_id_hash) makes this 0..1 rows.
@@ -191,6 +193,71 @@ async function handleStudentStartSession(req, res) {
       // F-12: same answer as every other credential failure — "not on the
       // class list" must not confirm the code is real.
       return json(res, 403, { error: 'invalid_credentials' });
+    }
+    // T7 — 6-digit exam PIN. First-ever login (no pin_hash, or a teacher reset
+    // flagged pin_must_change) sets it; every later login must present it.
+    // All failures answer invalid_credentials identically (F-12 no-oracle rule).
+    const { normalizeStudentPin, validateStudentPin, studentPinHash } = await import(
+      '../_lib/crypto.js'
+    );
+    const cleanPin = normalizeStudentPin(body.pin ?? body.studentPin);
+    const needsPinSetup = !student.pin_hash || student.pin_must_change === true;
+    if (needsPinSetup) {
+      const confirmPin = normalizeStudentPin(body.pinConfirm ?? body.confirmPin);
+      if (!validateStudentPin(cleanPin) || cleanPin !== confirmPin) {
+        // No PIN yet → tell the client to show the set-PIN screen, not a
+        // credential error (nothing secret was attempted).
+        return json(res, 200, {
+          ok: true,
+          pinSetupRequired: true,
+          student: { id: student.id, name: student.full_name, grade: student.grade },
+        });
+      }
+      // Compare-and-set: a concurrent first-login must not overwrite the
+      // winner's PIN. The loser re-reads and falls into the verify branch.
+      const newHash = studentPinHash(student.id, cleanPin);
+      const { data: claimed, error: claimError } = await supabase
+        .from('students')
+        .update({ pin_hash: newHash, pin_set_at: new Date().toISOString(), pin_must_change: false })
+        .eq('id', student.id)
+        .is('pin_hash', null)
+        .select('id')
+        .maybeSingle();
+      if (claimError) throw claimError;
+      if (!claimed) {
+        const { data: fresh, error: freshError } = await supabase
+          .from('students')
+          .select('id, pin_hash, pin_must_change')
+          .eq('id', student.id)
+          .single();
+        if (freshError) throw freshError;
+        if (!fresh || String(fresh.pin_hash || '') !== newHash) {
+          return json(res, 403, { error: 'invalid_credentials' });
+        }
+      }
+      student.pin_hash = newHash;
+      student.pin_must_change = false;
+      await auditLog(supabase, {
+        actorType: 'student',
+        actorId: student.id,
+        action: 'student_pin_set',
+        entityType: 'student',
+        entityId: student.id,
+      });
+    } else {
+      if (!validateStudentPin(cleanPin)) return json(res, 403, { error: 'invalid_credentials' });
+      let presentedHash;
+      try {
+        presentedHash = studentPinHash(student.id, cleanPin);
+      } catch {
+        return json(res, 403, { error: 'invalid_credentials' });
+      }
+      // Constant-time compare — wrong PIN must not leak prefix info via timing.
+      const expected = Buffer.from(String(student.pin_hash || ''), 'utf8');
+      const presented = Buffer.from(String(presentedHash || ''), 'utf8');
+      if (expected.length !== presented.length || !crypto.timingSafeEqual(expected, presented)) {
+        return json(res, 403, { error: 'invalid_credentials' });
+      }
     }
     const { data: existing, error: existingError } = await supabase
       .from('student_exam_sessions')

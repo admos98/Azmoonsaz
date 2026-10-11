@@ -21,6 +21,7 @@ import {
   Eye,
   Activity,
   UserPlus,
+  KeyRound,
 } from 'lucide-react';
 
 import { Student, Submission } from '../../types';
@@ -327,6 +328,30 @@ export default function Students() {
     } catch (err: unknown) {
       setSaveState('failed');
       showToast(`خطا در ذخیره‌سازی: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
+  };
+
+  // ConfirmDialog state for PIN reset (T7) — the teacher never sees the PIN;
+  // reset clears it so the student's next login shows the set-PIN screen.
+  const [studentToResetPin, setStudentToResetPin] = useState<{ id: string; name: string } | null>(
+    null,
+  );
+
+  const handleResetPin = (id: string, name: string) => {
+    setStudentToResetPin({ id, name });
+  };
+
+  const confirmResetPin = async () => {
+    if (!studentToResetPin) return;
+    try {
+      const updated = await studentService.resetStudentPin(studentToResetPin.id);
+      const existing = students.find((s) => s.id === studentToResetPin.id);
+      if (existing) upsertStudent({ ...existing, ...updated });
+      showToast('رمز دانش‌آموز بازنشانی شد. در ورود بعدی رمز جدید تعیین می‌کند.', 'success');
+    } catch (err: unknown) {
+      showToast(`خطا در بازنشانی رمز: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    } finally {
+      setStudentToResetPin(null);
     }
   };
 
@@ -699,6 +724,16 @@ export default function Students() {
                                 ? 'غیرفعال / مسدود'
                                 : 'فعال'}
                           </span>
+                          {/* T7: PIN-set indicator — hash never leaves the server. */}
+                          <span
+                            className={`mt-1 px-2.5 py-1 rounded-full text-micro font-bold block ${
+                              student.pinSet
+                                ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
+                                : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10'
+                            }`}
+                          >
+                            {student.pinSet ? 'رمز تعیین شده' : 'بدون رمز'}
+                          </span>
                         </td>
 
                         {/* Channels */}
@@ -754,6 +789,20 @@ export default function Students() {
                               onClick={() => openEditModal(student)}
                             >
                               <Edit className="w-4 h-4" />
+                            </IconButton>
+
+                            {/* Reset PIN (T7) — clears the hash; student sets a new one next login */}
+                            <IconButton
+                              id={`reset-pin-std-${student.id}`}
+                              label="بازنشانی رمز"
+                              title="بازنشانی رمز"
+                              size="md"
+                              radius="xl"
+                              tone="accent"
+                              surface="wash"
+                              onClick={() => handleResetPin(student.id, student.name)}
+                            >
+                              <KeyRound className="w-4 h-4" />
                             </IconButton>
 
                             {/* Delete */}
@@ -877,6 +926,13 @@ export default function Students() {
                         className="px-3 py-1.5 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl font-bold text-micro"
                       >
                         ویرایش
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResetPin(student.id, student.name)}
+                        className="px-3 py-1.5 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl font-bold text-micro"
+                      >
+                        بازنشانی رمز
                       </button>
                       <PillButton
                         fill="danger-soft"
@@ -1147,6 +1203,17 @@ export default function Students() {
           </div>
         </Modal>
       )}
+
+      {/* Reset PIN Confirmation (T7) */}
+      <ConfirmDialog
+        isOpen={studentToResetPin !== null}
+        title="بازنشانی رمز دانش‌آموز"
+        message={`رمز فعلی «${studentToResetPin?.name}» پاک می‌شود و در ورود بعدی از او خواسته می‌شود رمز ۶ رقمی جدید تعیین کند. رمز فعلی برای هیچ‌کس — از جمله شما — قابل مشاهده نیست.`}
+        confirmText="بازنشانی رمز"
+        variant="primary"
+        onConfirm={confirmResetPin}
+        onCancel={() => setStudentToResetPin(null)}
+      />
 
       {/* Delete Student Confirmation */}
       <ConfirmDialog

@@ -202,6 +202,15 @@ export const studentService = {
     return response.student;
   },
 
+  /** T7: teacher-only PIN reset — clears the hash; student sets a new PIN next login. */
+  async resetStudentPin(id: string): Promise<Student> {
+    const response = await teacherPost<{ student: Student }>('/api/teacher/students', {
+      action: 'reset-pin',
+      id,
+    });
+    return response.student;
+  },
+
   async deleteStudent(id: string): Promise<boolean> {
     await teacherPost('/api/teacher/students', { action: 'delete', id });
     return true;

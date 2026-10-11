@@ -275,7 +275,7 @@ async function handleTeacherStudents(req, res) {
   if (req.method === 'GET') {
     const { data, error } = await teacher.admin
       .from('students')
-      .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at')
+      .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at, pin_set_at, pin_must_change')
       .eq('teacher_id', teacher.id)
       .order('created_at', { ascending: false });
     if (error) return json(res, 500, safeError(error, 'students_fetch_failed'));
@@ -310,7 +310,7 @@ async function handleTeacherStudents(req, res) {
           national_id_last4: cleanNationalId.slice(-4),
           status: normalizeStudentStatus(studentBody.status),
         })
-        .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at')
+        .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at, pin_set_at, pin_must_change')
         .single();
       if (error)
         return json(
@@ -356,13 +356,36 @@ async function handleTeacherStudents(req, res) {
         .update(updates)
         .eq('id', id)
         .eq('teacher_id', teacher.id)
-        .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at')
+        .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at, pin_set_at, pin_must_change')
         .maybeSingle();
       if (error || !data) return json(res, 400, safeError(error, 'student_update_failed'));
       return json(res, 200, { ok: true, student: mapStudent(data) });
     } catch (error) {
       return json(res, 400, safeError(error, 'student_update_failed'));
     }
+  }
+  if (action === 'reset-pin') {
+    // T7 — teacher-only PIN reset. The teacher never sees or sets the PIN:
+    // this clears the hash and flags pin_must_change, so the student's next
+    // login shows the set-PIN screen. Audited (counts only, no PII).
+    const id = String(studentBody.id || body.id || '').trim();
+    if (!id) return json(res, 400, { error: 'missing_student_id' });
+    const { data, error } = await teacher.admin
+      .from('students')
+      .update({ pin_hash: null, pin_set_at: null, pin_must_change: true })
+      .eq('id', id)
+      .eq('teacher_id', teacher.id)
+      .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at, pin_set_at, pin_must_change')
+      .maybeSingle();
+    if (error || !data) return json(res, 400, safeError(error, 'student_pin_reset_failed'));
+    await auditLog(teacher.admin, {
+      actorType: 'teacher',
+      actorId: teacher.id,
+      action: 'student_pin_reset',
+      entityType: 'student',
+      entityId: id,
+    });
+    return json(res, 200, { ok: true, student: { ...mapStudent(data), pinSet: false } });
   }
   if (action === 'delete') {
     const id = String(body.id || '').trim();
@@ -407,7 +430,7 @@ async function handleTeacherStudentsBulk(req, res) {
   const { normalizeNationalId, nationalIdHash, validateIranianNationalId } =
     await import('../_lib/crypto.js');
   const SELECT_COLUMNS =
-    'id, full_name, grade, class_group_id, national_id_last4, status, created_at';
+    'id, full_name, grade, class_group_id, national_id_last4, status, created_at, pin_set_at, pin_must_change';
 
   // Pass 1 — resolve every distinct class group once. A 100-row import must
   // not fire 100 class lookups, and two rows racing to create the same class
