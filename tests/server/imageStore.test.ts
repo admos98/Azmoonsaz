@@ -222,6 +222,28 @@ describe('questionToBody image gate', () => {
     );
   });
 
+  it('rejects foreign storage keys with image_not_owned', async () => {
+    const { questionToBody } = await import('../../api/_lib/utils.js');
+    const foreign = '22222222-2222-4222-8222-222222222222/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee.webp';
+    expect(() => questionToBody({ text: 't', imageUrl: foreign }, null, 'teacher-a')).toThrow(
+      'image_not_owned',
+    );
+    // A well-formed key with no teacher scope keeps shape-only behavior:
+    // any syntactically valid key passes (ownership binds at the handler).
+    const anyKey = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee.webp';
+    expect(questionToBody({ text: 't', imageUrl: anyKey }, null).imageUrl).toBe(anyKey);
+  });
+
+  it('persists blankCount for fill-blank without leaking the key', async () => {
+    const { questionToBody } = await import('../../api/_lib/utils.js');
+    const body = questionToBody(
+      { type: 'fill_blank', text: 't', correctFillBlanks: ['a', 'b', 'c'] },
+      null,
+    );
+    expect(body.blankCount).toBe(3);
+    expect(JSON.stringify(body)).not.toContain('correctFillBlanks');
+  });
+
   it('grandfathers byte-identical legacy values on update', async () => {
     const { questionToBody } = await import('../../api/_lib/utils.js');
     const legacy = 'https://example.com/kept.png';

@@ -2,10 +2,11 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Check } from 'lucide-react';
 import { toPersianDigits } from '../utils/persian';
 import { ResolvedImage } from './QuestionImage';
+import { PillButton, IconButton, Input, Textarea, Dropdown } from '../ui';
 
 /**
  * Typed student answer renderer (T1) — one interactive input per question
@@ -26,7 +27,22 @@ import { ResolvedImage } from './QuestionImage';
  * full answer value for save-answer. Disabled entirely when `disabled`.
  */
 
-export type StudentAnswerValue = string | boolean | string[] | Record<string, string>;
+export type StudentAnswerValue =
+  | string
+  | boolean
+  | string[]
+  | Record<string, string | string[] | boolean>;
+
+/**
+ * Shared answer-value contract (renderer → save → restore → queue → grader).
+ * Mirrors the server's discriminated schema in examSecurity.js:
+ * - scalar string/boolean: choice ids, true/false, free text
+ * - string[]: multiple_choice ids, ordering sequence, fill-blank rows
+ * - Record<string, string | string[]>: matching { left: right }, cloze/reading
+ *   parts { partId: scalar-or-array }
+ * Anything outside these shapes is dropped by sanitizeStudentAnswer — the
+ * "saved" indicator must never conceal a lost answer.
+ */
 
 export interface StudentQuestionBody {
   text?: string;
@@ -41,6 +57,8 @@ export interface StudentQuestionBody {
   }[];
   displayPairs?: { left: string; right: string }[];
   displayItems?: string[];
+  /** Non-secret field count for fill-blank (correctFillBlanks stays server-side). */
+  blankCount?: number;
 }
 
 export interface StudentQuestion {
@@ -53,13 +71,8 @@ export interface StudentQuestion {
 
 const selectedCls =
   'border-[var(--color-accent)]/100 bg-[var(--color-accent-soft)] text-[var(--color-accent)] shadow-xs font-black ';
-const idleCls =
-  'border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] text-[var(--color-text-secondary)] hover:border-[var(--color-glass-light-stroke)] ';
-const btnCls =
-  'rounded-2xl border p-4 text-right text-caption transition-all flex items-center justify-between cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ';
-
-const fieldCls =
-  'w-full glx field rounded-xl px-3.5 py-2.5 text-caption text-[var(--color-text-primary)] disabled:opacity-60 ';
+const btnLayoutCls =
+  'w-full rounded-2xl border p-4 text-right text-caption transition-all flex items-center justify-between cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ';
 
 function QuestionImage({ url, alt }: { url?: string; alt: string }) {
   if (!url) return null;
@@ -103,17 +116,22 @@ function SingleChoiceInput({
       {(question.body.options || []).map((option) => {
         const selected = value === option.id;
         return (
-          <button
-            type="button"
+          <PillButton
             key={option.id}
-            onClick={() => onChange(option.id)}
+            fill={selected ? 'accent-soft' : 'surface'}
+            size="none"
+            radius="2xl"
+            text="caption"
+            weight="black"
+            textColor={selected ? 'accent' : 'secondary'}
             aria-pressed={selected}
             disabled={disabled}
-            className={(selected ? selectedCls : idleCls) + btnCls}
+            onClick={() => onChange(option.id)}
+            className={`${btnLayoutCls} ${selected ? selectedCls : 'border-[var(--color-glass-light-stroke)] hover:border-[var(--color-glass-light-stroke)]'}`}
           >
             <span>{option.text}</span>
             <OptionImage url={option.imageUrl} />
-          </button>
+          </PillButton>
         );
       })}
     </div>
@@ -141,13 +159,18 @@ function MultipleChoiceInput({
       {(question.body.options || []).map((option) => {
         const isOn = selected.includes(option.id);
         return (
-          <button
-            type="button"
+          <PillButton
             key={option.id}
-            onClick={() => toggle(option.id)}
+            fill={isOn ? 'accent-soft' : 'surface'}
+            size="none"
+            radius="2xl"
+            text="caption"
+            weight="black"
+            textColor={isOn ? 'accent' : 'secondary'}
             aria-pressed={isOn}
             disabled={disabled}
-            className={(isOn ? selectedCls : idleCls) + btnCls}
+            onClick={() => toggle(option.id)}
+            className={`${btnLayoutCls} ${isOn ? selectedCls : 'border-[var(--color-glass-light-stroke)] hover:border-[var(--color-glass-light-stroke)]'}`}
           >
             <span className="flex items-center gap-2">
               <span
@@ -160,7 +183,7 @@ function MultipleChoiceInput({
               {option.text}
             </span>
             <OptionImage url={option.imageUrl} />
-          </button>
+          </PillButton>
         );
       })}
     </div>
@@ -185,19 +208,21 @@ function TrueFalseInput({
       {choices.map((c) => {
         const selected = value === c.val;
         return (
-          <button
-            type="button"
+          <PillButton
             key={String(c.val)}
-            onClick={() => onChange(c.val)}
+            fill={selected ? 'accent-soft' : 'surface'}
+            size="none"
+            radius="2xl"
+            text="caption"
+            weight="black"
+            textColor={selected ? 'accent' : 'secondary'}
             aria-pressed={selected}
             disabled={disabled}
-            className={
-              (selected ? selectedCls : idleCls) +
-              'rounded-2xl border p-4 text-center text-caption font-black transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60'
-            }
+            onClick={() => onChange(c.val)}
+            className={`border p-4 text-center transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selected ? selectedCls : 'border-[var(--color-glass-light-stroke)] hover:border-[var(--color-glass-light-stroke)]'}`}
           >
             {c.label}
-          </button>
+          </PillButton>
         );
       })}
     </div>
@@ -225,19 +250,18 @@ function FillBlankInput({
   return (
     <div className="space-y-2.5">
       {Array.from({ length: Math.max(1, blankCount) }).map((_, i) => (
-        <label key={i} className="flex items-center gap-2">
+        <div key={i} className="flex items-center gap-2">
           <span className="text-micro font-bold text-[var(--color-text-secondary)] shrink-0">
             جای خالی {toPersianDigits(i + 1)}:
           </span>
-          <input
-            type="text"
+          <Input
             value={rows[i] || ''}
             onChange={(e) => setRow(i, e.target.value)}
             disabled={disabled}
-            className={fieldCls}
             placeholder="پاسخ خود را بنویسید"
+            aria-label={`جای خالی ${toPersianDigits(i + 1)}`}
           />
-        </label>
+        </div>
       ))}
     </div>
   );
@@ -257,23 +281,20 @@ function TextInput({
   const text = typeof value === 'string' ? value : '';
   if (long) {
     return (
-      <textarea
+      <Textarea
         value={text}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         rows={5}
-        className={fieldCls + ' leading-relaxed whitespace-pre-wrap'}
         placeholder="پاسخ تشریحی خود را بنویسید"
       />
     );
   }
   return (
-    <input
-      type="text"
+    <Input
       value={text}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className={fieldCls}
       placeholder="پاسخ خود را بنویسید"
     />
   );
@@ -290,7 +311,10 @@ function MatchingInput({
   onChange: (next: StudentAnswerValue) => void;
   disabled: boolean;
 }) {
-  const map = value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, string>) : {};
+  const map =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, string | string[] | boolean>)
+      : {};
   // Right column is the fixed choice pool (shuffled display keeps canonical
   // mapping server-side; the student matches by visible text).
   const rightPool = useMemo(() => pairs.map((p) => p.right), [pairs]);
@@ -299,28 +323,32 @@ function MatchingInput({
   };
   return (
     <div className="space-y-2.5">
-      {pairs.map((pair, i) => (
-        <div key={i} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <span className="glx-inset text-[var(--color-text-primary)] px-3 py-2 rounded-xl font-bold text-caption flex-1">
-            {pair.left}
-          </span>
-          <span className="text-[var(--color-text-tertiary)] font-black text-center">➔</span>
-          <select
-            value={map[pair.left] || ''}
-            onChange={(e) => setRow(pair.left, e.target.value)}
-            disabled={disabled}
-            className={fieldCls + ' flex-1'}
-            aria-label={`معادل ${pair.left}`}
-          >
-            <option value="">انتخاب کنید…</option>
-            {rightPool.map((right, j) => (
-              <option key={j} value={right}>
-                {right}
-              </option>
-            ))}
-          </select>
-        </div>
-      ))}
+      {pairs.map((pair, i) => {
+        const current = typeof map[pair.left] === 'string' ? (map[pair.left] as string) : '';
+        return (
+          <div key={i} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <span className="glx-inset text-[var(--color-text-primary)] px-3 py-2 rounded-xl font-bold text-caption flex-1">
+              {pair.left}
+            </span>
+            <span className="text-[var(--color-text-tertiary)] font-black text-center">➔</span>
+            {disabled ? (
+              <span className="glx-inset px-3 py-2 rounded-xl font-bold text-caption flex-1 text-[var(--color-text-secondary)]">
+                {current || '—'}
+              </span>
+            ) : (
+              <Dropdown
+                value={current}
+                onChange={(next) => setRow(pair.left, next)}
+                options={rightPool.map((right) => ({ value: right, label: right }))}
+                placeholder="انتخاب کنید…"
+                ariaLabel={`معادل ${pair.left}`}
+                compact
+                className="flex-1"
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -337,7 +365,18 @@ function OrderingInput({
   disabled: boolean;
 }) {
   // Local order state, seeded from the display items; every move commits.
+  // A pristine list commits its initial sequence once — an untouched order is
+  // still an answer (grading compares sequences), and without this no answer
+  // row exists until the first move. The ref guards re-runs (StrictMode,
+  // parent re-renders); later moves commit explicitly.
   const current: string[] = Array.isArray(value) && value.length > 0 ? value.map(String) : [...items];
+  const committedInitial = useRef(false);
+  useEffect(() => {
+    if (!disabled && !committedInitial.current && !(Array.isArray(value) && value.length > 0)) {
+      committedInitial.current = true;
+      if (items.length > 0) onChange([...items]);
+    }
+  });
   const move = (index: number, dir: -1 | 1) => {
     const next = [...current];
     const j = index + dir;
@@ -356,24 +395,30 @@ function OrderingInput({
             {toPersianDigits(i + 1)}
           </span>
           <span className="flex-1 text-caption font-bold text-[var(--color-text-primary)]">{item}</span>
-          <button
-            type="button"
+          <IconButton
+            label="انتقال به بالا"
+            size="xs"
+            radius="lg"
+            tone="secondary"
+            surface="bright"
             onClick={() => move(i, -1)}
             disabled={disabled || i === 0}
-            aria-label="انتقال به بالا"
-            className="px-2 py-1 btn-glass btn-glass--quiet rounded-lg text-micro font-black cursor-pointer disabled:opacity-40"
+            className="px-2 py-1 btn-glass btn-glass--quiet text-micro font-black disabled:opacity-40"
           >
             ▲
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            label="انتقال به پایین"
+            size="xs"
+            radius="lg"
+            tone="secondary"
+            surface="bright"
             onClick={() => move(i, 1)}
             disabled={disabled || i === current.length - 1}
-            aria-label="انتقال به پایین"
-            className="px-2 py-1 btn-glass btn-glass--quiet rounded-lg text-micro font-black cursor-pointer disabled:opacity-40"
+            className="px-2 py-1 btn-glass btn-glass--quiet text-micro font-black disabled:opacity-40"
           >
             ▼
-          </button>
+          </IconButton>
         </div>
       ))}
     </div>
@@ -427,10 +472,21 @@ function AnswerBody({
     case 'true_false':
       return <TrueFalseInput value={value as StudentAnswerValue} onChange={onChange} disabled={disabled} />;
     case 'fill_blank': {
-      // Blank count comes from the passage markers when known; fall back to
-      // the restored length so refresh never loses a row.
+      // Field count comes from the server's non-secret blankCount; fall back
+      // to the restored length so refresh never loses a row, then to 1.
+      const serverCount =
+        typeof question.body.blankCount === 'number' && question.body.blankCount >= 1
+          ? Math.min(20, Math.floor(question.body.blankCount))
+          : 0;
       const blanks = Array.isArray(value) ? value.length : 0;
-      return <FillBlankInput blankCount={Math.max(1, blanks)} value={value as StudentAnswerValue} onChange={onChange} disabled={disabled} />;
+      return (
+        <FillBlankInput
+          blankCount={Math.max(1, serverCount, blanks)}
+          value={value as StudentAnswerValue}
+          onChange={onChange}
+          disabled={disabled}
+        />
+      );
     }
     case 'short_answer':
       return <TextInput value={value as StudentAnswerValue} onChange={onChange} disabled={disabled} long={false} />;
@@ -467,7 +523,15 @@ function AnswerBody({
               key={part.id}
               part={part}
               value={map[part.id]}
-              onChange={(next) => onChange({ ...(map as Record<string, string>), [part.id]: next as string })}
+              onChange={(next) => {
+                // Cloze parts stay inside the shared schema: scalar-or-array
+                // values only — nested objects would be dropped on save.
+                const clean: string | string[] | boolean =
+                  typeof next === 'string' || typeof next === 'boolean' || Array.isArray(next)
+                    ? (next as string | string[] | boolean)
+                    : String(next ?? '');
+                onChange({ ...(map as Record<string, string | string[] | boolean>), [part.id]: clean });
+              }}
               disabled={disabled}
             />
           ))}

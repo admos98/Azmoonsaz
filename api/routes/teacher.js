@@ -577,10 +577,12 @@ async function handleTeacherQuestions(req, res) {
     if (qSubject.length > 100) return json(res, 400, { error: 'subject_too_long' });
     let createBody;
     try {
-      createBody = questionToBody(question, null);
+      createBody = questionToBody(question, null, teacher.id);
     } catch (validationError) {
       if (Number(validationError?.status) === 400)
         return json(res, 400, { error: 'image_must_be_uploaded' });
+      if (Number(validationError?.status) === 403)
+        return json(res, 403, { error: 'image_not_owned' });
       throw validationError;
     }
     const payload = {
@@ -620,10 +622,12 @@ async function handleTeacherQuestions(req, res) {
       return json(res, 400, safeError(existingError, 'question_update_failed'));
     let body;
     try {
-      body = questionToBody(question, existingRow.body);
+      body = questionToBody(question, existingRow.body, teacher.id);
     } catch (validationError) {
       if (Number(validationError?.status) === 400)
         return json(res, 400, { error: 'image_must_be_uploaded' });
+      if (Number(validationError?.status) === 403)
+        return json(res, 403, { error: 'image_not_owned' });
       throw validationError;
     }
     const updates = {

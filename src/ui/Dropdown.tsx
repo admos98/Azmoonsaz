@@ -18,22 +18,28 @@ export interface DropdownOption {
  group?: string;
 }
 export interface DropdownProps {
- value: string;
- onChange: (value: string) => void;
- options: DropdownOption[];
- placeholder?: string;
- className?: string;
- label?: string;
- error?: string;
- id?: string;
- /** Compact variant for inline filter pills */
- compact?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  className?: string;
+  label?: string;
+  error?: string;
+  id?: string;
+  /** Compact variant for inline filter pills */
+  compact?: boolean;
+  /**
+   * Invisible accessible name for the trigger (aria-label). Use when the
+   * visible context already identifies the field (e.g. matching rows where
+   * the left-hand term names it) so no duplicate visible label is needed.
+   */
+  ariaLabel?: string;
 }
 export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
- (
- { value, onChange, options, placeholder, label, error, className = '', id, compact = false },
- ref,
- ) => {
+  (
+    { value, onChange, options, placeholder, label, error, className = '', id, compact = false, ariaLabel },
+    ref,
+  ) => {
  const generatedId = useId();
  const dropdownId = id || generatedId;
  const [open, setOpen] = useState(false);
@@ -141,13 +147,14 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
  </label>
  )}
  <button
- id={dropdownId}
- ref={ref}
- type="button"
- onClick={() => setOpen(!open)}
- aria-haspopup="listbox"
- aria-expanded={open}
- aria-invalid={error ? true : undefined}
+   id={dropdownId}
+   ref={ref}
+   type="button"
+   onClick={() => setOpen(!open)}
+   aria-haspopup="listbox"
+   aria-expanded={open}
+   aria-label={ariaLabel || undefined}
+   aria-invalid={error ? true : undefined}
  aria-describedby={error ? `${dropdownId}-error` : undefined}
  aria-controls={open ? `${dropdownId}-list` : undefined}
  className={`relative w-full flex items-center justify-between glx field border rounded-xl font-bold transition-all text-[var(--color-text-primary)] focus:border-[var(--color-accent)] focus:bg-[var(--color-accent-soft)]/30 ${

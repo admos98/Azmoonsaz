@@ -28,6 +28,16 @@ import { createAdmin, createReq, createRes } from './helpers.js';
 vi.mock('../../api/_lib/teacherAuth.js', () => ({ requireTeacher: vi.fn() }));
 vi.mock('../../api/_lib/rateLimit.js', () => ({ checkRateLimit: vi.fn() }));
 vi.mock('../../api/_lib/supabaseAdmin.js', () => ({ getSupabaseAdmin: vi.fn() }));
+// Redirect-chain tests stub outbound fetch; DNS resolves to a public IP by
+// default (per-test overrides cover the rebinding guard). Real network and
+// real DNS are never touched. vi.hoisted: the mock factory is hoisted above
+// imports, so the shared spy must be created here to be visible inside it.
+const { mockDnsLookup } = vi.hoisted(() => ({
+  mockDnsLookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
+}));
+vi.mock('node:dns/promises', () => ({
+  lookup: mockDnsLookup,
+}));
 
 type Teacher = Awaited<ReturnType<typeof requireTeacher>>;
 
@@ -44,6 +54,7 @@ const STUDENT_ID = '44444444-4444-4333-8333-444444444444';
 const SESSION_ID = '55555555-5555-4555-8555-555555555555';
 const Q1 = '66666666-6666-4666-8666-666666666666';
 const Q2 = '77777777-7777-4777-8777-777777777777';
+const Q3 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const Q_DEL = '88888888-8888-4888-8888-888888888888';
 const Q_OTHER = '99999999-9999-4999-8999-999999999999';
 
@@ -89,6 +100,9 @@ const storageApi = {
 };
 
 beforeEach(() => {
+  vi.unstubAllGlobals();
+  mockDnsLookup.mockReset();
+  mockDnsLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
   process.env.STUDENT_ID_PEPPER = 'test-pepper-'.padEnd(64, '0');
   delete process.env.IMAGE_STORE_PROVIDER;
   delete process.env.S3_ENDPOINT;
@@ -358,6 +372,24 @@ describe('POST /api/teacher/images/migrate', () => {
   const DATA_URL =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
+  // Redirect-chain fixtures: canned fetch responses for the manual-hop tests.
+  const imgBytes = () => ({
+    status: 200,
+    ok: true,
+    headers: {
+      get: (name: string) => (String(name).toLowerCase() === 'content-type' ? 'image/png' : null),
+    },
+    arrayBuffer: async () => new Uint8Array([137, 80, 78, 71]).buffer,
+  });
+  const redirectTo = (location: string) => ({
+    status: 302,
+    ok: false,
+    headers: {
+      get: (name: string) => (String(name).toLowerCase() === 'location' ? location : null),
+    },
+    arrayBuffer: async () => new ArrayBuffer(0),
+  });
+
   function migrateApi(rows: unknown[]) {
     const updates: { id: string; body: unknown }[] = [];
     const api = {
@@ -449,6 +481,77 @@ describe('POST /api/teacher/images/migrate', () => {
     expect(body.skipped[0].reason).toBe('unfetchable_or_too_large');
   });
 
+  it('follows a public redirect hop with redirect:manual and migrates the bytes', async () => {
+    const fetchMock = vi.fn(async (url: string, _init?: unknown) =>
+      String(url).endsWith('/start.png') ? redirectTo('https://cdn.test/final.png') : imgBytes(),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
+    teacherWith(api as never);
+    vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+    const res = createRes();
+    await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as { migrated: { key: string }[]; skipped: unknown[] };
+    expect(body.skipped).toEqual([]);
+    expect(body.migrated).toHaveLength(1);
+    expect(body.migrated[0].key.startsWith(`${TEACHER_ID}/`)).toBe(true);
+    // Every hop goes out with manual redirect — the client never auto-chases.
+    for (const [, init] of fetchMock.mock.calls) {
+      expect(init).toMatchObject({ redirect: 'manual' });
+    }
+  });
+
+  it('rejects a redirect hop to an internal address without fetching it', async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      String(url).endsWith('/start.png') ? redirectTo('https://169.254.169.254/x.png') : imgBytes(),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
+    teacherWith(api as never);
+    vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+    const res = createRes();
+    await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as { migrated: unknown[]; skipped: { reason: string }[] };
+    expect(body.migrated).toEqual([]);
+    expect(body.skipped).toHaveLength(1);
+    expect(body.skipped[0].reason).toBe('unfetchable_or_too_large');
+    for (const [url] of fetchMock.mock.calls) {
+      expect(String(url)).not.toContain('169.254.169.254');
+    }
+  });
+
+  it('stops after the redirect hop cap instead of looping forever', async () => {
+    let n = 0;
+    const fetchMock = vi.fn(async () => redirectTo(`https://cdn.test/hop-${n++}.png`));
+    vi.stubGlobal('fetch', fetchMock);
+    const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
+    teacherWith(api as never);
+    vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+    const res = createRes();
+    await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+    const body = res.body as { migrated: unknown[]; skipped: { reason: string }[] };
+    expect(body.migrated).toEqual([]);
+    expect(body.skipped).toHaveLength(1);
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(6);
+  });
+
+  it('rejects a host that resolves to a private IP (DNS-rebinding guard)', async () => {
+    mockDnsLookup.mockResolvedValueOnce([{ address: '10.9.9.9', family: 4 }]);
+    const fetchMock = vi.fn(async () => imgBytes());
+    vi.stubGlobal('fetch', fetchMock);
+    const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
+    teacherWith(api as never);
+    vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+    const res = createRes();
+    await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+    const body = res.body as { migrated: unknown[]; skipped: { reason: string }[] };
+    expect(body.migrated).toEqual([]);
+    expect(body.skipped).toHaveLength(1);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('returns 429 when the strict migrate budget is exhausted', async () => {
     teacherWith(createAdmin({}));
     vi.mocked(checkRateLimit).mockResolvedValueOnce({ ok: false } as never);
@@ -491,6 +594,7 @@ describe('student exam-payload image substitution', () => {
         rows: [
           { question_id: Q1, section_title: '', position: 0, points: 2 },
           { question_id: Q2, section_title: '', position: 1, points: 2 },
+          { question_id: Q3, section_title: '', position: 2, points: 1 },
         ],
       },
       questions: {
@@ -517,6 +621,17 @@ describe('student exam-payload image substitution', () => {
             title: 'سوال ۲',
             body: { text: 'متن', imageUrl: LEGACY_URL, options: [{ id: 'A', text: 'الف' }] },
             points: 2,
+          },
+          {
+            id: Q3,
+            type: 'short_answer',
+            grade: 'هفتم',
+            subject: 'ریاضی',
+            title: 'سوال ۳',
+            // Grandfathered cross-tenant row: another teacher's key predating
+            // the write-time ownership check. The payload must never mint it.
+            body: { text: 'متن خارجی', imageUrl: KEY_FOREIGN },
+            points: 1,
           },
         ],
       },
@@ -572,5 +687,30 @@ describe('student exam-payload image substitution', () => {
     expect(raw).not.toContain(KEY_OPT);
     expect(raw).not.toContain(KEY_PART);
     expect(raw).toContain(LEGACY_URL);
+  });
+
+  it('never mints foreign-tenant keys and strips them from the paper', async () => {
+    let minted: string[] = [];
+    signedReadImpl = (keys: string[]) => {
+      minted = keys;
+      return fakeSign(keys);
+    };
+    vi.mocked(getSupabaseAdmin).mockReturnValue(payloadAdmin() as never);
+    const res = createRes();
+    await handleStudentExamPayload(payloadReq(), res as never);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      ok: boolean;
+      questions: Array<{ id: string; body: Record<string, unknown> }>;
+    };
+    expect(body.ok).toBe(true);
+    // The foreign key never reaches the store — no cross-tenant signed URL.
+    expect(minted).not.toContain(KEY_FOREIGN);
+    expect(minted).toEqual(expect.arrayContaining([KEY_OWN, KEY_OPT, KEY_PART]));
+    const raw = JSON.stringify(body);
+    expect(raw).not.toContain(KEY_FOREIGN);
+    expect(raw).not.toContain(TEACHER_B);
+    const q3 = body.questions.find((q) => q.id === Q3);
+    expect(q3?.body.imageUrl).toBeUndefined();
   });
 });

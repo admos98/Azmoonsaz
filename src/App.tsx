@@ -14,6 +14,7 @@ import Onboarding from './pages/teacher/Onboarding';
 import ResetPassword from './pages/teacher/ResetPassword';
 import { authService } from './services/api';
 import { getSupabasePublicClient } from './lib/supabasePublic';
+import { publicEnv } from './config/env';
 import { isKnownTeacherPath, teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
 import { requestAppNavigation } from './hooks/useUnsavedChanges';
@@ -77,7 +78,10 @@ function BootScreen({ label }: { label: string }) {
 
 export default function App() {
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
-  const [authInitializing, setAuthInitializing] = useState(true);
+  // Hermetic boot: the student portal talks to /api only and never needs the
+  // teacher Supabase client. Without configured env the client factory throws,
+  // so start uninitialized only when there is something to initialize.
+  const [authInitializing, setAuthInitializing] = useState(() => publicEnv.isSupabaseConfigured);
   /** A session we HAD just went away — C.2 session-expired interstitial
    *  instead of a silent drop to the Login page. */
   const [sessionExpired, setSessionExpired] = useState(false);
@@ -105,6 +109,11 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
+    // E2E hermetic boot: the student portal talks to /api only and never
+    // needs the teacher Supabase client. Without configured env the client
+    // factory throws — skip teacher boot instead of crashing the route.
+    // (authInitializing already starts false in that case; see useState.)
+    if (!publicEnv.isSupabaseConfigured) return;
     const supabase = getSupabasePublicClient();
     const bootstrap = async () => {
       const { data } = await supabase.auth.getSession();

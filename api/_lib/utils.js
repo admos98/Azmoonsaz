@@ -76,8 +76,14 @@ export function deriveAnswerKey(question) {
  * byte-identical to the stored value — a grandfathered legacy URL (base64 /
  * external https from the old form). Anything else is a 400: the new upload
  * pipeline is the only way fresh pixels enter the database.
+ *
+ * Cross-tenant guard: a storage key's first segment MUST be the writing
+ * teacher's own UUID. A key that merely looks valid but belongs to another
+ * tenant is rejected — otherwise a teacher who learns a foreign opaque key
+ * (signed URLs expose the path) could attach it and get reads minted for
+ * their own students.
  */
-function cleanImageField(incoming, existing) {
+function cleanImageField(incoming, existing, teacherId) {
   const next = incoming === undefined || incoming === null ? '' : String(incoming);
   if (next === '') return undefined;
   if (existing !== undefined && next === String(existing)) return String(existing) || undefined;
@@ -86,10 +92,15 @@ function cleanImageField(incoming, existing) {
     error.status = 400;
     throw error;
   }
+  if (teacherId && !next.startsWith(`${teacherId}/`)) {
+    const error = new Error('image_not_owned');
+    error.status = 403;
+    throw error;
+  }
   return next;
 }
 
-function cleanOptionImages(options, prevOptions) {
+function cleanOptionImages(options, prevOptions, teacherId) {
   if (!Array.isArray(options)) return undefined;
   const prevById = new Map(
     (Array.isArray(prevOptions) ? prevOptions : [])
@@ -98,11 +109,11 @@ function cleanOptionImages(options, prevOptions) {
   );
   return options.map(({ isCorrect, ...option }) => ({
     ...option,
-    imageUrl: cleanImageField(option.imageUrl, prevById.get(option.id)),
+    imageUrl: cleanImageField(option.imageUrl, prevById.get(option.id), teacherId),
   }));
 }
 
-function cleanPartImages(parts, prevParts) {
+function cleanPartImages(parts, prevParts, teacherId) {
   if (!Array.isArray(parts)) return undefined;
   const prevById = new Map(
     (Array.isArray(prevParts) ? prevParts : [])
@@ -114,21 +125,31 @@ function cleanPartImages(parts, prevParts) {
     const prev = prevById.get(part.id) || {};
     return {
       ...rest,
-      imageUrl: cleanImageField(rest.imageUrl, prev.imageUrl),
-      options: cleanOptionImages(part.options, prev.options),
+      imageUrl: cleanImageField(rest.imageUrl, prev.imageUrl, teacherId),
+      options: cleanOptionImages(part.options, prev.options, teacherId),
     };
   });
 }
 
-export function questionToBody(question, existingBody = null) {
+export function questionToBody(question, existingBody = null, teacherId = null) {
   const prev = existingBody && typeof existingBody === 'object' ? existingBody : {};
+  // blankCount is NON-SECRET display metadata: the student needs the field
+  // count before any answer exists (correctFillBlanks stays server-side).
+  // Derived from the author's blank list; capped so a hostile teacher row
+  // cannot force a giant form.
+  const blankList = Array.isArray(question.correctFillBlanks) ? question.correctFillBlanks : undefined;
+  const blankCount =
+    question.type === 'fill_blank' && blankList
+      ? Math.max(1, Math.min(20, blankList.length))
+      : undefined;
   return stripTeacherOnlyFields({
     text: question.text || '',
-    imageUrl: cleanImageField(question.imageUrl, prev.imageUrl),
-    options: cleanOptionImages(question.options, prev.options),
-    parts: cleanPartImages(question.parts, prev.parts),
+    imageUrl: cleanImageField(question.imageUrl, prev.imageUrl, teacherId),
+    options: cleanOptionImages(question.options, prev.options, teacherId),
+    parts: cleanPartImages(question.parts, prev.parts, teacherId),
     matchingPairs: question.matchingPairs,
     orderingItems: question.orderingItems,
+    blankCount,
     // Display metadata the teacher fills in the drawer — persisted in body
     // so it survives reload (it used to live only in the client cache,
     // refabricated by row index after every refresh).
@@ -165,6 +186,8 @@ export function mapQuestion(row) {
     correctAnswer: key.correctAnswer,
     imageUrl: body.imageUrl,
     parts: body.parts,
+    // Non-secret display count for fill-blank (key stays server-side).
+    blankCount: body.blankCount,
     // display metadata (whitelisted in questionToBody, stored in body)
     difficulty: body.difficulty,
     section: body.section,

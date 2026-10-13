@@ -119,6 +119,7 @@ api/                         # Vercel Serverless API
 
 ### Offline Resilience
 - While the exam is open, each answer saves to the server immediately; if the network drops, answers queue locally and sync when the connection returns (queued entries are cleared on successful sync or final submit)
+- Free-text answers (fill-blank, short/long) save on an 800ms debounce — every keystroke updates the screen instantly, the server write trails behind — while choice taps save immediately; pending debounced writes flush before the final submit so the graded paper never misses the last keystrokes
 - Refresh recovery: reloading the page in the same tab re-fetches the paper and restores previously saved answers automatically (the login token lives in session storage, never on disk; the national ID is never stored client-side)
 - Final server rejections (deadline passed, session closed) are dropped from the queue, not retried — the server is the deadline authority
 
@@ -222,6 +223,12 @@ legacy rows, run migrate first — tightening blocks grandfathered renders.
 When `IMAGE_STORE_PROVIDER=s3`, extend `img-src` (and `connect-src`) with
 the S3 origin.
 
+External fetches never auto-follow redirects: each hop (max 5) is
+re-validated for public-https shape and DNS-resolved public IPs, so a benign
+host that 302s to metadata/private ranges is rejected. Cross-tenant image
+keys are rejected at the write boundary and never minted into student papers
+(unminted key-shaped values are stripped, legacy URLs keep rendering).
+
 ---
 
 ## Audit & Quality
@@ -231,7 +238,7 @@ A comprehensive audit was conducted on 2026-09-15 covering security, architectur
 ### Quality Gates
 - **TypeScript** — strict type checking, client + server (0 errors)
 - **ESLint** — flat config with TypeScript + React Hooks rules (0 errors, 0 warnings)
-- **Vitest** — 274 client + 163 server tests across 52 files; Playwright hermetic E2E (route-intercepted, runs in CI)
+- **Vitest** — 277 client + 181 server tests across 52 files; Playwright hermetic E2E (route-intercepted, runs in CI)
 - **Vite build** — production-optimized (~4.7MB dist; vendor-import chunk carries xlsx/papaparse)
 - **Contrast gate** — token pairs + usage roles (tertiary@micro instructional text fails), ratchet enforced
 

@@ -5,6 +5,7 @@
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { useResolvedImageUrl } from '../hooks/useResolvedImageUrl';
 import { isLegacyImageValue, uploadQuestionImageFile } from '../services/imageStoreClient';
+import { TextLink } from '../ui';
 
 /**
  * Display-only image: storage keys resolve to short-lived signed URLs,
@@ -119,14 +120,16 @@ export function QuestionImageInput({
             className="w-8 h-8 rounded object-cover border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]"
           />
           {isLegacy(value) && <LegacyImageBadge />}
-          <button
-            type="button"
+          <TextLink
+            size="sm"
+            tone="danger"
+            bold
             onClick={() => onChange('')}
-            className="text-[var(--color-danger)] text-micro font-bold inline-flex items-center gap-0.5 cursor-pointer"
+            className="inline-flex items-center gap-0.5"
           >
             <Trash2 className="w-3 h-3" />
             حذف
-          </button>
+          </TextLink>
         </div>
       ) : (
         <span className="text-micro text-[var(--color-text-tertiary)] italic">عکسی نیست</span>

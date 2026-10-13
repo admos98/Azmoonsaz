@@ -25,7 +25,7 @@ import {
   readPersistedExamSession,
   clearPersistedExamSession,
 } from '../../services/studentSessionStore';
-import { ConfirmDialog, PillButton, TextLink } from '../../ui';
+import { ConfirmDialog, PillButton, TextLink, Button, Input } from '../../ui';
 import { ExamCountdown } from '../../components/ExamCountdown';
 import StudentQuestionCard, { type StudentAnswerValue } from '../../components/StudentQuestionCard';
 import { useExamGuard } from '../../features/exam-guard/useExamGuard';
@@ -75,6 +75,8 @@ type SafeQuestion = {
     }[];
     displayPairs?: { left: string; right: string }[];
     displayItems?: string[];
+    /** Non-secret fill-blank field count (correctFillBlanks stays server-side). */
+    blankCount?: number;
   };
   points: number;
   sectionTitle?: string;
@@ -216,7 +218,7 @@ export default function SecureExamPortal({
   const normalizePinInput = (value: string) =>
     value
       .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-      .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+      .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))) // persian-ok — Arabic-Indic digit map table, not copy
       .replace(/\D/g, '')
       .slice(0, 6);
 
@@ -389,12 +391,19 @@ export default function SecureExamPortal({
     }).finally(() => setLoading(false));
   }, [restoredSession]);
 
-  const handleSaveAnswer = async (questionId: string, value: StudentAnswerValue) => {
-    if (timeExpired) {
-      setError('زمان آزمون به پایان رسید؛ پاسخ جدیدی ذخیره نمی‌شود.');
-      return;
-    }
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  // Text-save debounce: every keystroke updates local state instantly, but
+  // the server write trails by TEXT_SAVE_DEBOUNCE_MS. Choice taps (single /
+  // multiple / true-false / matching / ordering) save immediately — they are
+  // discrete gestures, never keystroke streams. Pending values flush through
+  // the same send path before final submit so nothing is lost at the gate.
+  const pendingTextSaves = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const pendingTextValues = useRef(new Map<string, StudentAnswerValue>());
+  const TEXT_SAVE_DEBOUNCE_MS = 800;
+  const isTextAnswer = (value: StudentAnswerValue): boolean =>
+    typeof value === 'string' ||
+    (Array.isArray(value) && value.every((item) => typeof item === 'string'));
+
+  const sendSaveAnswer = async (questionId: string, value: StudentAnswerValue) => {
     setSaving(true);
     setError('');
     try {
@@ -427,6 +436,56 @@ export default function SecureExamPortal({
       setSaving(false);
     }
   };
+
+  // Flush every pending debounced write through the real send path, then
+  // submit. Awaits each so the paper the server grades includes them.
+  const flushPendingTextSaves = async () => {
+    const pending = [...pendingTextValues.current.entries()];
+    for (const [, timer] of pendingTextSaves.current) clearTimeout(timer);
+    pendingTextSaves.current.clear();
+    pendingTextValues.current.clear();
+    for (const [questionId, value] of pending) {
+      await sendSaveAnswer(questionId, value);
+    }
+  };
+
+  // Local answers always update instantly; the server write is debounced for
+  // free-text streams and immediate for discrete choice gestures.
+  const handleSaveAnswer = (questionId: string, value: StudentAnswerValue) => {
+    if (timeExpired) {
+      setError('زمان آزمون به پایان رسید؛ پاسخ جدیدی ذخیره نمی‌شود.');
+      return;
+    }
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    if (!isTextAnswer(value)) {
+      void sendSaveAnswer(questionId, value);
+      return;
+    }
+    const existing = pendingTextSaves.current.get(questionId);
+    if (existing) clearTimeout(existing);
+    pendingTextValues.current.set(questionId, value);
+    pendingTextSaves.current.set(
+      questionId,
+      setTimeout(() => {
+        pendingTextSaves.current.delete(questionId);
+        const latest = pendingTextValues.current.get(questionId);
+        pendingTextValues.current.delete(questionId);
+        void sendSaveAnswer(questionId, latest ?? value);
+      }, TEXT_SAVE_DEBOUNCE_MS),
+    );
+  };
+
+  // Unmount cleanup: drop pending timers (values stay in local state; the
+  // offline queue remains the reload path — timers must not fire post-unmount).
+  useEffect(() => {
+    const timers = pendingTextSaves.current;
+    const values = pendingTextValues.current;
+    return () => {
+      for (const timer of timers.values()) clearTimeout(timer);
+      timers.clear();
+      values.clear();
+    };
+  }, []);
 
   const handleSyncQueued = async () => {
     setSyncing(true);
@@ -468,6 +527,9 @@ export default function SecureExamPortal({
     setError('');
     setLoading(true);
     try {
+      // Debounced keystrokes land first — otherwise the graded paper could
+      // miss the student's last 800ms of typing.
+      await flushPendingTextSaves();
       await apiPost(
         '/api/student/submit',
         guard.total > 0 ? { proctor: guard.flags } : {},
@@ -529,60 +591,53 @@ export default function SecureExamPortal({
                 کد ملی در مرورگر ذخیره نمی‌شود؛ اعتبارسنجی و تطبیق آن فقط در بک‌اند انجام می‌شود.
               </p>
             </div>
-            <label className="block space-y-1.5 text-right">
-              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-                کد آزمون
-              </span>
-              <input
-                value={examCode}
-                onChange={(e) => setExamCode(e.target.value.toUpperCase())}
-                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left ltr"
-              />
-            </label>
-            <label className="block space-y-1.5 text-right">
-              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-                کد ملی دانش‌آموز
-              </span>
-              <input
-                value={nationalId}
-                onChange={(e) => setNationalId(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                placeholder="مثلاً 1000000001"
-                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
-              />
-            </label>
-            <label className="block space-y-1.5 text-right">
-              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-                رمز ۶ رقمی
-              </span>
-              <input
-                value={pin}
-                onChange={(e) => setPin(normalizePinInput(e.target.value))}
-                placeholder="۶ رقم"
-                inputMode="numeric"
-                autoComplete="off"
-                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
-              />
-            </label>
+            <Input
+              label="کد آزمون"
+              value={examCode}
+              onChange={(e) => setExamCode(e.target.value.toUpperCase())}
+              className="font-bold text-left ltr"
+            />
+            <Input
+              label="کد ملی دانش‌آموز"
+              value={nationalId}
+              onChange={(e) => setNationalId(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="مثلاً 1000000001"
+              className="font-bold text-left tracking-widest"
+              inputMode="numeric"
+            />
+            <Input
+              label="رمز ۶ رقمی"
+              value={pin}
+              onChange={(e) => setPin(normalizePinInput(e.target.value))}
+              placeholder="۶ رقم"
+              inputMode="numeric"
+              autoComplete="off"
+              className="font-bold text-left tracking-widest"
+            />
             {TURNSTILE_SITE_KEY && (
               <div ref={turnstileRef} className="flex justify-center" />
             )}
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="md"
               disabled={
                 loading ||
                 nationalId.length !== 10 ||
                 pin.length !== 6 ||
                 Boolean(TURNSTILE_SITE_KEY && !turnstileToken)
               }
-              className="w-full rounded-xl btn-glass btn-glass--primary py-3 text-label font-black flex items-center justify-center gap-2"
+              icon={
+                loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" />
+                )
+              }
+              className="w-full py-3 text-label font-black"
             >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <ShieldCheck className="w-4 h-4" />
-              )}
               ورود امن به آزمون
-            </button>
+            </Button>
           </form>
         )}
 
@@ -599,44 +654,40 @@ export default function SecureExamPortal({
                 آزمون‌ها می‌شوی؛ آن را به خاطر بسپار و به کسی نده.
               </p>
             </div>
-            <label className="block space-y-1.5 text-right">
-              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-                رمز ۶ رقمی جدید
-              </span>
-              <input
-                value={pin}
-                onChange={(e) => setPin(normalizePinInput(e.target.value))}
-                placeholder="۶ رقم"
-                inputMode="numeric"
-                autoComplete="new-password"
-                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
-              />
-            </label>
-            <label className="block space-y-1.5 text-right">
-              <span className="text-caption font-bold text-[var(--color-text-secondary)]">
-                تکرار رمز ۶ رقمی
-              </span>
-              <input
-                value={pinConfirm}
-                onChange={(e) => setPinConfirm(normalizePinInput(e.target.value))}
-                placeholder="تکرار ۶ رقم"
-                inputMode="numeric"
-                autoComplete="new-password"
-                className="w-full rounded-xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-on-dark-subtle)] px-4 py-3 text-label font-bold text-left tracking-widest"
-              />
-            </label>
-            <button
+            <Input
+              label="رمز ۶ رقمی جدید"
+              value={pin}
+              onChange={(e) => setPin(normalizePinInput(e.target.value))}
+              placeholder="۶ رقم"
+              inputMode="numeric"
+              autoComplete="new-password"
+              className="font-bold text-left tracking-widest"
+            />
+            <Input
+              label="تکرار رمز ۶ رقمی"
+              value={pinConfirm}
+              onChange={(e) => setPinConfirm(normalizePinInput(e.target.value))}
+              placeholder="تکرار ۶ رقم"
+              inputMode="numeric"
+              autoComplete="new-password"
+              className="font-bold text-left tracking-widest"
+            />
+            <Button
               type="submit"
+              variant="primary"
+              size="md"
               disabled={loading || pin.length !== 6 || pinConfirm.length !== 6}
-              className="w-full rounded-xl btn-glass btn-glass--primary py-3 text-label font-black flex items-center justify-center gap-2"
+              icon={
+                loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" />
+                )
+              }
+              className="w-full py-3 text-label font-black"
             >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <ShieldCheck className="w-4 h-4" />
-              )}
               ثبت رمز و ورود به آزمون
-            </button>
+            </Button>
           </form>
         )}
 
@@ -658,19 +709,23 @@ export default function SecureExamPortal({
                 <strong>{toPersianDigits(exam.durationMinutes)} دقیقه</strong>
               </div>
             </div>
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="md"
               onClick={handleLoadPayload}
               disabled={loading}
-              className="rounded-xl btn-glass btn-glass--primary px-6 py-3 text-label font-black inline-flex items-center gap-2"
+              icon={
+                loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Clock className="w-4 h-4" />
+                )
+              }
+              className="px-6 py-3 text-label font-black"
             >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Clock className="w-4 h-4" />
-              )}
               دریافت سوالات و شروع آزمون
-            </button>
+            </Button>
           </div>
         )}
 
@@ -755,15 +810,17 @@ export default function SecureExamPortal({
                     {savedAt}
                   </span>
                 )}
-                <button
+                <Button
                   type="button"
+                  variant="success"
+                  size="md"
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="rounded-xl btn-glass btn-glass--success px-5 py-2.5 font-black inline-flex items-center gap-2 cursor-pointer"
+                  icon={<Send className="w-4 h-4" />}
+                  className="px-5 py-2.5 font-black"
                 >
-                  <Send className="w-4 h-4" />
                   ارسال نهایی پاسخ‌ها
-                </button>
+                </Button>
               </div>
             </div>
 

@@ -89,10 +89,35 @@ describe('sanitizeStudentAnswer (F-01)', () => {
     expect(sanitizeStudentAnswer({ __grading: { scoreGained: 999, isCorrect: true } })).toEqual({});
   });
 
-  it('drops non-object / object-valued answers', () => {
+  it('drops non-object answers and hostile shapes', () => {
     expect(sanitizeStudentAnswer(null)).toEqual({});
     expect(sanitizeStudentAnswer('B')).toEqual({});
-    expect(sanitizeStudentAnswer({ value: { nested: true } })).toEqual({});
+    // Deeply nested objects collapse to {} — nothing salvageable inside.
+    expect(sanitizeStudentAnswer({ value: { a: { b: { c: 'deep' } } } })).toEqual({});
+  });
+
+  it('keeps bounded records for matching answers', () => {
+    expect(sanitizeStudentAnswer({ value: { ایران: 'تهران', فرانسه: 'پاریس' } })).toEqual({
+      value: { ایران: 'تهران', فرانسه: 'پاریس' },
+    });
+  });
+
+  it('keeps one-level nested records for cloze parts, strips __grading', () => {
+    expect(
+      sanitizeStudentAnswer({
+        value: { p1: 'پاسخ', p2: ['الف', 'ب'], __grading: { scoreGained: 999 } },
+      }),
+    ).toEqual({ value: { p1: 'پاسخ', p2: ['الف', 'ب'] } });
+  });
+
+  it('caps record keys and key length, drops deep nesting', () => {
+    const big: Record<string, string> = {};
+    for (let i = 0; i < 60; i++) big[`k${i}`] = 'v';
+    const out = sanitizeStudentAnswer({ value: big }).value as Record<string, string>;
+    expect(Object.keys(out)).toHaveLength(50);
+    expect(sanitizeStudentAnswer({ value: { ['x'.repeat(100)]: 'v', ok: 'yes' } })).toEqual({
+      value: { ok: 'yes' },
+    });
   });
 
   it('keeps bounded arrays (ordering/matching style values)', () => {
@@ -123,7 +148,15 @@ describe('extractSavedAnswerValue (refresh recovery: value-only, no grading)', (
     expect(extractSavedAnswerValue({})).toBeUndefined();
     expect(extractSavedAnswerValue({ __grading: { scoreGained: 4 } })).toBeUndefined();
     expect(extractSavedAnswerValue({ value: '' })).toBeUndefined();
-    expect(extractSavedAnswerValue({ value: { nested: true } })).toBeUndefined();
+  });
+
+  it('restores records for matching and cloze parts', () => {
+    expect(extractSavedAnswerValue({ value: { ایران: 'تهران' } })).toEqual({ ایران: 'تهران' });
+    expect(extractSavedAnswerValue({ value: { p1: 'x', p2: ['a', 'b'] } })).toEqual({
+      p1: 'x',
+      p2: ['a', 'b'],
+    });
+    expect(extractSavedAnswerValue({ value: { __grading: { scoreGained: 1 } } })).toBeUndefined();
   });
 });
 

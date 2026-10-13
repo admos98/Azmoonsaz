@@ -23,6 +23,10 @@ const QUESTION_BODY_WHITELIST = new Set([
   // order/mapping — never sent to students. The per-session scrambled copies
   // (`displayItems` / `displayPairs`) ARE sent; answers reference displayed
   // positions and grading maps them back through the same seeded order.
+  // `blankCount` is the non-secret field count for fill-blank (the key
+  // `correctFillBlanks` stays stripped) — the student needs the form shape
+  // before any answer exists.
+  'blankCount',
   'displayItems',
   'displayPairs',
 ]);
@@ -90,6 +94,9 @@ export function gradeAnswerValue(answerKey, value) {
  *
  * Grading policy per type:
  * - true_false: boolean equality against the key.
++ * - single_choice / image_based: exact id equality against the key.
++ * - multiple_choice: SET equality against the full correct-id list —
++ *   order-independent, duplicates ignored; partial selection is incorrect.
  * - fill_blank: positional string compare, trimmed + case-insensitive
  *   (Persian answers vary in spacing/case, not meaning).
  * - matching: every canonical left maps to its canonical right.
@@ -107,6 +114,22 @@ export function gradeTypedAnswer(question, value) {
     const expected = key.correctAnswer;
     if (typeof expected !== 'boolean') return null;
     return { correct: value === expected };
+  }
+
+  if (type === 'single_choice' || type === 'image_based') {
+    const expected = key.correctAnswer;
+    if (typeof expected !== 'string' || expected.trim().length === 0) return null;
+    return { correct: String(value).trim() === expected.trim() };
+  }
+
+  if (type === 'multiple_choice') {
+    const expected = Array.isArray(key.correctAnswer) ? key.correctAnswer : [];
+    if (expected.length === 0) return null;
+    if (!Array.isArray(value)) return { correct: false };
+    const want = new Set(expected.map((id) => String(id).trim()));
+    const got = new Set(value.map((id) => String(id).trim()));
+    if (got.size !== want.size) return { correct: false };
+    return { correct: [...want].every((id) => got.has(id)) };
   }
 
   if (type === 'fill_blank') {
@@ -273,26 +296,87 @@ export function getSessionTimeWindow(session, exam, now = new Date(), { grace = 
 
 const MAX_ANSWER_VALUE_CHARS = 4000;
 const MAX_ANSWER_ITEMS = 200;
+// Object answers (matching / cloze parts): bounded keys, shallow values,
+// depth-capped — never arbitrary JSON.
+const MAX_ANSWER_KEYS = 50;
+const MAX_ANSWER_KEY_CHARS = 64;
+const MAX_ANSWER_DEPTH = 2;
+
+function sanitizeScalar(value) {
+  if (typeof value === 'string') return value.slice(0, MAX_ANSWER_VALUE_CHARS);
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value === 'boolean') return value;
+  return undefined;
+}
+
+function sanitizeStringArray(value) {
+  const items = value
+    .filter(
+      (item) => typeof item === 'string' || (typeof item === 'number' && Number.isFinite(item)),
+    )
+    .slice(0, MAX_ANSWER_ITEMS)
+    .map((item) => (typeof item === 'string' ? item.slice(0, MAX_ANSWER_VALUE_CHARS) : item));
+  return items;
+}
+
+/**
+ * Bounded record sanitizer for object-shaped answers:
+ * - matching: `{ leftText: rightText }` (flat scalars)
+ * - cloze / reading_comprehension: `{ partId: scalar | string[] }` (one nest)
+ * Keys capped in count and length, `__grading` never accepted, depth capped
+ * so a hostile client cannot smuggle grading state or unbounded JSON.
+ */
+function sanitizeRecord(value, depth = 0) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  if (depth >= MAX_ANSWER_DEPTH) return undefined;
+  const out = {};
+  let count = 0;
+  for (const [key, entry] of Object.entries(value)) {
+    if (count >= MAX_ANSWER_KEYS) break;
+    if (typeof key !== 'string' || key.length === 0 || key.length > MAX_ANSWER_KEY_CHARS) continue;
+    if (key === '__grading') continue;
+    if (Array.isArray(entry)) {
+      out[key] = sanitizeStringArray(entry);
+      count++;
+      continue;
+    }
+    const scalar = sanitizeScalar(entry);
+    if (scalar !== undefined) {
+      out[key] = scalar;
+      count++;
+      continue;
+    }
+    if (entry && typeof entry === 'object') {
+      const nested = sanitizeRecord(entry, depth + 1);
+      if (nested && Object.keys(nested).length > 0) {
+        out[key] = nested;
+        count++;
+      }
+    }
+  }
+  return out;
+}
 
 /**
  * Students may write `{ value }` and nothing else. Server-side grading state
  * (`__grading`, comments, correctness flags) is teacher-owned and is stripped
  * here so a client can never forge a score through save-answer.
+ *
+ * One discriminated value schema, shared by renderer → save → restore →
+ * queue → grader: scalar (choice/text/boolean), bounded string array
+ * (multiple/ordering/fill-blank), or bounded record (matching/cloze parts).
  */
 export function sanitizeStudentAnswer(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   const { value } = raw;
-  if (typeof value === 'string') return { value: value.slice(0, MAX_ANSWER_VALUE_CHARS) };
-  if (typeof value === 'number') return Number.isFinite(value) ? { value } : {};
-  if (typeof value === 'boolean') return { value };
+  const scalar = sanitizeScalar(value);
+  if (scalar !== undefined) return { value: scalar };
   if (Array.isArray(value)) {
-    const items = value
-      .filter(
-        (item) => typeof item === 'string' || (typeof item === 'number' && Number.isFinite(item)),
-      )
-      .slice(0, MAX_ANSWER_ITEMS)
-      .map((item) => (typeof item === 'string' ? item.slice(0, MAX_ANSWER_VALUE_CHARS) : item));
-    return { value: items };
+    return { value: sanitizeStringArray(value) };
+  }
+  if (value && typeof value === 'object') {
+    const record = sanitizeRecord(value);
+    if (record && Object.keys(record).length > 0) return { value: record };
   }
   return {};
 }
@@ -308,20 +392,20 @@ export function extractSavedAnswerValue(answerJson) {
   if (!Object.prototype.hasOwnProperty.call(answerJson, 'value')) return undefined;
   const { value } = answerJson;
   if (value === undefined || value === null || value === '') return undefined;
-  if (typeof value === 'string') {
-    const trimmed = value.slice(0, MAX_ANSWER_VALUE_CHARS);
-    return trimmed === '' ? undefined : trimmed;
+  const scalar = sanitizeScalar(value);
+  if (scalar !== undefined) {
+    if (typeof scalar === 'string' && scalar === '') return undefined;
+    return scalar;
   }
-  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
-  if (typeof value === 'boolean') return value;
   if (Array.isArray(value)) {
-    const items = value
-      .filter(
-        (item) => typeof item === 'string' || (typeof item === 'number' && Number.isFinite(item)),
-      )
-      .slice(0, MAX_ANSWER_ITEMS)
-      .map((item) => (typeof item === 'string' ? item.slice(0, MAX_ANSWER_VALUE_CHARS) : item));
+    const items = sanitizeStringArray(value);
     return items.length > 0 ? items : undefined;
+  }
+  if (value && typeof value === 'object') {
+    // Records restore only when they still hold content — the sanitizer
+    // already bounded keys/values/depth on the way in.
+    const record = sanitizeRecord(value);
+    return record && Object.keys(record).length > 0 ? record : undefined;
   }
   return undefined;
 }
@@ -359,8 +443,9 @@ function shuffledArray(array, random) {
  * Matching/ordering need the same anti-copy treatment as options: a stable
  * per-session scramble is sent as `displayPairs` / `displayItems`, while the
  * canonical `matchingPairs` / `orderingItems` key stays server-side (stripped
- * by sanitizeBody). Answers reference the DISPLAYED positions, so grading
- * maps them back through the same seeded order before comparing.
+ * by sanitizeBody). The scrambled copies contain the same canonical TEXTS in
+ * a different order, so student answers (left-text keys, item-text arrays)
+ * grade directly against the canonical key — no index mapping needed.
  */
 export function applyExamShuffles(questions, exam, sessionId) {
   const settings = exam && typeof exam === 'object' && exam.settings ? exam.settings : {};
@@ -413,9 +498,12 @@ export function applyExamShuffles(questions, exam, sessionId) {
 }
 
 /**
- * Map a matching answer on DISPLAYED positions back to canonical form.
- * The student sends `{ leftIndex: rightText }` against the scrambled display
- * pairs; grading compares canonical `left -> right` mappings.
+ * Legacy index-keyed matching resolver — kept for rows written by an older
+ * renderer that sent `{ leftIndex: rightText }` against the scrambled
+ * display pairs. The current renderer sends canonical `{ leftText:
+ * rightText }` (MatchingInput keys by pair text), which grades directly in
+ * gradeTypedAnswer — this helper is unused on the live path but stays for
+ * back-compat reads of old stored answers.
  */
 export function resolveMatchingAnswer(question, displayPairs, value) {
   if (!question || !Array.isArray(displayPairs) || !value || typeof value !== 'object') return null;
@@ -433,9 +521,10 @@ export function resolveMatchingAnswer(question, displayPairs, value) {
 }
 
 /**
- * Map an ordering answer on DISPLAYED positions back to canonical item order.
- * The student sends an array of item texts in their chosen order; grading
- * compares against the canonical `orderingItems` sequence.
+ * Legacy index-keyed ordering normalizer — the current renderer commits the
+ * chosen item-text sequence directly (OrderingInput), which grades against
+ * canonical `orderingItems` in gradeTypedAnswer. This helper only strips
+ * non-string entries from old stored rows; the live path does not need it.
  */
 export function resolveOrderingAnswer(question, value) {
   const canonical = Array.isArray(question?.body?.orderingItems)

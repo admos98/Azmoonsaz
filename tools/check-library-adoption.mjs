@@ -51,8 +51,11 @@ const RATCHET = {
   // 140 -> 76: F-6 migration to TextLink / IconButton / PillButton moved 63
   // raw buttons into the library (2026-10-04). Lower in the migrating
   // commit; never raise to pass CI.
-  button: 76, // <button in src/pages + src/components (excl. src/ui) + src/features
-  input: 40,
+  // 76 -> 72 / 40 -> 38: student renderer + portal login/PIN/ready/submit
+  // migration to PillButton / Input / Textarea / Dropdown (answer-contract
+  // fix batch). Same-commit lowering; never raise to pass CI.
+  button: 72, // <button in src/pages + src/components (excl. src/ui) + src/features
+  input: 38,
   select: 2,
   textarea: 1,
 };
@@ -78,13 +81,13 @@ const CATEGORY_RATCHET = {
   //   pill(3)  Exams:203 tab + ExamSettings:641/1342 — conditional template
   //            classes that no fixed prop set reproduces
   //   other(1) TeacherProfile wrapper span-style button
-  //   unclassified(2) icon-only buttons without className (Topbar chrome)
-  onSystem: 69,
+  //   unclassified(1) icon-only button without className (Topbar chrome)
+  onSystem: 66,
   link: 0,
   icon: 1,
   pill: 3,
   other: 1,
-  unclassified: 2,
+  unclassified: 1,
 };
 
 /** Text of a raw <button>'s opening tag — quote- and `=>`-aware, so an

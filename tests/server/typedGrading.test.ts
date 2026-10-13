@@ -14,6 +14,27 @@ describe('gradeTypedAnswer (T1 typed verdicts)', () => {
     expect(gradeTypedAnswer({ type: 'true_false', answer_key: {}, body: {} }, true)).toBe(null);
   });
 
+  it('grades single choice by exact id equality', () => {
+    const q = { type: 'single_choice', answer_key: { correctAnswer: 'B' }, body: {} };
+    expect(gradeTypedAnswer(q, 'B')).toEqual({ correct: true });
+    expect(gradeTypedAnswer(q, 'A')).toEqual({ correct: false });
+    expect(gradeTypedAnswer({ type: 'single_choice', answer_key: {}, body: {} }, 'B')).toBe(null);
+  });
+
+  it('grades multiple choice by set equality — order-free, duplicates ignored', () => {
+    const q = { type: 'multiple_choice', answer_key: { correctAnswer: ['A', 'B'] }, body: {} };
+    expect(gradeTypedAnswer(q, ['A', 'B'])).toEqual({ correct: true });
+    expect(gradeTypedAnswer(q, ['B', 'A'])).toEqual({ correct: true });
+    expect(gradeTypedAnswer(q, ['A', 'B', 'A'])).toEqual({ correct: true });
+    // Partial, over-, and scalar answers are incorrect — never half credit.
+    expect(gradeTypedAnswer(q, ['A'])).toEqual({ correct: false });
+    expect(gradeTypedAnswer(q, ['A', 'B', 'C'])).toEqual({ correct: false });
+    expect(gradeTypedAnswer(q, 'A')).toEqual({ correct: false });
+    expect(gradeTypedAnswer({ type: 'multiple_choice', answer_key: {}, body: {} }, ['A'])).toBe(
+      null,
+    );
+  });
+
   it('grades fill-blank positionally, trimmed and case-insensitive', () => {
     const q = {
       type: 'fill_blank',

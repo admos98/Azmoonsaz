@@ -138,46 +138,120 @@ function decodeDataUrl(dataUrl) {
 
 /** Fetch an external https image to bytes (SSRF-guarded, bounded). */
 async function fetchExternalImage(url) {
-  let parsed;
-  try {
-    parsed = new URL(String(url));
-  } catch {
-    return null;
-  }
   // SSRF guard: public https only — no localhost, LAN, metadata endpoints.
-  if (parsed.protocol !== 'https:') return null;
-  const host = parsed.hostname.toLowerCase();
-  if (
-    host === 'localhost' ||
-    host.endsWith('.localhost') ||
-    host === 'metadata.google.internal' ||
-    /^10\./.test(host) ||
-    /^192\.168\./.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-    host === '169.254.169.254' ||
-    host === '[::1]' ||
-    host === '::1'
-  ) {
-    return null;
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), MIGRATE_FETCH_TIMEOUT_MS);
+  // Applied per redirect hop below (not just the initial URL): a public host
+  // that 302s to 169.254.169.254 or a resolved private IP is rejected.
+  const isPublicHttpUrl = (parsed) => {
+    if (!(parsed instanceof URL)) return false;
+    if (parsed.protocol !== 'https:') return false;
+    if (parsed.username || parsed.password) return false;
+    const port = parsed.port ? Number(parsed.port) : 443;
+    if (!Number.isFinite(port) || port < 1 || port > 65535) return false;
+    const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
+    if (
+      host.length === 0 ||
+      host === 'localhost' ||
+      host.endsWith('.localhost') ||
+      host === 'metadata.google.internal' ||
+      host === 'metadata.google.com' ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+      host === '169.254.169.254' ||
+      host === 'metadata' ||
+      host === '[::1]' ||
+      host === '::1' ||
+      /^0\.0\.0\.0$/.test(host) ||
+      /^127\./.test(host) ||
+      /^0\./.test(host) ||
+      // IPv6 loopback / link-local / unique-local / mapped-private ranges.
+      /^(::1|fe80:|fc00:|fd00:|::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.))/.test(
+        host.replace(/^\[|\]$/g, ''),
+      )
+    ) {
+      return false;
+    }
+    return true;
+  };
+  // DNS-rebinding guard: the hostname must not resolve to a private,
+  // loopback, or link-local IP. Checked on the initial host AND every
+  // redirect target — resolving is the only thing a redirect check alone
+  // cannot see.
+  const resolvesPublic = async (hostname) => {
+    try {
+      const { lookup } = await import('node:dns/promises');
+      const records = await lookup(hostname.replace(/^\[|\]$/g, ''), { all: true });
+      if (!records || records.length === 0) return false;
+      for (const record of records) {
+        const ip = String(record.address || '');
+        const fake = new URL(`https://${ip === '::1' ? '[::1]' : ip}/`);
+        // Reuse the literal-IP denylist by stuffing the IP into a URL.
+        const host = fake.hostname.toLowerCase().replace(/\.$/, '');
+        if (
+          host === 'localhost' ||
+          /^10\./.test(host) ||
+          /^192\.168\./.test(host) ||
+          /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+          host === '169.254.169.254' ||
+          /^127\./.test(host) ||
+          /^0\./.test(host) ||
+          /^(::1|fe80:|fc00:|fd00:|::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.))/.test(
+            host.replace(/^\[|\]$/g, ''),
+          )
+        ) {
+          return false;
+        }
+      }
+      return true;
+    } catch {
+      // Unresolvable host — fail closed.
+      return false;
+    }
+  };
+  let current;
   try {
-    const response = await fetch(parsed.toString(), {
-      signal: controller.signal,
-      redirect: 'follow',
-    });
-    if (!response.ok) return null;
-    const contentType = String(response.headers.get('content-type') || '').split(';')[0].trim();
-    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(contentType)) return null;
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.length === 0 || buffer.length > MIGRATE_MAX_BYTES) return null;
-    return { bytes: buffer, contentType };
+    current = new URL(String(url));
   } catch {
     return null;
-  } finally {
-    clearTimeout(timer);
   }
+  // Manual redirect chain (max 5): fetch with redirect:'manual' so EVERY hop
+  // is validated before following — fetch's built-in 'follow' would chase a
+  // 302 to an internal address without re-checking.
+  for (let hop = 0; hop < 6; hop++) {
+    if (!isPublicHttpUrl(current)) return null;
+    if (!(await resolvesPublic(current.hostname))) return null;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), MIGRATE_FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(current.toString(), {
+        signal: controller.signal,
+        redirect: 'manual',
+      });
+      if (response.status >= 300 && response.status < 400) {
+        if (hop === 5) return null;
+        const location = response.headers.get('location');
+        if (!location) return null;
+        try {
+          current = new URL(location, current.toString());
+        } catch {
+          return null;
+        }
+        continue;
+      }
+      if (!response.ok) return null;
+      const contentType = String(response.headers.get('content-type') || '').split(';')[0].trim();
+      if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(contentType))
+        return null;
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.length === 0 || buffer.length > MIGRATE_MAX_BYTES) return null;
+      return { bytes: buffer, contentType };
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return null;
 }
 
 /** Collect every legacy image value in a body with its JSON path. */

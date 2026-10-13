@@ -166,9 +166,11 @@ describe('StudentQuestionCard (T1 typed inputs)', () => {
         disabled={false}
       />,
     );
-    const selects = screen.getAllByRole('combobox');
-    expect(selects).toHaveLength(2);
-    fireEvent.change(selects[0], { target: { value: 'تهران' } });
+    // Matching uses the library Dropdown (listbox trigger + portaled options),
+    // not a native select — open the row trigger, then pick the option.
+    const trigger = screen.getByRole('button', { name: 'معادل ایران' });
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('option', { name: 'تهران' }));
     expect(onAnswer).toHaveBeenCalledWith('q1', { ایران: 'تهران' });
   });
 
@@ -190,6 +192,55 @@ describe('StudentQuestionCard (T1 typed inputs)', () => {
     const downButtons = screen.getAllByLabelText('انتقال به پایین');
     fireEvent.click(downButtons[0]);
     expect(onAnswer).toHaveBeenCalledWith('q1', ['دوم', 'اول', 'سوم']);
+  });
+
+  it('ordering commits the pristine sequence on mount (untouched order is an answer)', () => {
+    const onAnswer = vi.fn();
+    render(
+      <StudentQuestionCard
+        question={{
+          ...base,
+          type: 'ordering',
+          body: { text: 'مرتب کنید', displayItems: ['اول', 'دوم', 'سوم'] },
+        }}
+        index={0}
+        answer={undefined}
+        onAnswer={onAnswer}
+        disabled={false}
+      />,
+    );
+    expect(onAnswer).toHaveBeenCalledWith('q1', ['اول', 'دوم', 'سوم']);
+  });
+
+  it('fill-blank renders blankCount fields before any answer exists', () => {
+    render(
+      <StudentQuestionCard
+        question={{ ...base, type: 'fill_blank', body: { text: 'متن', blankCount: 3 } }}
+        index={0}
+        answer={undefined}
+        onAnswer={vi.fn()}
+        disabled={false}
+      />,
+    );
+    expect(screen.getAllByLabelText(/جای خالی/)).toHaveLength(3);
+  });
+
+  it('disabled matching renders the answer as static text', () => {
+    render(
+      <StudentQuestionCard
+        question={{
+          ...base,
+          type: 'matching',
+          body: { text: 'وصل کنید', displayPairs: [{ left: 'ایران', right: 'تهران' }] },
+        }}
+        index={0}
+        answer={{ ایران: 'تهران' }}
+        onAnswer={vi.fn()}
+        disabled
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'معادل ایران' })).toBeNull();
+    expect(screen.getByText('تهران')).toBeVisible();
   });
 
   it('cloze renders per-part inputs keyed by part id', () => {

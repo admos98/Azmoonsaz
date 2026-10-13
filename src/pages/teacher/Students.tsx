@@ -920,20 +920,26 @@ export default function Students() {
                       >
                         سوابق آزمون
                       </PillButton>
-                      <button
-                        type="button"
+                      <PillButton
+                        fill="surface"
+                        size="md"
+                        radius="xl"
+                        text="micro"
+                        weight="bold"
                         onClick={() => openEditModal(student)}
-                        className="px-3 py-1.5 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl font-bold text-micro"
                       >
                         ویرایش
-                      </button>
-                      <button
-                        type="button"
+                      </PillButton>
+                      <PillButton
+                        fill="surface"
+                        size="md"
+                        radius="xl"
+                        text="micro"
+                        weight="bold"
                         onClick={() => handleResetPin(student.id, student.name)}
-                        className="px-3 py-1.5 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl font-bold text-micro"
                       >
                         بازنشانی رمز
-                      </button>
+                      </PillButton>
                       <PillButton
                         fill="danger-soft"
                         size="md"
@@ -1062,18 +1068,20 @@ export default function Students() {
                 { val: 'suspended', label: 'غیرفعال / مسدود' },
                 { val: 'examining', label: 'در حال آزمون' },
               ].map((s) => (
-                <button
+                <PillButton
                   key={s.val}
-                  type="button"
+                  fill={formStatus === s.val ? 'accent-soft' : 'surface'}
+                  size="md"
+                  radius="xl"
+                  text="micro"
+                  weight="bold"
+                  textColor={formStatus === s.val ? 'accent' : 'secondary'}
+                  aria-pressed={formStatus === s.val}
                   onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
-                  className={`py-2 text-micro rounded-xl border font-bold transition-all cursor-pointer ${
-                    formStatus === s.val
-                      ? 'btn-glass btn-glass--accent'
-                      : 'btn-glass btn-glass--bare'
-                  }`}
+                  className={`py-2 border ${formStatus === s.val ? 'btn-glass btn-glass--accent' : ''}`}
                 >
                   {s.label}
-                </button>
+                </PillButton>
               ))}
             </div>
           </div>

@@ -94,10 +94,14 @@ async function autoGradeSession(supabase, sessionId, examId) {
       const answer = row.answer && typeof row.answer === 'object' ? row.answer : {};
       const previous = answer.__grading;
       if (previous && previous.gradedBy !== 'auto') continue; // teacher grade wins
-      // Typed grading first (true/false, fill-blank, matching, ordering);
-      // falls back to the legacy correctAnswer check for choice types.
+      // Typed grading first (true/false, choice, fill-blank, matching,
+      // ordering); falls back to the legacy correctAnswer check.
+      // Matching answers arrive as { leftText: rightText } — canonical keys
+      // straight from the renderer (displayPairs only scramble ORDER, the
+      // texts stay canonical), so they grade directly, no index mapping.
+      const typedValue = answer.value;
       const verdict =
-        gradeTypedAnswer(question, answer.value) ?? gradeAnswerValue(question.answer_key, answer.value);
+        gradeTypedAnswer(question, typedValue) ?? gradeAnswerValue(question.answer_key, typedValue);
       if (!verdict) continue; // not machine-gradable — teacher grades it
       const points = Number(pointsById.get(row.question_id) ?? question.points ?? 0);
       const score = verdict.correct && Number.isFinite(points) && points > 0 ? points : 0;
@@ -414,7 +418,7 @@ async function handleStudentExamPayload(req, res) {
     const { data: exam, error: examError } = await supabase
       .from('exams')
       .select(
-        'id, exam_code, title, grade, subject, status, mode, starts_at, ends_at, duration_minutes, settings',
+        'id, exam_code, title, grade, subject, status, mode, starts_at, ends_at, duration_minutes, settings, teacher_id',
       )
       .eq('id', payload.eid)
       .single();
@@ -459,14 +463,27 @@ async function handleStudentExamPayload(req, res) {
     try {
       const needed = new Set();
       for (const q of orderedQuestions) for (const k of collectImageKeys(q?.body)) needed.add(k);
-      if (needed.size > 0) {
+      // Defense in depth: only the exam owner's prefix is minted. The write
+      // path already rejects foreign keys, but a grandfathered row predating
+      // the check (or a direct DB write) must never yield another tenant's
+      // pixels through our signed URLs — and unminted key-shaped values are
+      // stripped afterward (the first segment is another teacher's UUID, and
+      // the student client could neither render nor fetch a raw key anyway).
+      const ownerPrefix = `${exam?.teacher_id || ''}/`;
+      const owned = [...needed].filter((k) => ownerPrefix.length > 1 && k.startsWith(ownerPrefix));
+      let urls = {};
+      if (owned.length > 0) {
         const { store } = await selectImageStore();
         const ttl = Math.min(
           12 * 3600,
           Math.max(1, Number(exam?.duration_minutes) || 60) * 60 + 600,
         );
-        const urls = await store.mintReadUrlUnchecked({ keys: [...needed], expiresIn: ttl });
-        resolvedQuestions = orderedQuestions.map((q) => substituteImageUrls(q, urls));
+        urls = await store.mintReadUrlUnchecked({ keys: owned, expiresIn: ttl });
+      }
+      if (needed.size > 0) {
+        resolvedQuestions = orderedQuestions.map((q) =>
+          removeImageKeys(substituteImageUrls(q, urls)),
+        );
       }
     } catch {
       resolvedQuestions = orderedQuestions.map((q) => removeImageKeys(q));

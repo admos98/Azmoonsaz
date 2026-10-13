@@ -160,8 +160,13 @@ test.describe('Student exam flow (hermetic)', () => {
     await expect(page.locator('button:has-text("گزینه ب")')).toHaveAttribute('aria-pressed', 'true');
 
     // ConfirmDialog (not browser chrome) gates the irreversible submit.
+    // Dialog-scoped exact locator: the take-phase bar holds its own
+    // "ارسال نهایی پاسخ‌ها" button, so scope to the dialog.
     await page.click('button:has-text("ارسال نهایی پاسخ‌ها")');
-    await page.click('button:has-text("ارسال نهایی"):visible');
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'ارسال نهایی', exact: true })
+      .click();
     await expect(page.locator('text=ثبت نهایی شد')).toBeVisible();
   });
 
@@ -171,10 +176,14 @@ test.describe('Student exam flow (hermetic)', () => {
     await page.click('button:has-text("دریافت سوالات و شروع آزمون")');
     await expect(page.locator('text=ارسال نهایی')).toBeVisible();
 
-    // True/false boolean buttons.
-    await expect(page.locator('button:has-text("درست")').first()).toBeVisible();
-    await page.click('button:has-text("درست")');
-    await expect(page.locator('button:has-text("درست")')).toHaveAttribute('aria-pressed', 'true');
+    // True/false boolean buttons — exact names: "درست" is a substring of
+    // "نادرست", so a plain has-text matcher violates strict mode.
+    await expect(page.getByRole('button', { name: 'درست', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'درست', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'درست', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
 
     // Fill-blank positional input.
     await page.fill('input[placeholder="پاسخ خود را بنویسید"] >> nth=0', 'تهران');
@@ -201,9 +210,13 @@ test.describe('Student exam flow (hermetic)', () => {
     await expect(page.locator('text=ارسال نهایی')).toBeVisible();
 
     await page.click('button:has-text("گزینه الف")');
-    await expect(page.locator('text=زمان آزمون به پایان رسید')).toBeVisible();
+    // role=alert: the expiry banner nests spans, so a text matcher hits two
+    // elements — scope to the alert.
+    await expect(page.getByRole('alert')).toContainText('زمان آزمون به پایان رسید');
     // Submit stays offered so the paper can still land (grace is submit-only).
-    await expect(page.locator('button:has-text("ارسال نهایی")')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'ارسال نهایی پاسخ‌ها', exact: true }),
+    ).toBeVisible();
   });
 
   test('T7: first login offers set-PIN, then enters the exam', async ({ page }) => {
