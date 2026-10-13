@@ -63,11 +63,13 @@ function sanitizeBody(body) {
 }
 
 /**
- * Wave B: deterministic answer verdict against a stored answer key.
+ * Legacy answer-key verdict against a stored answer key.
  * Returns { correct: boolean } when the question is machine-gradable,
  * or null when it needs a teacher (subjective / no usable key).
- * Only `correctAnswer` participates — fill-blank/matching/ordering are
- * teacher-graded until the student portal can render them.
+ * Only `correctAnswer` participates. On the live submit path this is the
+ * FALLBACK behind gradeTypedAnswer (which grades every renderer type) — it
+ * fires only for shapes the typed grader returns null for. Behavior frozen:
+ * the array branch answers membership on the raw value and never coerces.
  */
 export function gradeAnswerValue(answerKey, value) {
   if (!answerKey || typeof answerKey !== 'object') return null;

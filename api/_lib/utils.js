@@ -142,6 +142,21 @@ export function questionToBody(question, existingBody = null, teacherId = null) 
     question.type === 'fill_blank' && blankList
       ? Math.max(1, Math.min(20, blankList.length))
       : undefined;
+  // L3: display metadata rides in body JSONB but comes from free-text drawer
+  // fields — trim and cap so one hostile row can't bloat every payload.
+  // completenessStatus is a closed enum, not free text — anything else drops.
+  const cleanTags = Array.isArray(question.tags)
+    ? question.tags
+        .map((tag) => String(tag || '').trim().slice(0, 40))
+        .filter(Boolean)
+        .slice(0, 20)
+    : undefined;
+  const cleanDifficulty =
+    question.difficulty === undefined
+      ? undefined
+      : ['easy', 'medium', 'hard'].includes(question.difficulty)
+        ? question.difficulty
+        : String(question.difficulty || '').trim().slice(0, 20) || undefined;
   return stripTeacherOnlyFields({
     text: question.text || '',
     imageUrl: cleanImageField(question.imageUrl, prev.imageUrl, teacherId),
@@ -153,10 +168,13 @@ export function questionToBody(question, existingBody = null, teacherId = null) 
     // Display metadata the teacher fills in the drawer — persisted in body
     // so it survives reload (it used to live only in the client cache,
     // refabricated by row index after every refresh).
-    difficulty: question.difficulty,
-    section: question.section,
-    tags: Array.isArray(question.tags) ? question.tags : undefined,
-    completenessStatus: question.completenessStatus,
+    difficulty: cleanDifficulty,
+    section: question.section === undefined ? undefined : String(question.section || '').trim().slice(0, 100) || undefined,
+    tags: cleanTags,
+    completenessStatus:
+      question.completenessStatus === 'complete' || question.completenessStatus === 'incomplete'
+        ? question.completenessStatus
+        : undefined,
   });
 }
 

@@ -138,9 +138,17 @@ describe('POST /api/teacher/images/upload-url', () => {
   it('rejects unsupported content types before minting', async () => {
     teacherWith(createAdmin({}));
     const res = createRes();
-    await handleTeacherImageUploadUrl(post('/api/teacher/images/upload-url', { contentType: 'image/gif' }), res);
+    await handleTeacherImageUploadUrl(post('/api/teacher/images/upload-url', { contentType: 'image/bmp' }), res);
     expect(res.statusCode).toBe(400);
     expect(res.body).toEqual({ error: 'unsupported_image_type' });
+  });
+
+  it('accepts gif — the downstream chain (decode/migrate/stores) supports it (L9)', async () => {
+    teacherWith(createAdmin({}));
+    const res = createRes();
+    await handleTeacherImageUploadUrl(post('/api/teacher/images/upload-url', { contentType: 'image/gif' }), res);
+    expect(res.statusCode).toBe(200);
+    expect((res.body as Record<string, unknown>).ok).toBe(true);
   });
 
   it('returns 429 when the mint budget is exhausted', async () => {

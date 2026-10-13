@@ -127,6 +127,80 @@ async function autoGradeSession(supabase, sessionId, examId) {
   }
 }
 
+/**
+ * ML2 — shared rejoin evaluator for start-session. Both the normal rejoin
+ * and the 23505 race-rejoin pass through here, so a raced row gets the same
+ * terminal-state rejections, pin_reset re-admit, window freeze, and
+ * availability checks as a directly-read row.
+ *
+ * Returns `{ session }` when the row may proceed, or `{ response: { status,
+ * error } }` when the handler must answer immediately. Never throws for
+ * expected states — only for DB failures, which the handler turns into 500.
+ */
+async function evaluateRejoin(supabase, session, exam) {
+  const terminalError = (row) => {
+    // Codes preserved from the original inline logic: a stored `expired` row
+    // answers 409 exam_time_expired (only the fresh-freeze path below 410s).
+    if (['submitted', 'graded', 'expired'].includes(row.status)) {
+      return {
+        status: 409,
+        error:
+          row.status === 'expired'
+            ? 'exam_time_expired'
+            : 'exam_already_finalized',
+      };
+    }
+    if (row.status === 'invalidated' && row.invalidated_reason !== 'pin_reset') {
+      return { status: 409, error: 'exam_invalidated' };
+    }
+    return null;
+  };
+  // Distinct codes only AFTER credentials validate (F-12 still holds — this
+  // reveals nothing about exams the caller isn't a member of).
+  const terminal = terminalError(session);
+  if (terminal) return { response: terminal };
+  if (session.status === 'invalidated' && session.invalidated_reason === 'pin_reset') {
+    // Re-admit after a teacher PIN reset: the squatter's answers die here
+    // (cascade-equivalent explicit wipe) and the student gets a fresh
+    // personal window. Update-in-place — never delete+insert — so the
+    // (exam_id, student_id) unique index can't 500 a concurrent rejoin.
+    const { error: wipeError } = await supabase
+      .from('student_answers')
+      .delete()
+      .eq('session_id', session.id);
+    if (wipeError) throw wipeError;
+    const { data: readmitted, error: readmitError } = await supabase
+      .from('student_exam_sessions')
+      .update({
+        status: 'ongoing',
+        started_at: new Date().toISOString(),
+        submitted_at: null,
+        invalidated_reason: null,
+      })
+      .eq('id', session.id)
+      .select('id, status, started_at, submitted_at')
+      .single();
+    if (readmitError) throw readmitError;
+    session = readmitted;
+  }
+  // Personal window (started_at + duration + grace). Once it passes, freeze
+  // the session so re-joins can never mint a fresh token (F-02).
+  const windowCheck = getSessionTimeWindow(session, exam);
+  if (!windowCheck.ok) {
+    await supabase
+      .from('student_exam_sessions')
+      .update({ status: 'expired' })
+      .eq('id', session.id)
+      .eq('status', 'ongoing');
+    return { response: { status: 410, error: 'exam_time_expired' } };
+  }
+  // Rejoin: the end-of-window grace applies, but teacher intent
+  // (draft/completed/archived) and not-yet-open stay strict.
+  const rejoin = getExamAvailabilityWithGrace(exam);
+  if (!rejoin.ok) return { response: { status: rejoin.status, error: rejoin.error } };
+  return { session };
+}
+
 async function handleStudentStartSession(req, res) {
   if (!requireMethod(req, res, ['POST'])) return;
   const ip = getClientIp(req);
@@ -271,63 +345,12 @@ async function handleStudentStartSession(req, res) {
       .maybeSingle();
     if (existingError) throw existingError;
     let session = existing;
-    if (
-      session &&
-      (['submitted', 'graded', 'expired'].includes(session.status) ||
-        // A PIN reset re-admits exactly its own rows below; proctor strikes
-        // (NULL/legacy reason) stay permanently blocked.
-        (session.status === 'invalidated' && session.invalidated_reason !== 'pin_reset'))
-    ) {
-      // Distinct code only AFTER credentials validate (F-12 still holds —
-      // this reveals nothing about exams the caller isn't a member of).
-      const statusError =
-        session.status === 'expired'
-          ? 'exam_time_expired'
-          : session.status === 'invalidated'
-            ? 'exam_invalidated'
-            : 'exam_already_finalized';
-      return json(res, 409, { error: statusError });
-    }
-    if (session && session.status === 'invalidated' && session.invalidated_reason === 'pin_reset') {
-      // Re-admit after a teacher PIN reset: the squatter's answers die here
-      // (cascade-equivalent explicit wipe) and the student gets a fresh
-      // personal window. Update-in-place — never delete+insert — so the
-      // (exam_id, student_id) unique index can't 500 a concurrent rejoin.
-      const { error: wipeError } = await supabase
-        .from('student_answers')
-        .delete()
-        .eq('session_id', session.id);
-      if (wipeError) throw wipeError;
-      const { data: readmitted, error: readmitError } = await supabase
-        .from('student_exam_sessions')
-        .update({
-          status: 'ongoing',
-          started_at: new Date().toISOString(),
-          submitted_at: null,
-          invalidated_reason: null,
-        })
-        .eq('id', session.id)
-        .select('id, status, started_at, submitted_at')
-        .single();
-      if (readmitError) throw readmitError;
-      session = readmitted;
-    }
     if (session) {
-      // Personal window (started_at + duration + grace). Once it passes, freeze
-      // the session so re-joins can never mint a fresh token (F-02).
-      const windowCheck = getSessionTimeWindow(session, exam);
-      if (!windowCheck.ok) {
-        await supabase
-          .from('student_exam_sessions')
-          .update({ status: 'expired' })
-          .eq('id', session.id)
-          .eq('status', 'ongoing');
-        return json(res, 410, { error: 'exam_time_expired' });
-      }
-      // Rejoin: the end-of-window grace applies, but teacher intent
-      // (draft/completed/archived) and not-yet-open stay strict.
-      const rejoin = getExamAvailabilityWithGrace(exam);
-      if (!rejoin.ok) return json(res, rejoin.status, { error: rejoin.error });
+      // Normal rejoin: terminal states, pin_reset re-admit, window freeze,
+      // and availability all live in the shared evaluator (ML2).
+      const verdict = await evaluateRejoin(supabase, session, exam);
+      if (verdict.response) return json(res, verdict.response.status, { error: verdict.response.error });
+      session = verdict.session;
     } else {
       if (!availability.ok) return json(res, availability.status, { error: availability.error });
       const { data: inserted, error: insertError } = await supabase
@@ -344,7 +367,9 @@ async function handleStudentStartSession(req, res) {
         .single();
       if (insertError) {
         // Lost the insert race (unique exam_id+student_id): the winner's row
-        // is ours to rejoin — re-read it instead of 500ing this login.
+        // is ours to rejoin — re-read it and run the SAME evaluator as the
+        // normal path (terminal states, pin_reset re-admit, window freeze,
+        // availability) instead of 500ing or minting blind (ML2).
         if (insertError.code === '23505') {
           const { data: raced, error: racedError } = await supabase
             .from('student_exam_sessions')
@@ -353,19 +378,10 @@ async function handleStudentStartSession(req, res) {
             .eq('student_id', student.id)
             .single();
           if (racedError || !raced) throw racedError || new Error('session race re-read failed');
-          if (
-            ['submitted', 'graded', 'expired'].includes(raced.status) ||
-            (raced.status === 'invalidated' && raced.invalidated_reason !== 'pin_reset')
-          ) {
-            const statusError =
-              raced.status === 'expired'
-                ? 'exam_time_expired'
-                : raced.status === 'invalidated'
-                  ? 'exam_invalidated'
-                  : 'exam_already_finalized';
-            return json(res, 409, { error: statusError });
-          }
-          session = raced;
+          const verdict = await evaluateRejoin(supabase, raced, exam);
+          if (verdict.response)
+            return json(res, verdict.response.status, { error: verdict.response.error });
+          session = verdict.session;
         } else {
           throw insertError;
         }

@@ -238,7 +238,7 @@ A comprehensive audit was conducted on 2026-09-15 covering security, architectur
 ### Quality Gates
 - **TypeScript** — strict type checking, client + server (0 errors)
 - **ESLint** — flat config with TypeScript + React Hooks rules (0 errors, 0 warnings)
-- **Vitest** — 277 client + 181 server tests across 52 files; Playwright hermetic E2E (route-intercepted, runs in CI)
+- **Vitest** — 277 client + 191 server tests across 52 files; Playwright hermetic E2E (route-intercepted, runs in CI)
 - **Vite build** — production-optimized (~4.7MB dist; vendor-import chunk carries xlsx/papaparse)
 - **Contrast gate** — token pairs + usage roles (tertiary@micro instructional text fails), ratchet enforced
 

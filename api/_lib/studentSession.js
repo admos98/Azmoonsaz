@@ -57,7 +57,14 @@ export function verifyStudentSessionToken(token) {
     return null;
   }
 
-  const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+  // L2: the middle segment is attacker-controlled — a well-formed signature
+  // over garbage must answer null, never throw.
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
   if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) return null;
   return payload;
 }

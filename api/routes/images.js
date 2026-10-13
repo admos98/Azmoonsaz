@@ -25,7 +25,9 @@ export async function handleTeacherImageUploadUrl(req, res) {
   try {
     const body = req.body || {};
     const contentType = String(body.contentType || 'image/webp').trim() || 'image/webp';
-    if (!['image/webp', 'image/jpeg', 'image/png'].includes(contentType)) {
+    // L9: gif is accepted everywhere downstream (decode, migrate, stores) —
+    // the upload gate matches that set instead of rejecting what works.
+    if (!['image/webp', 'image/jpeg', 'image/png', 'image/gif'].includes(contentType)) {
       return json(res, 400, { error: 'unsupported_image_type' });
     }
     const key = mintImageKey(teacher.id);

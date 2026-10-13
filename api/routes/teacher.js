@@ -226,6 +226,7 @@ async function handleTeacherClasses(req, res) {
       .select('id, name, grade')
       .single();
     if (error) return json(res, 400, safeError(error, 'class_create_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'class_create', entityType: 'class_group', entityId: data.id });
     return json(res, 200, {
       ok: true,
       classGroup: { id: data.id, name: data.name, grade: data.grade, studentCount: 0 },
@@ -249,6 +250,7 @@ async function handleTeacherClasses(req, res) {
       .select('id, name, grade')
       .maybeSingle();
     if (error || !data) return json(res, 400, safeError(error, 'class_update_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'class_update', entityType: 'class_group', entityId: id });
     return json(res, 200, {
       ok: true,
       classGroup: { id: data.id, name: data.name, grade: data.grade, studentCount: 0 },
@@ -257,12 +259,34 @@ async function handleTeacherClasses(req, res) {
   if (action === 'delete') {
     const id = String(body.id || '').trim();
     if (!id) return json(res, 400, { error: 'missing_class_id' });
+    // M2: deleting a class cascades (students SET NULL, exam links CASCADE).
+    // When it is the last allowed class of an exam, the delete would silently
+    // widen a restricted exam to whole-roster — refuse while referenced.
+    const { data: refStudents, error: refStudentsError } = await teacher.admin
+      .from('students')
+      .select('id')
+      .eq('class_group_id', id)
+      .eq('teacher_id', teacher.id)
+      .limit(1);
+    if (refStudentsError) return json(res, 500, safeError(refStudentsError, 'class_delete_check_failed'));
+    if ((refStudents || []).length > 0)
+      return json(res, 409, { error: 'class_has_students' });
+    const { data: refLinks, error: refLinksError } = await teacher.admin
+      .from('exam_allowed_classes')
+      .select('exam_id, exams!inner(id, teacher_id)')
+      .eq('class_group_id', id)
+      .eq('exams.teacher_id', teacher.id)
+      .limit(1);
+    if (refLinksError) return json(res, 500, safeError(refLinksError, 'class_delete_check_failed'));
+    if ((refLinks || []).length > 0)
+      return json(res, 409, { error: 'class_used_by_exam' });
     const { error } = await teacher.admin
       .from('class_groups')
       .delete()
       .eq('id', id)
       .eq('teacher_id', teacher.id);
     if (error) return json(res, 400, safeError(error, 'class_delete_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'class_delete', entityType: 'class_group', entityId: id });
     return json(res, 200, { ok: true });
   }
   json(res, 400, { error: 'unknown_action' });
@@ -318,6 +342,7 @@ async function handleTeacherStudents(req, res) {
           400,
           safeError(error, error.code === '23505' ? 'duplicate_student' : 'student_create_failed'),
         );
+      await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'student_create', entityType: 'student', entityId: data.id });
       return json(res, 200, { ok: true, student: mapStudent(data) });
     } catch (error) {
       return json(res, 400, safeError(error, 'student_create_failed'));
@@ -359,6 +384,7 @@ async function handleTeacherStudents(req, res) {
         .select('id, full_name, grade, class_group_id, national_id_last4, status, created_at, pin_set_at, pin_must_change')
         .maybeSingle();
       if (error || !data) return json(res, 400, safeError(error, 'student_update_failed'));
+      await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'student_update', entityType: 'student', entityId: id });
       return json(res, 200, { ok: true, student: mapStudent(data) });
     } catch (error) {
       return json(res, 400, safeError(error, 'student_update_failed'));
@@ -406,6 +432,7 @@ async function handleTeacherStudents(req, res) {
       .eq('id', id)
       .eq('teacher_id', teacher.id);
     if (error) return json(res, 400, safeError(error, 'student_delete_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'student_delete', entityType: 'student', entityId: id });
     return json(res, 200, { ok: true });
   }
   json(res, 400, { error: 'unknown_action' });
@@ -601,6 +628,7 @@ async function handleTeacherQuestions(req, res) {
       .select('id, type, grade, subject, title, body, answer_key, points, created_at')
       .single();
     if (error) return json(res, 400, safeError(error, 'question_create_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'question_create', entityType: 'question', entityId: data.id });
     return json(res, 200, { ok: true, question: mapQuestion(data) });
   }
   if (action === 'update') {
@@ -647,6 +675,7 @@ async function handleTeacherQuestions(req, res) {
       .select('id, type, grade, subject, title, body, answer_key, points, created_at')
       .maybeSingle();
     if (error || !data) return json(res, 400, safeError(error, 'question_update_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'question_update', entityType: 'question', entityId: id });
     return json(res, 200, { ok: true, question: mapQuestion(data) });
   }
   if (action === 'delete') {
@@ -666,6 +695,7 @@ async function handleTeacherQuestions(req, res) {
       .eq('id', id)
       .eq('teacher_id', teacher.id);
     if (error) return json(res, 400, safeError(error, 'question_delete_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'question_delete', entityType: 'question', entityId: id });
     const doomedKeys = collectImageKeys(doomed?.body);
     if (doomedKeys.length > 0) {
       try {
@@ -730,9 +760,27 @@ async function handleTeacherExams(req, res) {
       return json(res, 400, { error: 'subject_too_long' });
     try {
       const classIds = await resolveClassGroupIds(teacher, exam.classGroupIds, exam.grade);
-      const settings = { ...(exam.settings || {}), description: exam.description || '' };
+      // L3: description rides in the settings JSONB — cap the free text.
+      const settings = { ...(exam.settings || {}), description: String(exam.description || '').slice(0, 2000) };
       // F-11: exam codes are minted server-side only. A client-supplied
       // examCode is ignored so no unvalidated value can ever reach the DB.
+      const questions = Array.isArray(exam.questions)
+        ? exam.questions.filter((q) => isUuid(q.id))
+        : [];
+      // F-26 (A01, IDOR via FK): only THIS teacher's questions may be
+      // attached — validate BEFORE the exam row exists so a rejection never
+      // leaves an orphaned question-less exam behind (M3).
+      if (questions.length > 0) {
+        const { data: ownedQuestions, error: ownershipError } = await teacher.admin
+          .from('questions')
+          .select('id')
+          .eq('teacher_id', teacher.id)
+          .in('id', questions.map((q) => q.id));
+        if (ownershipError) throw ownershipError;
+        const ownedIds = new Set((ownedQuestions || []).map((row) => row.id));
+        if (questions.some((q) => !ownedIds.has(q.id)))
+          return json(res, 400, { error: 'question_not_owned' });
+      }
       let data = null;
       let lastError = null;
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -765,26 +813,28 @@ async function handleTeacherExams(req, res) {
         if (result.error.code !== '23505') throw result.error;
       }
       if (!data) throw lastError || new Error('exam_create_failed_after_retries');
-      if (classIds.length)
-        await teacher.admin
+      // M3: the two dependent inserts are checked, not fire-and-forget. A
+      // silent failure here used to leave a partial exam (unrestricted, or
+      // question-less) behind a 200 — now the exam row is compensated away
+      // and the create fails loudly.
+      const compensateExam = async () => {
+        try {
+          await teacher.admin.from('exams').delete().eq('id', data.id).eq('teacher_id', teacher.id);
+        } catch (compensateError) {
+          console.error('exam_create_compensate_failed', data.id, compensateError?.message || compensateError);
+        }
+      };
+      if (classIds.length) {
+        const { error: linkError } = await teacher.admin
           .from('exam_allowed_classes')
           .insert(classIds.map((id) => ({ exam_id: data.id, class_group_id: id })));
-      const questions = Array.isArray(exam.questions)
-        ? exam.questions.filter((q) => isUuid(q.id))
-        : [];
+        if (linkError) {
+          await compensateExam();
+          return json(res, 500, safeError(linkError, 'exam_create_links_failed'));
+        }
+      }
       if (questions.length > 0) {
-        // F-26 (A01, IDOR via FK): only THIS teacher's questions may be
-        // attached — hydrateExam reads them back with their answer keys.
-        const { data: ownedQuestions, error: ownershipError } = await teacher.admin
-          .from('questions')
-          .select('id')
-          .eq('teacher_id', teacher.id)
-          .in('id', questions.map((q) => q.id));
-        if (ownershipError) throw ownershipError;
-        const ownedIds = new Set((ownedQuestions || []).map((row) => row.id));
-        if (questions.some((q) => !ownedIds.has(q.id)))
-          return json(res, 400, { error: 'question_not_owned' });
-        await teacher.admin
+        const { error: linkError } = await teacher.admin
           .from('exam_questions')
           .insert(
             questions.map((q, index) => ({
@@ -795,7 +845,12 @@ async function handleTeacherExams(req, res) {
               points: q.points || null,
             })),
           );
+        if (linkError) {
+          await compensateExam();
+          return json(res, 500, safeError(linkError, 'exam_create_questions_failed'));
+        }
       }
+      await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'exam_create', entityType: 'exam', entityId: data.id });
       return json(res, 200, { ok: true, exam: await hydrateExam(teacher, data) });
     } catch (error) {
       return json(res, 400, safeError(error, 'exam_create_failed'));
@@ -804,7 +859,7 @@ async function handleTeacherExams(req, res) {
   if (action === 'update') {
     const id = String(body.id || exam.id || '').trim();
     if (!id) return json(res, 400, { error: 'missing_exam_id' });
-    const settings = { ...(exam.settings || {}), description: exam.description || '' };
+    const settings = { ...(exam.settings || {}), description: String(exam.description || '').slice(0, 2000) };
     const updates = {
       title: exam.title,
       grade: exam.grade,
@@ -834,6 +889,7 @@ async function handleTeacherExams(req, res) {
       )
       .maybeSingle();
     if (error || !data) return json(res, 400, safeError(error, 'exam_update_failed'));
+    await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'exam_update', entityType: 'exam', entityId: id });
     return json(res, 200, { ok: true, exam: await hydrateExam(teacher, data) });
   }
   if (action === 'delete') {
@@ -938,9 +994,13 @@ async function handleTeacherSubmissions(req, res) {
   if (!sessions || sessions.length === 0) return json(res, 200, { ok: true, submissions: [] });
   const studentIds = [...new Set(sessions.map((session) => session.student_id))];
   const sessionIds = sessions.map((session) => session.id);
+  // ML3: scope the roster read to this teacher. Session ids arrive from
+  // teacher-owned exams, but the lookup itself must not be a cross-tenant
+  // read — a forged session row must never resolve a foreign student's name.
   const { data: students } = await teacher.admin
     .from('students')
     .select('id, full_name, national_id_last4')
+    .eq('teacher_id', teacher.id)
     .in('id', studentIds);
   const studentById = new Map((students || []).map((student) => [student.id, student]));
   const { data: answers, error: answersError } = await teacher.admin
@@ -1003,6 +1063,9 @@ async function handleTeacherGradeAnswer(req, res) {
   const scoreGained = Number(body.scoreGained || 0);
   const teacherComment = String(body.comment || body.teacherComment || '');
   if (!sessionId || !questionId) return json(res, 400, { error: 'missing_grade_target' });
+  // L3: the comment rides inside the answer JSONB — bound like every other
+  // free-text edge input (teacher UI sends short notes; 2k is headroom).
+  if (teacherComment.length > 2000) return json(res, 400, { error: 'comment_too_long' });
   // F-18: NaN alone is not enough — Infinity passes Number.isNaN, and a score
   // is only meaningful against the question's point value.
   if (!Number.isFinite(scoreGained) || scoreGained < 0)
@@ -1065,13 +1128,20 @@ async function handleTeacherFinalizeSubmission(req, res) {
   if (!sessionId) return json(res, 400, { error: 'missing_submission_id' });
   const owned = await requireOwnedSession(teacher, sessionId);
   if (owned.error) return json(res, 403, safeError(owned.error, 'submission_not_owned'));
+  // M1: finalize is the submitted → graded transition only. An unconditional
+  // write would stamp a live 'ongoing' paper as graded — cutting the exam off
+  // (saves 403, submit 409s) with score ~0. The conditional update also wins
+  // the race against a concurrent in-flight submit.
   const { data, error } = await teacher.admin
     .from('student_exam_sessions')
     .update({ status: 'graded' })
     .eq('id', sessionId)
+    .eq('status', 'submitted')
     .select('id, exam_id, student_id, status, started_at, submitted_at')
-    .single();
+    .maybeSingle();
   if (error) return json(res, 500, safeError(error, 'finalize_failed'));
+  if (!data)
+    return json(res, 409, { error: 'submission_not_submitted' });
   await auditLog(teacher.admin, { actorType: 'teacher', actorId: teacher.id, action: 'finalize_submission', entityType: 'session', entityId: sessionId, metadata: { examId: owned.session.exam_id } });
   json(res, 200, { ok: true, session: data });
 }
