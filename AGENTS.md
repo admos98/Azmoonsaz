@@ -18,7 +18,7 @@ This is a **single-page app + one serverless entry function**. Not a monorepo.
 - **Frontend**: `src/` — React SPA. Entry: `src/main.tsx` → `src/App.tsx`
 - **API**: `api/index.js` — ONE Vercel serverless entry. The `routes` map (line ~25) dispatches to handlers **in `api/routes/*.js`** (`public.js`, `student.js`, `teacher.js`, `auth.js`). Add new routes there, not in `api/index.js` itself.
 - **Shared API helpers**: `api/_lib/` — `auth`/`teacherAuth` (Supabase Auth), `studentSession` (HMAC-SHA256 JWT, hand-rolled via `node:crypto`), `crypto`, `env`, `examSecurity`, `http`, `rateLimit`, `supabaseAdmin`, `utils`
-- **Frontend services**: `src/services/` — one mode only: every service calls the real API through `src/lib/apiClient.ts`. `isSecureTeacherModeAvailable()` (`src/services/teacherApi.ts`) and `isSecureBackendMode()` (`src/config/runtimeMode.ts`) are `return true` stubs kept for call-site compatibility; there is NO mock/localStorage data path (see `docs/mock-cleanup-plan.md`, `docs/route-migration-and-mock-lockdown.md`).
+- **Frontend services**: `src/services/` — one mode only: every service calls the real API through `src/lib/apiClient.ts`. `isSecureTeacherModeAvailable()` (`src/services/teacherApi.ts`) and `isSecureBackendMode()` (`src/config/runtimeMode.ts`) are `return true` stubs kept for call-site compatibility; there is NO mock/localStorage data path.
 - **One real localStorage use**: `src/services/offlineAnswerQueue.ts` — queues student answers when a save fails and retries later. Not mock data.
 - **Routing**: path-based inside `App.tsx` (`window.location.pathname`), not a router library. `vercel.json` rewrites `/api/:path*` → `/api?path=:path*`.
 
@@ -150,13 +150,12 @@ Real class names in `src/index.css` — there is no `glass-1/2/3`:
 
 ## Supabase Migrations
 
-Located in `supabase/migrations/`. Schema draft in `supabase/schema-security-draft.sql`. Read `docs/supabase-hardening.md` and `docs/supabase-first-run.md` before working with the database.
+Located in `supabase/migrations/`. Read `docs/supabase-hardening.md` before working with the database.
 
 ## Docs
 
 The `docs/` folder has detailed architecture docs. Most relevant for agents:
 
-- `docs/backend-fixes-needed.md` — open backend work (bulk import, exam-code, scheduling, AI grading decision)
 - `docs/art/Azmoonsaz-ART-MASTERPLAN.md` — art grammar + pipeline (prompts, gates, PanelCrest/Cut specs; companion files alongside)
 - `docs/security-architecture.md` — security model overview
 - `docs/supabase-hardening.md` — RLS policies and database security

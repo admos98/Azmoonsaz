@@ -233,7 +233,7 @@ keys are rejected at the write boundary and never minted into student papers
 
 ## Audit & Quality
 
-A comprehensive audit was conducted on 2026-09-15 covering security, architecture, and code quality. All 16 findings have been resolved. See `.hermes/plans/2026-09-15_comprehensive-audit.md` for the full audit report and fix details.
+A comprehensive audit was conducted on 2026-09-15 covering security, architecture, and code quality. All 16 findings have been resolved. The most recent backend audit lives in `docs/backend-audit-2026-10-13.md`.
 
 ### Quality Gates
 - **TypeScript** — strict type checking, client + server (0 errors)
