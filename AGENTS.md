@@ -156,7 +156,8 @@ Located in `supabase/migrations/`. Read `docs/supabase-hardening.md` before work
 
 The `docs/` folder has detailed architecture docs. Most relevant for agents:
 
-- `docs/art/Azmoonsaz-ART-MASTERPLAN.md` — art grammar + pipeline (prompts, gates, PanelCrest/Cut specs; companion files alongside)
+- `docs/BACKEND-SECURITY-TASKS.md` — remaining backend/security/ops work
+- `docs/FRONTEND-TASKS.md` — remaining frontend/release work
 - `docs/security-architecture.md` — security model overview
 - `docs/supabase-hardening.md` — RLS policies and database security
 - `docs/local-api-testing.md` — how to test API locally

@@ -44,6 +44,6 @@ for (const [name, dir] of BANDS) {
   }
 }
 if (failed) {
-  console.error('art gate FAILED — stroke-weight spread over 15%. Re-run process.py normalization (see docs/art/Azmoonsaz-ART-MASTERPLAN.md).');
+  console.error('art gate FAILED — stroke-weight spread over 15%. Re-run process.py normalization (see the art pipeline notes in tools/art-gate/).');
   process.exit(1);
 }

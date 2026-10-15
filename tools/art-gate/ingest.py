@@ -58,7 +58,7 @@ WASH_D = np.array([50, 47, 71], dtype=np.float64)    # #322F47 plum wash
 BG_KEY_DIST = 10.0
 MIN_ALPHA = 0.05
 
-# Stroke-weight normalization (docs/art/Azmoonsaz-ART-MASTERPLAN.md §3):
+# Stroke-weight normalization (§3 of the art plan, now retired):
 # exact Euclidean morphology on the keyed alpha mask with a per-asset float
 # radius, then σ=0.7 re-fringe. EDT distances come in float rings — tune the
 # radius in 0.2 steps against tools/art-gate/measure.py, never by eye.
