@@ -65,11 +65,20 @@ function readParams() {
 const STRIP_W = 1400;
 const STRIP_H = 2400;
 
+/** Device pixels for a CSS size. The strip is uploaded as a texture and sampled
+ *  1:1 against device pixels, so an unscaled canvas is magnified by `dpr` and
+ *  loses high-frequency detail exactly like the plate raster did — the bend is
+ *  only visible over detail, so this is the metric that would hide the fix. */
+const stripScale = () => Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+
 function makeStrip() {
+  const k = stripScale();
   const c = document.createElement('canvas');
-  c.width = STRIP_W;
-  c.height = STRIP_H;
+  c.width = Math.round(STRIP_W * k);
+  c.height = Math.round(STRIP_H * k);
   const x = c.getContext('2d');
+  // draw in CSS units; the scale maps them onto the DPR-sized buffer
+  x.scale(k, k);
   const g = x.createLinearGradient(0, 0, 0, STRIP_H);
   g.addColorStop(0, '#f7f4ec');
   g.addColorStop(0.5, '#efe9dc');
@@ -361,7 +370,7 @@ async function ensureRenderer() {
   if (renderer) return renderer;
   renderer = new GlassRenderer($('gl'));
   await renderer.setPlate(plateURL());
-  renderer.setStrip(stripCanvas);
+  renderer.setStrip(stripCanvas, STRIP_W, STRIP_H);
   return renderer;
 }
 
@@ -491,6 +500,14 @@ async function init() {
 
   window.__labBench = runBench;
   window.__labSetMode = setMode;
+  window.__labPlate = () =>
+    renderer && renderer.plateSize ? { w: renderer.plateSize[0], h: renderer.plateSize[1] } : null;
+  /** Deterministic corner verification: with the probe on, each panel paints its
+   *  inside-mask into R with no discard, so gl.readPixels reads the exact painted
+   *  shape regardless of backdrop content. */
+  window.__labMaskProbe = (on) => {
+    if (renderer) renderer.maskProbe = !!on;
+  };
   window.__labDump = () => ({
     mode: root.dataset.render,
     theme: root.dataset.theme,

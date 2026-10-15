@@ -98,6 +98,7 @@ uniform float u_scrollY;
 uniform float u_radius;
 uniform float u_cornerExp;
 uniform float u_circle;
+uniform float u_maskProbe;   // dev probe: paint the inside mask instead of the glass
 
 uniform sampler2D u_disp;
 uniform sampler2D u_spec;
@@ -124,13 +125,26 @@ float seMetric(float u, float v, float n) { return pow(pow(u, n) + pow(v, n), 1.
 
 /* Signed distance to the border, device px, positive inside. Approximate at the
    corners (the app's borderSDF is the exact reference); used here only for the
-   interior mask and the AA fringe. */
+   interior mask and the AA fringe.
+
+   SIGN CONVENTION — get this wrong and the panel is painted SQUARE with the
+   corners eaten out instead of rounded:
+     flat branches return max(q.x, q.y) - r, which is ANTI-symmetric about the
+     boundary: negative inside, positive outside. Match that in the corner case.
+   The superellipse measure seMetric(t) is < 1 INSIDE the corner curve and > 1
+   outside, so the distance must be (seMetric - 1) * r. Writing (1 - seMetric)
+   inverts the corner against the edges: the bbox corner (which must be OUTSIDE
+   the shape) reads as inside and gets painted, while the real arc interior reads
+   as outside and is discarded — four square patches, visible on every lens panel.
+   (The app's mapMath.borderSDF returns p - s / p - t, i.e. positive-inside, and
+   the map path converts with a negate — the two conventions are not the same,
+   which is what made this easy to transpose.) */
 float borderDist(vec2 p, vec2 half_, float r, float n, float circle) {
   vec2 q = abs(p) - (half_ - vec2(r));
   if (q.x <= 0.0 || q.y <= 0.0) return max(q.x, q.y) - r;
   if (circle > 0.5) return length(q) - r;
   vec2 t = abs(q) / r;
-  return (1.0 - seMetric(t.x, t.y, n)) * r;
+  return (seMetric(t.x, t.y, n) - 1.0) * r;
 }
 
 vec2 plateUV(vec2 viewCss) {
@@ -173,6 +187,11 @@ void main() {
   float d = borderDist(v_local - u_size * 0.5, u_size * 0.5, u_radius, n, u_circle);
   float aa = max(0.75, fwidth(d));
   float inside = 1.0 - smoothstep(-aa, aa, d);
+  /* Dev probe: when enabled this pass paints the raw inside mask (R = inside,
+     opaque) over the whole quad, with no discard, so a machine can read the
+     exact painted shape with gl.readPixels. Screenshot-based edge detection is
+     backdrop-dependent and flipped between runs; this cannot. */
+  if (u_maskProbe > 0.5) { outColor = vec4(vec3(inside), 1.0); return; }
   if (inside <= 0.0) discard;
 
   vec2 viewCss = v_view / u_dpr;
@@ -299,11 +318,23 @@ export class GlassRenderer {
     this.plateSize = [1, 1];
     this.stripTex = null;
     this.stripSize = [1, 1];
+    this.maskProbe = false; // dev: paint the inside mask (R) for deterministic corner tests
     this.maps = new Map();
   }
 
-  /** Load the plate SVG and rasterize it at natural size: an <img> of an SVG
-   *  is not uploadable as a texture in every engine, a canvas is. */
+  /** Load the plate SVG and rasterize it at a DPR-aware size.
+   *
+   *  Two traps here, both of which make the backdrop look pixelated/soft while
+   *  the CSS mode looks crisp (the CSS path scales the SVG as vectors):
+   *   1. Rasterizing at a fixed size — the viewBox is 1600x1000, and an SVG with
+   *      no width/height attributes reports a default replaced-element size
+   *      (Chromium: 240x150), NOT the viewBox — and then stretching it over a
+   *      wider viewport MAGNIFIES it. With LINEAR filtering and no mipmaps that
+   *      reads as blurry, blocky texture. Rasterize at the size it will actually
+   *      occupy instead, times DPR. (naturalWidth/naturalHeight share the
+   *      viewBox's 1.6 aspect ratio, so the cover scale is safe to derive from
+   *      them.)
+   *  The raster is capped so a 4K viewport does not allocate a 30MP texture. */
   async setPlate(url) {
     const img = await new Promise((res, rej) => {
       const i = new Image();
@@ -311,8 +342,19 @@ export class GlassRenderer {
       i.onerror = () => rej(new Error(`plate load failed: ${url}`));
       i.src = url;
     });
-    const w = img.naturalWidth || 1200;
-    const h = img.naturalHeight || 900;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const MAX_SIDE = 4096;
+    const cover = Math.max(
+      (window.innerWidth * dpr) / (img.naturalWidth || 1600),
+      (window.innerHeight * dpr) / (img.naturalHeight || 1000),
+    );
+    let w = Math.round((img.naturalWidth || 1600) * cover);
+    let h = Math.round((img.naturalHeight || 1000) * cover);
+    const cap = MAX_SIDE / Math.max(w, h);
+    if (cap < 1) {
+      w = Math.round(w * cap);
+      h = Math.round(h * cap);
+    }
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
@@ -323,11 +365,17 @@ export class GlassRenderer {
   }
 
   /** The scrolling strip: one canvas artwork, used as a CSS background in CSS
-   *  mode and as a texture here — one source, so the A/B is honest. */
-  setStrip(canvasEl) {
+   *  mode and as a texture here — one source, so the A/B is honest.
+   *
+   *  `stripSize` is deliberately the CSS size, not the canvas pixel size: both
+   *  UV paths divide CSS coordinates by it, and the texture's own resolution is
+   *  irrelevant to UV (0..1 spans the whole image whatever its pixel count).
+   *  Keeping it in CSS px while the texture is DPR-scaled is what gives one
+   *  texel per device pixel. */
+  setStrip(canvasEl, cssW, cssH) {
     if (this.stripTex) this.gl.deleteTexture(this.stripTex);
     this.stripTex = texFromCanvas(this.gl, canvasEl);
-    this.stripSize = [canvasEl.width, canvasEl.height];
+    this.stripSize = [cssW, cssH];
   }
 
   /** Build (and cache) the displacement+specular maps for one geometry, using
@@ -450,6 +498,7 @@ export class GlassRenderer {
     gl.uniform1f(u('u_dimB'), db[0]);
     gl.uniform3f(u('u_dimTint'), params.dimTint[0], params.dimTint[1], params.dimTint[2]);
     f1('u_specOpacity', params.specOpacity);
+    gl.uniform1f(u('u_maskProbe'), this.maskProbe ? 1 : 0);
     gl.uniform4f(u('u_scrollRect'), ...scroll.rect);
     gl.uniform1f(u('u_scrollY'), scroll.top);
 

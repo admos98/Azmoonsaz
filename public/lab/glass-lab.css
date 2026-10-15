@@ -100,6 +100,14 @@ html, body {
 #gl {
   position: fixed;
   inset: 0;
+  /* A <canvas> is a REPLACED element: `inset: 0` alone does NOT stretch it, it
+     keeps its intrinsic size — which is the drawing buffer (window * dpr). With
+     no CSS size the canvas is therefore displayed at `buffer` CSS px, i.e.
+     magnified by `dpr`, and on a 2x screen only a quarter of the rendered
+     backdrop is visible, blurry. Explicit 100% is what makes the element match
+     the viewport and the buffer map 1:1 to device pixels. */
+  width: 100%;
+  height: 100%;
   z-index: 1;
   pointer-events: none;
   display: none;
