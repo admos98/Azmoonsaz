@@ -56,6 +56,65 @@ handling, tenant isolation, and the answer-contract batch all hold.
 `supabaseStore.js:1-84`, RLS policy migration bodies, PIN-migration backfill
 shape, `vercel.json` CSP, live prod state.
 
+## Round 2 — data layer + storage (2026-10-13, same session)
+
+Scope: `api/_lib/supabaseStore.js:85-160`, `s3Store.js` (full),
+all 16 migrations, browser→DB surface. Read-only; no code changes.
+
+### S1 — exam_allowed_classes / exam_questions: FORCE RLS, zero policies (by design — VERIFIED CLEAN)
+Both junction tables carry ENABLE + FORCE RLS with no policies anywhere in
+history: deny-all for every role except the service role (which bypasses
+RLS). The only readers/writers are the API handlers via `getSupabaseAdmin()`
+(`teacher.js` exams/submissions/questions/hydrate, `student.js` start/payload/
+save/grade), each with handler-level ownership checks (requireTeacher,
+requireOwnedSession, exam_allowed_classes membership, question ownership).
+No browser client touches either table directly (grep: zero `.from(` on tables
+in `src/` outside tests — the browser reaches only Auth + Storage). This is
+the same deny-all pattern as `audit_logs` / `rate_limits`, documented. No fix.
+
+### S2 — RLS policy coverage on the rest (VERIFIED CLEAN)
+- Owner tables (`teacher_profiles`, `class_groups`, `students`, `exams`,
+  `questions`, `teacher_schools`, `teacher_schedule`): `teacher_id = auth.uid()`
+  (initplan form), FORCE RLS. `students`/`student_exam_sessions`/
+  `student_answers` intentionally have NO student-tier policy — students never
+  hold a Supabase session; every student read goes through the service role
+  behind the signed JWT + triple-ID match.
+- `question-images`: public-read policy dropped in `...0002`, bucket flipped
+  private + 5 MB + MIME allow-list; `...0009` scopes select/insert to the
+  teacher's own folder (`foldername(name)[1] = auth.uid()`). No UPDATE/DELETE
+  policy — overwrite/delete impossible from any client; service role only.
+- `audit_logs`, `rate_limits`: ENABLE + FORCE, zero policies (deny-all),
+  service-role writers only.
+- `teacher-avatars`: public bucket by design (avatars render via public URL);
+  insert/update path-scoped to own folder. Browser `upsert:true` on own path
+  only — correct.
+
+### S3 — avatar extension allow-list gap (LOW, accepted)
+`storageService.ts:10` takes any `file.name` extension (`.svg`, `.exe`) while
+the bucket allow-list is jpeg/png/webp; Storage rejects the upload, so the
+only effect is a confusing error after 5 MB of upload. Client `file.size`
+check also duplicated server-side by the bucket cap. No fix (defense already
+at the enforcement point).
+
+### S4 — PIN migrations consistent with code (VERIFIED CLEAN)
+`20261012000001`: nullable `pin_hash`/`pin_set_at`, `pin_must_change`
+default false, unique `(exam_id, student_id)` — matches the CAS (`.is('pin_hash',
+null)`) and the 23505 race path. `20261012000002`: nullable text
+`invalidated_reason`, matches the reset/re-admit contract. The migration
+comment still says "delete + fresh mint; answers cascade" while the code does
+update-in-place + explicit wipe — stale comment, cosmetic only (schema itself
+is right).
+
+### S5 — store drivers (VERIFIED CLEAN)
+Supabase driver: every mutating op asserts ownership (`mintUploadUrl`,
+`deleteObject`, `putObject`, `listObjects` prefix-exact); the sole unchecked
+op is `mintReadUrlUnchecked`, whose only caller pre-filters to the exam-owner
+prefix and strips unminted keys. S3 driver mirrors the same asserts. `upsert:
+false` on both server writes — no silent overwrite.
+
+No live prod access from this shell (no service key / pepper locally, per
+design) — prod-state verification stays an operator step.
+
 ## Verification
 
 - `npm run typecheck:server` clean
