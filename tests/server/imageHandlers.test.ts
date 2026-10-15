@@ -560,6 +560,86 @@ describe('POST /api/teacher/images/migrate', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  // Broadened denylist (SSRF defense in depth): the whole 169.254.0.0/16
+  // link-local block — not just the .169.254 metadata address — plus CGNAT,
+  // the documentation/benchmarking blocks, multicast/reserved space, and the
+  // IPv4-in-IPv6 and exotic-IPv4 spellings that reach the same addresses.
+  const BLOCKED_URLS: [string, string][] = [
+    ['link-local outside the metadata address', 'https://169.254.1.1/x.png'],
+    ['link-local high end of the /16', 'https://169.254.255.254/x.png'],
+    ['cloud metadata (unchanged)', 'https://169.254.169.254/latest/meta-data/'],
+    ['CGNAT 100.64.0.0/10', 'https://100.64.0.1/x.png'],
+    ['CGNAT high end', 'https://100.127.255.254/x.png'],
+    ['benchmarking 198.18.0.0/15', 'https://198.18.0.1/x.png'],
+    ['IETF 192.0.0.0/24', 'https://192.0.0.1/x.png'],
+    ['documentation 192.0.2.0/24', 'https://192.0.2.5/x.png'],
+    ['documentation 198.51.100.0/24', 'https://198.51.100.7/x.png'],
+    ['documentation 203.0.113.0/24', 'https://203.0.113.9/x.png'],
+    ['multicast 224.0.0.0/4', 'https://224.0.0.1/x.png'],
+    ['reserved 240.0.0.0/4', 'https://240.0.0.1/x.png'],
+    ['broadcast 255.255.255.255', 'https://255.255.255.255/x.png'],
+    ['decimal-encoded loopback', 'https://2130706433/x.png'],
+    ['hex-encoded loopback', 'https://0x7f000001/x.png'],
+    ['octal-encoded loopback', 'https://0177.0.0.1/x.png'],
+    ['short-form loopback', 'https://127.1/x.png'],
+    ['IPv4-mapped IPv6 metadata', 'https://[::ffff:169.254.169.254]/x.png'],
+    ['IPv4-mapped IPv6 CGNAT', 'https://[::ffff:100.64.0.1]/x.png'],
+    ['IPv6 link-local fe80::/10', 'https://[fe80::1]/x.png'],
+    ['IPv6 unique-local fc00::/7', 'https://[fd00::1]/x.png'],
+    ['IPv6 unspecified ::', 'https://[::]/x.png'],
+    ['IPv6 multicast ff00::/8', 'https://[ff02::1]/x.png'],
+    ['IPv6 documentation 2001:db8::/32', 'https://[2001:db8::1]/x.png'],
+    ['IPv6 NAT64 64:ff9b::/96', 'https://[64:ff9b::7f00:1]/x.png'],
+  ];
+
+  for (const [label, url] of BLOCKED_URLS) {
+    it(`rejects ${label} (${url})`, async () => {
+      const fetchMock = vi.fn(async () => imgBytes());
+      vi.stubGlobal('fetch', fetchMock);
+      const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: url } }]);
+      teacherWith(api as never);
+      vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+      const res = createRes();
+      await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+      expect(res.statusCode).toBe(200);
+      const body = res.body as { migrated: unknown[]; skipped: { reason: string }[] };
+      expect(body.migrated).toEqual([]);
+      expect(body.skipped).toHaveLength(1);
+      expect(body.skipped[0].reason).toBe('unfetchable_or_too_large');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  }
+
+  it('rejects a host resolving to link-local / CGNAT / mapped-private space', async () => {
+    for (const address of ['169.254.1.1', '100.64.0.1', '::ffff:10.0.0.1', '::ffff:a9fe:a9fe', 'fe80::1']) {
+      mockDnsLookup.mockResolvedValueOnce([{ address, family: address.includes(':') ? 6 : 4 }]);
+      const fetchMock = vi.fn(async () => imgBytes());
+      vi.stubGlobal('fetch', fetchMock);
+      const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
+      teacherWith(api as never);
+      vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+      const res = createRes();
+      await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+      const body = res.body as { migrated: unknown[] };
+      expect(body.migrated, `resolved ${address} must be rejected`).toEqual([]);
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  });
+
+  it('still migrates a genuinely public host (denylist does not over-block)', async () => {
+    mockDnsLookup.mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }]);
+    const fetchMock = vi.fn(async () => imgBytes());
+    vi.stubGlobal('fetch', fetchMock);
+    const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/ok.png' } }]);
+    teacherWith(api as never);
+    vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
+    const res = createRes();
+    await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
+    const body = res.body as { migrated: unknown[]; skipped: unknown[] };
+    expect(body.skipped).toEqual([]);
+    expect(body.migrated).toHaveLength(1);
+  });
+
   it('returns 429 when the strict migrate budget is exhausted', async () => {
     teacherWith(createAdmin({}));
     vi.mocked(checkRateLimit).mockResolvedValueOnce({ ok: false } as never);

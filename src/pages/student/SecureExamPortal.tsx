@@ -391,11 +391,15 @@ export default function SecureExamPortal({
     }).finally(() => setLoading(false));
   }, [restoredSession]);
 
-  // Text-save debounce: every keystroke updates local state instantly, but
-  // the server write trails by TEXT_SAVE_DEBOUNCE_MS. Choice taps (single /
-  // multiple / true-false / matching / ordering) save immediately — they are
-  // discrete gestures, never keystroke streams. Pending values flush through
-  // the same send path before final submit so nothing is lost at the gate.
+  // Text-save debounce: every gesture updates local state instantly, but the
+  // server write may trail by TEXT_SAVE_DEBOUNCE_MS. The split is by VALUE
+  // SHAPE, not by question type — `isTextAnswer` below returns true for any
+  // bare string OR string[] (every element a string), which covers free text,
+  // fill-blank rows, multiple_choice id lists and ordering sequences. Those
+  // debounce; only shapes outside that predicate (booleans, and the part-keyed
+  // / left-keyed records of cloze, reading and matching) send immediately.
+  // Pending values flush through the same send path before final submit so
+  // nothing is lost at the gate.
   const pendingTextSaves = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const pendingTextValues = useRef(new Map<string, StudentAnswerValue>());
   const TEXT_SAVE_DEBOUNCE_MS = 800;

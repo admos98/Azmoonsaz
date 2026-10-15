@@ -27,6 +27,10 @@ supabase/seed-demo.generated.sql
 # Graphify code graph output
 graphify-out/
 
+# Supabase CLI local state — per-developer, rewritten on every CLI run, and
+# includes the pooler connection URL. Never commit.
+supabase/.temp/
+
 # Hermes local verify recipe (local tool state, bumps updatedAt)
 .hermes/environment.json
 
@@ -34,3 +38,9 @@ graphify-out/
 audit-profile/
 audit-state.json
 audit-*.json
+
+# Playwright run output — regenerated per run, never commit
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

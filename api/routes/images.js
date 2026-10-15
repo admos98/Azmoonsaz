@@ -138,6 +138,76 @@ function decodeDataUrl(dataUrl) {
   }
 }
 
+/**
+ * SSRF denylist for the image migrator — one classifier, used for both the
+ * literal hostname check and the post-DNS-resolution check (previously two
+ * hand-copied lists that could drift apart).
+ *
+ * Blocked: loopback, RFC1918, the WHOLE 169.254.0.0/16 link-local range
+ * (not just the .169.254 metadata address), CGNAT 100.64.0.0/10, the
+ * documentation/benchmarking blocks, multicast and reserved space — in
+ * literal-IPv4, canonical-IPv6 and IPv4-mapped-IPv6 form. WHATWG `URL`
+ * canonicalizes exotic IPv4 spellings (`2130706433`, `0x7f000001`, `0177.0.0.1`,
+ * `127.1`) to dotted quads BEFORE this runs, so those need no special case;
+ * IPv4-mapped IPv6 is canonicalized to hex groups (`::ffff:7f00:1`), which
+ * `isBlockedHost` decodes back to an IPv4 before classifying.
+ */
+function isBlockedIpv4(ip) {
+  const octets = String(ip)
+    .split('.')
+    .map((part) => Number(part));
+  if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false;
+  const [a, b, c] = octets;
+  return (
+    a === 0 || // 0.0.0.0/8 — "this network"
+    a === 10 || // 10.0.0.0/8 — private
+    a === 127 || // 127.0.0.0/8 — loopback
+    (a === 100 && b >= 64 && b <= 127) || // 100.64.0.0/10 — CGNAT
+    (a === 169 && b === 254) || // 169.254.0.0/16 — link-local + cloud metadata
+    (a === 172 && b >= 16 && b <= 31) || // 172.16.0.0/12 — private
+    (a === 192 && b === 0 && (c === 0 || c === 2)) || // 192.0.0.0/24, 192.0.2.0/24 — IETF/doc
+    (a === 192 && b === 168) || // 192.168.0.0/16 — private
+    (a === 198 && (b === 18 || b === 19)) || // 198.18.0.0/15 — benchmarking
+    (a === 198 && b === 51 && c === 100) || // 198.51.100.0/24 — doc
+    (a === 203 && b === 0 && c === 113) || // 203.0.113.0/24 — doc
+    a >= 224 // 224.0.0.0/4 multicast + 240.0.0.0/4 reserved (incl. 255.255.255.255)
+  );
+}
+
+function isBlockedHost(rawHost) {
+  const host = String(rawHost || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '') // WHATWG keeps IPv6 brackets in hostname
+    .replace(/\.$/, ''); // trailing root dot
+  if (host.length === 0) return true; // fail closed on empty
+  if (host === 'localhost' || host.endsWith('.localhost')) return true;
+  if (host === 'metadata' || host === 'metadata.google.internal' || host === 'metadata.google.com')
+    return true;
+  if (isBlockedIpv4(host)) return true;
+  if (!host.includes(':')) return false; // not an IP literal — caller resolves it
+  // IPv6 literal. WHATWG lowercases + compresses, so compare canonical groups.
+  if (host === '::' || host === '::1') return true;
+  if (/^fe[89ab]/.test(host)) return true; // fe80::/10 link-local
+  if (/^f[cd]/.test(host)) return true; // fc00::/7 unique-local
+  if (/^ff/.test(host)) return true; // ff00::/8 multicast
+  if (/^2001:db8(:|$)/.test(host)) return true; // 2001:db8::/32 documentation
+  if (/^64:ff9b(:|$)/.test(host)) return true; // 64:ff9b::/96 NAT64 — embeds IPv4
+  // IPv4-mapped (::ffff:a.b.c.d canonicalized by WHATWG to ::ffff:hhhh:hhhh).
+  const mapped = /^::ffff:(.+)$/.exec(host);
+  if (mapped) {
+    const tail = mapped[1];
+    if (tail.includes('.')) return isBlockedIpv4(tail);
+    const groups = tail.split(':');
+    if (groups.length === 2 && groups.every((g) => /^[0-9a-f]{1,4}$/.test(g))) {
+      const [hi, lo] = groups.map((g) => parseInt(g, 16));
+      const ip = [hi >> 8, hi & 0xff, lo >> 8, lo & 0xff].join('.');
+      return isBlockedIpv4(ip);
+    }
+  }
+  return false;
+}
+
 /** Fetch an external https image to bytes (SSRF-guarded, bounded). */
 async function fetchExternalImage(url) {
   // SSRF guard: public https only — no localhost, LAN, metadata endpoints.
@@ -150,29 +220,8 @@ async function fetchExternalImage(url) {
     const port = parsed.port ? Number(parsed.port) : 443;
     if (!Number.isFinite(port) || port < 1 || port > 65535) return false;
     const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
-    if (
-      host.length === 0 ||
-      host === 'localhost' ||
-      host.endsWith('.localhost') ||
-      host === 'metadata.google.internal' ||
-      host === 'metadata.google.com' ||
-      /^10\./.test(host) ||
-      /^192\.168\./.test(host) ||
-      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-      host === '169.254.169.254' ||
-      host === 'metadata' ||
-      host === '[::1]' ||
-      host === '::1' ||
-      /^0\.0\.0\.0$/.test(host) ||
-      /^127\./.test(host) ||
-      /^0\./.test(host) ||
-      // IPv6 loopback / link-local / unique-local / mapped-private ranges.
-      /^(::1|fe80:|fc00:|fd00:|::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.))/.test(
-        host.replace(/^\[|\]$/g, ''),
-      )
-    ) {
-      return false;
-    }
+    if (host.length === 0) return false;
+    if (isBlockedHost(host)) return false;
     return true;
   };
   // DNS-rebinding guard: the hostname must not resolve to a private,
@@ -186,23 +235,9 @@ async function fetchExternalImage(url) {
       if (!records || records.length === 0) return false;
       for (const record of records) {
         const ip = String(record.address || '');
-        const fake = new URL(`https://${ip === '::1' ? '[::1]' : ip}/`);
-        // Reuse the literal-IP denylist by stuffing the IP into a URL.
-        const host = fake.hostname.toLowerCase().replace(/\.$/, '');
-        if (
-          host === 'localhost' ||
-          /^10\./.test(host) ||
-          /^192\.168\./.test(host) ||
-          /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-          host === '169.254.169.254' ||
-          /^127\./.test(host) ||
-          /^0\./.test(host) ||
-          /^(::1|fe80:|fc00:|fd00:|::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.))/.test(
-            host.replace(/^\[|\]$/g, ''),
-          )
-        ) {
-          return false;
-        }
+        // Reuse the same classifier the literal-host check uses — including
+        // the whole 169.254.0.0/16 link-local block and mapped-IPv6 forms.
+        if (isBlockedHost(ip)) return false;
       }
       return true;
     } catch {
