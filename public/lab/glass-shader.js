@@ -1,0 +1,478 @@
+/**
+ * WebGL2 glass renderer — the GPU path for the lens bend.
+ *
+ * WHY THIS EXISTS: url(#…) inside backdrop-filter has no GPU-compositor path
+ * in Chromium. Chrome snapshots the backdrop and runs the SVG graph through
+ * Skia on the RASTER path, per surface, per frame. Measured collapse on this
+ * machine (RTX 3070): 6 panels 59.8fps -> 8 panels 21.6 -> 30 panels 15.5.
+ * Safari never runs it at all (boot.js gates the lens to Chromium >= 138).
+ *
+ * Same math, different machine: sampleUV = uv - n*bend is a texture-lookup
+ * offset the GPU does for free. This renderer consumes THE APP'S OWN maps (the
+ * same ImageData maps.js builds for feImage) in the same order as
+ * lensEngine.buildFilterMarkup(), so the comparison in the lab is meaningful.
+ *
+ * DRAW MODEL — one canvas for the whole page (Chrome caps live WebGL contexts
+ * ~16, evicting oldest; a shared pass is cheaper anyway), two programs:
+ *   1. bgProgram    — one quad over the viewport: the plate, with the scrolling
+ *                     strip painted inside the scroll box's rect.
+ *   2. glassProgram — one quad PER PANEL, so each fragment shades only its own
+ *                     panel's pixels (30 draw calls is nothing; a per-pixel
+ *                     loop over panels would not be).
+ * The panels are DOM elements; the canvas sits fixed behind them and every
+ * frame the renderer reads their rects. That is how the sticky bar and real
+ * scrolling work with a GPU paint: the glass follows the element, not the
+ * other way round.
+ */
+
+import {
+  buildDisplacementMap,
+  buildSpecularMap,
+  computeProfile,
+  dimParams,
+  isCircleRadius,
+  mapCornerExp,
+  mapScaleFor,
+} from './maps.js';
+
+const BG_VS = `#version 300 es
+in vec2 a_corner;
+void main() { gl_Position = vec4(a_corner * 2.0 - 1.0, 0.0, 1.0); }`;
+
+const BG_FS = `#version 300 es
+precision highp float;
+uniform vec2  u_res;
+uniform float u_dpr;
+uniform sampler2D u_plate;
+uniform vec2  u_plateSize;
+uniform sampler2D u_strip;
+uniform vec2  u_stripSize;
+uniform vec4  u_scrollRect;   // x,y,w,h in CSS px
+uniform float u_scrollY;      // scrollTop in CSS px
+out vec4 outColor;
+
+vec2 plateUV(vec2 viewCss) {
+  float ps = max(u_res.x / u_dpr / u_plateSize.x, u_res.y / u_dpr / u_plateSize.y);
+  return (viewCss - (u_res / u_dpr) * 0.5) / (u_plateSize * ps) + 0.5;
+}
+
+void main() {
+  vec2 viewCss = vec2(gl_FragCoord.x, u_res.y - gl_FragCoord.y) / u_dpr;
+  vec2 r = u_scrollRect.xy;
+  vec2 s = u_scrollRect.zw;
+  if (viewCss.x >= r.x && viewCss.x <= r.x + s.x && viewCss.y >= r.y && viewCss.y <= r.y + s.y) {
+    vec2 uv = vec2((viewCss.x - r.x) / u_stripSize.x, (viewCss.y - r.y + u_scrollY) / u_stripSize.y);
+    if (uv.y <= 1.0) { outColor = vec4(texture(u_strip, uv).rgb, 1.0); return; }
+  }
+  outColor = vec4(texture(u_plate, clamp(plateUV(viewCss), 0.0, 1.0)).rgb, 1.0);
+}`;
+
+const GLASS_VS = `#version 300 es
+uniform vec2 u_res;
+uniform vec2 u_rect;
+uniform vec2 u_size;
+in vec2 a_corner;
+out vec2 v_local;
+out vec2 v_view;
+void main() {
+  vec2 px = u_rect + a_corner * u_size;
+  v_local = a_corner * u_size;
+  v_view = px;
+  vec2 ndc = vec2(px.x / u_res.x * 2.0 - 1.0, 1.0 - px.y / u_res.y * 2.0);
+  gl_Position = vec4(ndc, 0.0, 1.0);
+}`;
+
+const GLASS_FS = `#version 300 es
+precision highp float;
+uniform vec2  u_res;
+uniform vec2  u_size;
+uniform float u_dpr;
+
+uniform sampler2D u_plate;
+uniform vec2  u_plateSize;
+uniform sampler2D u_strip;
+uniform vec2  u_stripSize;
+uniform vec4  u_scrollRect;
+uniform float u_scrollY;
+
+uniform float u_radius;
+uniform float u_cornerExp;
+uniform float u_circle;
+
+uniform sampler2D u_disp;
+uniform sampler2D u_spec;
+uniform float u_hasDisp;
+uniform float u_dispScale;
+uniform float u_blur;
+uniform float u_sat;
+
+uniform float u_fillA1;
+uniform float u_fillA2;
+uniform float u_fillAngle;
+uniform float u_dim;
+uniform float u_dimR;
+uniform float u_dimG;
+uniform float u_dimB;
+uniform vec3  u_dimTint;
+uniform float u_specOpacity;
+
+in vec2 v_local;
+in vec2 v_view;
+out vec4 outColor;
+
+float seMetric(float u, float v, float n) { return pow(pow(u, n) + pow(v, n), 1.0 / n); }
+
+/* Signed distance to the border, device px, positive inside. Approximate at the
+   corners (the app's borderSDF is the exact reference); used here only for the
+   interior mask and the AA fringe. */
+float borderDist(vec2 p, vec2 half_, float r, float n, float circle) {
+  vec2 q = abs(p) - (half_ - vec2(r));
+  if (q.x <= 0.0 || q.y <= 0.0) return max(q.x, q.y) - r;
+  if (circle > 0.5) return length(q) - r;
+  vec2 t = abs(q) / r;
+  return (1.0 - seMetric(t.x, t.y, n)) * r;
+}
+
+vec2 plateUV(vec2 viewCss) {
+  float ps = max(u_res.x / u_dpr / u_plateSize.x, u_res.y / u_dpr / u_plateSize.y);
+  return (viewCss - (u_res / u_dpr) * 0.5) / (u_plateSize * ps) + 0.5;
+}
+
+vec3 backdropAt(vec2 viewCss) {
+  vec2 r = u_scrollRect.xy;
+  vec2 s = u_scrollRect.zw;
+  if (viewCss.x >= r.x && viewCss.x <= r.x + s.x && viewCss.y >= r.y && viewCss.y <= r.y + s.y) {
+    vec2 uv = vec2((viewCss.x - r.x) / u_stripSize.x, (viewCss.y - r.y + u_scrollY) / u_stripSize.y);
+    if (uv.y <= 1.0) return texture(u_strip, uv).rgb;
+  }
+  return texture(u_plate, clamp(plateUV(viewCss), 0.0, 1.0)).rgb;
+}
+
+/* 25-tap blur, CSS px radius. Chromium's backdrop blur is a true gaussian; this
+   is a cheap approximation — adequate for an A/B, and its cost is FLAT across
+   panel counts, which is the property under test. */
+vec3 blurred(vec2 viewCss, float radius) {
+  if (radius < 0.35) return backdropAt(viewCss);
+  vec3 acc = vec3(0.0);
+  float wsum = 0.0;
+  for (int i = -2; i <= 2; i++) {
+    for (int j = -2; j <= 2; j++) {
+      vec2 off = vec2(float(i), float(j)) * radius * 0.55;
+      float w = exp(-float(i * i + j * j) / 4.0);
+      acc += backdropAt(viewCss + off) * w;
+      wsum += w;
+    }
+  }
+  return acc / wsum;
+}
+
+float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+
+void main() {
+  float n = pow(2.0, u_cornerExp);
+  float d = borderDist(v_local - u_size * 0.5, u_size * 0.5, u_radius, n, u_circle);
+  float aa = max(0.75, fwidth(d));
+  float inside = 1.0 - smoothstep(-aa, aa, d);
+  if (inside <= 0.0) discard;
+
+  vec2 viewCss = v_view / u_dpr;
+  vec3 back = blurred(viewCss, u_blur);
+
+  /* feDisplacementMap semantics: read the map at THIS pixel, offset the source
+     sample by (R-0.5)*scale, (G-0.5)*scale. Same numbers feDisplacementMap
+     receives from the same map bytes. */
+  if (u_hasDisp > 0.5) {
+    vec2 dm = texture(u_disp, v_local / u_size).rg;
+    vec2 disp = (dm - 0.5) * u_dispScale;
+    back = blurred(viewCss + disp, u_blur);
+  }
+
+  /* saturate inside the specular mask, blended over the raw displaced backdrop */
+  float spec = texture(u_spec, v_local / u_size).a;
+  vec3 saturated = mix(vec3(luma(back)), back, u_sat);
+  vec3 col = mix(back, saturated, spec);
+
+  /* linear-gradient(angle, tint/a1, tint/a2) */
+  float ang = radians(u_fillAngle);
+  vec2 dir = vec2(cos(ang), sin(ang));
+  float t = clamp(dot(v_local / u_size - 0.5, dir) + 0.5, 0.0, 1.0);
+  col = mix(col, vec3(1.0), mix(u_fillA1, u_fillA2, t));
+
+  /* dim wash — dimParams() is affine per channel, so it applies straight here */
+  if (u_dim > 0.0) {
+    vec3 slope = vec3(u_dimR, u_dimG, u_dimB);
+    vec3 icept = vec3(
+      u_dim * u_dimTint.r / 255.0,
+      u_dim * 1.0526 * u_dimTint.g / 255.0,
+      min(1.0, u_dim * 1.4737) * u_dimTint.b / 255.0
+    );
+    col = col * slope + icept;
+  }
+
+  col = mix(col, vec3(1.0), spec * u_specOpacity);
+  outColor = vec4(col * inside, inside);   /* premultiplied */
+}`;
+
+function compile(gl, type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    throw new Error(`shader compile failed: ${gl.getShaderInfoLog(s)}`);
+  }
+  return s;
+}
+
+function program(gl, vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    throw new Error(`link failed: ${gl.getProgramInfoLog(p)}`);
+  }
+  return p;
+}
+
+function newTex(gl) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  return t;
+}
+
+function texFromCanvas(gl, src) {
+  const t = newTex(gl);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  return t;
+}
+
+/** The map textures: the app's ImageData uploaded as-is. R/G carry the
+ *  displacement vector, alpha carries the specular intensity. */
+function texFromImageData(gl, img) {
+  const t = newTex(gl);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA,
+    img.width,
+    img.height,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    new Uint8Array(img.data.buffer),
+  );
+  return t;
+}
+
+export class GlassRenderer {
+  constructor(canvas) {
+    const gl = canvas.getContext('webgl2', {
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      premultipliedAlpha: true,
+      preserveDrawingBuffer: true, // pixel verification / screenshots
+      powerPreference: 'high-performance',
+    });
+    if (!gl) throw new Error('webgl2 unavailable');
+    this.gl = gl;
+    this.canvas = canvas;
+
+    this.bgProg = program(gl, BG_VS, BG_FS);
+    this.glassProg = program(gl, GLASS_VS, GLASS_FS);
+
+    this.quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW);
+
+    this.bgCorner = gl.getAttribLocation(this.bgProg, 'a_corner');
+    this.glCorner = gl.getAttribLocation(this.glassProg, 'a_corner');
+
+    this.plateTex = null;
+    this.plateSize = [1, 1];
+    this.stripTex = null;
+    this.stripSize = [1, 1];
+    this.maps = new Map();
+  }
+
+  /** Load the plate SVG and rasterize it at natural size: an <img> of an SVG
+   *  is not uploadable as a texture in every engine, a canvas is. */
+  async setPlate(url) {
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = () => rej(new Error(`plate load failed: ${url}`));
+      i.src = url;
+    });
+    const w = img.naturalWidth || 1200;
+    const h = img.naturalHeight || 900;
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    if (this.plateTex) this.gl.deleteTexture(this.plateTex);
+    this.plateTex = texFromCanvas(this.gl, c);
+    this.plateSize = [w, h];
+  }
+
+  /** The scrolling strip: one canvas artwork, used as a CSS background in CSS
+   *  mode and as a texture here — one source, so the A/B is honest. */
+  setStrip(canvasEl) {
+    if (this.stripTex) this.gl.deleteTexture(this.stripTex);
+    this.stripTex = texFromCanvas(this.gl, canvasEl);
+    this.stripSize = [canvasEl.width, canvasEl.height];
+  }
+
+  /** Build (and cache) the displacement+specular maps for one geometry, using
+   *  the mapMath port. `params` is the pinned token recipe. */
+  mapsFor(kind, w, h, radius, params) {
+    const key = `${kind}|${Math.round(w)}x${Math.round(h)}|${Math.round(radius)}`;
+    const hit = this.maps.get(key);
+    if (hit) return hit;
+    const cornerExp = mapCornerExp(params.cornerExp, params.cornerShapeSupported);
+    const prof = computeProfile(params.bezel, params.thickness);
+    const r = Math.min(radius, Math.min(w, h) / 2 - 1);
+    const scale = params.dpr * mapScaleFor(w, h);
+    let disp = null;
+    let maxAbs = 1;
+    if (kind !== 'pane') {
+      const dm = buildDisplacementMap(w, h, r, params.bezel, prof, scale, cornerExp);
+      maxAbs = dm.maxAbs;
+      disp = texFromImageData(this.gl, dm.img);
+    }
+    const specImg = buildSpecularMap(w, h, r, params.specAngle, scale, params.specPeak, cornerExp);
+    const entry = {
+      disp,
+      spec: texFromImageData(this.gl, specImg),
+      maxAbs,
+      hasDisp: kind !== 'pane',
+      cornerExp,
+      circle: kind === 'drop' || isCircleRadius(w, h, radius),
+    };
+    this.maps.set(key, entry);
+    return entry;
+  }
+
+  resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = Math.max(2, Math.round(window.innerWidth * dpr));
+    const h = Math.max(2, Math.round(window.innerHeight * dpr));
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w;
+      this.canvas.height = h;
+    }
+    this.gl.viewport(0, 0, w, h);
+    return { w, h, dpr };
+  }
+
+  bindTex(prog, name, tex, unit) {
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(gl.getUniformLocation(prog, name), unit);
+  }
+
+  /** Wipe the canvas. Called when leaving webgl/split mode so the last painted
+   *  frame does not stay baked behind the CSS panels. */
+  clear() {
+    const { w, h } = this.resize();
+    this.gl.clearColor(0, 0, 0, 0);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+  }
+
+  /** Backdrop pass: plate everywhere, scrolling strip inside its rect.
+   *  scroll = { rect: [x,y,w,h] CSS px, top: scrollTop in CSS px }. */
+  drawBackdrop(scroll) {
+    const gl = this.gl;
+    const { w, h, dpr } = this.resize();
+    gl.useProgram(this.bgProg);
+    gl.disable(gl.BLEND);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+    gl.enableVertexAttribArray(this.bgCorner);
+    gl.vertexAttribPointer(this.bgCorner, 2, gl.FLOAT, false, 0, 0);
+
+    const u = (n) => gl.getUniformLocation(this.bgProg, n);
+    gl.uniform2f(u('u_res'), w, h);
+    gl.uniform1f(u('u_dpr'), dpr);
+    gl.uniform2f(u('u_plateSize'), this.plateSize[0], this.plateSize[1]);
+    gl.uniform2f(u('u_stripSize'), this.stripSize[0], this.stripSize[1]);
+    gl.uniform4f(u('u_scrollRect'), ...scroll.rect);
+    gl.uniform1f(u('u_scrollY'), scroll.top);
+    this.bindTex(this.bgProg, 'u_plate', this.plateTex, 0);
+    this.bindTex(this.bgProg, 'u_strip', this.stripTex, 1);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  /** One panel. `rect` is a DOMRect (CSS px), `params` the token recipe. */
+  drawPanel(kind, rect, radius, params, scroll) {
+    const gl = this.gl;
+    const { w, h, dpr } = this.resize();
+    const entry = this.mapsFor(kind, rect.width, rect.height, radius, params);
+    const p = this.glassProg;
+    gl.useProgram(p);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // premultiplied
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
+    gl.enableVertexAttribArray(this.glCorner);
+    gl.vertexAttribPointer(this.glCorner, 2, gl.FLOAT, false, 0, 0);
+
+    const u = (n) => gl.getUniformLocation(p, n);
+    /* NaN guard: gl.uniform1f(loc, undefined) stores NaN, the shader paints
+       col * NaN, and the panel comes out opaque black with NO error anywhere.
+       Coerce here so a missing param degrades to a visible default instead. */
+    const f1 = (name, v) => gl.uniform1f(u(name), Number.isFinite(v) ? v : 0);
+    gl.uniform2f(u('u_res'), w, h);
+    gl.uniform1f(u('u_dpr'), dpr);
+    gl.uniform2f(u('u_rect'), rect.left * dpr, rect.top * dpr);
+    gl.uniform2f(u('u_size'), rect.width * dpr, rect.height * dpr);
+    gl.uniform1f(u('u_radius'), Math.min(radius, Math.min(rect.width, rect.height) / 2) * dpr);
+    gl.uniform1f(u('u_cornerExp'), entry.cornerExp);
+    gl.uniform1f(u('u_circle'), entry.circle ? 1 : 0);
+    gl.uniform1f(u('u_hasDisp'), entry.hasDisp ? 1 : 0);
+    gl.uniform1f(u('u_dispScale'), 2 * entry.maxAbs * params.refraction * params.scaleRatio);
+    f1('u_blur', params.blur);
+    f1('u_sat', params.sat);
+    f1('u_fillA1', params.fillA1);
+    f1('u_fillA2', params.fillA2);
+    f1('u_fillAngle', params.fillAngle);
+    const [dr, dg, db] = dimParams({ dim: params.dim, dimTint: params.dimTint });
+    f1('u_dim', kind === 'drop' ? 0 : params.dim);
+    gl.uniform1f(u('u_dimR'), dr[0]);
+    gl.uniform1f(u('u_dimG'), dg[0]);
+    gl.uniform1f(u('u_dimB'), db[0]);
+    gl.uniform3f(u('u_dimTint'), params.dimTint[0], params.dimTint[1], params.dimTint[2]);
+    f1('u_specOpacity', params.specOpacity);
+    gl.uniform4f(u('u_scrollRect'), ...scroll.rect);
+    gl.uniform1f(u('u_scrollY'), scroll.top);
+
+    gl.uniform2f(u('u_plateSize'), this.plateSize[0], this.plateSize[1]);
+    gl.uniform2f(u('u_stripSize'), this.stripSize[0], this.stripSize[1]);
+    this.bindTex(p, 'u_plate', this.plateTex, 0);
+    this.bindTex(p, 'u_strip', this.stripTex, 1);
+    this.bindTex(p, 'u_disp', entry.disp || this.plateTex, 2);
+    this.bindTex(p, 'u_spec', entry.spec, 3);
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+
+  dispose() {
+    const gl = this.gl;
+    for (const e of this.maps.values()) {
+      if (e.disp) gl.deleteTexture(e.disp);
+      if (e.spec) gl.deleteTexture(e.spec);
+    }
+    this.maps.clear();
+    if (this.plateTex) gl.deleteTexture(this.plateTex);
+    if (this.stripTex) gl.deleteTexture(this.stripTex);
+    const ext = gl.getExtension('WEBGL_lose_context');
+    if (ext) ext.loseContext();
+  }
+}

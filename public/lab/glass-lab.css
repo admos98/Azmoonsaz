@@ -1,0 +1,416 @@
+/* Dev-only glass comparison lab. Tokens below are PINNED COPIES of
+   src/styles/themes.css + tokens.css (light and dark). If the app's recipe
+   changes, update both — the lab is only meaningful while it matches.
+   Not scanned by any gate (they all walk src/), and check-bundle.mjs only
+   looks for playground|probe|tuner in dist/. */
+
+:root {
+  --lab-page: #f2efe8;
+  --lab-ink: #1a1a2e;
+  --lab-muted: #5b5866;
+
+  /* ── light theme glass recipe (themes.css :root + tokens.css) ── */
+  --glass-bg-blur: 8px;
+  --glass-bg-sat: 1.5;
+  --glass-p-blur: 16px;
+  --glass-p-sat: 1.5;
+  --glass-p-angle: 108deg;
+  --glass-p-tint: 255 255 255;
+  --glass-p-a1: 0.2;
+  --glass-p-a2: 0.13;
+  --glass-p-boost1: 0.24;
+  --glass-p-boost2: 0.17;
+  --glass-p-bw: 1px;
+  --glass-p-ba: 0;
+  --glass-p-bc: 26 28 34;
+  --glass-fill: 0;
+  --glass-bloom-line-a: 0.24;
+  --glass-bloom-a: 0.38;
+  --glass-rim-fade: 0.2;
+  --glass-text-ambient: 255 255 255;
+  --glass-text-ambient-a: 0.5;
+  --glass-scrim: 56 60 68;
+
+  --lens-blur: 1px;
+  --lens-menu-blur: 6px;
+  --lens-menu-dim: 0.2;
+  --lens-dim: 0.1;
+  --dim-tint: 103 100 112;
+  --pane-blur: 2px;
+  --frost-blur: 2px;
+  --field-blur: 2px;
+  --drop-blur: 0.5px;
+
+  --corner-exp: 2;
+  --corner-shape: superellipse(var(--corner-exp));
+  --lens-bezel: 14px;
+  --lens-thickness: 66px;
+  --lens-refraction-level: 0.7;
+  --lens-scale-ratio: 1;
+  --lens-spec-opacity: 0.2;
+  --lens-spec-saturation: 4;
+  --lens-spec-angle: -60deg;
+  --lens-spec-peak: 1px;
+  --lens-radius: 21px;
+}
+
+:root[data-theme='dark'] {
+  --lab-page: #131220;
+  --lab-ink: #ece9f5;
+  --lab-muted: #a9a4bd;
+
+  --glass-p-a1: 0.36;
+  --glass-p-a2: 0.28;
+  --glass-p-boost1: 0.34;
+  --glass-p-boost2: 0.26;
+  --glass-p-blur: 26px;
+  --glass-p-bc: 255 255 255;
+  --lens-menu-dim: 0.14;
+  --glass-bloom-line-a: 0.05;
+  --glass-bloom-a: 0.05;
+  --glass-rim-fade: 0.12;
+  --glass-text-ambient: 0 0 0;
+  --glass-text-ambient-a: 0.45;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--lab-page);
+  color: var(--lab-ink);
+  font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── the backdrop layers ─────────────────────────────────────────────────
+   CSS mode: a fixed plate image + a scrolling strip (both real DOM).
+   WebGL mode: the canvas paints the same two textures itself, so the DOM
+   layers are hidden and the canvas becomes the sole backdrop. */
+#plate {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+#gl {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  display: none;
+}
+:root[data-render='webgl'] #plate { display: none; }
+:root[data-render='webgl'] #gl { display: block; }
+:root[data-render='split'] #gl { display: block; }
+:root[data-render='split'] #plate { display: none; }
+
+#shell {
+  position: relative;
+  z-index: 2;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 18px 18px 120px;
+}
+
+/* ── materials, copied from src/styles/glass.css + materials.css ───────── */
+
+@supports (corner-shape: superellipse(2)) {
+  .lens, .pane, .glx, .glx-strong, .glx-dark, .drop, .btn-glass {
+    corner-shape: var(--corner-shape);
+  }
+}
+
+.lens {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--lens-blur));
+  -webkit-backdrop-filter: blur(var(--lens-blur));
+}
+.lens.lens--menu {
+  --lens-dim: var(--lens-menu-dim);
+  backdrop-filter: blur(var(--lens-menu-blur));
+  -webkit-backdrop-filter: blur(var(--lens-menu-blur));
+}
+:root:not([data-theme='dark']) .lens.lens--menu {
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.drop {
+  border-radius: 9999px;
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--drop-blur));
+  -webkit-backdrop-filter: blur(var(--drop-blur));
+  corner-shape: round;
+}
+.pane {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--pane-blur));
+  -webkit-backdrop-filter: blur(var(--pane-blur));
+}
+.frost {
+  background: rgb(var(--dim-tint) / var(--glass-fill));
+  backdrop-filter: blur(var(--frost-blur));
+  -webkit-backdrop-filter: blur(var(--frost-blur));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.13),
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 10px 24px -20px rgb(255 255 255 / var(--glass-bloom-a));
+}
+.field {
+  backdrop-filter: blur(var(--field-blur));
+  -webkit-backdrop-filter: blur(var(--field-blur));
+}
+.glx {
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
+    rgb(var(--glass-p-tint) / var(--glass-p-a2))
+  );
+  border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 0 14px -6px rgb(255 255 255 / var(--glass-rim-fade));
+  text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
+  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
+  -webkit-backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
+}
+.glx-strong {
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a1) + var(--glass-p-boost1))),
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a2) + var(--glass-p-boost2)))
+  );
+  border: var(--glass-p-bw) solid rgb(var(--glass-p-bc) / var(--glass-p-ba));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 16px 38px -24px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 0 16px -6px rgb(255 255 255 / var(--glass-rim-fade));
+  text-shadow: 0 1px 2px rgb(var(--glass-text-ambient) / var(--glass-text-ambient-a));
+  backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
+  -webkit-backdrop-filter: blur(var(--glass-p-blur)) saturate(var(--glass-p-sat));
+}
+.glx-dark {
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a1) + var(--glass-p-boost1))),
+    rgb(var(--glass-p-tint) / calc(var(--glass-p-a2) + var(--glass-p-boost2)))
+  );
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+}
+
+/* WebGL mode: the engine's maps are consumed by the shader, so the DOM
+   panels stop filtering and become transparent frames — the canvas behind
+   them paints the glass. Inner UI (text, controls) stays DOM. */
+:root[data-render='webgl'] .lens,
+:root[data-render='webgl'] .lens.lens--menu,
+:root[data-render='webgl'] .pane,
+:root[data-render='webgl'] .drop,
+:root[data-render='split'] [data-ab='webgl'] .lens,
+:root[data-render='split'] [data-ab='webgl'] .lens.lens--menu,
+:root[data-render='split'] [data-ab='webgl'] .pane,
+:root[data-render='split'] [data-ab='webgl'] .drop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: transparent !important;
+}
+/* glx / glx-strong / glx-dark deliberately KEEP their CSS path in webgl mode.
+   They are blur-only (blur() saturate()) — no url(#…) displacement chain — so
+   they were never the bottleneck, and they carry inset box-shadow "bloom" lines
+   the shader cannot reproduce. Blanking them here would leave empty boxes,
+   because the shader's selector (.lens/.pane/.drop) never covered them. Keeping
+   them identical in both modes also makes the fps delta isolate the url() cost,
+   since the same glx panels cost the same in both.
+   The one glx element the shader DOES paint is #menu (.lens.lens--menu.glx-dark):
+   it is matched as a lens, so paramsFor() supplies its glx-dark gradient fill. */
+
+/* ── panel shapes ─────────────────────────────────────────────────────── */
+.panel {
+  border-radius: var(--lens-radius);
+  padding: 16px 18px;
+  position: relative;
+}
+.panel-wide { border-radius: calc(var(--lens-radius) + 8px); }
+.panel-pane { border-radius: 28px; backdrop-filter: blur(var(--pane-blur)); }
+.panel-frost { border-radius: var(--lens-radius); }
+
+/* the sticky bar over scrolling content — the case the user needs */
+#stickybar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0 0 14px;
+  border-radius: calc(var(--lens-radius) + 6px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  font-weight: 800;
+}
+
+#scrollbox {
+  height: 380px;
+  overflow-y: auto;
+  border-radius: 18px;
+  position: relative;
+  scroll-behavior: auto;
+}
+#scrollstrip {
+  background-size: 100% auto;
+  background-repeat: repeat-y;
+  height: 2400px;
+}
+#scrollbox::-webkit-scrollbar { width: 10px; }
+#scrollbox::-webkit-scrollbar-thumb {
+  background: rgb(0 0 0 / 0.25);
+  border-radius: 6px;
+}
+
+/* ── controls ─────────────────────────────────────────────────────────── */
+.btn-glass {
+  --glass-p-fa1: var(--glass-p-a1);
+  appearance: none;
+  border: 1px solid rgb(var(--glass-p-bc) / 0.14);
+  border-radius: 9999px;
+  padding: 9px 18px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--lab-ink);
+  background: linear-gradient(
+    var(--glass-p-angle),
+    rgb(var(--glass-p-tint) / var(--glass-p-a1)),
+    rgb(var(--glass-p-tint) / var(--glass-p-a2))
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 10px 24px -20px rgb(255 255 255 / var(--glass-bloom-a));
+  backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
+  -webkit-backdrop-filter: blur(var(--glass-bg-blur)) saturate(var(--glass-bg-sat));
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+.btn-glass:hover,
+.btn-glass:focus-visible {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / calc(var(--glass-bloom-line-a) + 0.2)),
+    inset 0 12px 28px -20px rgb(255 255 255 / calc(var(--glass-bloom-a) + 0.2)),
+    0 6px 18px -10px rgb(0 0 0 / 0.4);
+}
+.btn-glass:active { transform: translateY(0) scale(0.985); }
+.btn-glass--primary { background-color: rgb(37 99 235 / 0.22); }
+.btn-glass--danger { background-color: rgb(225 29 72 / 0.22); }
+.btn-glass--gold { background-color: rgb(245 179 1 / 0.28); }
+.btn-glass--quiet { opacity: 0.75; }
+.btn-glass--bare { background: transparent; border-color: transparent; backdrop-filter: none; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* dropdowns + popups */
+.wrap { position: relative; display: inline-block; }
+#menu, #popup {
+  position: absolute;
+  z-index: 60;
+  min-width: 240px;
+  padding: 12px;
+  border-radius: var(--lens-radius);
+  display: none;
+}
+#menu { top: calc(100% + 8px); right: 0; }
+#menu[data-open='1'], #popup[data-open='1'] { display: block; }
+#popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 420px;
+  padding: 20px;
+  border-radius: 30px;
+  z-index: 80;
+}
+#popup-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: none;
+  background: rgb(var(--glass-scrim, 0 0 0) / 0.22);
+  backdrop-filter: blur(4px);
+}
+#popup-scrim[data-open='1'] { display: block; }
+.menu-item {
+  display: block;
+  width: 100%;
+  text-align: right;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  padding: 9px 12px;
+  border-radius: 14px;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+.menu-item:hover { background: rgb(255 255 255 / 0.18); }
+.sep { height: 1px; margin: 8px 4px; background: rgb(255 255 255 / 0.18); }
+
+/* ── HUD ──────────────────────────────────────────────────────────────── */
+#hud {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 99;
+  direction: ltr;
+  text-align: left;
+  font: 12px/1.6 ui-monospace, monospace;
+  background: rgb(0 0 0 / 0.86);
+  color: #ffd166;
+  padding: 10px 13px;
+  border-radius: 12px;
+  white-space: pre;
+  pointer-events: none;
+}
+#bar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 13px;
+}
+#bar label { display: flex; gap: 6px; align-items: center; font-weight: 700; }
+#bar select, #bar input[type='range'] {
+  font: inherit;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  background: rgb(0 0 0 / 0.4);
+  color: #fff;
+  padding: 4px 8px;
+}
+#gap { height: 62px; }
+h2 { font-size: 17px; margin: 22px 0 10px; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+#abgrid { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+#abgrid > div { display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 720px) { #abgrid { grid-template-columns: 1fr; } }
+.muted { color: var(--lab-muted); font-size: 13px; }
+.tag {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.18);
+  margin-inline-start: 6px;
+}

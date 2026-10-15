@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fa" dir="rtl" data-theme="dark" data-render="css">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>آزمایشگاه شیشه مایع | آزمون‌ساز</title>
+    <link rel="stylesheet" href="/lab/glass-lab.css" />
+    <!-- External only: Vercel CSP is script-src 'self' (inline is blocked). -->
+    <script type="module" src="/lab/glass-lab.js"></script>
+  </head>
+  <body>
+    <div id="plate"></div>
+    <canvas id="gl"></canvas>
+
+    <div id="bar">
+      <label>
+        روش رندر
+        <select id="mode">
+          <option value="css">CSS + SVG (فعلی)</option>
+          <option value="webgl">WebGL2 (جدید)</option>
+          <option value="split">هر دو، کنار هم</option>
+        </select>
+      </label>
+      <label>
+        تم
+        <select id="theme">
+          <option value="dark">تیره</option>
+          <option value="light">روشن</option>
+        </select>
+      </label>
+      <label>
+        تعداد پنل
+        <select id="count">
+          <option value="6">۶</option>
+          <option value="12" selected>۱۲</option>
+          <option value="24">۲۴</option>
+          <option value="40">۴۰</option>
+        </select>
+      </label>
+      <button class="btn-glass" id="bench" type="button">آزمون روانی</button>
+      <button class="btn-glass" id="scrolltest" type="button">آزمون اسکرول</button>
+      <button class="btn-glass btn-glass--quiet" id="clear" type="button">پاک‌سازی</button>
+    </div>
+    <div id="gap"></div>
+
+    <div id="shell">
+      <div class="glx" id="guide">
+        <strong>راهنمای آزمایش</strong>
+        <p class="muted">
+          این صفحه فقط برای بررسی است و به برنامه‌ی اصلی وصل نیست. با «روش رندر» بین دو پیاده‌سازی جابه‌جا شوید:
+        </p>
+        <ul class="muted">
+          <li><b>CSS + SVG (فعلی)</b> — همان روشی که الان روی سایت اصلی اجرا می‌شود. در کروم کندی آن را حس می‌کنید، در سافاری خمِ لبه را نمی‌بینید.</li>
+          <li><b>WebGL2 (جدید)</b> — روش پیشنهادی. باید در هر دو مرورگر روان باشد و خمِ لبه را نشان دهد.</li>
+          <li><b>هر دو، کنار هم</b> — فقط برای مقایسه‌ی ظاهر؛ عدد روانی در این حالت معنایی ندارد.</li>
+        </ul>
+        <p class="muted">
+          برای مقایسه: تعداد پنل را روی ۴۰ بگذارید و صفحه را اسکرول کنید (در کروم حالت CSS باید کند شود، WebGL نه). «آزمون روانی» و
+          «آزمون اسکرول» عدد می‌دهند. سافاری همین حالا هیچ خمِ لبه‌ای ندارد؛ در حالت WebGL باید پیدا شود.
+        </p>
+      </div>
+      <div id="stickybar" class="lens">
+        <strong>نوار چسبان</strong>
+        <span class="muted">محتوای زیر آن واقعاً اسکرول می‌شود</span>
+        <span class="tag" id="stickytag">lens</span>
+      </div>
+
+      <h2>سه خانواده‌ی متریال</h2>
+      <div class="grid" id="familygrid">
+        <div class="panel lens" data-kind="lens">
+          <strong>lens</strong> <span class="tag">شکست + رینگ</span>
+          <p class="muted">شکست نور در لبه، رینگ براق، دیم.</p>
+        </div>
+        <div class="panel pane panel-pane" data-kind="pane">
+          <strong>pane</strong> <span class="tag">فقط رینگ</span>
+          <p class="muted">بدون شکست — فقط رینگ براق.</p>
+        </div>
+        <div class="panel frost panel-frost" data-kind="frost">
+          <strong>frost</strong> <span class="tag">بدون شکست</span>
+          <p class="muted">رینگ ثابت، بلور، بدون bend.</p>
+        </div>
+        <div class="panel glx" data-kind="glx">
+          <strong>glx</strong> <span class="tag">کارت</span>
+          <p class="muted">متریال کارت‌های اصلی برنامه.</p>
+        </div>
+        <div class="panel glx-strong" data-kind="glx-strong">
+          <strong>glx-strong</strong> <span class="tag">مودال</span>
+          <p class="muted">پنل‌های شناور و مودال‌ها.</p>
+        </div>
+        <div class="panel glx-dark" data-kind="glx-dark">
+          <strong>glx-dark</strong> <span class="tag">منو</span>
+          <p class="muted">منوی همبرگری روی محتوای متراکم.</p>
+        </div>
+      </div>
+
+      <h2>مقایسه‌ی هم‌زمان (چپ: CSS — راست: WebGL)</h2>
+      <div id="abgrid"></div>
+
+      <h2>قطره و دکمه‌ها</h2>
+      <div class="btn-row" style="gap: 16px">
+        <span
+          class="drop"
+          data-kind="drop"
+          style="width: 56px; height: 56px; display: inline-block"
+          aria-label="قطره"
+        ></span>
+        <button class="btn-glass" type="button">دکمه‌ی شیشه‌ای</button>
+        <button class="btn-glass btn-glass--primary" type="button">اصلی</button>
+        <button class="btn-glass btn-glass--gold" type="button">طلایی</button>
+        <button class="btn-glass btn-glass--danger" type="button">خطر</button>
+        <div class="wrap">
+          <button class="btn-glass btn-glass--quiet" id="menubtn" type="button" aria-expanded="false">
+            فهرست بازشو ▾
+          </button>
+          <div id="menu" class="lens lens--menu glx-dark" role="menu">
+            <button class="menu-item" type="button" role="menuitem">ویرایش آزمون</button>
+            <button class="menu-item" type="button" role="menuitem">مشاهده‌ی پاسخ‌ها</button>
+            <button class="menu-item" type="button" role="menuitem">دانلود کارنامه</button>
+            <div class="sep"></div>
+            <button class="menu-item" type="button" role="menuitem">آرشیو</button>
+          </div>
+        </div>
+        <button class="btn-glass btn-glass--primary" id="popupbtn" type="button">پنجره‌ی شناور</button>
+      </div>
+
+      <h2>نوار اسکرول</h2>
+      <div id="scrollbox" class="glx">
+        <div id="scrollstrip"></div>
+      </div>
+
+      <h2>پنل‌ها</h2>
+      <div class="grid" id="feed"></div>
+    </div>
+
+    <div id="popup-scrim"></div>
+    <div id="popup" class="glx-strong" role="dialog" aria-modal="true" aria-label="پنجره‌ی شناور">
+      <strong>پنجره‌ی شناور</strong>
+      <p class="muted">این یک مودال شیشه‌ای روی پرده‌ی تار است.</p>
+      <div class="btn-row">
+        <button class="btn-glass btn-glass--primary" type="button">تأیید</button>
+        <button class="btn-glass" id="popupclose" type="button">بستن</button>
+      </div>
+    </div>
+
+    <div id="hud">…</div>
+  </body>
+</html>
