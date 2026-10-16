@@ -39,7 +39,10 @@
  *   means WebGL2 context creation failed at boot on this device),
  *   `tier` ('lite'/'off' = the device/user setting chose it), `broken`
  *   (a context died — off until reload), `shell` (route has the teacher
- *   shell at all), `canvas`/`ready` (the swap). `mode:'css'` plus the
+ *   shell at all), `canvas`/`ready` (the swap), `plate` (the last plate-load
+ *   stage: 'ok', or img-err/timeout/no-2d/raster-err/tex-err naming the step
+ *   that failed; plateRetries = bounded retry attempts consumed).
+ *   `mode:'css'` plus the
  *   matching flag names the cause; `surfaces[]` rows with `flow:true` and
  *   `glassPaint:null` are panels that fell back to the CSS material.
  *
@@ -657,6 +660,7 @@ function buildUi(ops: UiOps): void {
       `filters ${r.filterCountStart}->${r.filterCountEnd}\n` +
       `render ${e.mode}/${e.drawn}  probe ${b.probe}\n` +
       `tier ${b.tier} lens ${b.lens}${b.broken ? ' broken!' : ''}\n` +
+      `plate ${b.plate ?? '-'}${b.plateRetries ? ` r${b.plateRetries}` : ''}\n` +
       `maps ${e.maps} infl ${e.inflight} post ${e.posted} hit ${e.hits} wrk ${e.worker} sync ${e.sync}`;
   };
 

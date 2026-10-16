@@ -168,6 +168,33 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(renderer).toMatch(/if \(id !== this\.plateLoadId\)/);
   });
 
+  it('plate load is deadline-guarded and retried, stage-telemetered', () => {
+    // A stalled plate fetch (cold/evicted cache, engine never fires
+    // onload/onerror) must not park the atomic swap forever: the load has a
+    // deadline, and a failure hands off to a bounded retry.
+    expect(renderer).toContain('PLATE_LOAD_TIMEOUT_MS');
+    expect(renderer).toMatch(/setTimeout\(\(\) => \{[\s\S]{0,240}plate load timed out/);
+    expect(renderer).toContain('retryPlate(url: string): void');
+    expect(renderer).toContain('PLATE_MAX_RETRIES');
+    // The stage must survive into the report — no more silent swallow.
+    expect(renderer).toContain('plateStage');
+    for (const stage of ['img-err', 'timeout', 'no-2d', 'raster-err', 'tex-err', 'ok']) {
+      expect(renderer, `plateStage must distinguish '${stage}'`).toContain(`'${stage}'`);
+    }
+    // The controller consumes the retry instead of swallowing (both sites).
+    expect(controller).toMatch(/catch\(\(\) => r\.retryPlate\(url\)\)/);
+    expect(controller).toMatch(/catch\(\(\) => renderer\?\.retryPlate\(url\)\)/);
+    // The swap still flips only on a real texture.
+    expect(renderer).toContain("this.plateStage = 'ok'");
+    // Teardown stops pending retries (dead renderer must not resurrect).
+    expect(controller).toMatch(/renderer\.plateURL = ''/);
+  });
+
+  it('boot triage carries the plate stage into the perf report', () => {
+    expect(controller).toMatch(/plate: renderer \? renderer\.plateStage : null/);
+    expect(controller).toMatch(/plateRetries: renderer \? renderer\.plateRetryCount : 0/);
+  });
+
   it('a single shared draw list drives the frame, culled by rect', () => {
     expect(controller).toContain('const webglDrawSet = new Set<HTMLElement>()');
     expect(controller).toContain('function glFrame');

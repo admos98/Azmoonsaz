@@ -326,6 +326,13 @@ interface MapEntry {
  *  memory. Oldest-first (Map insertion order), textures deleted on evict. */
 const MAX_MAP_BYTES = 48 * 1024 * 1024;
 
+/** Plate-load deadline. A stalled image (cold/evicted cache on mobile, or an
+ *  engine that never fires onload/onerror) must not park the atomic swap
+ *  forever — see setPlate(). */
+const PLATE_LOAD_TIMEOUT_MS = 8000;
+const PLATE_MAX_RETRIES = 2;
+const PLATE_RETRY_DELAY_MS = 1200;
+
 export class GlassRenderer {
   private gl: WebGL2RenderingContext;
   private canvas: HTMLCanvasElement;
@@ -346,6 +353,16 @@ export class GlassRenderer {
   /** Dev-only: paint each panel's inside mask into R (deterministic corner
    *  verification via gl.readPixels). Never enabled in production paths. */
   maskProbe = false;
+
+  /** Plate pipeline telemetry — the last stage the load reached. Travels into
+   *  the ?perf=1 report (engine.plate) so a field failure names the step
+   *  (img-err / timeout / no-2d / raster-err / tex-err) instead of vanishing
+   *  into a swallowed promise. 'ok' once the texture is uploaded. */
+  plateStage: 'pending' | 'ok' | 'img-err' | 'timeout' | 'no-2d' | 'raster-err' | 'tex-err' =
+    'pending';
+  /** The URL the current plate stage belongs to (retry race guard). */
+  plateURL = '';
+  plateRetryCount = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', {
@@ -386,23 +403,43 @@ export class GlassRenderer {
    *      Rasterize at the size it will actually occupy instead, times DPR.
    *      (naturalWidth/naturalHeight share the viewBox aspect ratio, so the
    *      cover scale is safe to derive from them.)
-   *  The raster is capped so a 4K viewport does not allocate a 30MP texture. */
+   *  The raster is capped so a 4K viewport does not allocate a 30MP texture.
+   *
+   *  The whole chain is deadline-guarded because on some engines (reported:
+   *  iPhone Safari) `onload` never fires and `onerror` never fires either —
+   *  without the timeout the atomic swap would wait forever, glReady would
+   *  stay false, and every panel would sit on the CSS material for the whole
+   *  session with nothing in the report to say why. A stall is not fatal:
+   *  the retry below re-enters the same guard. */
   setPlate(url: string): Promise<void> {
     const id = ++this.plateLoadId;
     return new Promise<void>((resolve, reject) => {
       const img = new Image();
+      let settled = false;
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        fn();
+      };
+      const timer = setTimeout(() => {
+        this.plateStage = 'timeout';
+        finish(() => reject(new Error(`plate load timed out: ${url}`)));
+      }, PLATE_LOAD_TIMEOUT_MS);
       img.onload = () => {
         // a newer setPlate() landed first (theme flip during load) — drop this
-        if (id !== this.plateLoadId) return resolve();
+        if (id !== this.plateLoadId) return finish(() => resolve());
         try {
           const dpr = this.frameDpr || Math.min(2, Math.max(1, window.devicePixelRatio || 1));
           const MAX_SIDE = 4096;
+          const nw = img.naturalWidth || 1600;
+          const nh = img.naturalHeight || 1000;
           const cover = Math.max(
-            (window.innerWidth * dpr) / (img.naturalWidth || 1600),
-            (window.innerHeight * dpr) / (img.naturalHeight || 1000),
+            (window.innerWidth * dpr) / nw,
+            (window.innerHeight * dpr) / nh,
           );
-          let w = Math.round((img.naturalWidth || 1600) * cover);
-          let h = Math.round((img.naturalHeight || 1000) * cover);
+          let w = Math.round(nw * cover);
+          let h = Math.round(nh * cover);
           const cap = MAX_SIDE / Math.max(w, h);
           if (cap < 1) {
             w = Math.round(w * cap);
@@ -412,19 +449,47 @@ export class GlassRenderer {
           c.width = w;
           c.height = h;
           const ctx = c.getContext('2d');
-          if (!ctx) throw new Error('2d context unavailable');
+          if (!ctx) {
+            this.plateStage = 'no-2d';
+            throw new Error('2d context unavailable');
+          }
           ctx.drawImage(img, 0, 0, w, h);
           if (this.plateTex) this.gl.deleteTexture(this.plateTex);
+          // Drain stale errors so the check below only sees this upload.
+          this.gl.getError();
           this.plateTex = texFromCanvas(this.gl, c);
+          // A 0x0 or oversized raster uploads without a GL error and then
+          // paints nothing — the swap would flip onto an empty backdrop.
+          if (this.gl.getError() !== this.gl.NO_ERROR) {
+            this.plateStage = 'tex-err';
+            throw new Error('plate texture upload failed');
+          }
           this.plateSize = [w, h];
-          resolve();
+          this.plateStage = 'ok';
+          finish(() => resolve());
         } catch (e) {
-          reject(e instanceof Error ? e : new Error(String(e)));
+          this.plateStage = 'raster-err';
+          finish(() => reject(e instanceof Error ? e : new Error(String(e))));
         }
       };
-      img.onerror = () => reject(new Error(`plate load failed: ${url}`));
+      img.onerror = () => {
+        this.plateStage = 'img-err';
+        finish(() => reject(new Error(`plate load failed: ${url}`)));
+      };
       img.src = url;
     });
+  }
+
+  /** Retry a stalled/failed plate load with a bounded, delayed backoff. Two
+   *  attempts, 1.2s apart — enough to ride out a cold/evicted-cache stall on
+   *  mobile without hammering the network or blocking the swap forever. */
+  retryPlate(url: string): void {
+    this.plateRetryCount++;
+    if (this.plateRetryCount > PLATE_MAX_RETRIES) return;
+    setTimeout(() => {
+      if (url !== this.plateURL) return; // a theme flip won the race
+      void this.setPlate(url).catch(() => this.retryPlate(url));
+    }, PLATE_RETRY_DELAY_MS);
   }
 
   /** Build (and cache) the displacement+specular maps for one geometry, using

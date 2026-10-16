@@ -189,6 +189,12 @@ export interface GlassEngineStats {
     canvas: boolean;
     /** The atomic swap landed (plate texture uploaded, canvas visible). */
     ready: boolean;
+    /** Plate-load pipeline stage: 'ok' once the texture is up; 'img-err' /
+     *  'timeout' / 'no-2d' / 'raster-err' / 'tex-err' name the failing step
+     *  when the swap never lands. null = no renderer yet. */
+    plate: string | null;
+    /** Plate retries consumed this session (bounded backoff). */
+    plateRetries: number;
     /** The teacher shell exists on this route (the shader needs it). */
     shell: boolean;
   };
@@ -214,6 +220,8 @@ export function glassStats(): GlassEngineStats {
       lens: document.documentElement.dataset.lens ?? null,
       canvas: glCanvas !== null,
       ready: glReady,
+      plate: renderer ? renderer.plateStage : null,
+      plateRetries: renderer ? renderer.plateRetryCount : 0,
       shell: shellAt() !== null,
     },
   };
@@ -529,7 +537,11 @@ function tryInitWebgl(): void {
     glCanvas = canvas;
     glReady = false;
     plateURL = plateURLForTheme();
-    if (plateURL) void r.setPlate(plateURL).catch(() => {});
+    if (plateURL) {
+      r.plateURL = plateURL;
+      const url = plateURL;
+      void r.setPlate(url).catch(() => r.retryPlate(url));
+    }
     glRaf = requestAnimationFrame(glFrame);
   } catch {
     // Context creation failed even though the probe passed — stay on CSS
@@ -548,7 +560,9 @@ function refreshPlate(): void {
   const url = plateURLForTheme();
   if (url && url !== plateURL) {
     plateURL = url;
-    void renderer.setPlate(url).catch(() => {});
+    renderer.plateURL = url;
+    renderer.plateRetryCount = 0;
+    void renderer.setPlate(url).catch(() => renderer?.retryPlate(url));
   }
 }
 
@@ -627,6 +641,7 @@ function shutdownWebgl(lost: boolean): void {
     glRaf = 0;
   }
   if (renderer) {
+    renderer.plateURL = ''; // stop any pending plate retries on a dead renderer
     try {
       renderer.dispose();
     } catch {
