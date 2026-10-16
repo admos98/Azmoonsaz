@@ -229,12 +229,29 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(existsSync(join(root, 'tools/render-plate-rasters.mjs'))).toBe(true);
   });
 
+  it('the plate URL is decoded out of the computed property (iOS escape round-trip)', () => {
+    // Field (azmoon-perf-1792181900728): iOS 26.6 serializes the computed
+    // --page-plate with CSS escapes applied (`bg-d-light\.svg`). Taken
+    // verbatim that is not a fetchable URL — the `\` reads as a path
+    // separator, so EVERY chain rung died before the network (img-err on
+    // both <img> sources, fetch-err on the probes) while the file itself was
+    // fine. The lab page bends on the same iPhone precisely because it
+    // never crosses the getComputedStyle boundary. Extraction must decode;
+    // clean serializations pass through byte-identical.
+    expect(controller).toContain("from './cssUrl'");
+    expect(controller).toContain('plateURLFromComputed');
+    expect(controller).not.toMatch(/return m \? m\[2\]/);
+    expect(existsSync(join(root, 'src/glass/cssUrl.ts'))).toBe(true);
+  });
+
   it('boot triage carries the plate stage into the perf report', () => {
     expect(controller).toMatch(/plate: renderer \? renderer\.plateStage : null/);
     expect(controller).toMatch(/plateRetries: renderer \? renderer\.plateRetryCount : 0/);
     expect(controller).toMatch(/plateSrc: renderer \? renderer\.plateSrc : null/);
     expect(controller).toMatch(/plateTried: renderer \? renderer\.plateTried : \[\]/);
     expect(controller).toMatch(/plateProbe: renderer \? renderer\.plateProbe : \[\]/);
+    expect(controller).toMatch(/plateRaw: plateRaw/);
+    expect(controller).toMatch(/plateEsc: plateEsc/);
   });
 
   it('a single shared draw list drives the frame, culled by rect', () => {

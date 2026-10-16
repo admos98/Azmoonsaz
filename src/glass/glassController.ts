@@ -72,6 +72,7 @@ import {
   type LensParams,
 } from './lensEngine';
 import type { MapBuildRequest, MapBuildResponse } from './mapWorker';
+import { cssUnescape, plateURLFromComputed } from './cssUrl';
 import { GlassRenderer, type GlassKind, type GlassPaintParams } from './webglRenderer';
 
 /* ───────────────────── Ladder ───────────────────── */
@@ -150,6 +151,13 @@ let glReady = false;
 let webglBroken = false;
 let shellElCache: HTMLElement | null = null;
 let plateURL = '';
+/** Last raw computed --page-plate — the engine's exact serialization, kept
+ *  for the ?perf=1 forensics (iOS 26.6 returns it with CSS escapes). */
+let plateRaw = '';
+/** True when that serialization carried CSS escapes and was decoded on
+ *  read. Escaped input is not a fetchable URL (the `\` reads as a path
+ *  separator) — leaving it verbatim killed every plate request on iPhone. */
+let plateEsc = false;
 const paintCache = new WeakMap<HTMLElement, PaintEntry>();
 const webglDrawSet = new Set<HTMLElement>();
 
@@ -205,6 +213,12 @@ export interface GlassEngineStats {
     /** Final-failure forensics (empty unless the whole chain failed):
      *  per URL `name:status:bytes:decode` — separates network/server/decode. */
     plateProbe: string[];
+    /** Last raw computed --page-plate (the engine's exact serialization). */
+    plateRaw: string;
+    /** True when that serialization needed CSS-escape decoding — the iOS
+     *  26.6 case (`bg-d-light\.svg`), which silently corrupted every plate
+     *  request until decoded. */
+    plateEsc: boolean;
     /** The teacher shell exists on this route (the shader needs it). */
     shell: boolean;
   };
@@ -235,6 +249,8 @@ export function glassStats(): GlassEngineStats {
       plateSrc: renderer ? renderer.plateSrc : null,
       plateTried: renderer ? renderer.plateTried : [],
       plateProbe: renderer ? renderer.plateProbe : [],
+      plateRaw: plateRaw,
+      plateEsc: plateEsc,
       shell: shellAt() !== null,
     },
   };
@@ -527,10 +543,19 @@ function untrackWebgl(el: HTMLElement): void {
   if (el.dataset.glassPaint) delete el.dataset.glassPaint;
 }
 
+/** Read the themed plate URL. The computed value is DECODED before use:
+ *  iOS 26.6 serializes a computed custom property with CSS escapes applied
+ *  (field: `url(/backgrounds/bg-d-light\.svg)`) — taken verbatim, the `\`
+ *  reads as a fetch-path separator and every plate request died before the
+ *  network (img-err on both <img> sources, fetch-err in the probe) while the
+ *  file itself decoded fine by hand. The lab page bends on the same iPhone
+ *  because it never crosses this boundary (URL is a string literal there).
+ *  plateRaw/plateEsc carry the serialization into the ?perf=1 report. */
 function plateURLForTheme(): string {
   const raw = getComputedStyle(document.documentElement).getPropertyValue('--page-plate').trim();
-  const m = /url\((['"]?)(.*?)\1\)/.exec(raw);
-  return m ? m[2] : '';
+  plateRaw = raw;
+  plateEsc = cssUnescape(raw) !== raw;
+  return plateURLFromComputed(raw);
 }
 
 function tryInitWebgl(): void {

@@ -42,9 +42,10 @@
  *   shell at all), `canvas`/`ready` (the swap), `plate` (the last plate-load
  *   stage: 'ok', or img-err/timeout/no-2d/raster-err/tex-err naming the step
  *   that failed; plateRetries = bounded retry attempts consumed;
- *   plateSrc = which source landed — 'svg' or 'raster', the .2x.webp twin
- *   the loader falls back to when the SVG <img> decode is refused, the
- *   iPhone Safari case).
+ *   plateSrc = which source landed — 'svg', the .2x.webp twin ('raster'),
+ *   or the fetch→createImageBitmap escape hatch ('bitmap');
+ *   plateEsc/plateRaw = the computed --page-plate arrived CSS-escaped and
+ *   was decoded on read (the iOS `bg-d-light\.svg` case; raw kept verbatim).
  *   `mode:'css'` plus the
  *   matching flag names the cause; `surfaces[]` rows with `flow:true` and
  *   `glassPaint:null` are panels that fell back to the CSS material.
@@ -663,7 +664,7 @@ function buildUi(ops: UiOps): void {
       `filters ${r.filterCountStart}->${r.filterCountEnd}\n` +
       `render ${e.mode}/${e.drawn}  probe ${b.probe}\n` +
       `tier ${b.tier} lens ${b.lens}${b.broken ? ' broken!' : ''}\n` +
-      `plate ${b.plate ?? '-'}${b.plateRetries ? ` r${b.plateRetries}` : ''}${b.plateSrc ? ` ${b.plateSrc}` : ''}${b.plateTried?.length ? ` [${b.plateTried.join(' ')}]` : ''}\n` +
+      `plate ${b.plate ?? '-'}${b.plateRetries ? ` r${b.plateRetries}` : ''}${b.plateSrc ? ` ${b.plateSrc}` : ''}${b.plateEsc ? ' esc' : ''}${b.plateTried?.length ? ` [${b.plateTried.join(' ')}]` : ''}\n` +
       (b.plateProbe?.length ? `plateProbe ${b.plateProbe.join(' | ')}\n` : '') +
       `maps ${e.maps} infl ${e.inflight} post ${e.posted} hit ${e.hits} wrk ${e.worker} sync ${e.sync}`;
   };

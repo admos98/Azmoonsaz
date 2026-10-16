@@ -463,19 +463,18 @@ export class GlassRenderer {
    *  session with nothing in the report to say why. A stall is not fatal:
    *  the retry below re-enters the same guard.
    *
-   *  SOURCE CHAIN: iPhone Safari also refuses to decode the plate SVG
-   *  through <img> at all — field report `plate:'img-err'` on every retry
-   *  (root width/height present) while the SAME SVG paints fine as a CSS
-   *  background. So the SVG is tried first, then its committed `.2x.webp`
+   *  SOURCE CHAIN: the SVG is tried first, then its committed `.2x.webp`
    *  raster twin; desktop engines keep the vector plate untouched, and
-   *  plateSrc in the report names the source that won.
+   *  plateSrc in the report names the source that won. (This chain was
+   *  built chasing field `img-err` reports that were later traced to the
+   *  computed --page-plate arriving CSS-escaped on iOS 26.6 — a corrupted
+   *  URL before the network, not a decode refusal; see cssUrl.ts. The extra
+   *  rungs stay as defense-in-depth against genuine decode failures.)
    *
-   *  Last resort: fetch→createImageBitmap. iOS can refuse the <img> decode
-   *  of BOTH sources (field: img-err on every attempt) while the same bytes
-   *  decode through the async-bitmap path — a different decode queue. If
-   *  even that fails, probePlate() records fetch status/byte count and the
-   *  decode error name per URL, so the next field report is decisive
-   *  instead of a picture of a swallowed promise. */
+   *  Last resort: fetch→createImageBitmap — a decode queue separate from
+   *  <img>. If even that fails, probePlate() records fetch status/byte
+   *  count and the decode error name per URL, so the next field report is
+   *  decisive instead of a picture of a swallowed promise. */
   setPlate(url: string): Promise<void> {
     const id = ++this.plateLoadId;
     const imgs = plateSources(url);
@@ -598,11 +597,10 @@ export class GlassRenderer {
     this.plateProbe = [];
   }
 
-  /** fetch→createImageBitmap escape hatch. iOS can refuse the <img> decode
-   *  of BOTH the SVG and its raster twin (field: img-err on every attempt)
-   *  while the same bytes fetch and decode fine through the async-bitmap
-   *  path — a different decode queue. Lands the plate texture without ever
-   *  touching <img>. */
+  /** fetch→createImageBitmap escape hatch — a decode queue separate from
+   *  <img> (defense-in-depth; see setPlate's docblock: the original field
+   *  failures were a corrupted URL, not a decode refusal). Lands the plate
+   *  texture without ever touching <img>. */
   private loadPlateBitmap(url: string, id: number): Promise<void> {
     if (typeof createImageBitmap !== 'function') {
       return Promise.reject(plateFail('bitmap-err', 'createImageBitmap unavailable'));
