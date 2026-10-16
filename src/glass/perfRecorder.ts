@@ -663,7 +663,8 @@ function buildUi(ops: UiOps): void {
       `filters ${r.filterCountStart}->${r.filterCountEnd}\n` +
       `render ${e.mode}/${e.drawn}  probe ${b.probe}\n` +
       `tier ${b.tier} lens ${b.lens}${b.broken ? ' broken!' : ''}\n` +
-      `plate ${b.plate ?? '-'}${b.plateRetries ? ` r${b.plateRetries}` : ''}${b.plateSrc ? ` ${b.plateSrc}` : ''}\n` +
+      `plate ${b.plate ?? '-'}${b.plateRetries ? ` r${b.plateRetries}` : ''}${b.plateSrc ? ` ${b.plateSrc}` : ''}${b.plateTried?.length ? ` [${b.plateTried.join(' ')}]` : ''}\n` +
+      (b.plateProbe?.length ? `plateProbe ${b.plateProbe.join(' | ')}\n` : '') +
       `maps ${e.maps} infl ${e.inflight} post ${e.posted} hit ${e.hits} wrk ${e.worker} sync ${e.sync}`;
   };
 

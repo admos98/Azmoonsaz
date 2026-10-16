@@ -188,7 +188,7 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(renderer).toContain('PLATE_MAX_RETRIES');
     // The stage must survive into the report — no more silent swallow.
     expect(renderer).toContain('plateStage');
-    for (const stage of ['img-err', 'timeout', 'no-2d', 'raster-err', 'tex-err', 'ok']) {
+    for (const stage of ['img-err', 'timeout', 'no-2d', 'raster-err', 'tex-err', 'bitmap-err', 'ok']) {
       expect(renderer, `plateStage must distinguish '${stage}'`).toContain(`'${stage}'`);
     }
     // The controller consumes the retry instead of swallowing (both sites).
@@ -200,17 +200,25 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(controller).toMatch(/renderer\.plateURL = ''/);
   });
 
-  it('the plate load falls back to the raster twin (iOS refuses the SVG <img>)', () => {
+  it('the plate load escapes a refused <img> path via the raster/bitmap chain', () => {
     // Field report: iPhone Safari fires onerror for the plate SVG with
     // correct width/height on the root, while the SAME SVG paints fine as a
-    // CSS background. The loader must therefore try the SVG first and fall
-    // through to the committed .2x.webp twin — and telemetry must name the
-    // source that won, or the next field report is blind again.
+    // CSS background — and then refused the .2x.webp twin through <img> too.
+    // The loader must chain SVG → twin → fetch⇒createImageBitmap (a decode
+    // queue separate from <img>), and telemetry must name the stage each
+    // source died at plus final-failure forensics — or the next field report
+    // is blind again.
     expect(renderer).toContain('plateSources(url: string): string[]');
     expect(renderer).toMatch(/url\.slice\(0, -4\) \+ '\.2x\.webp'/);
     expect(renderer).toContain('loadPlateSource');
+    expect(renderer).toContain('loadPlateBitmap');
+    expect(renderer).toMatch(/createImageBitmap\(blob\)/);
     expect(renderer).toContain('plateSrc');
-    expect(renderer).toMatch(/plateSrc = isRaster \? 'raster' : 'svg'/);
+    expect(renderer).toMatch(/this\.plateSrc = srcName/);
+    // Chain trail + forensics both surface in the report.
+    expect(renderer).toContain('plateTried');
+    expect(renderer).toContain('probePlate');
+    expect(renderer).toMatch(/plateProbe/);
     // A stage-tagged failure must not be clobbered to 'raster-err'.
     expect(renderer).toMatch(/if \(e instanceof Error && 'stage' in e\)/);
     // The twins are COMMITTED artifacts next to each plate (public/).
@@ -225,6 +233,8 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(controller).toMatch(/plate: renderer \? renderer\.plateStage : null/);
     expect(controller).toMatch(/plateRetries: renderer \? renderer\.plateRetryCount : 0/);
     expect(controller).toMatch(/plateSrc: renderer \? renderer\.plateSrc : null/);
+    expect(controller).toMatch(/plateTried: renderer \? renderer\.plateTried : \[\]/);
+    expect(controller).toMatch(/plateProbe: renderer \? renderer\.plateProbe : \[\]/);
   });
 
   it('a single shared draw list drives the frame, culled by rect', () => {

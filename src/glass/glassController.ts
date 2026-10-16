@@ -196,8 +196,15 @@ export interface GlassEngineStats {
     /** Plate retries consumed this session (bounded backoff). */
     plateRetries: number;
     /** Which plate source landed the texture: 'svg' (vector decode) or
-     *  'raster' (the .2x.webp twin — the iPhone path). null = none yet. */
-    plateSrc: 'svg' | 'raster' | null;
+     *  'raster' (the .2x.webp twin — the iPhone path), 'bitmap' (the
+     *  fetch→createImageBitmap escape hatch). null = none yet. */
+    plateSrc: 'svg' | 'raster' | 'bitmap' | null;
+    /** Chain trail of the last load cycle: which source died at which stage,
+     *  e.g. ['svg:img-err', 'raster:img-err', 'bitmap:ok']. */
+    plateTried: string[];
+    /** Final-failure forensics (empty unless the whole chain failed):
+     *  per URL `name:status:bytes:decode` — separates network/server/decode. */
+    plateProbe: string[];
     /** The teacher shell exists on this route (the shader needs it). */
     shell: boolean;
   };
@@ -226,6 +233,8 @@ export function glassStats(): GlassEngineStats {
       plate: renderer ? renderer.plateStage : null,
       plateRetries: renderer ? renderer.plateRetryCount : 0,
       plateSrc: renderer ? renderer.plateSrc : null,
+      plateTried: renderer ? renderer.plateTried : [],
+      plateProbe: renderer ? renderer.plateProbe : [],
       shell: shellAt() !== null,
     },
   };

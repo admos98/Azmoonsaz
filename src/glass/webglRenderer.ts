@@ -333,10 +333,22 @@ const PLATE_LOAD_TIMEOUT_MS = 8000;
 const PLATE_MAX_RETRIES = 2;
 const PLATE_RETRY_DELAY_MS = 1200;
 
+/** Every plate-load stage a load can stop at — reported verbatim so the
+ *  ?perf=1 report names the failing step instead of a swallowed promise. */
+type PlateStage =
+  | 'pending'
+  | 'ok'
+  | 'img-err'
+  | 'timeout'
+  | 'no-2d'
+  | 'raster-err'
+  | 'tex-err'
+  | 'bitmap-err';
+
 /** Plate-load failure carrying its pipeline stage, so setPlate's chain can
  *  map any step to the telemetry values the ?perf=1 report reads. */
 function plateFail(
-  stage: 'img-err' | 'timeout' | 'no-2d' | 'raster-err' | 'tex-err',
+  stage: Exclude<PlateStage, 'pending' | 'ok'>,
   msg: string,
 ): Error & { stage: string } {
   return Object.assign(new Error(msg), { stage });
@@ -351,6 +363,15 @@ function plateFail(
 function plateSources(url: string): string[] {
   if (url.endsWith('.svg')) return [url, url.slice(0, -4) + '.2x.webp'];
   return [url];
+}
+
+/** One attempt in setPlate's chain: the vector/raster bytes through <img>,
+ *  then the raster through fetch→createImageBitmap (a decode queue the
+ *  engine can reach even when its <img> path is refused). */
+interface PlateAttempt {
+  kind: 'img' | 'bitmap';
+  url: string;
+  isRaster: boolean;
 }
 
 export class GlassRenderer {
@@ -378,15 +399,21 @@ export class GlassRenderer {
    *  the ?perf=1 report (engine.plate) so a field failure names the step
    *  (img-err / timeout / no-2d / raster-err / tex-err) instead of vanishing
    *  into a swallowed promise. 'ok' once the texture is uploaded. */
-  plateStage: 'pending' | 'ok' | 'img-err' | 'timeout' | 'no-2d' | 'raster-err' | 'tex-err' =
-    'pending';
+  plateStage: PlateStage = 'pending';
   /** The URL the current plate stage belongs to (retry race guard). */
   plateURL = '';
   plateRetryCount = 0;
-  /** Which source actually landed the plate texture: 'svg' = the vector
-   *  plate decoded through <img>, 'raster' = the `.2x.webp` twin. Telemetry
-   *  only — travels into the ?perf=1 report (engine.boot.plateSrc). */
-  plateSrc: 'svg' | 'raster' | null = null;
+  /** Which source landed the plate texture: the vector plate via <img>
+   *  ('svg'), the `.2x.webp` twin via <img> ('raster'), or the twin through
+   *  the fetch→bitmap escape hatch ('bitmap'). Telemetry only — travels
+   *  into the ?perf=1 report (engine.boot.plateSrc). */
+  plateSrc: 'svg' | 'raster' | 'bitmap' | null = null;
+  /** Chain trail of the LAST load cycle: 'svg:img-err', 'raster:img-err',
+   *  'bitmap:bitmap-err' … names which source died at which stage. */
+  plateTried: string[] = [];
+  /** Final-failure forensics — per URL `name:status:bytes:decode`. Set by
+   *  probePlate only when the whole chain failed; [] otherwise. */
+  plateProbe: string[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', {
@@ -441,18 +468,39 @@ export class GlassRenderer {
    *  (root width/height present) while the SAME SVG paints fine as a CSS
    *  background. So the SVG is tried first, then its committed `.2x.webp`
    *  raster twin; desktop engines keep the vector plate untouched, and
-   *  plateSrc in the report names the source that won. */
+   *  plateSrc in the report names the source that won.
+   *
+   *  Last resort: fetch→createImageBitmap. iOS can refuse the <img> decode
+   *  of BOTH sources (field: img-err on every attempt) while the same bytes
+   *  decode through the async-bitmap path — a different decode queue. If
+   *  even that fails, probePlate() records fetch status/byte count and the
+   *  decode error name per URL, so the next field report is decisive
+   *  instead of a picture of a swallowed promise. */
   setPlate(url: string): Promise<void> {
     const id = ++this.plateLoadId;
-    const sources = plateSources(url);
+    const imgs = plateSources(url);
+    const attempts: PlateAttempt[] = imgs.map((u, i) => ({ kind: 'img', url: u, isRaster: i > 0 }));
+    attempts.push({ kind: 'bitmap', url: imgs[imgs.length - 1], isRaster: imgs.length > 1 });
+    this.plateTried = [];
+    this.plateProbe = [];
     const attempt = (i: number, lastErr: unknown): Promise<void> => {
       if (id !== this.plateLoadId) return Promise.resolve(); // superseded
-      if (i >= sources.length) {
+      if (i >= attempts.length) {
+        void this.probePlate(imgs);
         return Promise.reject(
           lastErr instanceof Error ? lastErr : new Error(`plate load failed: ${url}`),
         );
       }
-      return this.loadPlateSource(sources[i], id, i > 0).catch((e) => attempt(i + 1, e));
+      const a = attempts[i];
+      const tag = a.kind === 'bitmap' ? 'bitmap' : a.isRaster ? 'raster' : 'svg';
+      const load =
+        a.kind === 'bitmap'
+          ? this.loadPlateBitmap(a.url, id)
+          : this.loadPlateSource(a.url, id, a.isRaster);
+      return load.catch((e) => {
+        this.plateTried.push(`${tag}:${(e as { stage?: string }).stage ?? 'err'}`);
+        return attempt(i + 1, e);
+      });
     };
     return attempt(0, null);
   }
@@ -478,43 +526,12 @@ export class GlassRenderer {
         // a newer setPlate() landed first (theme flip during load) — drop this
         if (id !== this.plateLoadId) return finish(() => resolve());
         try {
-          const dpr = this.frameDpr || Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-          const MAX_SIDE = 4096;
-          const nw = img.naturalWidth || 1600;
-          const nh = img.naturalHeight || 1000;
-          const cover = Math.max(
-            (window.innerWidth * dpr) / nw,
-            (window.innerHeight * dpr) / nh,
+          this.uploadRaster(
+            img,
+            img.naturalWidth || 1600,
+            img.naturalHeight || 1000,
+            isRaster ? 'raster' : 'svg',
           );
-          let w = Math.round(nw * cover);
-          let h = Math.round(nh * cover);
-          const cap = MAX_SIDE / Math.max(w, h);
-          if (cap < 1) {
-            w = Math.round(w * cap);
-            h = Math.round(h * cap);
-          }
-          const c = document.createElement('canvas');
-          c.width = w;
-          c.height = h;
-          const ctx = c.getContext('2d');
-          if (!ctx) {
-            this.plateStage = 'no-2d';
-            throw plateFail('no-2d', '2d context unavailable');
-          }
-          ctx.drawImage(img, 0, 0, w, h);
-          if (this.plateTex) this.gl.deleteTexture(this.plateTex);
-          // Drain stale errors so the check below only sees this upload.
-          this.gl.getError();
-          this.plateTex = texFromCanvas(this.gl, c);
-          // A 0x0 or oversized raster uploads without a GL error and then
-          // paints nothing — the swap would flip onto an empty backdrop.
-          if (this.gl.getError() !== this.gl.NO_ERROR) {
-            this.plateStage = 'tex-err';
-            throw plateFail('tex-err', 'plate texture upload failed');
-          }
-          this.plateSize = [w, h];
-          this.plateStage = 'ok';
-          this.plateSrc = isRaster ? 'raster' : 'svg';
           finish(() => resolve());
         } catch (e) {
           // A stage-tagged failure (no-2d / tex-err above) already recorded
@@ -534,6 +551,137 @@ export class GlassRenderer {
       };
       img.src = url;
     });
+  }
+
+  /** Rasterize a decoded source at the DPR-aware cover size and upload it as
+   *  the plate texture. Shared by the <img> chain and the fetch→bitmap
+   *  escape hatch (loadPlateBitmap). Throws a stage-tagged plateFail
+   *  ('no-2d' / 'tex-err') so setPlate's trail names the failing step. */
+  private uploadRaster(
+    src: CanvasImageSource,
+    nw: number,
+    nh: number,
+    srcName: 'svg' | 'raster' | 'bitmap',
+  ): void {
+    const dpr = this.frameDpr || Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const MAX_SIDE = 4096;
+    const cover = Math.max((window.innerWidth * dpr) / nw, (window.innerHeight * dpr) / nh);
+    let w = Math.round(nw * cover);
+    let h = Math.round(nh * cover);
+    const cap = MAX_SIDE / Math.max(w, h);
+    if (cap < 1) {
+      w = Math.round(w * cap);
+      h = Math.round(h * cap);
+    }
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d');
+    if (!ctx) {
+      this.plateStage = 'no-2d';
+      throw plateFail('no-2d', '2d context unavailable');
+    }
+    ctx.drawImage(src, 0, 0, w, h);
+    if (this.plateTex) this.gl.deleteTexture(this.plateTex);
+    // Drain stale errors so the check below only sees this upload.
+    this.gl.getError();
+    this.plateTex = texFromCanvas(this.gl, c);
+    // A 0x0 or oversized raster uploads without a GL error and then
+    // paints nothing — the swap would flip onto an empty backdrop.
+    if (this.gl.getError() !== this.gl.NO_ERROR) {
+      this.plateStage = 'tex-err';
+      throw plateFail('tex-err', 'plate texture upload failed');
+    }
+    this.plateSize = [w, h];
+    this.plateStage = 'ok';
+    this.plateSrc = srcName;
+    this.plateProbe = [];
+  }
+
+  /** fetch→createImageBitmap escape hatch. iOS can refuse the <img> decode
+   *  of BOTH the SVG and its raster twin (field: img-err on every attempt)
+   *  while the same bytes fetch and decode fine through the async-bitmap
+   *  path — a different decode queue. Lands the plate texture without ever
+   *  touching <img>. */
+  private loadPlateBitmap(url: string, id: number): Promise<void> {
+    if (typeof createImageBitmap !== 'function') {
+      return Promise.reject(plateFail('bitmap-err', 'createImageBitmap unavailable'));
+    }
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        fn();
+      };
+      // Same deadline as the <img> path — a hung fetch must not park the
+      // atomic swap forever (the exact bug PLATE_LOAD_TIMEOUT_MS prevents).
+      const timer = setTimeout(() => {
+        this.plateStage = 'timeout';
+        finish(() => reject(plateFail('timeout', `bitmap load timed out: ${url}`)));
+      }, PLATE_LOAD_TIMEOUT_MS);
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) throw plateFail('bitmap-err', `bitmap fetch ${res.status}: ${url}`);
+          return res.blob();
+        })
+        .then((blob) => createImageBitmap(blob))
+        .then((bmp) => {
+          try {
+            finish(() => {
+              if (id !== this.plateLoadId) {
+                resolve(); // superseded — a newer setPlate owns every field
+                return;
+              }
+              try {
+                this.uploadRaster(bmp, bmp.width, bmp.height, 'bitmap');
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
+            });
+          } finally {
+            // Closed exactly once on every branch (upload is synchronous, so
+            // the texture is already on the GPU by the time we get here).
+            bmp.close();
+          }
+        })
+        .catch((e) => finish(() => reject(e)));
+    });
+  }
+
+  /** Final-failure forensics, recorded into the report (engine.boot.plateProbe):
+   *  per candidate URL, the fetch status + byte count + createImageBitmap
+   *  verdict. Separates the three failure classes the field can hit —
+   *  network (fetch-err), server (status), decode (bmp-err:Name, with the
+   *  error name <img>.onerror never exposes) — so the next field report is
+   *  actionable instead of another round-trip guess. */
+  private async probePlate(urls: string[]): Promise<void> {
+    const out: string[] = [];
+    for (const u of urls) {
+      const name = u.split('/').pop() || u;
+      try {
+        const res = await fetch(u);
+        const buf = await res.arrayBuffer();
+        let bmp = 'bmp-skip';
+        if (typeof createImageBitmap === 'function') {
+          try {
+            const b = await createImageBitmap(
+              new Blob([buf], { type: res.headers.get('content-type') || '' }),
+            );
+            bmp = `bmp:${b.width}x${b.height}`;
+            b.close();
+          } catch (e) {
+            bmp = `bmp-err:${e instanceof Error ? e.name : 'err'}`;
+          }
+        }
+        out.push(`${name}:${res.status}:${buf.byteLength}:${bmp}`);
+      } catch {
+        out.push(`${name}:fetch-err`);
+      }
+    }
+    this.plateProbe = out;
   }
 
   /** Retry a stalled/failed plate load with a bounded, delayed backoff. Two
