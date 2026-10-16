@@ -82,8 +82,14 @@ def grain(seed, color, freq=0.85):
 
 
 def svg(defs, body):
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" '
-            f'preserveAspectRatio="xMidYMid slice">\n<defs>\n{defs}\n</defs>\n{body}\n</svg>\n')
+    # Root carries EXPLICIT width/height. iOS applies image-decode limits to
+    # an SVG drawn through <img> (the WebGL plate path in webglRenderer.ts):
+    # a root with viewBox but no width/height reports the default
+    # replaced-element size and fails to decode on iPhone (plate="img-err" in
+    # the ?perf=1 report), and Chromium sizes it 240x150 instead of 1600x1000.
+    # With the attributes the natural size is the real artwork size everywhere.
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
+            f'viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid slice">\n<defs>\n{defs}\n</defs>\n{body}\n</svg>\n')
 
 
 def n(v):

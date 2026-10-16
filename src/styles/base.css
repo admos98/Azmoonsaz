@@ -89,6 +89,14 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* 100lvh pins the layer to the LARGE viewport. On iOS 26 a fixed layer with
+     inset:0 is sized by the DYNAMIC viewport: while the URL bar collapses
+     mid-scroll the box re-sizes, `cover` re-scales the crop, and the art
+     visibly slides (reported on iPhone; WebKit #297779 family). lvh is
+     constant, so the layer never re-scales; the extra height sits under the
+     collapsed bar. Engines without lvh drop the declaration and keep the old
+     inset-stretch behavior. */
+  height: 100lvh;
   background-image: var(--page-plate);
   background-size: cover;
   background-position: center;
@@ -128,6 +136,11 @@ body {
      buffer would be magnified to the viewport (the lab's DPR2 softness bug). */
   width: 100%;
   height: 100%;
+  /* ...and 100lvh for the same reason as the plate: a DYNAMIC-height canvas
+     re-sizes its buffer mid-scroll on iOS 26 (URL bar collapse), forcing a
+     resize + re-alloc + full redraw every frame of the animation. lvh is
+     constant; the panel draw loop maps layout coords 1:1 to the buffer. */
+  height: 100lvh;
   z-index: 1;
   pointer-events: none;
 }

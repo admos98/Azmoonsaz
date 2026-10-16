@@ -257,6 +257,19 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/#app-teacher-shell::before/);
   });
 
+  it('the plate SVGs carry explicit width/height (iOS <img> decode limits)', () => {
+    // webglRenderer loads the plate through <img>; iOS applies image-decode
+    // limits to that path, and a root with viewBox but no width/height fails
+    // to decode there (field report: plate='img-err' on iPhone). Chromium
+    // also sizes such a root 240x150 instead of the artwork's real size.
+    for (const f of ['bg-d-light.svg', 'bg-d-dark.svg']) {
+      const svg = readFileSync(join(root, 'public/backgrounds', f), 'utf8');
+      expect(svg, `${f} root must carry width/height`).toMatch(
+        /<svg[^>]*\bwidth="1600"[^>]*\bheight="1000"/,
+      );
+    }
+  });
+
   it('menus and notif center cast NOTHING: halo + veil layers are gone', () => {
     const topbar = component('src/components/Topbar.tsx');
     expect(topbar).not.toMatch(/area-blur|bgfx/);

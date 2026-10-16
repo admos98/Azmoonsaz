@@ -88,6 +88,16 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(css).toMatch(/#glass-canvas\s*\{[^}]*z-index:\s*1/);
   });
 
+  it('the fixed layers pin to the LARGE viewport (iOS 26 URL-bar re-scale)', () => {
+    // A fixed layer sized by the DYNAMIC viewport re-scales on iOS 26 while
+    // the URL bar collapses mid-scroll: the plate's `cover` crop visibly
+    // slides and the canvas buffer re-allocates every frame (WebKit #297779
+    // family). Both fixed layers must carry an lvh height; the plain 100%
+    // precedes it so engines without lvh keep the inset-stretch behavior.
+    expect(css).toMatch(/#glass-canvas\s*\{[^}]*height:\s*100lvh/);
+    expect(css).toMatch(/#app-teacher-shell::before\s*\{[^}]*height:\s*100lvh/);
+  });
+
   it('the controller mounts the renderer as the FIRST choice, CSS as fallback', () => {
     expect(controller).toContain("from './webglRenderer'");
     expect(controller).toContain('new GlassRenderer(');
