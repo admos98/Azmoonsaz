@@ -111,4 +111,21 @@
   } catch {
     document.documentElement.dataset.lens = 'off';
   }
+
+  // Paint path — WebGL2 is the PRIMARY glass renderer (glassController.ts
+  // draws the plate + every in-flow lens/pane/drop panel in one fragment
+  // shader; url() inside backdrop-filter has no GPU-compositor path on
+  // Chromium and never paints on WebKit/Firefox). The classic CSS path —
+  // url lens where data-lens='on', blur + static rims elsewhere — stays as
+  // the fallback. Pure capability probe (no failIfMajorPerformanceCaveat):
+  // the renderer is lab-validated, and the data-glass tier is the perf
+  // valve, not a blanket software-rasterizer veto.
+  try {
+    const probe = document.createElement('canvas');
+    const gl = probe.getContext('webgl2');
+    document.documentElement.dataset.paint = gl ? 'gl' : 'css';
+    if (gl) gl.getExtension('WEBGL_lose_context')?.loseContext();
+  } catch {
+    document.documentElement.dataset.paint = 'css';
+  }
 })();

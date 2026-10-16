@@ -36,6 +36,30 @@ function DensePage() {
           </div>
         </div>
       </section>
+      {/* WebGL paint-path targets — in-flow lens/pane/drop inside the shell.
+          The shader draws these; tests/e2e/webgl-glass.spec.ts asserts the
+          canvas mount, the atomic plate swap and the transparent frames. */}
+      <section className="lens rounded-2xl p-6" id="harness-lens">
+        <h3 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+          پنل شیشه‌ای (lens)
+        </h3>
+        <p className="mt-2 text-body text-[var(--color-text-secondary)]">
+          روی مسیر WebGL این پنل با شیدر رسم می‌شود و قاب آن شفاف می‌ماند.
+        </p>
+      </section>
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="pane rounded-2xl p-5" id="harness-pane">
+          <p className="text-label font-bold text-[var(--color-text-primary)]">قاب داخلی (pane)</p>
+          <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
+            رینگ بدون خمش — بلور دوبرابر.
+          </p>
+        </section>
+        <div
+          className="drop flex h-16 w-16 items-center justify-center"
+          id="harness-drop"
+          aria-hidden="true"
+        />
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         {Array.from({ length: 8 }, (_, i) => (
           <section key={i} className="glx rounded-2xl p-5">

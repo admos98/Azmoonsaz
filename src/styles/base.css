@@ -109,6 +109,49 @@ body {
   }
 }
 
+/* ─── WebGL paint path — the primary glass renderer ───
+   glassController.ts draws the plate + every in-flow lens/pane/drop panel
+   into one fixed canvas (#glass-canvas, z-1) between the plate (z-0) and the
+   content (z-10). The swap is ATOMIC: the canvas stays display:none and the
+   DOM plate visible until html[data-glass-render='webgl'] lands (set only
+   after the plate texture is uploaded), at which point the canvas shows, the
+   DOM plate hides, and every drawn panel ([data-glass-paint='webgl']) drops
+   to a transparent frame — the shader paints its material, the panel carries
+   only its content. A lost context removes the attribute and the classic CSS
+   path resumes. Panels NOT drawn (glx*, floating panels, clipped backdrops,
+   off-shell routes, lite/off tiers) keep their CSS material untouched. */
+#glass-canvas {
+  display: none;
+  position: fixed;
+  inset: 0;
+  /* A canvas is a REPLACED element: inset alone does not stretch it — the
+     buffer would be magnified to the viewport (the lab's DPR2 softness bug). */
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+:root[data-glass-render='webgl'] #glass-canvas {
+  display: block;
+}
+:root[data-glass-render='webgl'] #app-teacher-shell::before {
+  /* the canvas carries the plate — the DOM twin must not double it */
+  display: none;
+}
+:root[data-glass-render='webgl'] [data-glass-paint='webgl'] {
+  /* Transparent frame. backdrop-filter must die COMPLETELY: blurring the
+     already-bent canvas pixels is the double-glass the lab neutralized.
+     The box-shadow/::after rings are the non-lens-engine fallback material
+     and must not double the shader's specular arc. */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+:root[data-glass-render='webgl'] [data-glass-paint='webgl']::after {
+  display: none;
+}
+
 :where(button, [role='button']):disabled {
   cursor: not-allowed;
 }

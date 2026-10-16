@@ -72,6 +72,7 @@ import {
   type LensParams,
 } from './lensEngine';
 import type { MapBuildRequest, MapBuildResponse } from './mapWorker';
+import { GlassRenderer, type GlassKind, type GlassPaintParams } from './webglRenderer';
 
 /* ───────────────────── Ladder ───────────────────── */
 
@@ -110,6 +111,48 @@ let seq = 0;
 
 let defaultParams: LensParams | null = null;
 
+/* ───────────────────── WebGL render path ───────────────────── */
+
+type RenderMode = 'webgl' | 'css';
+
+interface PaintEntry {
+  kind: GlassKind;
+  params: GlassPaintParams;
+}
+
+/** Paint capability — settled before first paint by the boot probe
+ *  (public/boot.js → html[data-paint]); the inline fallback covers a boot
+ *  without the script. Pure WebGL2 capability: the lab-validated renderer
+ *  beats the url() raster path even on software stacks, and the data-glass
+ *  lite/off tiers stay the perf valve. */
+const webglSupported = (() => {
+  const probe = document.documentElement.dataset.paint;
+  if (probe === 'gl') return true;
+  if (probe === 'css') return false;
+  try {
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl2');
+    if (!gl) return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+let lastDrawCount = 0;
+
+let renderMode: RenderMode = 'css';
+let renderer: GlassRenderer | null = null;
+let glCanvas: HTMLCanvasElement | null = null;
+let glRaf = 0;
+let glReady = false;
+let webglBroken = false;
+let shellElCache: HTMLElement | null = null;
+let plateURL = '';
+const paintCache = new WeakMap<HTMLElement, PaintEntry>();
+const webglDrawSet = new Set<HTMLElement>();
+
 /* Engine counters — the ?perf=1 oracle for the map pipeline. posted =
    builds sent to the worker, hits = panels dressed from cache (sub-frame),
    worker = panels dressed from worker maps, sync = panels that paid the
@@ -124,6 +167,9 @@ export interface GlassEngineStats {
   maps: number;
   inflight: number;
   filters: number;
+  /** Active paint path and panels drawn in the last WebGL frame. */
+  mode: 'webgl' | 'css';
+  drawn: number;
 }
 
 /** Snapshot of the map pipeline — consumed by the ?perf=1 report. */
@@ -136,6 +182,8 @@ export function glassStats(): GlassEngineStats {
     maps: MAP_TABLE.size,
     inflight: inflight.size,
     filters: FILTERS.size,
+    mode: renderMode,
+    drawn: lastDrawCount,
   };
 }
 
@@ -249,6 +297,7 @@ function undressNested(el: HTMLElement): void {
   if (el.style.backdropFilter) el.style.backdropFilter = '';
   delete el.dataset.lastQuickKey;
   byEl.delete(el);
+  untrackWebgl(el);
 }
 
 /* ── Lever A: viewport-gated bend (zero visual loss) ─────────────────────
@@ -269,6 +318,9 @@ function isInExtendedViewport(el: HTMLElement): boolean {
 /** Park an offscreen panel: clear the inline url() chain, forget the key so
  *  re-entry re-dresses. Guarded: no style write when already parked. */
 function parkOffscreen(el: HTMLElement): void {
+  // Drawn panels stay tracked (the frame loop culls by rect); CSS-backed
+  // panels (glx*, floating, non-webgl) park exactly as they always have.
+  if (renderMode === 'webgl' && webglDrawSet.has(el)) return;
   if (el.style.backdropFilter) el.style.backdropFilter = '';
   if (el.dataset.lastQuickKey) delete el.dataset.lastQuickKey;
   byEl.delete(el);
@@ -312,6 +364,257 @@ function applyChain(el: HTMLElement, chain: string): void {
 function glassAllowed(): boolean {
   const root = document.documentElement;
   return root.dataset.lens === 'on' && root.dataset.glass !== 'lite' && root.dataset.glass !== 'off';
+}
+
+/* ── WebGL paint path — the primary renderer ────────────────────────────
+ * The shader (webglRenderer.ts) draws the fixed page plate plus every
+ * in-flow .lens/.pane/.drop panel whose true backdrop IS the plate:
+ * nothing floats above it, nothing clips it, no ancestor paints over the
+ * plane. Everything else — glx* families (their bloom lines are CSS),
+ * floating/sticky panels, scroll/clip containers, non-shell routes — stays
+ * exactly as it is on the CSS path. Drawn panels go transparent via
+ * html[data-glass-render='webgl'] [data-glass-paint='webgl'] only once the
+ * plate texture has landed (the swap is atomic: canvas on, plate ::before
+ * off, panels transparent). A lost context reverts to the classic path. */
+
+function shellAt(): HTMLElement | null {
+  if (shellElCache && shellElCache.isConnected) return shellElCache;
+  shellElCache = document.getElementById('app-teacher-shell');
+  return shellElCache;
+}
+
+function tierAllowsGlass(): boolean {
+  const tier = document.documentElement.dataset.glass;
+  return tier !== 'lite' && tier !== 'off';
+}
+
+/** Drawable class → kind; glx* are excluded on purpose (blur-only CSS). */
+function webglKindOf(el: Element): GlassKind | null {
+  const cl = el.classList;
+  if (cl.contains('glx') || cl.contains('glx-strong') || cl.contains('glx-dark')) return null;
+  if (cl.contains('lens')) return 'lens';
+  if (cl.contains('pane')) return 'pane';
+  if (cl.contains('drop')) return 'drop';
+  return null;
+}
+
+/** True when the panel's backdrop is provably the plate: in flow inside the
+ *  shell, no fixed/sticky/absolute ancestor, no clip/scroll ancestor, no
+ *  ancestor painting a fill or artwork over the plate plane. Conservative on
+ *  purpose — a panel left on the CSS path is a smaller bug than a panel
+ *  showing the wrong layer. */
+function webglPlaceable(el: HTMLElement, cs: CSSStyleDeclaration): boolean {
+  const ownPos = cs.position;
+  if (ownPos === 'fixed' || ownPos === 'sticky' || ownPos === 'absolute') return false;
+  const shell = shellAt();
+  if (!shell) return false;
+  let n = el.parentElement;
+  while (n && n !== shell) {
+    const acs = getComputedStyle(n);
+    const p = acs.position;
+    if (p === 'fixed' || p === 'sticky' || p === 'absolute') return false;
+    if (acs.overflowX !== 'visible' || acs.overflowY !== 'visible') return false;
+    if (acs.backgroundImage !== 'none') return false;
+    const bg = acs.backgroundColor;
+    if (bg && bg !== 'transparent' && !bg.endsWith(', 0)')) return false;
+    n = n.parentElement;
+  }
+  return n === shell;
+}
+
+/** The panel's shader recipe — the same tokens chainOf() reads for the CSS
+ *  chain, in numeric form. `sat` stays at the lab's 1.15: drawn families
+ *  carry no saturate() in their base chains. dpr mirrors the CSS map build
+ *  (mapDPR caps 1..2 by viewport). */
+function paramsForWebgl(el: HTMLElement, cs: CSSStyleDeclaration): GlassPaintParams {
+  const lensBlur = cssNum(cs, '--lens-blur', 1);
+  let blur: number;
+  if (el.classList.contains('lens--menu')) blur = cssNum(cs, '--lens-menu-blur', 6);
+  else if (el.classList.contains('pane')) blur = lensBlur * 2;
+  else if (el.classList.contains('drop')) blur = cssNum(cs, '--drop-blur', 0.5);
+  else blur = lensBlur;
+  return {
+    bezel: cssNum(cs, '--lens-bezel', 14),
+    thickness: cssNum(cs, '--lens-thickness', 66),
+    refraction: cssNum(cs, '--lens-refraction-level', 0.7),
+    scaleRatio: cssNum(cs, '--lens-scale-ratio', 1),
+    specOpacity: cssNum(cs, '--lens-spec-opacity', 0.2),
+    specSaturation: cssNum(cs, '--lens-spec-saturation', 4),
+    specAngle: cssNum(cs, '--lens-spec-angle', -60),
+    specPeak: cssNum(cs, '--lens-spec-peak', 1),
+    cornerExp: cssNum(cs, '--corner-exp', 3),
+    dim: cssNum(cs, '--lens-dim', 0.15),
+    dimTint: [103, 100, 112],
+    blur,
+    sat: 1.15,
+    fillA1: cssNum(cs, '--glass-fill', 0),
+    fillA2: cssNum(cs, '--glass-fill', 0),
+    fillAngle: cssNum(cs, '--glass-p-angle', 180),
+    radius: radiusOf(el, cs, cssNum(cs, '--lens-radius', 21)),
+    dpr: mapDPR(),
+    cornerShapeSupported: CORNER_SHAPE_SUPPORTED,
+  };
+}
+
+/** Track a panel into the per-frame draw list. The engine writes NO inline
+ *  backdrop-filter in WebGL mode: any chain from an earlier CSS flush is
+ *  cleared and the stylesheet keeps showing the material until the atomic
+ *  swap turns [data-glass-paint] panels transparent. */
+function trackWebgl(el: HTMLElement, kind: GlassKind, params: GlassPaintParams): void {
+  paintCache.set(el, { kind, params });
+  webglDrawSet.add(el);
+  if (el.dataset.glassPaint !== 'webgl') el.dataset.glassPaint = 'webgl';
+  if (el.style.backdropFilter) el.style.backdropFilter = '';
+  if (el.dataset.lastQuickKey) delete el.dataset.lastQuickKey;
+  byEl.delete(el);
+}
+
+function untrackWebgl(el: HTMLElement): void {
+  webglDrawSet.delete(el);
+  if (el.dataset.glassPaint) delete el.dataset.glassPaint;
+}
+
+function plateURLForTheme(): string {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--page-plate').trim();
+  const m = /url\((['"]?)(.*?)\1\)/.exec(raw);
+  return m ? m[2] : '';
+}
+
+function tryInitWebgl(): void {
+  if (glCanvas || webglBroken || !webglSupported || !mounted) return;
+  if (!tierAllowsGlass()) return;
+  const shell = shellAt();
+  if (!shell) return;
+  let canvas: HTMLCanvasElement | null = null;
+  try {
+    canvas = document.createElement('canvas');
+    canvas.id = 'glass-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+    shell.insertBefore(canvas, shell.firstChild);
+    const r = new GlassRenderer(canvas);
+    canvas.addEventListener('webglcontextlost', () => shutdownWebgl(true), false);
+    renderer = r;
+    glCanvas = canvas;
+    glReady = false;
+    plateURL = plateURLForTheme();
+    if (plateURL) void r.setPlate(plateURL).catch(() => {});
+    glRaf = requestAnimationFrame(glFrame);
+  } catch {
+    // Context creation failed even though the probe passed — stay on CSS
+    // for the session; partial state must not leak.
+    webglBroken = true;
+    renderer = null;
+    glCanvas = null;
+    if (canvas) canvas.remove();
+  }
+}
+
+/** Theme flip: re-load the plate artwork behind the atomic swap guard
+ *  (setPlate has its own load-id race guard). */
+function refreshPlate(): void {
+  if (!renderer) return;
+  const url = plateURLForTheme();
+  if (url && url !== plateURL) {
+    plateURL = url;
+    void renderer.setPlate(url).catch(() => {});
+  }
+}
+
+/** Effective opacity of the panel INCLUDING fading wrappers (motion sets
+ *  opacity inline on the animated element and/or its parents; computed
+ *  opacity is per-element, so the product up to the shell is the paint
+ *  alpha). Reads only — runs inside the draw loop. */
+function effectiveAlpha(el: HTMLElement): number {
+  let a = 1;
+  let n: HTMLElement | null = el;
+  let guard = 0;
+  while (n && n !== shellElCache && guard++ < 32) {
+    const o = parseFloat(getComputedStyle(n).opacity);
+    if (Number.isFinite(o) && o < 1) {
+      a *= o;
+      if (a < 0.01) return 0;
+    }
+    n = n.parentElement;
+  }
+  return a;
+}
+
+function glFrame(): void {
+  glRaf = requestAnimationFrame(glFrame);
+  const r = renderer;
+  const canvas = glCanvas;
+  if (!r || !canvas) return;
+  if (!canvas.isConnected) {
+    // The shell unmounted (route change) — park the whole path; CSS owns
+    // whatever is on screen now, and a later shell re-inits from scratch.
+    shutdownWebgl(false);
+    return;
+  }
+  r.beginFrame();
+  r.drawBackdrop();
+  if (!glReady && r.hasPlate) {
+    glReady = true;
+    document.documentElement.dataset.glassRender = 'webgl';
+  }
+  if (!glReady) return;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const M = 96;
+  let drawn = 0;
+  for (const el of webglDrawSet) {
+    if (!el.isConnected) {
+      webglDrawSet.delete(el);
+      continue;
+    }
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom < -M || rect.top > vh + M || rect.right < -M || rect.left > vw + M) continue;
+    if (rect.width < 2 || rect.height < 2) continue;
+    const entry = paintCache.get(el);
+    if (!entry) continue;
+    try {
+      r.drawPanel(
+        entry.kind,
+        { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        entry.params,
+        effectiveAlpha(el),
+      );
+      drawn++;
+    } catch {
+      /* one bad geometry must not kill the loop */
+    }
+  }
+  lastDrawCount = drawn;
+}
+
+/** Tear the WebGL path down: canvas out, attr off, panels back on the CSS
+ *  material. `lost` marks a context loss — permanent for the session; a
+ *  route-driven teardown allows a later re-init. */
+function shutdownWebgl(lost: boolean): void {
+  if (glRaf) {
+    cancelAnimationFrame(glRaf);
+    glRaf = 0;
+  }
+  if (renderer) {
+    try {
+      renderer.dispose();
+    } catch {
+      /* context already gone */
+    }
+  }
+  renderer = null;
+  if (glCanvas) {
+    glCanvas.remove();
+    glCanvas = null;
+  }
+  glReady = false;
+  lastDrawCount = 0;
+  if (lost) webglBroken = true;
+  document.documentElement.removeAttribute('data-glass-render');
+  for (const el of webglDrawSet) {
+    if (el.dataset.glassPaint) delete el.dataset.glassPaint;
+  }
+  webglDrawSet.clear();
+  if (mounted) resyncGlass();
 }
 
 /* ───────────────────── batched sync ───────────────────── */
@@ -362,7 +665,16 @@ function scheduleFlush(): void {
 function flushSync(): void {
   flushQueued = false;
   if (!mounted) return;
-  if (!glassAllowed()) {
+
+  // Path choice, resolved fresh every flush: WebGL2 + full glass tier = the
+  // shader path; anything else = the CSS path below, untouched. renderMode
+  // is what parkOffscreen / IO callbacks test between flushes.
+  const wantWebgl = tierAllowsGlass() && webglSupported && !webglBroken;
+  if (wantWebgl && !glCanvas) tryInitWebgl();
+  const useWebgl = wantWebgl && glCanvas !== null;
+  renderMode = useWebgl ? 'webgl' : 'css';
+
+  if (!useWebgl && !glassAllowed()) {
     pendingSync.clear();
     return;
   }
@@ -372,6 +684,7 @@ function flushSync(): void {
 
   /* PHASE A — READ ONLY */
   const todo: PendingPanel[] = [];
+  const glTodo: { el: HTMLElement; kind: GlassKind; params: GlassPaintParams }[] = [];
   for (const el of batch) {
     if (!el.isConnected) {
       tracked.delete(el);
@@ -379,14 +692,36 @@ function flushSync(): void {
     }
     const kind = kindOf(el);
     if (!kind) continue;
-    // Nested glass samples only the parent's flat fill — the url() bend is
-    // invisible there, so never dress it. Strip any stale inline chain first:
-    // inline style beats the stylesheet de-nest rule, so a panel that BECAME
-    // nested (DOM move) would otherwise keep burning a filter forever.
-    // Checked BEFORE getComputedStyle: a DOM walk, zero forced layout.
+    // Nested glass samples only the parent's flat fill — the bend is
+    // invisible there, so never dress or draw it. Strip any stale inline
+    // chain first: inline style beats the stylesheet de-nest rule, so a
+    // panel that BECAME nested (DOM move) would otherwise keep burning a
+    // filter forever. Checked BEFORE getComputedStyle: a DOM walk, zero
+    // forced layout.
     if (isNestedGlass(el)) {
       undressNested(el);
       continue;
+    }
+    if (useWebgl) {
+      // WebGL branch — the panel is tracked into the per-frame draw list
+      // (reads only here; DOM writes happen in PHASE B). Panels the shader
+      // cannot serve fall THROUGH to the classic CSS dress path instead:
+      // glx* families (their bloom lines and url() bend stay exactly as
+      // today), floating/sticky/absolute panels, clipped or painted-over
+      // backdrops. On engines below the url() gate they skip that too and
+      // keep the pure stylesheet material — today's behavior, unchanged.
+      const wk = webglKindOf(el);
+      const cs = getComputedStyle(el);
+      if (wk && webglPlaceable(el, cs)) {
+        glTodo.push({ el, kind: wk, params: paramsForWebgl(el, cs) });
+        continue;
+      }
+      // Not shader-served: hand it back to the CSS path BEFORE the offscreen
+      // gate below, so a formerly-drawn panel (DOM move, class swap) parks
+      // and re-dresses exactly like any other CSS panel. Attribute/style
+      // clears are layout-free.
+      if (el.dataset.glassPaint) untrackWebgl(el);
+      if (!glassAllowed()) continue;
     }
     // Lever A: offscreen panels park on blur-only. Checked BEFORE
     // getComputedStyle so an offscreen panel costs one rect (same layout
@@ -409,8 +744,14 @@ function flushSync(): void {
     todo.push({ el, kind, w, h, radius, p, chainBase, withDim, quickKey });
   }
 
-  /* PHASE B — WRITE. Cache hits dress inline (string ops, sub-frame);
-     misses post to the map worker and return — zero map math on this thread. */
+  /* PHASE B — WRITE. */
+  if (useWebgl) {
+    for (const t of glTodo) trackWebgl(t.el, t.kind, t.params);
+  }
+  // Runs in BOTH modes: the pure-CSS path, and WebGL fall-through panels
+  // (glx*/floating) which keep the engine's maps + filter graphs. Cache
+  // hits dress inline (string ops, sub-frame); misses post to the map
+  // worker and return — zero map math on this thread.
   for (const t of todo) {
     try {
       commit(t);
@@ -623,6 +964,9 @@ function pruneDead(): void {
       viewObserver?.unobserve(el);
     }
   }
+  for (const el of Array.from(webglDrawSet)) {
+    if (!el.isConnected) webglDrawSet.delete(el);
+  }
   if (!container) return;
   const liveIds = new Set<string>();
   for (const el of tracked) {
@@ -645,7 +989,16 @@ function pruneDead(): void {
 /** Full sweep — boot and theme/glass-tier flips only. Still batched. */
 export function resyncGlass(): void {
   if (!mounted) return;
-  if (!glassAllowed()) return;
+  // Path housekeeping first — a tier flip (settings) or a route with/without
+  // the teacher shell lands here. WebGL is torn down when the tier drops;
+  // nothing else about the CSS flow changes.
+  if (tierAllowsGlass() && webglSupported && !webglBroken) {
+    if (glCanvas) refreshPlate();
+    else tryInitWebgl();
+  } else if (glCanvas) {
+    shutdownWebgl(false);
+  }
+  if (!glassAllowed() && !glCanvas) return;
   document.querySelectorAll<HTMLElement>(GLASS_SELECTOR).forEach((el) => {
     resizeObserver?.observe(el);
     viewObserver?.observe(el);
@@ -750,6 +1103,7 @@ export function mountGlassEngine(): void {
 
 export function unmountGlassEngine(): void {
   mounted = false;
+  shutdownWebgl(false);
   resizeObserver?.disconnect();
   resizeObserver = null;
   attrObserver?.disconnect();
