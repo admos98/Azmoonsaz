@@ -41,7 +41,10 @@
  *   (a context died — off until reload), `shell` (route has the teacher
  *   shell at all), `canvas`/`ready` (the swap), `plate` (the last plate-load
  *   stage: 'ok', or img-err/timeout/no-2d/raster-err/tex-err naming the step
- *   that failed; plateRetries = bounded retry attempts consumed).
+ *   that failed; plateRetries = bounded retry attempts consumed;
+ *   plateSrc = which source landed — 'svg' or 'raster', the .2x.webp twin
+ *   the loader falls back to when the SVG <img> decode is refused, the
+ *   iPhone Safari case).
  *   `mode:'css'` plus the
  *   matching flag names the cause; `surfaces[]` rows with `flow:true` and
  *   `glassPaint:null` are panels that fell back to the CSS material.
@@ -660,7 +663,7 @@ function buildUi(ops: UiOps): void {
       `filters ${r.filterCountStart}->${r.filterCountEnd}\n` +
       `render ${e.mode}/${e.drawn}  probe ${b.probe}\n` +
       `tier ${b.tier} lens ${b.lens}${b.broken ? ' broken!' : ''}\n` +
-      `plate ${b.plate ?? '-'}${b.plateRetries ? ` r${b.plateRetries}` : ''}\n` +
+      `plate ${b.plate ?? '-'}${b.plateRetries ? ` r${b.plateRetries}` : ''}${b.plateSrc ? ` ${b.plateSrc}` : ''}\n` +
       `maps ${e.maps} infl ${e.inflight} post ${e.posted} hit ${e.hits} wrk ${e.worker} sync ${e.sync}`;
   };
 

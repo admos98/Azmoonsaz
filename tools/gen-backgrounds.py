@@ -8,6 +8,9 @@ Pure stdlib, no deps. Every plate is a single self-contained SVG sized
 app shell.
 
     python3 tools/gen-backgrounds.py            # writes public/backgrounds/*.svg
+    node tools/render-plate-rasters.mjs         # then re-render the .2x.webp
+                                                # twins the WebGL plate loader
+                                                # falls back to on iPhone
 
 Plates:
   D  distribution  isolines of a score distribution; one gold contour = the pass mark

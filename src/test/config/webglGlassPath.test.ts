@@ -18,7 +18,7 @@
  * tests/e2e/webgl-glass.spec.ts, which needs a real GL context.
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { repoRoot as root } from '../sourceReader';
 import { readBundledCss } from '../cssConcat';
@@ -200,9 +200,31 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(controller).toMatch(/renderer\.plateURL = ''/);
   });
 
+  it('the plate load falls back to the raster twin (iOS refuses the SVG <img>)', () => {
+    // Field report: iPhone Safari fires onerror for the plate SVG with
+    // correct width/height on the root, while the SAME SVG paints fine as a
+    // CSS background. The loader must therefore try the SVG first and fall
+    // through to the committed .2x.webp twin — and telemetry must name the
+    // source that won, or the next field report is blind again.
+    expect(renderer).toContain('plateSources(url: string): string[]');
+    expect(renderer).toMatch(/url\.slice\(0, -4\) \+ '\.2x\.webp'/);
+    expect(renderer).toContain('loadPlateSource');
+    expect(renderer).toContain('plateSrc');
+    expect(renderer).toMatch(/plateSrc = isRaster \? 'raster' : 'svg'/);
+    // A stage-tagged failure must not be clobbered to 'raster-err'.
+    expect(renderer).toMatch(/if \(e instanceof Error && 'stage' in e\)/);
+    // The twins are COMMITTED artifacts next to each plate (public/).
+    for (const f of ['bg-d-light.2x.webp', 'bg-d-dark.2x.webp']) {
+      expect(existsSync(join(root, 'public/backgrounds', f)), `${f} must be committed`).toBe(true);
+    }
+    // And the generator tool exists so a plate regen can re-render them.
+    expect(existsSync(join(root, 'tools/render-plate-rasters.mjs'))).toBe(true);
+  });
+
   it('boot triage carries the plate stage into the perf report', () => {
     expect(controller).toMatch(/plate: renderer \? renderer\.plateStage : null/);
     expect(controller).toMatch(/plateRetries: renderer \? renderer\.plateRetryCount : 0/);
+    expect(controller).toMatch(/plateSrc: renderer \? renderer\.plateSrc : null/);
   });
 
   it('a single shared draw list drives the frame, culled by rect', () => {

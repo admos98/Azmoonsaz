@@ -195,6 +195,9 @@ export interface GlassEngineStats {
     plate: string | null;
     /** Plate retries consumed this session (bounded backoff). */
     plateRetries: number;
+    /** Which plate source landed the texture: 'svg' (vector decode) or
+     *  'raster' (the .2x.webp twin — the iPhone path). null = none yet. */
+    plateSrc: 'svg' | 'raster' | null;
     /** The teacher shell exists on this route (the shader needs it). */
     shell: boolean;
   };
@@ -222,6 +225,7 @@ export function glassStats(): GlassEngineStats {
       ready: glReady,
       plate: renderer ? renderer.plateStage : null,
       plateRetries: renderer ? renderer.plateRetryCount : 0,
+      plateSrc: renderer ? renderer.plateSrc : null,
       shell: shellAt() !== null,
     },
   };

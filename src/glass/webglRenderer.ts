@@ -333,6 +333,26 @@ const PLATE_LOAD_TIMEOUT_MS = 8000;
 const PLATE_MAX_RETRIES = 2;
 const PLATE_RETRY_DELAY_MS = 1200;
 
+/** Plate-load failure carrying its pipeline stage, so setPlate's chain can
+ *  map any step to the telemetry values the ?perf=1 report reads. */
+function plateFail(
+  stage: 'img-err' | 'timeout' | 'no-2d' | 'raster-err' | 'tex-err',
+  msg: string,
+): Error & { stage: string } {
+  return Object.assign(new Error(msg), { stage });
+}
+
+/** Plate source chain for a plate URL: the SVG first, then its pre-rendered
+ *  raster twin (`x.svg` → `x.2x.webp`, tools/render-plate-rasters.mjs).
+ *  iPhone Safari refuses to decode this artwork through <img> — field report
+ *  plate:'img-err' on every retry, with correct width/height on the root,
+ *  while the same SVG paints fine as a CSS background. A raster decode is a
+ *  path every engine supports. */
+function plateSources(url: string): string[] {
+  if (url.endsWith('.svg')) return [url, url.slice(0, -4) + '.2x.webp'];
+  return [url];
+}
+
 export class GlassRenderer {
   private gl: WebGL2RenderingContext;
   private canvas: HTMLCanvasElement;
@@ -363,6 +383,10 @@ export class GlassRenderer {
   /** The URL the current plate stage belongs to (retry race guard). */
   plateURL = '';
   plateRetryCount = 0;
+  /** Which source actually landed the plate texture: 'svg' = the vector
+   *  plate decoded through <img>, 'raster' = the `.2x.webp` twin. Telemetry
+   *  only — travels into the ?perf=1 report (engine.boot.plateSrc). */
+  plateSrc: 'svg' | 'raster' | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', {
@@ -410,9 +434,33 @@ export class GlassRenderer {
    *  without the timeout the atomic swap would wait forever, glReady would
    *  stay false, and every panel would sit on the CSS material for the whole
    *  session with nothing in the report to say why. A stall is not fatal:
-   *  the retry below re-enters the same guard. */
+   *  the retry below re-enters the same guard.
+   *
+   *  SOURCE CHAIN: iPhone Safari also refuses to decode the plate SVG
+   *  through <img> at all — field report `plate:'img-err'` on every retry
+   *  (root width/height present) while the SAME SVG paints fine as a CSS
+   *  background. So the SVG is tried first, then its committed `.2x.webp`
+   *  raster twin; desktop engines keep the vector plate untouched, and
+   *  plateSrc in the report names the source that won. */
   setPlate(url: string): Promise<void> {
     const id = ++this.plateLoadId;
+    const sources = plateSources(url);
+    const attempt = (i: number, lastErr: unknown): Promise<void> => {
+      if (id !== this.plateLoadId) return Promise.resolve(); // superseded
+      if (i >= sources.length) {
+        return Promise.reject(
+          lastErr instanceof Error ? lastErr : new Error(`plate load failed: ${url}`),
+        );
+      }
+      return this.loadPlateSource(sources[i], id, i > 0).catch((e) => attempt(i + 1, e));
+    };
+    return attempt(0, null);
+  }
+
+  /** One source attempt inside setPlate's chain. Resolves when the texture
+   *  is up; a stale load (a newer setPlate won) resolves silently — the
+   *  newer call owns every field. Rejects with a stage-tagged error. */
+  private loadPlateSource(url: string, id: number, isRaster: boolean): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const img = new Image();
       let settled = false;
@@ -424,7 +472,7 @@ export class GlassRenderer {
       };
       const timer = setTimeout(() => {
         this.plateStage = 'timeout';
-        finish(() => reject(new Error(`plate load timed out: ${url}`)));
+        finish(() => reject(plateFail('timeout', `plate load timed out: ${url}`)));
       }, PLATE_LOAD_TIMEOUT_MS);
       img.onload = () => {
         // a newer setPlate() landed first (theme flip during load) — drop this
@@ -451,7 +499,7 @@ export class GlassRenderer {
           const ctx = c.getContext('2d');
           if (!ctx) {
             this.plateStage = 'no-2d';
-            throw new Error('2d context unavailable');
+            throw plateFail('no-2d', '2d context unavailable');
           }
           ctx.drawImage(img, 0, 0, w, h);
           if (this.plateTex) this.gl.deleteTexture(this.plateTex);
@@ -462,19 +510,27 @@ export class GlassRenderer {
           // paints nothing — the swap would flip onto an empty backdrop.
           if (this.gl.getError() !== this.gl.NO_ERROR) {
             this.plateStage = 'tex-err';
-            throw new Error('plate texture upload failed');
+            throw plateFail('tex-err', 'plate texture upload failed');
           }
           this.plateSize = [w, h];
           this.plateStage = 'ok';
+          this.plateSrc = isRaster ? 'raster' : 'svg';
           finish(() => resolve());
         } catch (e) {
-          this.plateStage = 'raster-err';
-          finish(() => reject(e instanceof Error ? e : new Error(String(e))));
+          // A stage-tagged failure (no-2d / tex-err above) already recorded
+          // the precise step — the catch must not overwrite it with the
+          // generic 'raster-err' (the pre-chain code did exactly that).
+          if (e instanceof Error && 'stage' in e) {
+            finish(() => reject(e));
+          } else {
+            this.plateStage = 'raster-err';
+            finish(() => reject(plateFail('raster-err', e instanceof Error ? e.message : String(e))));
+          }
         }
       };
       img.onerror = () => {
         this.plateStage = 'img-err';
-        finish(() => reject(new Error(`plate load failed: ${url}`)));
+        finish(() => reject(plateFail('img-err', `plate load failed: ${url}`)));
       };
       img.src = url;
     });
