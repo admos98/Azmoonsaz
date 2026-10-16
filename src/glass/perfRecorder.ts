@@ -30,6 +30,19 @@
  *   3. Press **Stop**, then **Copy report** (or **Download**).
  *   4. Paste / attach the report back in chat.
  *
+ *   ON IPHONE/IPAD SAFARI (no console, no Web Inspector without a Mac):
+ *   the same panel works — open the app URL with ?perf=1 (e.g. the teacher
+ *   dashboard you use), tap Record, drive the app, tap Stop, then **Copy
+ *   report** and paste it into a message, or **Download** (saves to Files).
+ *   The report's `engine.boot` block settles the WebGL-fallback question in
+ *   one run: `probe` (html[data-paint] as resolved pre-paint — 'css' here
+ *   means WebGL2 context creation failed at boot on this device),
+ *   `tier` ('lite'/'off' = the device/user setting chose it), `broken`
+ *   (a context died — off until reload), `shell` (route has the teacher
+ *   shell at all), `canvas`/`ready` (the swap). `mode:'css'` plus the
+ *   matching flag names the cause; `surfaces[]` rows with `flow:true` and
+ *   `glassPaint:null` are panels that fell back to the CSS material.
+ *
  * HOW TO READ THE REPORT
  * ----------------------
  *   summary.fpsScroll vs fpsStill — the first split. Slow only while
@@ -76,6 +89,10 @@ const BF_TRUNC = 140;
 
 const GLASS_SEL = '.lens, .pane, .drop, .glx, .glx-strong, .glx-dark';
 const GLASS_CLASS_RE = /^(lens|pane|drop|glx|glx-strong|glx-dark|lens--)/;
+/** The families the WebGL shader serves — used for the surfaces-list flow flag. */
+const FLOW_SEL = '.lens, .pane, .drop';
+/** A running animation matching this is a loading/entrance tell, not motion. */
+const LOADING_ANIM_RE = /pulse|shimmer|skeleton|spin|progress|fade|appear|enter/i;
 
 interface SlowFrame {
   t: number; // ms since recording started
@@ -121,6 +138,12 @@ interface SurfaceInfo {
   nested: boolean;
   inView: boolean;
   area: number;
+  /** Flow family (.lens/.pane/.drop) — the families the WebGL shader draws.
+   *  A flow surface with glassPaint 'webgl' is transparent BY DESIGN (the
+   *  canvas paints it); one WITHOUT means it fell back to the CSS material. */
+  flow?: boolean;
+  /** data-glass-paint as set by the controller. */
+  glassPaint?: string | null;
 }
 
 interface AnimInfo {
@@ -128,6 +151,11 @@ interface AnimInfo {
   tag: string;
   cls: string;
   n: number;
+  /** Likely a loading/entrance tell rather than real motion — skeletons,
+   *  pulses, spinners, fade-ins. Timer-driven fps can never idle while one
+   *  runs (iPhone Safari measures this), so the reader must be able to
+   *  discount them. */
+  isLoading?: boolean;
 }
 
 interface PerfReport {
@@ -503,6 +531,8 @@ export function installPerfRecorder(): void {
         nested: !!el.parentElement?.closest?.(GLASS_SEL),
         inView,
         area: w * h,
+        flow: el.matches(FLOW_SEL),
+        glassPaint: el.dataset.glassPaint ?? null,
       });
     }
     // Dedup identical twins (card grids) so the list stays pastable.
@@ -531,7 +561,7 @@ export function installPerfRecorder(): void {
       const key = `${name}|${tag}|${cls}`;
       const hit = seen.get(key);
       if (hit) hit.n++;
-      else seen.set(key, { name, tag, cls, n: 1 });
+      else seen.set(key, { name, tag, cls, n: 1, isLoading: LOADING_ANIM_RE.test(name) });
     }
     return [...seen.values()].sort((a, b) => b.n - a.n).slice(0, 20);
   };
@@ -618,12 +648,15 @@ function buildUi(ops: UiOps): void {
 
   const show = (r: PerfReport) => {
     const e = r.engine;
+    const b = e.boot;
     out.textContent =
       `fps avg ${r.summary.avgFps}  p1 ${r.summary.p1Fps}\n` +
       `scroll ${r.summary.fpsScroll}  still ${r.summary.fpsStill}\n` +
       `p95 ${r.summary.p95Ms}ms  worst ${r.summary.worstMs}ms\n` +
       `jank ${r.summary.jankFrames}  longtasks ${r.summary.longTasks.count}\n` +
       `filters ${r.filterCountStart}->${r.filterCountEnd}\n` +
+      `render ${e.mode}/${e.drawn}  probe ${b.probe}\n` +
+      `tier ${b.tier} lens ${b.lens}${b.broken ? ' broken!' : ''}\n` +
       `maps ${e.maps} infl ${e.inflight} post ${e.posted} hit ${e.hits} wrk ${e.worker} sync ${e.sync}`;
   };
 

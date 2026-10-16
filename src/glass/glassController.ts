@@ -170,6 +170,28 @@ export interface GlassEngineStats {
   /** Active paint path and panels drawn in the last WebGL frame. */
   mode: 'webgl' | 'css';
   drawn: number;
+  /** Boot triage — WHY the active path is what it is. Travels into the
+   *  ?perf=1 report (engine.boot) so a field run on an engine the dev
+   *  machine cannot reproduce (iPhone/iPad Safari, Lockdown Mode, Reduce
+   *  Transparency) still answers: probe vs tier vs lost context vs plate. */
+  boot: {
+    /** html[data-paint] as published by public/boot.js before first paint. */
+    probe: string | null;
+    /** The controller's resolved WebGL2 capability (probe first, own context after). */
+    supported: boolean;
+    /** A context failed or was lost this session — WebGL is off until reload. */
+    broken: boolean;
+    /** html[data-glass] tier (full | lite | off | '(unset)'). */
+    tier: string;
+    /** html[data-lens] — the classic url() bend gate (Chromium >= 138 only). */
+    lens: string | null;
+    /** The draw canvas exists. */
+    canvas: boolean;
+    /** The atomic swap landed (plate texture uploaded, canvas visible). */
+    ready: boolean;
+    /** The teacher shell exists on this route (the shader needs it). */
+    shell: boolean;
+  };
 }
 
 /** Snapshot of the map pipeline — consumed by the ?perf=1 report. */
@@ -184,6 +206,16 @@ export function glassStats(): GlassEngineStats {
     filters: FILTERS.size,
     mode: renderMode,
     drawn: lastDrawCount,
+    boot: {
+      probe: document.documentElement.dataset.paint ?? null,
+      supported: webglSupported,
+      broken: webglBroken,
+      tier: document.documentElement.dataset.glass ?? '(unset)',
+      lens: document.documentElement.dataset.lens ?? null,
+      canvas: glCanvas !== null,
+      ready: glReady,
+      shell: shellAt() !== null,
+    },
   };
 }
 
