@@ -134,12 +134,22 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(css).toMatch(/:root\[data-glass-render='webgl'\]\s*#app-teacher-shell::before/);
     expect(css).toMatch(/:root\[data-glass-render='webgl'\]\s*\[data-glass-paint='webgl'\]/);
     // The transparent frame must kill the backdrop-filter COMPLETELY — a
-    // remaining blur would double-glass the already-bent canvas pixels.
+    // remaining blur would double-glass the already-bent canvas pixels. The
+    // sheet rule is belt-and-braces only: the load-bearing kill is INLINE
+    // (applyPaintKill), because production minification drops this rule's
+    // standard declaration and Chrome ignores the -webkit- form — measured
+    // double-paint on every drawn panel before the inline kill.
     const paintBlock = css.match(
       /:root\[data-glass-render='webgl'\]\s*\[data-glass-paint='webgl'\]\s*\{([^}]*)\}/,
     );
     expect(paintBlock).not.toBeNull();
     expect(paintBlock![1]).toMatch(/backdrop-filter:\s*none\s*!important/);
+    expect(controller).toContain("setProperty('backdrop-filter', 'none', 'important')");
+    expect(controller).toContain("setProperty('-webkit-backdrop-filter', 'none', 'important')");
+    // applied at the atomic swap and on post-swap tracks; removed on untrack
+    expect(controller).toMatch(/for \(const el of webglDrawSet\) applyPaintKill\(el\)/);
+    expect(controller).toMatch(/if \(glReady\) applyPaintKill\(el\)/);
+    expect(controller).toMatch(/function untrackWebgl[\s\S]{0,120}clearPaintKill\(el\)/);
     // Backgrounds: transparent for lens/pane/drop (the shader carries their
     // body); glx/glx-strong KEEP theirs — the shader must not invent a fill
     // the cascade may have overridden per element (measured +6/255).

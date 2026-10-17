@@ -230,15 +230,26 @@ export function buildSpecularMap(wCss, hCss, radiusCss, angleDeg, scale = 1, pea
   return img;
 }
 
-export function dimParams(p) {
-  const b = Math.max(0, Math.min(1, p.dim));
-  const [tr, tg, tb] = p.dimTint;
-  const slope = (t) => 1 - b * (1 - Math.max(0, Math.min(255, t)) / 255);
-  return [
-    [slope(tr), 0],
-    [slope(tg), 0],
-    [slope(tb), 0],
-  ];
+export function dimStrength(p) {
+  return Math.max(0, Math.min(0.5, p.dim));
+}
+
+/** One channel of the wash, 0..255. Mirrors src/glass/mapMath.ts exactly. */
+export function dimChannel(inp, b, tintCh) {
+  const x = Math.max(0, Math.min(255, inp));
+  const t = Math.max(0, Math.min(255, tintCh));
+  const k = Math.max(0, Math.min(0.5, b));
+  return x + k * (x / 255) * (t - x);
+}
+
+/** feFunc tableValues for one channel: 33 samples, linear interpolation. */
+export function dimTableValues(b, tintCh) {
+  const n = 33;
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    out.push((dimChannel((255 * i) / (n - 1), b, tintCh) / 255).toFixed(4));
+  }
+  return out.join(' ');
 }
 
 export function effectiveScale(maxAbs, p) {
@@ -381,20 +392,19 @@ export function buildFilterNode(doc, id, dispURL, specURL, maxAbs, p, withDim, W
   prev = 'withSaturation';
 
   if (withDim) {
-    const [r, g, b] = dimParams(p);
+    const b = dimStrength(p);
     const ct = el('feComponentTransfer');
     ct.setAttribute('in', prev);
     ct.setAttribute('result', 'dimmed');
-    const add = (ch, v) => {
+    const add = (ch, i) => {
       const f = el('feFunc' + ch);
-      f.setAttribute('type', 'linear');
-      f.setAttribute('slope', v[0].toFixed(4));
-      f.setAttribute('intercept', v[1].toFixed(4));
+      f.setAttribute('type', 'table');
+      f.setAttribute('tableValues', dimTableValues(b, p.dimTint[i]));
       ct.appendChild(f);
     };
-    add('R', r);
-    add('G', g);
-    add('B', b);
+    add('R', 0);
+    add('G', 1);
+    add('B', 2);
     filter.appendChild(ct);
     prev = 'dimmed';
   }

@@ -354,10 +354,10 @@ function cssNum(cs: CSSStyleDeclaration, name: string, fallback: number): number
 }
 
 /** The dim tint (RGB 0..255) from --glass-dim-tint — "31 29 41" in light,
- *  "0 0 0" in the dark scope. Feeds dimParams()' per-channel slopes: the
- *  tint's channels decide how hard each hue comes down (see mapMath.ts).
- *  Unparseable input falls back to the light slate so the dim stays a dark
- *  tint rather than a grey lift. */
+ *  "16 15 28" in the dark scope. The WASH TARGET: whites and highlights
+ *  head for this colour (see mapMath's wash law). Unparseable input falls
+ *  back to the light slate so the dim stays a tinted wash, never a grey
+ *  lift. */
 function dimTintOf(cs: CSSStyleDeclaration): [number, number, number] {
   const raw = cs.getPropertyValue('--glass-dim-tint').trim().split(/\s+/);
   const nums = raw.map((n) => parseFloat(n)).filter((n) => Number.isFinite(n));
@@ -623,6 +623,24 @@ function paramsForWebgl(el: HTMLElement, cs: CSSStyleDeclaration): GlassPaintPar
   };
 }
 
+/** Kill the DOM backdrop-filter INLINE (both spellings, !important).
+ *  The stylesheet strip rule cannot be trusted for this: production
+ *  minification drops its standard declaration (dist ships the -webkit-
+ *  form only) and Chrome does not honor that form — every drawn panel kept
+ *  blurring the canvas underneath ("the big panels stutter": double paint
+ *  over the largest surfaces). Inline !important wins everywhere; applied
+ *  at the atomic swap (and to panels tracked after it), removed on
+ *  untrack / teardown. */
+function applyPaintKill(el: HTMLElement): void {
+  el.style.setProperty('backdrop-filter', 'none', 'important');
+  el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+}
+
+function clearPaintKill(el: HTMLElement): void {
+  el.style.removeProperty('backdrop-filter');
+  el.style.removeProperty('-webkit-backdrop-filter');
+}
+
 /** Track a panel into the per-frame draw list. The engine writes NO inline
  *  backdrop-filter in WebGL mode: any chain from an earlier CSS flush is
  *  cleared and the stylesheet keeps showing the material until the atomic
@@ -631,13 +649,15 @@ function trackWebgl(el: HTMLElement, kind: GlassKind, params: GlassPaintParams):
   paintCache.set(el, { kind, params });
   webglDrawSet.add(el);
   if (el.dataset.glassPaint !== 'webgl') el.dataset.glassPaint = 'webgl';
-  if (el.style.backdropFilter) el.style.backdropFilter = '';
+  clearPaintKill(el); // a stale CSS chain or an old kill must not survive re-track
+  if (glReady) applyPaintKill(el); // post-swap tracks kill immediately
   if (el.dataset.lastQuickKey) delete el.dataset.lastQuickKey;
   byEl.delete(el);
 }
 
 function untrackWebgl(el: HTMLElement): void {
   webglDrawSet.delete(el);
+  clearPaintKill(el);
   if (el.dataset.glassPaint) delete el.dataset.glassPaint;
 }
 
@@ -737,6 +757,10 @@ function glFrame(): void {
   if (!glReady && r.hasPlate) {
     glReady = true;
     document.documentElement.dataset.glassRender = 'webgl';
+    // The atomic swap: from this frame the canvas paints these panels, so
+    // their DOM backdrop-filter dies INLINE (the stylesheet strip cannot be
+    // trusted — see applyPaintKill). CSS material held until this moment.
+    for (const el of webglDrawSet) applyPaintKill(el);
   }
   if (!glReady) return;
   const vw = window.innerWidth;
@@ -816,9 +840,7 @@ function shutdownWebgl(lost: boolean): void {
   lastDrawCount = 0;
   if (lost) webglBroken = true;
   document.documentElement.removeAttribute('data-glass-render');
-  for (const el of webglDrawSet) {
-    if (el.dataset.glassPaint) delete el.dataset.glassPaint;
-  }
+  for (const el of Array.from(webglDrawSet)) untrackWebgl(el);
   webglDrawSet.clear();
   if (mounted) resyncGlass();
 }

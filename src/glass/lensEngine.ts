@@ -34,7 +34,8 @@ import {
   buildDisplacementMap,
   buildSpecularMap,
   computeProfile,
-  dimParams,
+  dimStrength,
+  dimTableValues,
   mapCornerExp,
   mapScaleFor,
   type LensParams,
@@ -44,7 +45,8 @@ export {
   buildDisplacementMap,
   buildSpecularMap,
   computeProfile,
-  dimParams,
+  dimStrength,
+  dimTableValues,
   mapCornerExp,
   mapScaleFor,
 };
@@ -119,13 +121,13 @@ export function buildFilterMarkup(
   W: number,
   H: number,
 ): string {
-  const [r, g, b] = dimParams(p);
+  const b = dimStrength(p);
   const dim = withDim
     ? `
       <feComponentTransfer in="withSaturation" result="dimmed">
-        <feFuncR type="linear" slope="${esc(r[0].toFixed(4))}" intercept="${esc(r[1].toFixed(4))}"/>
-        <feFuncG type="linear" slope="${esc(g[0].toFixed(4))}" intercept="${esc(g[1].toFixed(4))}"/>
-        <feFuncB type="linear" slope="${esc(b[0].toFixed(4))}" intercept="${esc(b[1].toFixed(4))}"/>
+        <feFuncR type="table" tableValues="${esc(dimTableValues(b, p.dimTint[0]))}"/>
+        <feFuncG type="table" tableValues="${esc(dimTableValues(b, p.dimTint[1]))}"/>
+        <feFuncB type="table" tableValues="${esc(dimTableValues(b, p.dimTint[2]))}"/>
       </feComponentTransfer>`
     : '';
   // withDim=false: no dim CT at all (the old chain emitted two identity

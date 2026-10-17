@@ -91,8 +91,17 @@ test.describe('WebGL glass paint path', () => {
 
     // The drawn panel is a transparent frame: no backdrop blur at all (a
     // surviving blur would double-glass the already-bent canvas pixels).
+    // Asserted on the INLINE style: the stylesheet strip cannot be trusted —
+    // production minification dropped its standard declaration (dist ships
+    // the -webkit- form only, which Chrome ignores), so the controller
+    // applies the kill inline at the atomic swap.
     expect(state.drawnPanelPresent).toBe(true);
     expect(state.drawnPanelBackdrop).toMatch(/none|^$/);
+    const kill = await page.evaluate(() => {
+      const el = document.querySelector('[data-glass-paint="webgl"]') as HTMLElement | null;
+      return el ? el.style.getPropertyValue('backdrop-filter') + '|' + el.style.getPropertyPriority('backdrop-filter') : '';
+    });
+    expect(kill).toBe('none|important');
     expect(state.drawnPanelBackground).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
   });
 

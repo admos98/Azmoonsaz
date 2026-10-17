@@ -345,24 +345,46 @@ export function buildSpecularMap(
   return img;
 }
 
-/** Dim wash — MULTIPLICATIVE with zero intercept (Apple dim): each channel
- *  scales toward black, and the DIM TINT decides how hard each hue comes
- *  down:
- *      slope_ch = 1 - b * (1 - tint_ch / 255),   intercept = 0
- *  Black stays black, highlights come down, and a cool tint (B > R) keeps
- *  blue = dark tinted glass. The previous law was affine toward MID-GREY
- *  ([103,100,112]): at b=0.1 it LIFTED every pixel (+10 R, +11 G, +16 B on
- *  black) — an additive putty floor, the "dim plastic" reading. The old
- *  per-channel G/B boost ratios existed only to cancel that grey lift;
- *  against a deep tint they invert the cast, so they are gone.
- *  b = 0 or tint all-255 -> slope 1 = exact identity. */
-export function dimParams(p: LensParams): Array<[number, number]> {
-  const b = Math.max(0, Math.min(1, p.dim));
-  const [tr, tg, tb] = p.dimTint;
-  const slope = (t: number) => 1 - b * (1 - Math.max(0, Math.min(255, t)) / 255);
-  return [
-    [slope(tr), 0],
-    [slope(tg), 0],
-    [slope(tb), 0],
-  ];
+/** Dim law — Apple's highlight-weighted wash toward the tint.
+ *
+ *      out_ch = in_ch + b · (in_ch/255) · (tint_ch − in_ch)
+ *
+ *  The weight is the pixel's OWN value, so:
+ *    · whites move the full distance toward the tint — "whites washed";
+ *    · blacks never move (weight 0) — no grey floor, no plastic;
+ *    · mid/dark tones are barely touched, and every channel moves toward
+ *      the SAME tint, so relative channel structure (hue/saturation) is
+ *      preserved — "colored glass dark tint", not a flat multiply (which
+ *      crushed mids uniformly — the "plastic dark" reading).
+ *
+ *  b is clamped to [0, 0.5]: the curve is monotone non-decreasing exactly
+ *  on that interval (at b=0.5, t=0 the top flattens; beyond it, highlights
+ *  would invert). b=0 is exact identity.
+ *
+ *  The old affine law (toward mid-grey [103,100,112] with G/B boost ratios)
+ *  LIFTED black (+10/+11/+16) — the putty floor this law removes. */
+export function dimStrength(p: LensParams): number {
+  return Math.max(0, Math.min(0.5, p.dim));
+}
+
+/** One channel of the wash, in 0..255 space. Pure, side-effect free. */
+export function dimChannel(inp: number, b: number, tintCh: number): number {
+  const x = Math.max(0, Math.min(255, inp));
+  const t = Math.max(0, Math.min(255, tintCh));
+  const k = Math.max(0, Math.min(0.5, b));
+  return x + k * (x / 255) * (t - x);
+}
+
+/** feFunc tableValues for one channel: 33 samples (step 255/32), linear
+ *  interpolation between them. Max interpolation error vs the exact curve
+ *  is < 0.09/255 across the whole range (curvature bound b/4096 in
+ *  normalized units) — two orders under the accepted 2/255 LSB tolerance —
+ *  while costing ~600B of markup instead of 4KB for 256 exact samples. */
+export function dimTableValues(b: number, tintCh: number): string {
+  const n = 33;
+  const out: string[] = [];
+  for (let i = 0; i < n; i++) {
+    out.push((dimChannel((255 * i) / (n - 1), b, tintCh) / 255).toFixed(4));
+  }
+  return out.join(' ');
 }

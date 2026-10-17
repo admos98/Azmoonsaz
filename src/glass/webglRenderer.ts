@@ -40,7 +40,7 @@ import {
   buildDisplacementMap,
   buildSpecularMap,
   computeProfile,
-  dimParams,
+  dimStrength,
   isCircleRadius,
   mapCornerExp,
   mapScaleFor,
@@ -143,9 +143,9 @@ uniform float u_fillA2;
 uniform float u_fillAngle;
 uniform vec3  u_fillTint;   // the fill gradient's tint (255 255 255 light / 16 15 28 dark)
 uniform float u_dim;
-uniform float u_dimR;
-uniform float u_dimG;
-uniform float u_dimB;
+uniform float u_dimTr;      // dim tint, 0..255 (the wash target)
+uniform float u_dimTg;
+uniform float u_dimTb;
 uniform float u_specOpacity;
 uniform float u_gsat;       // global saturate from the CSS chain (glx 1.5, lens 1)
 uniform float u_alpha;       // the panel's own inline opacity (motion fades)
@@ -259,13 +259,17 @@ void main() {
   vec3 saturated = mix(vec3(luma(back)), back, u_sat);
   vec3 col = mix(back, saturated, spec);
 
-  /* dim wash — INSIDE the url() chain: after the rim-saturation blend,
-     before the specular fade (CSS dim input = withSaturation). dimParams()
-     is a pure per-channel SCALE (slope, intercept 0): black stays black;
-     the tint's channels set how hard each hue comes down (cool tint = dark
-     tinted glass, no additive putty floor). */
+  /* dim wash — INSIDE the url() chain (CSS dim input = withSaturation).
+     Apple's highlight-weighted wash toward the tint:
+         out = in + b·(in/255)·(tint − in)
+     whites move the full distance toward the tint ("whites washed"), blacks
+     never move (weight 0 — no grey floor), mids barely; every channel moves
+     toward the SAME tint, so hue/saturation structure is preserved (dark
+     tinted glass, not the uniform crush of a flat multiply). Clamp first:
+     CSS clamps between filter primitives, so the input here is [0,1]. */
   if (u_dim > 0.0) {
-    col *= vec3(u_dimR, u_dimG, u_dimB);
+    col = clamp(col, 0.0, 1.0);
+    col = col + u_dim * col * (vec3(u_dimTr, u_dimTg, u_dimTb) / 255.0 - col);
   }
 
   /* specular arc — the chain's final blend, over the dimmed result. */
@@ -906,11 +910,11 @@ export class GlassRenderer {
       params.fillTint[1],
       params.fillTint[2],
     );
-    const [dr, dg, db] = dimParams(params);
-    f1('u_dim', kind === 'drop' ? 0 : params.dim);
-    gl.uniform1f(this.uni(p, 'u_dimR'), dr[0]);
-    gl.uniform1f(this.uni(p, 'u_dimG'), dg[0]);
-    gl.uniform1f(this.uni(p, 'u_dimB'), db[0]);
+    const b = dimStrength(params);
+    f1('u_dim', kind === 'drop' ? 0 : b);
+    gl.uniform1f(this.uni(p, 'u_dimTr'), params.dimTint[0]);
+    gl.uniform1f(this.uni(p, 'u_dimTg'), params.dimTint[1]);
+    gl.uniform1f(this.uni(p, 'u_dimTb'), params.dimTint[2]);
     f1('u_specOpacity', params.specOpacity);
     f1('u_gsat', params.gsat);
     f1('u_alpha', alpha);

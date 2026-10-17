@@ -1,102 +1,138 @@
 /**
  * @license SPDX-License-Identifier: Apache-2.0
  *
- * The dim law — numeric contract (Apple dim: multiplicative, black-preserving).
+ * The dim law — numeric contract (Apple's highlight-weighted wash).
  *
- * The old playground law was AFFINE toward mid-grey [103,100,112]:
- *   out = in * (1 - b·k) + b·k·tint/255
- * which on black input produced +10/+11/+16 (R/G/B) — an additive grey floor.
- * That floor is the "dim plastic" reading: dark glass washed toward putty.
+ *      out_ch = in_ch + b · (in_ch/255) · (tint_ch − in_ch)
  *
- * The law is now a pure per-channel SCALE toward the dim tint:
- *   slope_ch = 1 - b·(1 - tint_ch/255),  intercept = 0
- * so black stays black, highlights come down, and the tint's channel
- * differences (its "coolness") decide the cast. These tests pin the numbers
- * so a regression to the affine form fails here instead of shipping.
+ * Weight = the pixel's OWN value:
+ *   · whites move the full distance toward the tint ("whites washed");
+ *   · blacks never move (weight 0) — the old affine law LIFTED black by
+ *     +10/+11/+16 (the putty floor) and the first multiplicative law
+ *     crushed mids uniformly ("plastic dark"); both regressions must fail
+ *     here instead of shipping;
+ *   · every channel converges on ONE tint → hue/saturation structure is
+ *     preserved: dark TINTED glass.
+ *
+ * Monotone non-decreasing exactly on b ∈ [0, 0.5] — pinned by test.
  */
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { repoRoot as root } from '../sourceReader';
-import { dimParams } from '../../glass/mapMath';
+import { dimChannel, dimStrength, dimTableValues } from '../../glass/mapMath';
 import type { LensParams } from '../../glass/lensEngine';
 
 const P = (dim: number, tint: [number, number, number]): LensParams =>
   ({ dim, dimTint: tint }) as LensParams;
 
-/** Apply the returned [slope, intercept] pairs to an RGB triple. */
-function apply(rgb: [number, number, number], b: number, tint: [number, number, number]) {
-  const [r, g, bl] = dimParams(P(b, tint));
-  return [rgb[0] * r[0] + r[1], rgb[1] * g[0] + g[1], rgb[2] * bl[0] + bl[1]];
-}
-
-describe('dim law — multiplicative, black-preserving (Apple dim)', () => {
-  it('black stays black at any strength (the old law LIFTED it +10/+11/+16)', () => {
-    // Old affine law on black with tint [103,100,112] at b=0.1:
-    //   +10.30, +10.95, +16.53 → the additive putty floor. The new law: 0.
-    for (const b of [0.02, 0.03, 0.08, 0.2]) {
-      const [r, g, bl] = apply([0, 0, 0], b, [31, 29, 41]);
-      expect(r).toBe(0);
-      expect(g).toBe(0);
-      expect(bl).toBe(0);
+describe('dim law — highlight-weighted wash toward the tint', () => {
+  it('black never moves at any strength (no grey floor, no lift)', () => {
+    // Old affine law on black with tint [103,100,112] at b=0.1 produced
+    // +10.30/+10.95/+16.53 — the additive putty floor. The wash: 0.
+    for (const b of [0.05, 0.12, 0.14, 0.32, 0.35, 0.5]) {
+      for (const t of [0, 31, 33, 103, 255]) {
+        expect(dimChannel(0, b, t)).toBe(0);
+      }
     }
   });
 
-  it('is a pure scale: intercept is exactly 0 for every channel', () => {
-    for (const [, i] of dimParams(P(0.1, [31, 29, 41]))) expect(i).toBe(0);
-    for (const [, i] of dimParams(P(0.55, [103, 100, 112]))) expect(i).toBe(0);
+  it('whites wash the full distance toward the tint (the readability lever)', () => {
+    // "whites washed": at b=0.35, white heads for the tint and lands far
+    // from 255 — 255 → 255 + 0.35·1·(33 − 255) ≈ 177.3 for light slate.
+    expect(dimChannel(255, 0.35, 33)).toBeCloseTo(255 + 0.35 * (33 - 255), 6);
+    // dark glass navy target: 255 → ~178 (tinted dark, not pitch black)
+    expect(dimChannel(255, 0.32, 20)).toBeCloseTo(255 + 0.32 * (20 - 255), 6);
+    // and the wash is monotone in b: deeper dim, lower whites
+    const at = (b: number) => dimChannel(255, b, 33);
+    expect(at(0)).toBe(255);
+    expect(at(0.12)).toBeLessThan(at(0.05));
+    expect(at(0.35)).toBeLessThan(at(0.12));
   });
 
-  it('darkens toward the tint: channel slope = 1 - b*(1 - tint/255)', () => {
-    const [r, g, bl] = dimParams(P(0.1, [31, 29, 41]));
-    // R: 1 - 0.1*(1 - 31/255)  = 0.912156...
-    expect(r[0]).toBeCloseTo(1 - 0.1 * (1 - 31 / 255), 6);
-    // G: tint 29 (cooler) comes down harder
-    expect(g[0]).toBeCloseTo(1 - 0.1 * (1 - 29 / 255), 6);
-    // B: tint 41 → the least reduction of the three (blue survives → tinted)
-    expect(bl[0]).toBeCloseTo(1 - 0.1 * (1 - 41 / 255), 6);
-    expect(bl[0]).toBeGreaterThan(r[0]);
-    expect(r[0]).toBeGreaterThan(g[0]);
+  it('mids barely move — no uniform crush (the flat-multiply regression)', () => {
+    // Flat multiply at b=0.35 (t=33): slope = 1 − 0.35·(1−33/255) = 0.695 —
+    // a 128 backdrop would land at ~89. The wash:
+    // 128 + 0.35·(128/255)·(33−128) ≈ 111.3 — a gentle step, not a crush.
+    const mid = dimChannel(128, 0.35, 33);
+    expect(mid).toBeCloseTo(128 + 0.35 * (128 / 255) * (33 - 128), 6);
+    expect(mid).toBeGreaterThan(100); // ≥ ~10 points above the flat multiply
+    // quarter-tones move even less than mids
+    const quarter = dimChannel(64, 0.35, 33);
+    expect(64 - quarter).toBeLessThan(128 - mid);
   });
 
-  it('identity when off: b=0 or white tint -> slope 1, intercept 0', () => {
-    const off = dimParams(P(0, [31, 29, 41]));
-    for (const [s, i] of off) {
-      expect(s).toBe(1);
-      expect(i).toBe(0);
+  it('hue structure survives: all channels converge on ONE tint', () => {
+    // Pure blue stays blue-dominant; pure red stays red; saturation falls
+    // smoothly toward the tint, never to grey-by-luma like a desaturate.
+    const t: [number, number, number] = [31, 29, 41];
+    const wash = (c: [number, number, number]) =>
+      c.map((v, i) => dimChannel(v, 0.35, t[i])) as [number, number, number];
+    const blue = wash([0, 0, 255]);
+    expect(blue[2]).toBeGreaterThan(blue[0]);
+    expect(blue[2]).toBeGreaterThan(blue[1]);
+    const red = wash([255, 0, 0]);
+    expect(red[0]).toBeGreaterThan(red[1]);
+    expect(red[0]).toBeGreaterThan(red[2]);
+    // the tint's own channel order survives on white: B > R > G (slate)
+    const white = wash([255, 255, 255]);
+    expect(white[2]).toBeGreaterThan(white[0]);
+    expect(white[0]).toBeGreaterThan(white[1]);
+  });
+
+  it('identity at b=0; b clamps to [0, 0.5] (monotone-safe interval)', () => {
+    for (const x of [0, 64, 128, 255]) expect(dimChannel(x, 0, 31)).toBe(x);
+    expect(dimStrength(P(0.9, [31, 29, 41]))).toBe(0.5);
+    expect(dimStrength(P(-1, [31, 29, 41]))).toBe(0);
+    // beyond 0.5 highlights would invert; the clamp is the contract
+    expect(dimChannel(255, 2, 0)).toBe(dimChannel(255, 0.5, 0));
+  });
+
+  it('is monotone non-decreasing on the whole clamped range (t=0, b=0.5)', () => {
+    let prev = -1;
+    for (let x = 0; x <= 255; x++) {
+      const y = dimChannel(x, 0.5, 0);
+      expect(y).toBeGreaterThanOrEqual(prev - 1e-9);
+      prev = y;
     }
-    const white = dimParams(P(0.2, [255, 255, 255]));
-    for (const [s, i] of white) {
-      expect(s).toBe(1);
-      expect(i).toBe(0);
+  });
+
+  it('dimTableValues: 33 samples, 0..1 range, endpoints exact', () => {
+    const vals = dimTableValues(0.35, 33)
+      .split(' ')
+      .map((v) => parseFloat(v));
+    expect(vals).toHaveLength(33);
+    expect(vals[0]).toBe(0);
+    expect(vals[32]).toBeCloseTo(dimChannel(255, 0.35, 33) / 255, 4);
+    // interpolation error vs the exact curve stays < 0.5/255 (0.0005 unit)
+    for (let i = 0; i <= 255; i += 7) {
+      const pos = (i / 255) * 32;
+      const lo = Math.floor(pos);
+      const hi = Math.min(32, lo + 1);
+      const frac = pos - lo;
+      const interp = vals[lo] * (1 - frac) + vals[hi] * frac;
+      expect(Math.abs(interp - dimChannel(i, 0.35, 33) / 255)).toBeLessThan(0.0005);
     }
   });
 
-  it('b is clamped to [0,1] and mid-grey lands below input on every channel', () => {
-    const [r, g, bl] = dimParams(P(2, [31, 29, 41]));
-    // b clamps to 1: slope = tint/255 (darkest possible without going black)
-    expect(r[0]).toBeCloseTo(31 / 255, 6);
-    expect(g[0]).toBeCloseTo(29 / 255, 6);
-    expect(bl[0]).toBeCloseTo(41 / 255, 6);
-    const mid = apply([128, 128, 128], 0.1, [31, 29, 41]);
-    expect(mid[0]).toBeLessThan(128);
-    expect(mid[1]).toBeLessThan(128);
-    expect(mid[2]).toBeLessThan(128);
-  });
-
-  it('the engine consumes dimParams on both paint paths (CSS chain + shader)', () => {
-    // CSS path: buildFilterMarkup emits the slope/intercept pairs.
+  it('both paint paths consume the SAME law (CSS chain + shader)', () => {
     const lensEngine = readFileSync(join(root, 'src/glass/lensEngine.ts'), 'utf8');
-    expect(lensEngine).toMatch(/dimParams\(p\)/);
-    // WebGL path: the shader multiplies by the same slopes.
+    expect(lensEngine).toMatch(/dimTableValues\(/);
     const renderer = readFileSync(join(root, 'src/glass/webglRenderer.ts'), 'utf8');
-    expect(renderer).toMatch(/col \*= vec3\(u_dimR, u_dimG, u_dimB\)/);
-    // regression guard: the affine icept form must not return
+    // the shader's wash matches dimChannel exactly
+    expect(renderer).toMatch(
+      /col = col \+ u_dim \* col \* \(vec3\(u_dimTr, u_dimTg, u_dimTb\) \/ 255\.0 - col\)/,
+    );
+    // regression guards: neither the affine boost ratios nor the flat
+    // multiply may return
     expect(renderer).not.toMatch(/1\.0526|1\.4737/);
+    expect(renderer).not.toMatch(/col \*= vec3\(u_dim/);
     expect(readFileSync(join(root, 'src/glass/mapMath.ts'), 'utf8')).not.toMatch(/1\.0526|1\.4737/);
-    // both dim bases agree per theme (filter law + lite/off fill)
+    // both dim bases agree per theme (wash target + lite/off fill)
     const themes = readFileSync(join(root, 'src/styles/themes.css'), 'utf8');
     expect(themes).toMatch(/--dim-tint: 31 29 41/);
     expect(themes).toMatch(/--glass-dim-tint: 31 29 41/);
+    expect(themes).toMatch(/--dim-tint: 16 15 28/);
+    expect(themes).toMatch(/--glass-dim-tint: 16 15 28/);
   });
 });

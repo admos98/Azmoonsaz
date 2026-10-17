@@ -217,34 +217,40 @@ cancel/save/confirm pairs are untouched.
 Superellipse corner-shape costs ≈12% fps under SOFTWARE rendering (54→48);
 on GPU-accelerated compositing (the user's hardware) it is a shader mask.
 
-### V4 — Dim law: multiplicative, black-preserving (Apple dim)
-The old playground law dimmed as an AFFINE wash toward mid-grey
-`[103,100,112]` with per-channel G/B boost ratios (×1.0526 / ×1.4737). On
-black input at b=0.1 that law ADDS +10 R / +11 G / +16 B — a grey putty
-floor; dark glass washed up into plastic (user: "the dim plastic thing").
-Now `dimParams()` is a pure per-channel SCALE toward the dim tint:
+### V4 — Dim law: the highlight-weighted wash (Apple dim, final form)
+Three laws were tried; the first two failed on feedback, and the failures
+are the history worth keeping:
 
-    slope_ch = 1 - b · (1 - tint_ch / 255),   intercept = 0
+1. AFFINE toward mid-grey `[103,100,112]` with G/B boost ratios
+   (×1.0526/×1.4737) — on black it ADDS +10/+11/+16: an additive putty
+   floor. "The dim plastic thing."
+2. FLAT MULTIPLY toward the tint (`slope = 1 - b(1-tint/255)`) — no floor,
+   but it crushed mids uniformly: "practically black", "plastic dark".
 
-Black stays black at any strength, highlights come down, and the tint's
-channel differences set the cast. The tint comes from `--glass-dim-tint`
-(deep slate `31 29 41` light / black dark), kept equal to `--dim-tint`
-(the lite/off fill) per theme. The `u_dimTint` shader uniform is gone
-(slopes carry everything); both paint paths consume the same
-`dimParams()` output.
+The shipped law is a per-channel WASH whose weight is the pixel's own
+value, in BOTH paint paths:
 
-V4c — strength re-tone ("practically black" report). The first V4 ship
-kept the old strength numbers (menu 0.55, lens 0.1/0.07) while the law
-under them changed from lift-to-grey to scale-to-black — the two compose
-into near-black. Numbers now reproduce the previously accepted wash under
-the new law: lens 0.05 light / 0.07 dark (dark tint is black, so slope
-= 1-b exactly — the original 1H number), menu 0.13 light / 0.14 dark
-(≈ the 1H affine 0.2 wash at the bright-plate anchor; 0.14 is the exact
-multiplicative equivalent of the dark 1H number). Apple's ONE published
-dim constant — the clear variant's 35% dark dimming layer over bright
-media (HIG) — is deliberately NOT applied: regular-variant app panels
-are not media-backed clear glass, and 35% on light panels turns them
-into grey slabs (category error).
+    out_ch = in_ch + b · (in_ch/255) · (tint_ch − in_ch)
+
+- **whites move the full distance toward the tint** ("whites washed");
+- **blacks never move** (weight 0 — no floor, no lift);
+- **mids barely move** (a 128 backdrop at b=0.35 drifts ~17, vs ~39
+  under the flat multiply);
+- **every channel converges on ONE tint**, so hue/saturation structure
+  survives — dark TINTED glass, not grey.
+- Monotone exactly on b ∈ [0, 0.5] (clamped); b=0 is exact identity.
+
+Tint from `--glass-dim-tint`, kept equal to `--dim-tint`: slate
+`31 29 41` light, GLASS NAVY `16 15 28` dark ("glasy dark" — dimmed
+whites keep a blue cast, never pitch black).
+
+V4c — final strengths: lens 0.12 light / 0.14 dark; menus 0.35 light /
+0.32 dark ("should be dimmer" — whites at the 215 plate anchor land ~161,
+blacks untouched). Apple's ONE published dim constant — the clear
+variant's 35% dark dimming layer over bright media (HIG) — is not
+applied to regular-variant panels (category error; media-backed clear
+glass only). CSS path: 33-sample feFunc tables (<0.09/255 interpolation
+error, ~600B markup); shader: the same formula with `u_dimTr/g/b`.
 
 V4b — dim-first menus: readability is the DIMMING + a light 3px blur,
 not the blur (user directive: "the dimming should do the readability,
