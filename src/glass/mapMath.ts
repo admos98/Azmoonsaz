@@ -345,14 +345,24 @@ export function buildSpecularMap(
   return img;
 }
 
-/** Per-channel RGB-aware dim wash (ratios 1 : 1.0526 : 1.474 over the tint) —
- *  exact port of the playground's dimParams(). */
+/** Dim wash — MULTIPLICATIVE with zero intercept (Apple dim): each channel
+ *  scales toward black, and the DIM TINT decides how hard each hue comes
+ *  down:
+ *      slope_ch = 1 - b * (1 - tint_ch / 255),   intercept = 0
+ *  Black stays black, highlights come down, and a cool tint (B > R) keeps
+ *  blue = dark tinted glass. The previous law was affine toward MID-GREY
+ *  ([103,100,112]): at b=0.1 it LIFTED every pixel (+10 R, +11 G, +16 B on
+ *  black) — an additive putty floor, the "dim plastic" reading. The old
+ *  per-channel G/B boost ratios existed only to cancel that grey lift;
+ *  against a deep tint they invert the cast, so they are gone.
+ *  b = 0 or tint all-255 -> slope 1 = exact identity. */
 export function dimParams(p: LensParams): Array<[number, number]> {
-  const b = p.dim;
-  const t = p.dimTint;
+  const b = Math.max(0, Math.min(1, p.dim));
+  const [tr, tg, tb] = p.dimTint;
+  const slope = (t: number) => 1 - b * (1 - Math.max(0, Math.min(255, t)) / 255);
   return [
-    [1 - b, (b * t[0]) / 255],
-    [1 - b * 1.0526, (b * 1.0526 * t[1]) / 255],
-    [1 - Math.min(1, b * 1.4737), (Math.min(1, b * 1.4737) * t[2]) / 255],
+    [slope(tr), 0],
+    [slope(tg), 0],
+    [slope(tb), 0],
   ];
 }

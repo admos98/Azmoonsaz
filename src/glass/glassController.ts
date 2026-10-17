@@ -273,7 +273,7 @@ function defaultParamsFromRoot(): LensParams {
     specPeak: cssNum(cs, '--lens-spec-peak', 1),
     cornerExp: cssNum(cs, '--corner-exp', 3),
     dim: cssNum(cs, '--lens-dim', 0.15),
-    dimTint: [103, 100, 112],
+    dimTint: dimTintOf(cs),
   };
 }
 
@@ -325,6 +325,18 @@ const CORNER_SHAPE_SUPPORTED =
 function cssNum(cs: CSSStyleDeclaration, name: string, fallback: number): number {
   const v = parseFloat(cs.getPropertyValue(name));
   return Number.isFinite(v) ? v : fallback;
+}
+
+/** The dim tint (RGB 0..255) from --glass-dim-tint — "31 29 41" in light,
+ *  "0 0 0" in the dark scope. Feeds dimParams()' per-channel slopes: the
+ *  tint's channels decide how hard each hue comes down (see mapMath.ts).
+ *  Unparseable input falls back to the light slate so the dim stays a dark
+ *  tint rather than a grey lift. */
+function dimTintOf(cs: CSSStyleDeclaration): [number, number, number] {
+  const raw = cs.getPropertyValue('--glass-dim-tint').trim().split(/\s+/);
+  const nums = raw.map((n) => parseFloat(n)).filter((n) => Number.isFinite(n));
+  if (nums.length >= 3) return [nums[0], nums[1], nums[2]];
+  return [31, 29, 41];
 }
 
 function radiusOf(el: HTMLElement, cs: CSSStyleDeclaration, fallback: number): number {
@@ -405,7 +417,7 @@ function chainOf(el: Element, cs: CSSStyleDeclaration): string {
     return `blur(${cssNum(cs, '--glass-bg-blur', 8).toFixed(2)}px)${sat(cssNum(cs, '--glass-bg-sat', 1.5))}`;
   if (el.classList.contains('lens')) {
     if (el.classList.contains('lens--menu'))
-      return `blur(${cssNum(cs, '--lens-menu-blur', 8).toFixed(2)}px)`;
+      return `blur(${cssNum(cs, '--lens-menu-blur', 3).toFixed(2)}px)`;
     return `blur(${lensBlur.toFixed(2)}px)`;
   }
   if (el.classList.contains('pane')) return `blur(${(lensBlur * 2).toFixed(2)}px)`;
@@ -498,7 +510,7 @@ function webglPlaceable(el: HTMLElement, cs: CSSStyleDeclaration): boolean {
 function paramsForWebgl(el: HTMLElement, cs: CSSStyleDeclaration): GlassPaintParams {
   const lensBlur = cssNum(cs, '--lens-blur', 1);
   let blur: number;
-  if (el.classList.contains('lens--menu')) blur = cssNum(cs, '--lens-menu-blur', 6);
+  if (el.classList.contains('lens--menu')) blur = cssNum(cs, '--lens-menu-blur', 3);
   else if (el.classList.contains('pane')) blur = lensBlur * 2;
   else if (el.classList.contains('drop')) blur = cssNum(cs, '--drop-blur', 0.5);
   else blur = lensBlur;
@@ -513,7 +525,7 @@ function paramsForWebgl(el: HTMLElement, cs: CSSStyleDeclaration): GlassPaintPar
     specPeak: cssNum(cs, '--lens-spec-peak', 1),
     cornerExp: cssNum(cs, '--corner-exp', 3),
     dim: cssNum(cs, '--lens-dim', 0.15),
-    dimTint: [103, 100, 112],
+    dimTint: dimTintOf(cs),
     blur,
     sat: 1.15,
     fillA1: cssNum(cs, '--glass-fill', 0),
@@ -1032,7 +1044,7 @@ function readParams(cs: CSSStyleDeclaration): LensParams {
     specPeak: cssNum(cs, '--lens-spec-peak', 1),
     cornerExp: cssNum(cs, '--corner-exp', 3),
     dim: cssNum(cs, '--lens-dim', 0.15),
-    dimTint: [103, 100, 112],
+    dimTint: dimTintOf(cs),
   };
 }
 

@@ -39,7 +39,7 @@ function readParams() {
     specPeak: num('--lens-spec-peak', 1),
     cornerExp: num('--corner-exp', 2),
     dim: num('--lens-dim', 0.1),
-    dimTint: [103, 100, 112],
+    dimTint: [31, 29, 41],
     /* These four were MISSING, and both absences were silently corrupting the
        A/B:
          · radius — css-engine.js:77 reads params.radius to size the maps. No

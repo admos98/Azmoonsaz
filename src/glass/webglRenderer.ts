@@ -136,7 +136,6 @@ uniform float u_dim;
 uniform float u_dimR;
 uniform float u_dimG;
 uniform float u_dimB;
-uniform vec3  u_dimTint;
 uniform float u_specOpacity;
 uniform float u_alpha;       // the panel's own inline opacity (motion fades)
 
@@ -234,15 +233,13 @@ void main() {
   float t = clamp(dot(v_local / u_size - 0.5, dir) + 0.5, 0.0, 1.0);
   col = mix(col, vec3(1.0), mix(u_fillA1, u_fillA2, t));
 
-  /* dim wash — dimParams() is affine per channel, so it applies straight here */
+  /* dim wash — dimParams() is a pure per-channel SCALE (slope, intercept 0):
+     col *= slope. Lockstep with the CSS filter chain (buildFilterMarkup
+     consumes the same dimParams() output), so both paths dim identically.
+     Black stays black; the tint's channels set how hard each hue comes
+     down (cool tint = dark tinted glass, no additive putty floor). */
   if (u_dim > 0.0) {
-    vec3 slope = vec3(u_dimR, u_dimG, u_dimB);
-    vec3 icept = vec3(
-      u_dim * u_dimTint.r / 255.0,
-      u_dim * 1.0526 * u_dimTint.g / 255.0,
-      min(1.0, u_dim * 1.4737) * u_dimTint.b / 255.0
-    );
-    col = col * slope + icept;
+    col *= vec3(u_dimR, u_dimG, u_dimB);
   }
 
   col = mix(col, vec3(1.0), spec * u_specOpacity);
@@ -870,12 +867,6 @@ export class GlassRenderer {
     gl.uniform1f(this.uni(p, 'u_dimR'), dr[0]);
     gl.uniform1f(this.uni(p, 'u_dimG'), dg[0]);
     gl.uniform1f(this.uni(p, 'u_dimB'), db[0]);
-    gl.uniform3f(
-      this.uni(p, 'u_dimTint'),
-      params.dimTint[0],
-      params.dimTint[1],
-      params.dimTint[2],
-    );
     f1('u_specOpacity', params.specOpacity);
     f1('u_alpha', alpha);
     gl.uniform1f(this.uni(p, 'u_maskProbe'), this.maskProbe ? 1 : 0);

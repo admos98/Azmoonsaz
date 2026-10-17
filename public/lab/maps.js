@@ -231,12 +231,13 @@ export function buildSpecularMap(wCss, hCss, radiusCss, angleDeg, scale = 1, pea
 }
 
 export function dimParams(p) {
-  const b = p.dim;
-  const t = p.dimTint;
+  const b = Math.max(0, Math.min(1, p.dim));
+  const [tr, tg, tb] = p.dimTint;
+  const slope = (t) => 1 - b * (1 - Math.max(0, Math.min(255, t)) / 255);
   return [
-    [1 - b, (b * t[0]) / 255],
-    [1 - b * 1.0526, (b * 1.0526 * t[1]) / 255],
-    [1 - Math.min(1, b * 1.4737), (Math.min(1, b * 1.4737) * t[2]) / 255],
+    [slope(tr), 0],
+    [slope(tg), 0],
+    [slope(tb), 0],
   ];
 }
 

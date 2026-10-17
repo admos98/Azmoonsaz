@@ -481,7 +481,11 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(token('--glass-fill')).toBe('0'); // glassBg: transparent, like the playground
     expect(token('--glass-fill', ":root[data-glass='lite']")).toBe('0.32');
     expect(token('--glass-fill', ":root[data-glass='off']")).toBe('0.85');
-    expect(token('--dim-tint')).toBe('103 100 112');
+    expect(token('--dim-tint')).toBe('31 29 41'); // deep slate — multiplicative dim tint + fallback fill (was mid-grey 103 100 112: the additive putty floor)
+    // both dim bases agree per theme — one value for the filter law, one for the lite/off fill
+    expect(token('--glass-dim-tint')).toBe(token('--dim-tint'));
+    expect(token('--glass-dim-tint', darkScope)).toBe('0 0 0');
+    expect(token('--dim-tint', darkScope)).toBe('0 0 0');
     expect(token('--lens-blur')).toBe('1px'); // Blur Level 1.0px
     expect(token('--pane-blur')).toBe('calc(var(--lens-blur) * 2)'); // nested = 2x
     expect(token('--frost-blur')).toBe('calc(var(--lens-blur) * 2)');
@@ -590,10 +594,13 @@ describe('glass material contract (pixel-audit gates)', () => {
     // opacity anywhere keeps the compositor requesting frames (every url()
     // surface re-runs at 60fps while the user sits still). Blink, then rest.
     expect(css).toMatch(/\.animate-pulse\s*\{\s*animation-iteration-count:\s*3/s);
-    // below-fold skipping: refracting cards skip rendering off-screen at zero
-    // filter cost, holding their scroll footprint (intrinsic-size auto).
-    expect(css).toMatch(/@utility cv-card\s*\{[^}]*content-visibility:\s*auto/s);
-    expect(css).toMatch(/contain-intrinsic-size:\s*auto/);
+    // below-fold skipping RETIRED (2026-10-17): the cv-card placeholder
+    // (contain-intrinsic-size 320px) jumped on scroll-in (+880px measured)
+    // — the "panels resize / jelly" report. The utility must not come back.
+    expect(css).not.toMatch(/@utility cv-card/);
+    expect(css).not.toMatch(/content-visibility:\s*auto/);
+    expect(component('src/pages/teacher/Dashboard.tsx')).not.toMatch(/cv-card/);
+    expect(component('src/pages/teacher/Questions.tsx')).not.toMatch(/cv-card/);
     // Lever A: the bend is viewport-gated — an IntersectionObserver parks
     // offscreen panels on blur-only (inline url() cleared, key forgotten),
     // entry re-dresses from the MAP_TABLE cache hit (no worker rebuild).
@@ -609,9 +616,6 @@ describe('glass material contract (pixel-audit gates)', () => {
     // removed panel is retained)
     expect(gate).toMatch(/viewObserver\?\.unobserve\(el\)/);
     expect(gate).toMatch(/resizeObserver\?\.unobserve\(el\)/);
-    // the two below-fold dashboard sections ride containment
-    expect(component('src/pages/teacher/Dashboard.tsx')).toMatch(/id="section-upcoming-exams"[\s\S]{0,120}cv-card|cv-card[\s\S]{0,120}id="section-upcoming-exams"/);
-    expect(component('src/pages/teacher/Dashboard.tsx')).toMatch(/id="section-recent-submissions"[\s\S]{0,120}cv-card|cv-card[\s\S]{0,120}id="section-recent-submissions"/);
     // push: the tint turns up (resting 16% -> 34%)
     expect(token('--btn-tint-mix')).toBe('16%');
     expect(css).toMatch(/\.btn-glass:active\s*{\s*--btn-tint-mix:\s*34%/);
@@ -680,12 +684,17 @@ describe('glass material contract (pixel-audit gates)', () => {
       /buildFilterMarkup/,
     );
 
-    // ── options A+B: light menu blur cut + floating menu containment ──
-    // A: light-only 6px->5px on the densest panels (shared token untouched,
-    // dark keeps 6+2). 1px is side-by-side imperceptible on a 280px menu.
+    // ── options A+B: menu blur cut + floating menu containment ──
+    // A: menus run 3px in BOTH themes — the heavy lift moved into the dim
+    // (see the dim-first pins below); blur only softens contours now.
     expect(css).toMatch(
-      /:root:not\(\[data-theme='dark'\]\) \.lens\.lens--menu\s*\{\s*backdrop-filter:\s*blur\(5px\);/s,
+      /:root:not\(\[data-theme='dark'\]\) \.lens\.lens--menu\s*\{\s*backdrop-filter:\s*blur\(3px\);/s,
     );
+    // dark carries no extra blur anymore (6+2px was the plastic smear)
+    expect(css).toMatch(
+      /:root\[data-theme='dark'\] \.lens\.lens--menu\s*\{\s*backdrop-filter:\s*blur\(var\(--lens-menu-blur\)\);/s,
+    );
+    expect(css).not.toMatch(/blur\(calc\(var\(--lens-menu-blur\) \+ 2px\)\)/);
     // B: contain: layout paint on both floating wrappers (invalidation stays
     // in the dropdown subtree). NOT strict/size (would collapse auto panels).
     expect(css).toMatch(/@utility contain-menu\s*\{[^}]*contain:\s*layout paint/s);
@@ -695,13 +704,11 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(component('src/components/Topbar.tsx')).toMatch(
       /fixed z-\[60\] @container contain-menu/,
     );
-    // ── 1H menu bleed: perceive but don't read ──
-    // light menus dim the backdrop harder (the hero h1 was legible through
-    // the panel and competed with menu labels); colour/contour/shape still
-    // bleed — only glyphs drop below the reading threshold. Dark keeps its
-    // original amplitude: it already passed the test.
-    expect(token('--lens-menu-dim')).toBe('0.2');
-    expect(token('--lens-menu-dim', darkScope)).toBe('0.14');
+    // dim-first menus: menus run a deep 0.55 dim and a light 3px blur; the
+    // dimming carries readability, not the blur (multiplicative dim law —
+    // V4 in docs/liquid-glass-engine-audit.md).
+    expect(token('--lens-menu-dim')).toBe('0.55');
+    expect(token('--lens-menu-dim', darkScope)).toBe('0.55');
     // the hamburger header no longer repeats the hero's date (1H)
     expect(component('src/components/Topbar.tsx')).not.toMatch(/formatPersianDate/);
     // ── the family rides every structural rule ──

@@ -131,20 +131,14 @@
   :is(.field, .frost, .chrome-blur, .btn-glass) {
   backdrop-filter: none;
 }
-/* Below-fold skipping — content-visibility for refracting cards.
-   A .lens card skipped by the browser costs ZERO filter passes (not rendered
-   = no backdrop re-sample on scroll, no per-frame graph), while
-   contain-intrinsic-size: auto holds its scroll footprint (auto remembers the
-   real size after first paint; the px value is only the pre-first-render
-   estimate). Zero visual change: in-view cards render exactly as before.
-   Applied per card (not per list) so each card skips independently as it
-   leaves the viewport. Safe with framer-motion layout/enter animations: those
-   run at mount/filter-change while cards are in view; skipped cards have
-   nothing to animate. */
-@utility cv-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 320px;
-}
+/* Below-fold skipping — RETIRED (2026-10-17). The cv-card utility
+   (content-visibility: auto + contain-intrinsic-size: auto 320px) gave every
+   skipped card a 320px placeholder; on first scroll-in the real height landed
+   in ONE frame — measured jump 368px -> 1248px (+880px shove of everything
+   below), the reported "panels resize / jelly while scrolling". The engine
+   also read the placeholder height for rects, painting panels at the wrong
+   size until render. A placeholder that lies about layout is worse than the
+   filter cost it saved: the removal is the fix. */
 /* Ink glass — sidebar (dark field with warm gold tint) */
 @utility glx-dark {
   background: var(--color-ink-field);

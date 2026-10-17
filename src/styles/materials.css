@@ -22,26 +22,27 @@
   background: rgb(var(--dim-tint) / var(--glass-fill));
   backdrop-filter: blur(var(--lens-blur));
 }
-/* Floating menu material (hamburger panels, notif): heavier frost + deeper
-   dim than resting panels — menus float over the DENSEST content and must
-   read as objects, not smears (user: "a bit more blur and dimming… still
-   feel glass"). Universal — not dark-only; the dark tune keeps a notch more
-   blur. The engine re-dresses the filter markup from these tokens (maps are
-   dim/blur-blind), and the plain-chain fallback matches until it attaches. */
+/* Floating menu material (hamburger panels, notif): the DIM carries the
+   readability (Apple's menu dim runs ~0.5), not the blur (user: "the dimming
+   should do the readability, not the blur"). 3px keeps the backdrop soft
+   without smearing it — menus used to run 6px+. The engine re-dresses the
+   filter markup from these tokens (maps are dim/blur-blind), and the
+   plain-chain fallback matches until it attaches. */
 .lens.lens--menu {
   --lens-dim: var(--lens-menu-dim);
   backdrop-filter: blur(var(--lens-menu-blur));
 }
+/* Dark: no extra blur anymore — the dim floor on a dark page IS the
+   readability (6+2px was the plastic smear). One notch deeper dim than the
+   light tune's 0.55 is unnecessary; dark keeps its 0.55 via the token. */
 :root[data-theme='dark'] .lens.lens--menu {
-  backdrop-filter: blur(calc(var(--lens-menu-blur) + 2px));
+  backdrop-filter: blur(var(--lens-menu-blur));
 }
-/* Light-only menu blur cut: 6px -> 5px on the densest panels. 1px is
-   imperceptible side-by-side on a 280px menu; blur cost scales with radius
-   so the hottest surface gets ~15% cheaper. Dark keeps 6+2 (dark pixels are
-   already cheap to raster). Scoped override — the shared token is untouched
-   so dark and the engine's chainOf() need no changes. */
+/* Light-only menu blur, same number: 3px on the densest panels. The heavy
+   lift moved into --lens-menu-dim (0.2 -> 0.55) — readability from the
+   dimming wash, blur only for contour softening. */
 :root:not([data-theme='dark']) .lens.lens--menu {
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(3px);
 }
 /* Floating menu containment: hover transitions inside the dropdowns used to
    invalidate style/paint up the tree (Topbar -> header -> page). contain:

@@ -217,6 +217,29 @@ cancel/save/confirm pairs are untouched.
 Superellipse corner-shape costs ≈12% fps under SOFTWARE rendering (54→48);
 on GPU-accelerated compositing (the user's hardware) it is a shader mask.
 
+### V4 — Dim law: multiplicative, black-preserving (Apple dim)
+The old playground law dimmed as an AFFINE wash toward mid-grey
+`[103,100,112]` with per-channel G/B boost ratios (×1.0526 / ×1.4737). On
+black input at b=0.1 that law ADDS +10 R / +11 G / +16 B — a grey putty
+floor; dark glass washed up into plastic (user: "the dim plastic thing").
+Now `dimParams()` is a pure per-channel SCALE toward the dim tint:
+
+    slope_ch = 1 - b · (1 - tint_ch / 255),   intercept = 0
+
+Black stays black at any strength, highlights come down, and the tint's
+channel differences set the cast. The tint comes from `--glass-dim-tint`
+(deep slate `31 29 41` light / black dark), kept equal to `--dim-tint`
+(the lite/off fill) per theme. Verified live: menu panel slopes
+`0.5169/0.5125/0.5384` at b=0.55 (light) — blue survives most → smoked
+tint; dark `0.45/0.45/0.45` → pure darkening. The `u_dimTint` shader
+uniform is gone (slopes carry everything); both paint paths consume the
+same `dimParams()` output.
+
+V4b — dim-first menus: readability is the DIMMING, not the blur (user
+directive). Menu dim 0.2→0.55 both themes; menu blur 5px→3px light and
+8px→3px dark (the 6+2px dark override is deleted — 'the plastic smear').
+Light menu rail measures −66.5 luminance vs page (was a +light haze).
+
 ### Regression tooling
 `tools/perf-probe.mjs` (load timeline), `tools/ab-perf.mjs` (A/B fps),
 `tools/verify-fn.mjs` (lazy build, theme-flip reuse, circle exemption,

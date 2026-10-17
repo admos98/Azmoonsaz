@@ -32,10 +32,10 @@
   --glass-scrim: 56 60 68;
 
   --lens-blur: 1px;
-  --lens-menu-blur: 6px;
-  --lens-menu-dim: 0.2;
+  --lens-menu-blur: 3px;
+  --lens-menu-dim: 0.55;
   --lens-dim: 0.1;
-  --dim-tint: 103 100 112;
+  --dim-tint: 31 29 41;
   --pane-blur: 2px;
   --frost-blur: 2px;
   --field-blur: 2px;
@@ -65,7 +65,8 @@
   --glass-p-boost2: 0.26;
   --glass-p-blur: 26px;
   --glass-p-bc: 255 255 255;
-  --lens-menu-dim: 0.14;
+  --lens-menu-dim: 0.55;
+  --dim-tint: 0 0 0;
   --glass-bloom-line-a: 0.05;
   --glass-bloom-a: 0.05;
   --glass-rim-fade: 0.12;
@@ -144,8 +145,8 @@ html, body {
   -webkit-backdrop-filter: blur(var(--lens-menu-blur));
 }
 :root:not([data-theme='dark']) .lens.lens--menu {
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 .drop {
   border-radius: 9999px;

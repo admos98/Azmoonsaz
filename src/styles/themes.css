@@ -109,20 +109,14 @@
      refraction 0.5, blur 1.0, specular 0.34/5/-55deg, rgb-dim 0.15).
      The dark theme changes exactly ONE number: --lens-dim. */
   --lens-dim: 0.1; /* rgb-dim — per-channel wash IN the lens/pane filters */
-  /* Floating menu material — hamburger/notif panels read against the DENSEST
-     content (hero type, busy cards). Apple's menus sit near 80% opacity:
-     deeper dim + heavier blur than resting panels, still glass. These only
-     re-dress the filter MARKUP (map cache is dim-blind) and the plain-chain
-     fallback below. */
-  /* Menu material — deeper dim + heavier blur than resting panels, still
-     glass. Round-1 1H: light 0.14 -> 0.2 — with the menu open you should
-     PERCEIVE something behind it without being able to READ it (the hero
-     h1 was legible through the panel and competed with menu labels).
-     Colour, contour and shape still bleed; glyphs drop under the reading
-     threshold. Dark keeps 0.14 via its override below. */
-  --lens-menu-dim: 0.2;
-  --lens-menu-blur: 6px;
-  --dim-tint: 103 100 112; /* dim wash target (mid-grey) + fallback fill */
+  /* Floating menu material — the DIM carries readability. Apple's menus sit
+     near 80% opacity: a deep dim + a light blur. The dimming wash does the
+     work (user directive), blur only softens contours. These only re-dress
+     the filter MARKUP (map cache is dim-blind) and the plain-chain fallback
+     below. */
+  --lens-menu-dim: 0.55;
+  --lens-menu-blur: 3px;
+  --dim-tint: 31 29 41; /* deep slate — multiplicative dim tint (see dimParams) */
   --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
   --lens-blur: 1px; /* Blur Level 1.0px (kube tune) */
   --pane-blur: calc(var(--lens-blur) * 2); /* nested: twice the lens blur */
@@ -281,9 +275,11 @@
      — see the base token comment. */
   --color-focus-ring: rgba(245, 179, 1, 0.72);
 
-  /* Menu bleed pinned at the original amplitude (1H): dark menus already
-     passed the perceive-but-don't-read test — only light moves. */
-  --lens-menu-dim: 0.14;
+  /* Menu bleed (1H) + dim-first readability pass: with the multiplicative
+     dim law the wash DARKENS instead of lifting — light menus run 0.55
+     (perceive the backdrop, drop glyphs under the reading threshold) and
+     the blur drops to 3px; the dimming does the work now, not the blur. */
+  --lens-menu-dim: 0.55;
 
   --glass-scrim-a: 0.35;
   --glass-scrim-color: 0 0 0;
@@ -313,6 +309,12 @@
   /* dark keeps no grain — see the retired token note in :root */
   --glass-p-ba: 0;
   --glass-p-bc: 255 255 255;
+  /* Dark dim base: pure black — the multiplicative dim can only darken, and
+     on a dark page that is a near-invisible scale toward zero (contrast
+     control). Also the lite/off-tier fill tint, matching --glass-dim-tint
+     below. Light uses the deep slate (31 29 41) for its cool smoked-glass
+     cast (see dimParams). */
+  --dim-tint: 0 0 0;
   /* Dark has no dimming base — the page is already the dark floor. */
   --glass-dim-tint: 0 0 0;
   --glass-dim-a1: 0;
