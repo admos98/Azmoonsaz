@@ -14,8 +14,9 @@ import { test, expect } from '@playwright/test';
  *   2. on a WebGL2-capable engine the canvas mounts, and the swap
  *      (data-glass-render='webgl') makes the plate layer and the drawn panel
  *      frames disappear together — atomically;
- *   3. panels the shader does NOT serve (glx*, floating) keep their CSS
- *      material — no transparent hole;
+ *   3. in-flow glx panels ARE shader-served (their Skia url() graph was the
+ *      dominant scroll cost); floating/sticky, clipped, field and glx-dark
+ *      panels keep their CSS material — no transparent hole;
  *   4. lite/off tiers never boot the shader;
  *   5. the frame loop actually runs (stats report mode + drawn count).
  *
@@ -95,7 +96,7 @@ test.describe('WebGL glass paint path', () => {
     expect(state.drawnPanelBackground).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
   });
 
-  test('panels the shader does not serve keep their CSS material', async ({ page }) => {
+  test('in-flow glx panels are served by the shader (DOM keeps painted material)', async ({ page }) => {
     await page.goto(HARNESS);
     await waitForPath(page);
     const paint = await page.evaluate(() => document.documentElement.dataset.paint);
@@ -104,19 +105,27 @@ test.describe('WebGL glass paint path', () => {
       timeout: 15000,
     });
 
-    // glx cards are shot by neither the shader nor the swap: they must still
-    // carry a backdrop-filter (their material is CSS-owned).
-    const glxBackdrop = await page.evaluate(() => {
-      const el = document.querySelector('#app-teacher-shell .glx') as HTMLElement | null;
+    // The hero banner is an in-flow .glx card: formerly CSS-only (Skia url()
+    // graph per frame — the questions-page scroll cost), now drawn by the
+    // shader for its BACKDROP chain while the DOM keeps its own painted
+    // material (fill gradient + bloom box-shadow) — the cascade owns the
+    // fill, so the shader must not invent one (measured +6/255 otherwise).
+    // Floating/sticky panels stay CSS-owned (webglPlaceable; pinned by the
+    // unit suite).
+    const glx = await page.evaluate(() => {
+      const el = document.getElementById('dashboard-hero-banner') as HTMLElement | null;
       if (!el) return null;
       return {
         painted: el.dataset.glassPaint === 'webgl',
         backdrop: getComputedStyle(el).backdropFilter,
+        // the bloom (painted material) survives the strip on the shader path
+        shadow: getComputedStyle(el).boxShadow,
       };
     });
-    expect(glxBackdrop).not.toBeNull();
-    expect(glxBackdrop!.painted).toBe(false);
-    expect(glxBackdrop!.backdrop).not.toMatch(/^none$/);
+    expect(glx).not.toBeNull();
+    expect(glx!.painted).toBe(true);
+    expect(glx!.backdrop).toMatch(/none|^$/);
+    expect(glx!.shadow).not.toBe('none');
   });
 
   test('lite/off tiers never boot the shader', async ({ page }) => {

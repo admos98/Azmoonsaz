@@ -73,6 +73,7 @@ import {
 } from './lensEngine';
 import type { MapBuildRequest, MapBuildResponse } from './mapWorker';
 import { cssUnescape, plateURLFromComputed } from './cssUrl';
+import { ScrollLead } from './scrollLead';
 import { GlassRenderer, type GlassKind, type GlassPaintParams } from './webglRenderer';
 
 /* ───────────────────── Ladder ───────────────────── */
@@ -158,6 +159,31 @@ let plateRaw = '';
  *  read. Escaped input is not a fetchable URL (the `\` reads as a path
  *  separator) — leaving it verbatim killed every plate request on iPhone. */
 let plateEsc = false;
+/** Display-time lead state (scrollLead.ts): a smoothed scroll velocity so
+ *  the glass is painted where the compositor will DISPLAY it, not where the
+ *  main thread last observed it — without the per-frame oscillation the raw
+ *  v1 delta caused (reverted: rim stutter). */
+const scrollLead = new ScrollLead();
+/** Scroll-lead configuration for the display-time compensation (glFrame).
+ *  Resolution order: window.__glassLead (A/B harness) > ?laglead= URL param >
+ *  default. Values: 0 = off (legacy); -1 = auto — one measured display
+ *  interval of smoothed velocity (shipped default; zero at rest, so idle
+ *  output is byte-identical); N > 0 = lead by N ms. */
+const leadParam: number | null = (() => {
+  try {
+    const v = new URLSearchParams(location.search).get('laglead');
+    if (v === null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+})();
+function glassLeadMs(): number {
+  const w = window as unknown as { __glassLead?: number };
+  if (typeof w.__glassLead === 'number') return w.__glassLead;
+  return leadParam ?? -1;
+}
 const paintCache = new WeakMap<HTMLElement, PaintEntry>();
 const webglDrawSet = new Set<HTMLElement>();
 
@@ -339,6 +365,16 @@ function dimTintOf(cs: CSSStyleDeclaration): [number, number, number] {
   return [31, 29, 41];
 }
 
+/** The fill gradient's tint from --glass-p-tint (light 255 255 255, dark
+ *  16 15 28). The shader reproduces the CSS fill in the THEME's tint so a
+ *  drawn glx keeps its dark near-black body instead of flipping white. */
+function fillTintOf(cs: CSSStyleDeclaration): [number, number, number] {
+  const raw = cs.getPropertyValue('--glass-p-tint').trim().split(/\s+/);
+  const nums = raw.map((n) => parseFloat(n)).filter((n) => Number.isFinite(n));
+  if (nums.length >= 3) return [nums[0], nums[1], nums[2]];
+  return [255, 255, 255];
+}
+
 function radiusOf(el: HTMLElement, cs: CSSStyleDeclaration, fallback: number): number {
   const raw = (cs.borderRadius || '').trim().split(/[\s/]+/)[0];
   const n = parseFloat(raw);
@@ -469,10 +505,36 @@ function tierAllowsGlass(): boolean {
   return tier !== 'lite' && tier !== 'off';
 }
 
-/** Drawable class → kind; glx* are excluded on purpose (blur-only CSS). */
+/** Drawable class → kind. glx/glx-strong ARE shader-served now: their CSS
+ *  url() graph through Skia was the dominant scroll cost on dense pages
+ *  (questions: 1.55M px urlArea/frame). The shader runs the same chain;
+ *  glx-dark stays CSS — it is the fixed ink field, not a plate-over panel.
+ *  `?glxc=0` forces glx back to the CSS path — the A/B lever for parity
+ *  captures (one variable: who paints the glx family). */
+const GLX_ON_CSS: boolean = (() => {
+  try {
+    return new URLSearchParams(location.search).get('glxc') === '0';
+  } catch {
+    return false;
+  }
+})();
 function webglKindOf(el: Element): GlassKind | null {
   const cl = el.classList;
-  if (cl.contains('glx') || cl.contains('glx-strong') || cl.contains('glx-dark')) return null;
+  // glx* families: formerly CSS-only ("their bloom lines are CSS"). Their
+  // url() graph through Skia is the dominant scroll cost on dense pages
+  // (questions: 1.55M px urlArea per frame at ~13fps). The shader runs the
+  // SAME chain (same maps, same order — webglRenderer docblock), and their
+  // one CSS-only element, the inset bloom line, survives the swap because
+  // the paint rule keeps box-shadow on glx (see base.css). glx-dark stays
+  // CSS: it is the fixed ink field, not a plate-over panel.
+  if (cl.contains('glx-dark')) return null;
+  if (cl.contains('glx') || cl.contains('glx-strong')) {
+    if (GLX_ON_CSS) return null;
+    // glx inputs (`.field`) keep their CSS material: the glx gates exclude
+    // .field everywhere (never engine targets — no url() to shed).
+    if (cl.contains('field')) return null;
+    return 'lens';
+  }
   if (cl.contains('lens')) return 'lens';
   if (cl.contains('pane')) return 'pane';
   if (cl.contains('drop')) return 'drop';
@@ -509,11 +571,30 @@ function webglPlaceable(el: HTMLElement, cs: CSSStyleDeclaration): boolean {
  *  (mapDPR caps 1..2 by viewport). */
 function paramsForWebgl(el: HTMLElement, cs: CSSStyleDeclaration): GlassPaintParams {
   const lensBlur = cssNum(cs, '--lens-blur', 1);
+  const isGlx = el.classList.contains('glx') || el.classList.contains('glx-strong');
+  const isGlxStrong = el.classList.contains('glx-strong');
   let blur: number;
   if (el.classList.contains('lens--menu')) blur = cssNum(cs, '--lens-menu-blur', 3);
   else if (el.classList.contains('pane')) blur = lensBlur * 2;
   else if (el.classList.contains('drop')) blur = cssNum(cs, '--drop-blur', 0.5);
+  else if (isGlxStrong) blur = cssNum(cs, '--glass-p-blur', 16);
+  else if (isGlx) blur = cssNum(cs, '--glass-bg-blur', 8);
   else blur = lensBlur;
+  /* NO shader fill for glx (nor anyone): the element's OWN background
+     gradient stays DOM-painted on the shader path (base.css keeps it for
+     glx/glx-strong), compositing over the canvas exactly as it composited
+     over the url() chain in CSS mode. Per-element overrides (a page rule
+     with higher specificity replacing the utility gradient) are the
+     cascade's to decide — a token-derived shader fill cannot see them and
+     measured +6/255 off (glx-parity bisect). --glass-fill is 0 on the full
+     tier, so this is inert machinery for lite/off tiers only. */
+  /* Masked rim saturation stays at the lab's 1.15 for every drawn family.
+     The CHAIN-level saturate (blur → saturate → url) is what only glx/glx-
+     strong carry; it feeds u_gsat (applied after the displacement sample). */
+  const sat = 1.15;
+  let gsat = 1;
+  if (isGlxStrong) gsat = cssNum(cs, '--glass-p-sat', 1.5);
+  else if (isGlx) gsat = cssNum(cs, '--glass-bg-sat', 1.5);
   return {
     bezel: cssNum(cs, '--lens-bezel', 14),
     thickness: cssNum(cs, '--lens-thickness', 66),
@@ -527,10 +608,15 @@ function paramsForWebgl(el: HTMLElement, cs: CSSStyleDeclaration): GlassPaintPar
     dim: cssNum(cs, '--lens-dim', 0.15),
     dimTint: dimTintOf(cs),
     blur,
-    sat: 1.15,
+    /* Masked rim saturation stays at the lab's 1.15 for every drawn family.
+       The CHAIN-level saturate (blur → saturate → url) is what only glx/glx-
+       strong carry; it feeds u_gsat (applied after the displacement sample). */
+    sat,
+    gsat,
     fillA1: cssNum(cs, '--glass-fill', 0),
     fillA2: cssNum(cs, '--glass-fill', 0),
     fillAngle: cssNum(cs, '--glass-p-angle', 180),
+    fillTint: fillTintOf(cs),
     radius: radiusOf(el, cs, cssNum(cs, '--lens-radius', 21)),
     dpr: mapDPR(),
     cornerShapeSupported: CORNER_SHAPE_SUPPORTED,
@@ -656,6 +742,28 @@ function glFrame(): void {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const M = 96;
+
+  /* Display-time compensation (scrollLead.ts, v2). The canvas is fixed and
+     painted on the main thread while the DOM scrolls on the compositor's
+     clock; painting at the read-time position trails the text by one display
+     interval (measured 60-98px in the throttled-capture A/B) — "panels are
+     late to their location on scroll". The lead rides a SMOOTHED velocity so
+     the offset cannot oscillate (v1's raw delta stuttered the rim). Rest
+     output is exactly 0 — byte-identical to the legacy path. */
+  const leadPx = scrollLead.update(
+    window.scrollY,
+    performance.now(),
+    glassLeadMs(),
+    Math.max(600, Math.round(vh * 0.7)),
+  );
+  const leadOff = -leadPx; // view scrolls down by leadPx → drawn panels rise
+  /* Applied-lead probe (dev): the offset lives only inside this loop; a
+     scripted gesture reads it per frame (window.__glassLeadPx) to verify
+     smoothness (no per-frame spikes) and rest-identity (exactly 0 when
+     stopped). One property write per frame; no DOM effect. */
+  (window as unknown as { __glassLeadPx?: number }).__glassLeadPx = leadPx;
+  const cull = M + Math.abs(leadOff);
+
   let drawn = 0;
   for (const el of webglDrawSet) {
     if (!el.isConnected) {
@@ -663,14 +771,14 @@ function glFrame(): void {
       continue;
     }
     const rect = el.getBoundingClientRect();
-    if (rect.bottom < -M || rect.top > vh + M || rect.right < -M || rect.left > vw + M) continue;
+    if (rect.bottom < -cull || rect.top > vh + cull || rect.right < -M || rect.left > vw + M) continue;
     if (rect.width < 2 || rect.height < 2) continue;
     const entry = paintCache.get(el);
     if (!entry) continue;
     try {
       r.drawPanel(
         entry.kind,
-        { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        { left: rect.left, top: rect.top + leadOff, width: rect.width, height: rect.height },
         entry.params,
         effectiveAlpha(el),
       );
@@ -690,6 +798,7 @@ function shutdownWebgl(lost: boolean): void {
     cancelAnimationFrame(glRaf);
     glRaf = 0;
   }
+  scrollLead.reset();
   if (renderer) {
     renderer.plateURL = ''; // stop any pending plate retries on a dead renderer
     try {
@@ -803,10 +912,12 @@ function flushSync(): void {
       // WebGL branch — the panel is tracked into the per-frame draw list
       // (reads only here; DOM writes happen in PHASE B). Panels the shader
       // cannot serve fall THROUGH to the classic CSS dress path instead:
-      // glx* families (their bloom lines and url() bend stay exactly as
-      // today), floating/sticky/absolute panels, clipped or painted-over
-      // backdrops. On engines below the url() gate they skip that too and
-      // keep the pure stylesheet material — today's behavior, unchanged.
+      // floating/sticky/absolute panels, fields, clipped or painted-over
+      // backdrops. glx/glx-strong ARE shader candidates now (webglKindOf):
+      // their Skia url() graph was the dominant scroll cost on dense pages;
+      // the shader runs the same chain (they shed exactly the layers lens
+      // already sheds on this path). On engines below the url() gate they
+      // skip that too and keep the pure stylesheet material — unchanged.
       const wk = webglKindOf(el);
       const cs = getComputedStyle(el);
       if (wk && webglPlaceable(el, cs)) {

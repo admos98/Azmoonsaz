@@ -33,8 +33,8 @@
 
   --lens-blur: 1px;
   --lens-menu-blur: 3px;
-  --lens-menu-dim: 0.55;
-  --lens-dim: 0.1;
+  --lens-menu-dim: 0.13;
+  --lens-dim: 0.05;
   --dim-tint: 31 29 41;
   --pane-blur: 2px;
   --frost-blur: 2px;
@@ -65,7 +65,8 @@
   --glass-p-boost2: 0.26;
   --glass-p-blur: 26px;
   --glass-p-bc: 255 255 255;
-  --lens-menu-dim: 0.55;
+  --lens-menu-dim: 0.14;
+  --lens-dim: 0.07;
   --dim-tint: 0 0 0;
   --glass-bloom-line-a: 0.05;
   --glass-bloom-a: 0.05;

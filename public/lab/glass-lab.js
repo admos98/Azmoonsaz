@@ -53,6 +53,10 @@ function readParams() {
     fillA1: num('--glass-fill', 0),
     fillA2: num('--glass-fill', 0),
     fillAngle: num('--glass-p-angle', 180),
+    fillTint: (() => {
+      const raw = cs.getPropertyValue('--glass-p-tint').trim().split(/\s+/).map(Number);
+      return raw.length >= 3 && raw.slice(0, 3).every(Number.isFinite) ? raw.slice(0, 3) : [255, 255, 255];
+    })(),
     radius: num('--lens-radius', 21),
     dpr: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
     cornerShapeSupported: CSS.supports?.('corner-shape', 'superellipse(2)') === true,
@@ -208,7 +212,14 @@ function chainBase(el) {
     const v = parseFloat(cs.getPropertyValue(n));
     return Number.isFinite(v) ? v : f;
   };
-  if (el.classList.contains('lens--menu')) return `blur(${num('--lens-menu-blur', 6).toFixed(2)}px)`;
+  // Mirrors chainOf() in the shipping controller: glx families carry their own
+  // blur + chain saturate; lens/pane/drop carry blur only.
+  if (el.classList.contains('glx-strong'))
+    return `blur(${num('--glass-p-blur', 16).toFixed(2)}px) saturate(${num('--glass-p-sat', 1.5)})`;
+  if (el.classList.contains('glx-dark')) return 'blur(10px) saturate(1.4)';
+  if (el.classList.contains('glx'))
+    return `blur(${num('--glass-bg-blur', 8).toFixed(2)}px) saturate(${num('--glass-bg-sat', 1.5)})`;
+  if (el.classList.contains('lens--menu')) return `blur(${num('--lens-menu-blur', 3).toFixed(2)}px)`;
   if (el.classList.contains('pane')) return `blur(${(num('--lens-blur', 1) * 2).toFixed(2)}px)`;
   if (el.classList.contains('drop')) return `blur(${num('--drop-blur', 0.5).toFixed(2)}px)`;
   return `blur(${num('--lens-blur', 1).toFixed(2)}px)`;
@@ -219,8 +230,12 @@ function paramsFor(el, base) {
   const p = readParams();
   const m = /blur\(([\d.]+)px\)/.exec(base);
   p.blur = m ? parseFloat(m[1]) : 1;
+  // The chain saturate feeds gsat (applied after the displacement sample);
+  // the masked rim saturation (u_sat) stays at the lab's 1.15 for every
+  // drawn family — mirrors the shipping controller.
   const s = /saturate\(([\d.]+)\)/.exec(base);
-  p.sat = s ? parseFloat(s[1]) : 1.15;
+  p.gsat = s ? parseFloat(s[1]) : 1;
+  p.sat = 1.15;
   const cs = getComputedStyle(el);
   if (el.classList.contains('lens--menu')) {
     p.dim *= 1.4;
@@ -235,8 +250,26 @@ function paramsFor(el, base) {
     };
     p.fillA1 = num('--glass-p-a1', 0) + num('--glass-p-boost1', 0);
     p.fillA2 = num('--glass-p-a2', 0) + num('--glass-p-boost2', 0);
-    p.blur = 10;
-    p.sat = 1.4;
+  }
+  // glx/glx-strong carry the CSS body gradient — the lab must hand the shader
+  // the same strengths (theme tint included) or a drawn glx loses its body.
+  // Their chain saturate already fed gsat via the base-string regex above.
+  if (el.classList.contains('glx-strong')) {
+    const num = (n, f) => {
+      const v = parseFloat(cs.getPropertyValue(n));
+      return Number.isFinite(v) ? v : f;
+    };
+    p.fillA1 = num('--glass-p-a1', 0.2) + num('--glass-p-boost1', 0.24);
+    p.fillA2 = num('--glass-p-a2', 0.13) + num('--glass-p-boost2', 0.17);
+    p.blur = num('--glass-p-blur', 16);
+  } else if (el.classList.contains('glx')) {
+    const num = (n, f) => {
+      const v = parseFloat(cs.getPropertyValue(n));
+      return Number.isFinite(v) ? v : f;
+    };
+    p.fillA1 = num('--glass-p-a1', 0.2);
+    p.fillA2 = num('--glass-p-a2', 0.13);
+    p.blur = num('--glass-bg-blur', 8);
   }
   return p;
 }

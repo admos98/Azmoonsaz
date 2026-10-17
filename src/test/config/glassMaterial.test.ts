@@ -476,8 +476,8 @@ describe('glass material contract (pixel-audit gates)', () => {
     // ── tokens: the kube.io replica tune, 1:1 (playground export) ──
     // parseFloat: prettier normalizes CSS numbers (0.10 -> 0.1); the pin is
     // the dim VALUE, not its spelling
-    expect(parseFloat(token('--lens-dim'))).toBe(0.1); // rgb-dim IN the lens/pane filters (user: light panels too dark at 0.15)
-    expect(token('--lens-dim', darkScope)).toBe('0.07'); // the ONE dark change (user: dark menu/dim band)
+    expect(parseFloat(token('--lens-dim'))).toBe(0.05); // rgb-dim IN the lens filters — multiplicative law: ≈ the accepted affine 0.1 minus its additive lift (V4)
+    expect(token('--lens-dim', darkScope)).toBe('0.07'); // dark keeps its 1H number (black tint → flat slope 0.93)
     expect(token('--glass-fill')).toBe('0'); // glassBg: transparent, like the playground
     expect(token('--glass-fill', ":root[data-glass='lite']")).toBe('0.32');
     expect(token('--glass-fill', ":root[data-glass='off']")).toBe('0.85');
@@ -704,11 +704,11 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(component('src/components/Topbar.tsx')).toMatch(
       /fixed z-\[60\] @container contain-menu/,
     );
-    // dim-first menus: menus run a deep 0.55 dim and a light 3px blur; the
-    // dimming carries readability, not the blur (multiplicative dim law —
-    // V4 in docs/liquid-glass-engine-audit.md).
-    expect(token('--lens-menu-dim')).toBe('0.55');
-    expect(token('--lens-menu-dim', darkScope)).toBe('0.55');
+    // dim-first menus: the multiplicative dim carries the readability, 3px
+    // blur only softens contours; 0.13/0.14 ≈ the accepted 1H affine washes
+    // with no additive lift (the 0.55 first pass read "practically black").
+    expect(token('--lens-menu-dim')).toBe('0.13'); // ≈ the 1H-accepted 0.2 affine wash under the multiplicative law (no lift)
+    expect(token('--lens-menu-dim', darkScope)).toBe('0.14'); // dark keeps its 1H number
     // the hamburger header no longer repeats the hero's date (1H)
     expect(component('src/components/Topbar.tsx')).not.toMatch(/formatPersianDate/);
     // ── the family rides every structural rule ──

@@ -58,6 +58,15 @@ export interface GlassPaintParams extends LensParams {
   fillA1: number;
   fillA2: number;
   fillAngle: number;
+  /** The fill gradient's tint, 0..255 — the CSS `--glass-p-tint`. Light: a
+   *  white frost; dark: a near-black wash. The shader must reproduce the
+   *  gradient in the theme's own tint (glx carries its fill in CSS, so a
+   *  hardcoded white would flip its dark appearance). */
+  fillTint: [number, number, number];
+  /** Global saturate from the element's CSS chain: glx/glx-strong carry
+   *  `blur() saturate()`; lens chains carry none (1). Applied BEFORE the
+   *  displacement, matching the CSS chain order. */
+  gsat: number;
   radius: number;
   dpr: number;
   cornerShapeSupported: boolean;
@@ -132,11 +141,13 @@ uniform float u_sat;
 uniform float u_fillA1;
 uniform float u_fillA2;
 uniform float u_fillAngle;
+uniform vec3  u_fillTint;   // the fill gradient's tint (255 255 255 light / 16 15 28 dark)
 uniform float u_dim;
 uniform float u_dimR;
 uniform float u_dimG;
 uniform float u_dimB;
 uniform float u_specOpacity;
+uniform float u_gsat;       // global saturate from the CSS chain (glx 1.5, lens 1)
 uniform float u_alpha;       // the panel's own inline opacity (motion fades)
 
 in vec2 v_local;
@@ -178,19 +189,36 @@ vec3 backdropAt(vec2 viewCss) {
   return texture(u_plate, clamp(plateUV(viewCss), 0.0, 1.0)).rgb;
 }
 
-/* 25-tap blur, CSS px radius. Chromium's backdrop blur is a true gaussian; this
-   is a cheap approximation — adequate for parity (lab: mean|d| 1.55, 0% of
-   pixels changed) and its cost is FLAT across panel counts. */
+/* 25-tap blur, CSS px radius. Chromium's backdrop blur is a true gaussian
+   with sigma = radius/2; this is a cheap approximation. Two kernels:
+     · radius < 4  — the original tight kernel (lens 1px, pane 2px, menu 3px,
+       drop 0.5px): shipped & lab-validated at mean|d| 1.55; DO NOT TOUCH.
+     · radius >= 4 — wide-radius kernel for the glx family (8/16/26px):
+       taps at (±2σ, ±2σ), σ = radius/2, gaussian weights, normalized. The
+       tight kernel at 8px measured mean|d| 7.66 vs Skia on the dev harness;
+       this one fits the real gaussian (see glx-parity diff). */
 vec3 blurred(vec2 viewCss, float radius) {
   if (radius < 0.35) return backdropAt(viewCss);
   vec3 acc = vec3(0.0);
   float wsum = 0.0;
-  for (int i = -2; i <= 2; i++) {
-    for (int j = -2; j <= 2; j++) {
-      vec2 off = vec2(float(i), float(j)) * radius * 0.55;
-      float w = exp(-float(i * i + j * j) / 4.0);
-      acc += backdropAt(viewCss + off) * w;
-      wsum += w;
+  if (radius < 4.0) {
+    for (int i = -2; i <= 2; i++) {
+      for (int j = -2; j <= 2; j++) {
+        vec2 off = vec2(float(i), float(j)) * radius * 0.55;
+        float w = exp(-float(i * i + j * j) / 4.0);
+        acc += backdropAt(viewCss + off) * w;
+        wsum += w;
+      }
+    }
+  } else {
+    float s = radius * 0.5;
+    for (int i = -3; i <= 3; i++) {
+      for (int j = -3; j <= 3; j++) {
+        vec2 off = vec2(float(i), float(j)) * s;
+        float w = exp(-float(i * i + j * j) / 2.0);
+        acc += backdropAt(viewCss + off) * w;
+        wsum += w;
+      }
     }
   }
   return acc / wsum;
@@ -212,7 +240,6 @@ void main() {
 
   vec2 viewCss = v_view / u_dpr;
   vec3 back = blurred(viewCss, u_blur);
-
   /* feDisplacementMap semantics: read the map at THIS pixel, offset the source
      sample by (R-0.5)*scale, (G-0.5)*scale. Same numbers feDisplacementMap
      receives from the same map bytes. */
@@ -222,27 +249,38 @@ void main() {
     back = blurred(viewCss + disp, u_blur);
   }
 
+  /* Chain saturate — CSS applies blur → saturate → url in order, so the
+     saturate reads the DISPLACED image. Applied here, after the sample.
+     Lens chains carry none (u_gsat = 1). */
+  if (abs(u_gsat - 1.0) > 0.001) back = mix(vec3(luma(back)), back, u_gsat);
+
   /* saturate inside the specular mask, blended over the raw displaced backdrop */
   float spec = texture(u_spec, v_local / u_size).a;
   vec3 saturated = mix(vec3(luma(back)), back, u_sat);
   vec3 col = mix(back, saturated, spec);
 
-  /* linear-gradient(angle, tint/a1, tint/a2) */
-  float ang = radians(u_fillAngle);
-  vec2 dir = vec2(cos(ang), sin(ang));
-  float t = clamp(dot(v_local / u_size - 0.5, dir) + 0.5, 0.0, 1.0);
-  col = mix(col, vec3(1.0), mix(u_fillA1, u_fillA2, t));
-
-  /* dim wash — dimParams() is a pure per-channel SCALE (slope, intercept 0):
-     col *= slope. Lockstep with the CSS filter chain (buildFilterMarkup
-     consumes the same dimParams() output), so both paths dim identically.
-     Black stays black; the tint's channels set how hard each hue comes
-     down (cool tint = dark tinted glass, no additive putty floor). */
+  /* dim wash — INSIDE the url() chain: after the rim-saturation blend,
+     before the specular fade (CSS dim input = withSaturation). dimParams()
+     is a pure per-channel SCALE (slope, intercept 0): black stays black;
+     the tint's channels set how hard each hue comes down (cool tint = dark
+     tinted glass, no additive putty floor). */
   if (u_dim > 0.0) {
     col *= vec3(u_dimR, u_dimG, u_dimB);
   }
 
+  /* specular arc — the chain's final blend, over the dimmed result. */
   col = mix(col, vec3(1.0), spec * u_specOpacity);
+
+  /* CSS paints the element's own background OVER its backdrop-filter output:
+     the fill gradient composites LAST (bare lens fill = 0, so this renders
+     on glx/glx-strong only). CSS gradient semantics exactly: dir =
+     (sin θ, −cos θ) with y down, the magic-corner length, t 0→1 across the
+     box; tint from --glass-p-tint so dark glx keeps its near-black body. */
+  float ang = radians(u_fillAngle);
+  vec2 dir = vec2(sin(ang), -cos(ang));
+  float glen = max(1.0, abs(u_size.x * dir.x) + abs(u_size.y * dir.y));
+  float t = clamp(dot(v_local - u_size * 0.5, dir) / glen + 0.5, 0.0, 1.0);
+  col = mix(col, u_fillTint / 255.0, mix(u_fillA1, u_fillA2, t));
   outColor = vec4(col * inside * u_alpha, inside * u_alpha);   /* premultiplied */
 }`;
 
@@ -862,12 +900,19 @@ export class GlassRenderer {
     f1('u_fillA1', params.fillA1);
     f1('u_fillA2', params.fillA2);
     f1('u_fillAngle', params.fillAngle);
+    gl.uniform3f(
+      this.uni(p, 'u_fillTint'),
+      params.fillTint[0],
+      params.fillTint[1],
+      params.fillTint[2],
+    );
     const [dr, dg, db] = dimParams(params);
     f1('u_dim', kind === 'drop' ? 0 : params.dim);
     gl.uniform1f(this.uni(p, 'u_dimR'), dr[0]);
     gl.uniform1f(this.uni(p, 'u_dimG'), dg[0]);
     gl.uniform1f(this.uni(p, 'u_dimB'), db[0]);
     f1('u_specOpacity', params.specOpacity);
+    f1('u_gsat', params.gsat);
     f1('u_alpha', alpha);
     gl.uniform1f(this.uni(p, 'u_maskProbe'), this.maskProbe ? 1 : 0);
     gl.uniform2f(this.uni(p, 'u_plateSize'), this.plateSize[0], this.plateSize[1]);

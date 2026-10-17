@@ -108,13 +108,20 @@
      (surface convex_squircle, bezel 14, thickness 72, radius 21,
      refraction 0.5, blur 1.0, specular 0.34/5/-55deg, rgb-dim 0.15).
      The dark theme changes exactly ONE number: --lens-dim. */
-  --lens-dim: 0.1; /* rgb-dim — per-channel wash IN the lens/pane filters */
-  /* Floating menu material — the DIM carries readability. Apple's menus sit
-     near 80% opacity: a deep dim + a light blur. The dimming wash does the
-     work (user directive), blur only softens contours. These only re-dress
-     the filter MARKUP (map cache is dim-blind) and the plain-chain fallback
-     below. */
-  --lens-menu-dim: 0.55;
+  --lens-dim: 0.05; /* rgb-dim — per-channel wash IN the lens/pane filters.
+     Multiplicative law (V4): the wash SCALES the backdrop toward the deep
+     tint, never lifts it (the old affine law additively LIFTED black by
+     +10 R/+11 G/+16 B — the putty floor). 0.05 reproduces the accepted
+     affine tune (0.1) within ~±4/255 across the plate range without the
+     lift. Apple's ONE published dim constant — 35% dark, clear variant
+     over bright media (HIG) — is deliberately NOT applied: regular-variant
+     app surfaces are not media-backed clear glass, and 35% on light panels
+     turns them into grey slabs (category error). */
+  /* Floating menu material — the DIM carries readability; 3px blur only
+     softens contours. 0.13 reproduces the 1H-accepted 0.2 affine wash at
+     the bright-plate anchor (240 → ~213) under the black-preserving law;
+     the 0.55 first pass read near-black ("practically black" report). */
+  --lens-menu-dim: 0.13;
   --lens-menu-blur: 3px;
   --dim-tint: 31 29 41; /* deep slate — multiplicative dim tint (see dimParams) */
   --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
@@ -275,11 +282,11 @@
      — see the base token comment. */
   --color-focus-ring: rgba(245, 179, 1, 0.72);
 
-  /* Menu bleed (1H) + dim-first readability pass: with the multiplicative
-     dim law the wash DARKENS instead of lifting — light menus run 0.55
-     (perceive the backdrop, drop glyphs under the reading threshold) and
-     the blur drops to 3px; the dimming does the work now, not the blur. */
-  --lens-menu-dim: 0.55;
+  /* Menu bleed (1H) + dim-first readability pass: the dim carries the
+     readability, the 3px blur only softens contours. 0.14 is the exact
+     multiplicative equivalent of the 1H-accepted 0.14 affine wash (black
+     tint: slope 0.86); the 0.55 first pass read near-black. */
+  --lens-menu-dim: 0.14;
 
   --glass-scrim-a: 0.35;
   --glass-scrim-color: 0 0 0;
@@ -347,10 +354,11 @@
   --pref-row-sheen: rgba(255, 255, 255, 0.12);
 
   /* ── Material family (dark) — the kube tune, EXCEPT dim:
-     the one number that changes is --lens-dim (user: 0.07 for dark,
-     inside the allowed 0.05–0.08 band). Blur, fill and physics params
-     inherit the light values. drop has no dim at all (it lives only
-     in the lens/pane filters). */
+     the one number that changes is --lens-dim. Dark tint is pure black,
+     so slope = 1 - b exactly: 0.07 is the exact multiplicative equivalent
+     of the accepted 0.07 affine tune (on black tint it reduced to x·0.93).
+     Blur, fill and physics params inherit the light values. drop has no
+     dim at all (it lives only in the lens/pane filters). */
   --lens-dim: 0.07;
 }
 

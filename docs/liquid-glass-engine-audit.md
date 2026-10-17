@@ -229,16 +229,27 @@ Now `dimParams()` is a pure per-channel SCALE toward the dim tint:
 Black stays black at any strength, highlights come down, and the tint's
 channel differences set the cast. The tint comes from `--glass-dim-tint`
 (deep slate `31 29 41` light / black dark), kept equal to `--dim-tint`
-(the lite/off fill) per theme. Verified live: menu panel slopes
-`0.5169/0.5125/0.5384` at b=0.55 (light) — blue survives most → smoked
-tint; dark `0.45/0.45/0.45` → pure darkening. The `u_dimTint` shader
-uniform is gone (slopes carry everything); both paint paths consume the
-same `dimParams()` output.
+(the lite/off fill) per theme. The `u_dimTint` shader uniform is gone
+(slopes carry everything); both paint paths consume the same
+`dimParams()` output.
 
-V4b — dim-first menus: readability is the DIMMING, not the blur (user
-directive). Menu dim 0.2→0.55 both themes; menu blur 5px→3px light and
-8px→3px dark (the 6+2px dark override is deleted — 'the plastic smear').
-Light menu rail measures −66.5 luminance vs page (was a +light haze).
+V4c — strength re-tone ("practically black" report). The first V4 ship
+kept the old strength numbers (menu 0.55, lens 0.1/0.07) while the law
+under them changed from lift-to-grey to scale-to-black — the two compose
+into near-black. Numbers now reproduce the previously accepted wash under
+the new law: lens 0.05 light / 0.07 dark (dark tint is black, so slope
+= 1-b exactly — the original 1H number), menu 0.13 light / 0.14 dark
+(≈ the 1H affine 0.2 wash at the bright-plate anchor; 0.14 is the exact
+multiplicative equivalent of the dark 1H number). Apple's ONE published
+dim constant — the clear variant's 35% dark dimming layer over bright
+media (HIG) — is deliberately NOT applied: regular-variant app panels
+are not media-backed clear glass, and 35% on light panels turns them
+into grey slabs (category error).
+
+V4b — dim-first menus: readability is the DIMMING + a light 3px blur,
+not the blur (user directive: "the dimming should do the readability,
+not the blur"). Menu blur 5px→3px light, the 6+2px dark override
+deleted. Menu rails measure within a few /255 of the 1H-accepted look.
 
 ### Regression tooling
 `tools/perf-probe.mjs` (load timeline), `tools/ab-perf.mjs` (A/B fps),

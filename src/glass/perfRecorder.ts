@@ -97,7 +97,7 @@ const BF_TRUNC = 140;
 const GLASS_SEL = '.lens, .pane, .drop, .glx, .glx-strong, .glx-dark';
 const GLASS_CLASS_RE = /^(lens|pane|drop|glx|glx-strong|glx-dark|lens--)/;
 /** The families the WebGL shader serves — used for the surfaces-list flow flag. */
-const FLOW_SEL = '.lens, .pane, .drop';
+const FLOW_SEL = '.lens, .pane, .drop, .glx, .glx-strong';
 /** A running animation matching this is a loading/entrance tell, not motion. */
 const LOADING_ANIM_RE = /pulse|shimmer|skeleton|spin|progress|fade|appear|enter/i;
 

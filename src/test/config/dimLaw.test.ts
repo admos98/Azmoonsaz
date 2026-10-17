@@ -34,7 +34,7 @@ describe('dim law — multiplicative, black-preserving (Apple dim)', () => {
   it('black stays black at any strength (the old law LIFTED it +10/+11/+16)', () => {
     // Old affine law on black with tint [103,100,112] at b=0.1:
     //   +10.30, +10.95, +16.53 → the additive putty floor. The new law: 0.
-    for (const b of [0.07, 0.1, 0.2, 0.55]) {
+    for (const b of [0.02, 0.03, 0.08, 0.2]) {
       const [r, g, bl] = apply([0, 0, 0], b, [31, 29, 41]);
       expect(r).toBe(0);
       expect(g).toBe(0);

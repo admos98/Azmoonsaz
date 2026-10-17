@@ -23,24 +23,24 @@
   backdrop-filter: blur(var(--lens-blur));
 }
 /* Floating menu material (hamburger panels, notif): the DIM carries the
-   readability (Apple's menu dim runs ~0.5), not the blur (user: "the dimming
-   should do the readability, not the blur"). 3px keeps the backdrop soft
-   without smearing it — menus used to run 6px+. The engine re-dresses the
-   filter markup from these tokens (maps are dim/blur-blind), and the
-   plain-chain fallback matches until it attaches. */
+   readability — the dimming wash plus a light blur drop glyphs under the
+   reading threshold, not the blur alone (user: "the dimming should do the
+   readability, not the blur"). 3px keeps the backdrop soft without
+   smearing it — menus used to run 6px+. The engine re-dresses the filter
+   markup from these tokens (maps are dim/blur-blind), and the plain-chain
+   fallback matches until it attaches. */
 .lens.lens--menu {
   --lens-dim: var(--lens-menu-dim);
   backdrop-filter: blur(var(--lens-menu-blur));
 }
 /* Dark: no extra blur anymore — the dim floor on a dark page IS the
-   readability (6+2px was the plastic smear). One notch deeper dim than the
-   light tune's 0.55 is unnecessary; dark keeps its 0.55 via the token. */
+   readability (6+2px was the plastic smear). Same token as light. */
 :root[data-theme='dark'] .lens.lens--menu {
   backdrop-filter: blur(var(--lens-menu-blur));
 }
 /* Light-only menu blur, same number: 3px on the densest panels. The heavy
-   lift moved into --lens-menu-dim (0.2 -> 0.55) — readability from the
-   dimming wash, blur only for contour softening. */
+   lift moved into --lens-menu-dim — readability from the dimming wash,
+   blur only for contour softening. */
 :root:not([data-theme='dark']) .lens.lens--menu {
   backdrop-filter: blur(3px);
 }

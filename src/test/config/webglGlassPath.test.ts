@@ -111,10 +111,11 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(controller).toContain('requestBucketAsync');
   });
 
-  it('draws only panels whose true backdrop is the plate (glx* + floating stay CSS)', () => {
-    // glx* families keep their CSS bloom lines and url() bend.
+  it('draws only panels whose true backdrop is the plate (glx served, floating stay CSS)', () => {
+    // glx/glx-strong are shader-served (their Skia url() graph was the
+    // dominant scroll cost); glx-dark stays CSS (fixed ink field).
     expect(controller).toMatch(
-      /function webglKindOf[\s\S]{0,400}glx-strong[\s\S]{0,200}return null;/,
+      /glx-dark'\)\)\s*return null;[\s\S]{0,600}GLX_ON_CSS\)\s*return null;[\s\S]{0,300}return 'lens';/,
     );
     // Floating/sticky/absolute and clipped backdrops are excluded in code.
     expect(controller).toMatch(/function webglPlaceable[\s\S]{0,400}'fixed'/);
@@ -139,7 +140,17 @@ describe('webgl glass renderer (primary paint path)', () => {
     );
     expect(paintBlock).not.toBeNull();
     expect(paintBlock![1]).toMatch(/backdrop-filter:\s*none\s*!important/);
-    expect(paintBlock![1]).toMatch(/background:\s*transparent\s*!important/);
+    // Backgrounds: transparent for lens/pane/drop (the shader carries their
+    // body); glx/glx-strong KEEP theirs — the shader must not invent a fill
+    // the cascade may have overridden per element (measured +6/255).
+    const bgBlock = css.match(
+      /:root\[data-glass-render='webgl'\]\s*\[data-glass-paint='webgl'\]:not\(\.glx\):not\(\.glx-strong\)\s*\{([^}]*)\}/,
+    );
+    expect(bgBlock).not.toBeNull();
+    expect(bgBlock![1]).toMatch(/background:\s*transparent\s*!important/);
+    expect(css).toMatch(
+      /\.glx\[data-glass-paint='webgl'\]\s*\{[\s\S]{0,300}box-shadow:/,
+    );
     // Teardown clears the swap, so the classic path resumes cleanly.
     expect(controller).toContain("document.documentElement.removeAttribute('data-glass-render')");
   });
@@ -268,10 +279,14 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(controller).toMatch(/drawn: lastDrawCount/);
   });
 
-  it('glx* families keep their CSS url() bend (not silently de-lensed)', () => {
-    // A glx panel falls through to the engine's CSS dress path, which
-    // attaches the url() filter graph exactly as before the migration.
+  it('glx panels keep a painted bend on every engine (CSS chain or shader)', () => {
+    // Shader path: glx draws through the same chain as lens (fills + rim).
+    // CSS path (no WebGL2 / lite-off / unplaceable): the engine's dress path
+    // still attaches the url() filter graph for glx fall-through panels.
     expect(controller).toMatch(/function chainOf[\s\S]{0,900}glx-strong/);
     expect(controller).toContain('url(#');
+    // …and the shader fills glx's body with the theme's own tint (a
+    // hardcoded white would flip its dark appearance).
+    expect(renderer).toContain('u_fillTint');
   });
 });
