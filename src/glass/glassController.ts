@@ -144,6 +144,19 @@ const webglSupported = (() => {
 let lastDrawCount = 0;
 /** Timestamp of the previous glass frame — feeds the drift ring's dt. */
 let lastGlFrameT = 0;
+/** Idle gate: a repaint happens only when the frame's identity changed
+ *  (scroll, draw set, geometry, fade, resize, theme). See glFrame. */
+let glDirty = true;
+let lastIdleKey = '';
+let lastDrawnCount = 0;
+
+/** Cheap change-signature: scroll + draw-set size only. Rect changes are
+ *  signalled by the mutation/layout observers (they set glDirty), never by
+ *  per-frame getBoundingClientRect calls — that would reintroduce the
+ *  layout thrash the two-phase flush exists to avoid. */
+function drawnSig(): string {
+  return `${window.scrollY}|${webglDrawSet.size}`;
+}
 
 let renderMode: RenderMode = 'css';
 let renderer: GlassRenderer | null = null;
@@ -185,11 +198,19 @@ const drift = {
   maxStale: 0,
   staleSum: 0,
   staleFrames: 0,
+  lastLead: 0,
 };
 function driftSample(scrollY: number, now: number, dt: number): void {
   const d = scrollY - drift.lastScrollY;
-  const stale = Math.abs(scrollY - drift.lastPaintY);
+  // stale = how far the PAINTED position is from where the compositor is
+  // RIGHT NOW: the panel is drawn at (scrollY + lead), and the display will
+  // show scrollY + lead_pending; with the one-frame lead the residual is
+  // |lead − observed motion|, i.e. exactly what is left of the trail after
+  // compensation. (Reading |scrollY − lastPaintY| instead would just report
+  // the previous frame's motion and could never go to zero while scrolling.)
+  const stale = Math.abs(d - (drift.lastLead ?? 0));
   drift.lastScrollY = scrollY;
+  drift.lastLead = d;
   drift.ring[drift.ringN & 31] = [Math.round(d * 10) / 10, Math.round(stale * 10) / 10, Math.round(dt * 10) / 10];
   drift.ringN++;
   if (stale > drift.maxStale) drift.maxStale = stale;
@@ -222,8 +243,11 @@ export function resetGlassDrift(): void {
   drift.maxStale = 0;
   drift.staleSum = 0;
   drift.staleFrames = 0;
-  drift.lastScrollY = 0;
-  drift.lastPaintY = 0;
+  // Seed from the CURRENT scroll position: zeroing it makes the first
+  // sample report the whole document offset as one giant "stale" step.
+  drift.lastScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+  drift.lastPaintY = drift.lastScrollY;
+  drift.lastLead = 0;
 }
 
 /* Engine counters — the ?perf=1 oracle for the map pipeline. posted =
@@ -687,6 +711,7 @@ function clearPaintKill(el: HTMLElement): void {
 function trackWebgl(el: HTMLElement, kind: GlassKind, params: GlassPaintParams): void {
   paintCache.set(el, { kind, params });
   webglDrawSet.add(el);
+  glDirty = true;
   if (el.dataset.glassPaint !== 'webgl') el.dataset.glassPaint = 'webgl';
   clearPaintKill(el); // a stale CSS chain or an old kill must not survive re-track
   if (glReady) applyPaintKill(el); // post-swap tracks kill immediately
@@ -696,6 +721,7 @@ function trackWebgl(el: HTMLElement, kind: GlassKind, params: GlassPaintParams):
 
 function untrackWebgl(el: HTMLElement): void {
   webglDrawSet.delete(el);
+  glDirty = true;
   clearPaintKill(el);
   if (el.dataset.glassPaint) delete el.dataset.glassPaint;
 }
@@ -757,6 +783,7 @@ function refreshPlate(): void {
     plateURL = url;
     renderer.plateURL = url;
     renderer.plateRetryCount = 0;
+    glDirty = true; // the plate under the fixed canvas changed — repaint
     void renderer.setPlate(url).catch(() => renderer?.retryPlate(url));
   }
 }
@@ -791,11 +818,18 @@ function glFrame(): void {
     shutdownWebgl(false);
     return;
   }
-  r.beginFrame();
-  r.drawBackdrop();
+  /* Resize first (cheap; it is a no-op unless the canvas box changed) and
+     treat a real buffer re-allocation as a dirty frame — the buffer is
+     cleared by the browser on resize. The REST of the frame (clear +
+     backdrop + panels) runs only past the idle gate below. */
+  const before = `${canvas.width}x${canvas.height}`;
+  r.resizeFrame();
+  const resized = before !== `${canvas.width}x${canvas.height}`;
+  if (resized) glDirty = true;
   if (!glReady && r.hasPlate) {
     glReady = true;
     document.documentElement.dataset.glassRender = 'webgl';
+    glDirty = true;
     // The atomic swap: from this frame the canvas paints these panels, so
     // their DOM backdrop-filter dies INLINE (the stylesheet strip cannot be
     // trusted — see applyPaintKill). CSS material held until this moment.
@@ -806,17 +840,63 @@ function glFrame(): void {
   const vh = window.innerHeight;
   const M = 96;
 
-  /* Panel position = read-time scroll position (±0 lead). The display-time
-     lead experiments (v1 raw delta, v2 smoothed EMA) are REMOVED: both
-     cancelled the one-interval trail in principle, but the predicted offset
-     manifests as the glass sliding ahead and easing back on every flick —
-     the reported "slide and bounce weirdly". The honest fix for the trail
-     is measuring it (drift ring, below) and attacking the paint cadence,
-     not faking position. */
+  /* Panel placement — ONE-FRAME LEAD, derived from this frame's REAL delta.
+     Measured (drift ring, ?perf=1): the canvas paints at rAF-time scroll
+     while the compositor has already advanced one frame, so glass trails
+     its own DOM contents by up to one frame of motion (maxStale 37px on the
+     dashboard run while fps was a clean 60). A document-anchored canvas
+     would fix this by construction but is IMPOSSIBLE here: GL
+     MAX_TEXTURE_SIZE is 8192, and a 6000px document needs a 12000px buffer.
+     So the canvas stays viewport-sized and we cancel the measured error
+     instead: lead = the scroll delta the PREVIOUS frame saw, clamped to
+     the motion actually on screen. It is:
+       · exactly 0 at rest (no delta → no offset → idle frames are
+         pixel-identical to today),
+       · bounded by the real per-frame motion (cannot overshoot into the
+         "slides ahead and eases back" artifact the EMA version produced —
+         that came from extrapolating velocity, not from using the observed
+         delta),
+       · re-derived every frame, so a flick reversal changes it the same
+         frame.
+     clamp ±120px: a fast flick steps ~60-120px per frame; beyond that the
+     frame was long (jank), and guessing that far ahead is worse than
+     trailing. */
+  const yNow = window.scrollY;
+  const rawStep = yNow - drift.lastScrollY;
+  const lead = Math.max(-120, Math.min(120, rawStep));
   const nowMs = performance.now();
-  driftSample(window.scrollY, nowMs, nowMs - lastGlFrameT);
+  driftSample(yNow, nowMs, nowMs - lastGlFrameT);
   lastGlFrameT = nowMs;
-  drift.lastPaintY = window.scrollY;
+  drift.lastPaintY = yNow;
+  /* Probe: the lead actually applied this frame. One property write, read
+     only by the ?perf=1 harness / dev probes; no DOM effect. */
+  (window as unknown as { __glassLeadPx?: number }).__glassLeadPx = lead;
+
+  /* IDLE GATE — do not repaint an unchanged frame. The canvas is fixed and
+     full-viewport: repainting it at 60Hz while nothing moves burns GPU on
+     every device and measurably LOWERS fps on the still frames (the panel
+     under test measured fpsStill 36 < fpsScroll 52 — the loop was the
+     cost). A frame is repainted only when one of these changed:
+       · scroll position (panels are placed in viewport coords),
+       · the draw set / geometry (layout, route, keepers),
+       · a panel's alpha mid-fade (motion opacity),
+       · the theme/plate (handled by the explicit dirty flag below),
+       · a resize.
+     Everything else skips the GL work entirely — the previous frame stays
+     on screen, which is pixel-identical because nothing moved. */
+  const aNow = webglDrawSet.size;
+  const idleKey = `${yNow}|${aNow}|${drawnSig()}`;
+  const alphaMoving = webglDrawSet.size > 0 && Array.from(webglDrawSet).some((el) => effectiveAlpha(el) < 0.999);
+  if (!glDirty && idleKey === lastIdleKey && !alphaMoving) {
+    lastDrawCount = lastDrawnCount;
+    return;
+  }
+  lastIdleKey = idleKey;
+  glDirty = false;
+
+  // Past the gate: this frame is actually (re)painted.
+  r.beginFrame();
+  r.drawBackdrop();
 
   let drawn = 0;
   for (const el of webglDrawSet) {
@@ -832,7 +912,9 @@ function glFrame(): void {
     try {
       r.drawPanel(
         entry.kind,
-        { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        // top + lead: paint where the compositor will DISPLAY this frame
+        // (one frame of measured motion), so glass locks to its contents.
+        { left: rect.left, top: rect.top + lead, width: rect.width, height: rect.height },
         entry.params,
         effectiveAlpha(el),
       );
@@ -842,6 +924,7 @@ function glFrame(): void {
     }
   }
   lastDrawCount = drawn;
+  lastDrawnCount = drawn;
 }
 
 /** Tear the WebGL path down: canvas out, attr off, panels back on the CSS
@@ -982,6 +1065,15 @@ function flushSync(): void {
       // clears are layout-free.
       if (el.dataset.glassPaint) untrackWebgl(el);
       if (!glassAllowed()) continue;
+      /* In WebGL mode, a non-placeable panel keeps the STYLESHEET material
+         (blur + saturate — GPU-composited) and never gets an SVG url() bend
+         graph. Those panels live inside overlays/scroll-clips where their
+         backdrop is the scrim, not the plate: the bend there is invisible
+         while the filter graph runs at full panel resolution every frame —
+         measured on /teacher/settings/questions: 4 such panels = 1.56M px
+         of url() raster per frame, floor 12fps. Only the no-WebGL CSS path
+         still dresses them. */
+      continue;
     }
     // Lever A: offscreen panels park on blur-only. Checked BEFORE
     // getComputedStyle so an offscreen panel costs one rect (same layout

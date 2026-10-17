@@ -1082,7 +1082,7 @@ export default function Questions() {
             ? 'افزودن و پیکربندی سوال نو در بانک'
             : 'ویرایش شناسنامه فنی و فرمول‌های سوال'
         }
-        icon={<CloudLightning className="w-5 h-5 animate-pulse" />}
+        icon={<CloudLightning className="w-5 h-5" />}
         maxWidth="5xl"
         triggerRef={drawerTriggerRef}
         bodyClassName="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 text-caption text-right"

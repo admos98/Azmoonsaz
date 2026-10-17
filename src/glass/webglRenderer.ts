@@ -832,6 +832,13 @@ export class GlassRenderer {
     gl.uniform1i(this.uni(p, name), unit);
   }
 
+  /** Resize only (public, for the controller's idle gate). A real buffer
+   *  re-allocation means the browser cleared it — the caller marks the
+   *  frame dirty. */
+  resizeFrame(): void {
+    this.resize();
+  }
+
   /** Start a frame: resize + clear to fully transparent. */
   beginFrame(): void {
     this.resize();
