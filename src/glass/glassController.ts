@@ -73,7 +73,6 @@ import {
 } from './lensEngine';
 import type { MapBuildRequest, MapBuildResponse } from './mapWorker';
 import { cssUnescape, plateURLFromComputed } from './cssUrl';
-import { computeLeadPx } from './scrollLead';
 import { GlassRenderer, type GlassKind, type GlassPaintParams } from './webglRenderer';
 
 /* ───────────────────── Ladder ───────────────────── */
@@ -149,13 +148,6 @@ let renderer: GlassRenderer | null = null;
 let glCanvas: HTMLCanvasElement | null = null;
 let glRaf = 0;
 let glReady = false;
-/** Scroll sampling for the display-time lead (glFrame): a rAF frame reads
- *  the last main-thread-committed scroll value, while the compositor is
- *  already displaying a NEWER offset (its own scroll clock). The glass then
- *  trails the DOM by the previous interval's motion; computeLeadPx
- *  (scrollLead.ts) offsets the draw by that delta. */
-let lastScrollY = 0;
-let leadPrimed = false;
 let webglBroken = false;
 let shellElCache: HTMLElement | null = null;
 let plateURL = '';
@@ -166,32 +158,6 @@ let plateRaw = '';
  *  read. Escaped input is not a fetchable URL (the `\` reads as a path
  *  separator) — leaving it verbatim killed every plate request on iPhone. */
 let plateEsc = false;
-/** Dev-only lag probe (?lagprobe=1): the frame loop paints an encoded
- *  paint-time scroll marker into the canvas so a screencast can measure the
- *  gap between compositor scroll and canvas paint. Off in every real run. */
-const lagProbeOn =
-  typeof location !== 'undefined' && /[?&]lagprobe=1/.test(location.search);
-/** Scroll-lead configuration for the display-time compensation (glFrame).
- *  Resolution order: window.__glassLead (A/B harness) > ?laglead= URL param >
- *  default. Values: 0 = off (legacy: paint at read-time position); -1 = auto —
- *  offset the draw by the previous interval's scroll delta (shipped default;
- *  zero at rest, so idle output is byte-identical); N > 0 = lead by N ms of
- *  the current per-frame delta. */
-const leadParam: number | null = (() => {
-  try {
-    const v = new URLSearchParams(location.search).get('laglead');
-    if (v === null) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  } catch {
-    return null;
-  }
-})();
-function glassLeadMs(): number {
-  const w = window as unknown as { __glassLead?: number };
-  if (typeof w.__glassLead === 'number') return w.__glassLead;
-  return leadParam ?? -1;
-}
 const paintCache = new WeakMap<HTMLElement, PaintEntry>();
 const webglDrawSet = new Set<HTMLElement>();
 
@@ -253,9 +219,6 @@ export interface GlassEngineStats {
      *  26.6 case (`bg-d-light\.svg`), which silently corrupted every plate
      *  request until decoded. */
     plateEsc: boolean;
-    /** Active display-time lead config: 0 = off, -1 = auto (predict one
-     *  interval of scroll motion), N = N ms of the per-frame delta. */
-    lead: number;
     /** The teacher shell exists on this route (the shader needs it). */
     shell: boolean;
   };
@@ -288,7 +251,6 @@ export function glassStats(): GlassEngineStats {
       plateProbe: renderer ? renderer.plateProbe : [],
       plateRaw: plateRaw,
       plateEsc: plateEsc,
-      lead: glassLeadMs(),
       shell: shellAt() !== null,
     },
   };
@@ -682,26 +644,6 @@ function glFrame(): void {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const M = 96;
-
-  /* Display-time compensation (scrollLead.ts). The glass canvas is fixed and
-     painted on the main thread while the DOM scrolls on the compositor's
-     clock; painting at the read-time position trails the text by the
-     previous interval's motion — measured 60-98px ("behind the scroll,
-     jelly"). Paint every panel offset by that delta instead. At rest the
-     lead is exactly 0 — byte-identical to the legacy path. */
-  const sy = window.scrollY;
-  if (!leadPrimed) {
-    lastScrollY = sy;
-    leadPrimed = true;
-  }
-  const d1 = sy - lastScrollY;
-  lastScrollY = sy;
-  // A programmatic jump (anchor, scrollTo) is not a velocity: > viewport*0.7.
-  const jumpDelta = Math.max(600, Math.round(vh * 0.7));
-  const leadPx = computeLeadPx(d1, glassLeadMs(), jumpDelta);
-  const leadOff = -leadPx; // view scrolls down by leadPx → drawn panels rise
-  const cull = M + Math.abs(leadOff);
-
   let drawn = 0;
   for (const el of webglDrawSet) {
     if (!el.isConnected) {
@@ -709,14 +651,14 @@ function glFrame(): void {
       continue;
     }
     const rect = el.getBoundingClientRect();
-    if (rect.bottom < -cull || rect.top > vh + cull || rect.right < -M || rect.left > vw + M) continue;
+    if (rect.bottom < -M || rect.top > vh + M || rect.right < -M || rect.left > vw + M) continue;
     if (rect.width < 2 || rect.height < 2) continue;
     const entry = paintCache.get(el);
     if (!entry) continue;
     try {
       r.drawPanel(
         entry.kind,
-        { left: rect.left, top: rect.top + leadOff, width: rect.width, height: rect.height },
+        { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
         entry.params,
         effectiveAlpha(el),
       );
@@ -726,30 +668,6 @@ function glFrame(): void {
     }
   }
   lastDrawCount = drawn;
-  // Dev-only lag marker (?lagprobe=1 or window.__glassMark): paint the
-  // paint-time scroll code into the canvas so a screenshot taken during
-  // active scroll decodes canvas-paint vs compositor-display lag. Off by
-  // default — one boolean check per frame when disarmed.
-  const wm = window as unknown as { __glassMark?: boolean; __glassMarkOff?: number; __lagRulerY?: number };
-  if ((lagProbeOn || wm.__glassMark) && glReady) {
-    const off = wm.__glassMarkOff || 0;
-    const s = Math.max(0, Math.round(window.scrollY - off));
-    r.devMark(s % 8, 20, 16, 20, 20);
-    r.devMark(Math.floor(s / 8) % 8, 48, 16, 20, 20);
-    r.devMark(Math.floor(s / 64) % 8, 76, 16, 20, 20);
-    r.devMark(Math.floor(s / 512) % 8, 104, 16, 20, 20);
-    // Reference bar: painted at the position a document point at
-    // window.__lagRulerY (default 1250) was DRAWN at (read scroll + lead).
-    // The screencast decodes its row against the magenta ruler (true display
-    // position) in the same frame — the residual measures the glass-to-
-    // content alignment error directly.
-    const rulerY = Math.max(0, Math.round(wm.__lagRulerY ?? 1250));
-    const h = 6;
-    const yView = rulerY - sy + leadOff;
-    if (yView > -h && yView < vh) {
-      r.devMark(0, 200, vh - yView - h, 80, h, [0, 200, 255]);
-    }
-  }
 }
 
 /** Tear the WebGL path down: canvas out, attr off, panels back on the CSS

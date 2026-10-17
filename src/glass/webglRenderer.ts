@@ -800,24 +800,6 @@ export class GlassRenderer {
     this.gl.clear(this.gl.COLOR_BUFFER_BIT);
   }
 
-  /** Dev-only lag markers. Fills a w×h block at (x, y) bottom-left-origin css
-   *  px (scaled by the frame DPR) — gray level g*36, or an explicit rgb when
-   *  given. The frame loop paints digit blocks encoding window.scrollY at
-   *  PAINT time plus a reference bar at the LED draw position, so a
-   *  screencast can measure canvas-paint vs compositor-display alignment
-   *  per displayed frame. Gated by the controller (?lagprobe=1). */
-  devMark(g: number, x: number, y: number, w: number, h: number, rgb?: [number, number, number]): void {
-    const gl = this.gl;
-    const d = this.frameDpr || 1;
-    const v = Math.max(0, Math.min(7, g)) * 36;
-    const [r, gg, b] = rgb ?? [v, v, v];
-    gl.enable(gl.SCISSOR_TEST);
-    gl.scissor(Math.round(x * d), Math.round(y * d), Math.round(w * d), Math.round(h * d));
-    gl.clearColor(r / 255, gg / 255, b / 255, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.disable(gl.SCISSOR_TEST);
-  }
-
   /** Wipe the canvas without drawing (used when the engine tears down). */
   clear(): void {
     this.resize();
@@ -914,8 +896,8 @@ export class GlassRenderer {
   }
 
   /** True once the plate artwork has landed as a texture. Until then the
-   *  canvas must stay hidden — the swap shows glass and plate together, and
-   *  before the texture exists the frame has neither. */
+   *  canvas must stay hidden (an alpha-less backbuffer is opaque black) and
+   *  the CSS material keeps showing. */
   get hasPlate(): boolean {
     return this.plateTex !== null;
   }
