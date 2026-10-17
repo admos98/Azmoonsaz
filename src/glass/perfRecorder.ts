@@ -65,6 +65,13 @@
  *   surfaces[] — every glass element at end of run: computed backdrop-filter
  *     (truncated), hasUrl (bend attached?), nested (inside another glass
  *     root = blur of a flat fill = pure cost), inView, area.
+ *   drift — the panel-position payload (the "panels fall behind / slide /
+ *     bounce" complaint): maxStale px is how far behind the scroll the glass
+ *     was painted at its worst; ring is the last 32 frames as
+ *     [driftPx, stalePx, dtMs] — during a flick, driftPx ≈ one frame of
+ *     motion means the trail is cadence-bound (compositor outran the rAF
+ *     loop), sign flips = bounce. timeline[].stale shows WHERE it fell
+ *     behind; worst[].step is the one-frame advance bound per slow frame.
  *   anims[] — running animations grouped by name+target. One infinite entry
  *     (shimmer/spin) present on every slow frame is the keep-dirty suspect.
  *
@@ -77,7 +84,7 @@
  * (cap 120) + 1s bins, so a minutes-long run stays pastable.
  */
 
-import { glassStats, type GlassEngineStats } from './glassController';
+import { glassStats, glassDriftStats, resetGlassDrift, type GlassEngineStats } from './glassController';
 
 /** A frame slower than this is below 60fps. */
 const JANK_MS = 16.7;
@@ -116,6 +123,11 @@ interface SlowFrame {
   an: number; // elements mid-keyframe-animation
   anims: string; // top animation names (max 3, comma-joined)
   p: string; // pathname
+  /** Page advance (px) since the previous frame — the one-frame visual
+   *  trail bound: the fixed glass canvas paints at rAF-time scroll, so on
+   *  a frame-step of N px the panels sit up to N px behind the compositor's
+   *  display position at display time. High + no longtask = cadence-bound. */
+  step: number;
 }
 
 interface BinSample {
@@ -132,6 +144,10 @@ interface BinSample {
   mutAdded: number; // DOM nodes added this bin (React storm detector)
   tr: number;
   an: number;
+  /** Cumulative panel staleness at this bin's close (drift.maxStale, px) —
+   *  flat bins mean the glass kept up; a jump marks the bin where it fell
+   *  behind. */
+  stale: number;
 }
 
 interface SurfaceInfo {
@@ -204,6 +220,24 @@ interface PerfReport {
   filterCountEnd: number;
   /** Map-pipeline oracle: posted/hit/worker/sync counts + table sizes. */
   engine: GlassEngineStats;
+  /** Panel-position drift — the "panels fall behind / slide / bounce"
+   *  payload. Measured in the glass frame loop itself:
+   *    maxStale   — worst |scrollY − lastPaintedScrollY| at paint time (px):
+   *                 "the glass was N px behind the text at its worst";
+   *    meanStale  — average of nonzero staleness across the run;
+   *    staleFrames— frames where the painted position was > 0.5px stale;
+   *    ring       — the last 32 frames as [driftPx, stalePx, dtMs]:
+   *                 driftPx = page movement seen BETWEEN paints (the
+   *                 compositor-vs-rAF gap; a slide-back/bounce shows as
+   *                 sign flips on consecutive nonzero rows), dtMs = frame
+   *                 interval. Read the ring during a flick: drift ≈ one
+   *                 frame of motion means the trail is cadence-bound. */
+  drift: {
+    ring: Array<[number, number, number]>;
+    maxStale: number;
+    meanStale: number;
+    staleFrames: number;
+  };
 }
 
 declare global {
@@ -334,6 +368,7 @@ export function installPerfRecorder(): void {
     // Scroll bookkeeping — window.scrollY is a cheap read, no layout.
     const y = window.scrollY;
     const dy = Math.abs(y - lastScrollY);
+    const step = dy; // one-frame page advance — the trail bound (see SlowFrame.step)
     lastScrollY = y;
     binScrollPx += dy;
     totalScrollPx += dy;
@@ -372,6 +407,7 @@ export function installPerfRecorder(): void {
         mutAdded: binMutAdded,
         tr: anim.tr,
         an: anim.an,
+        stale: glassDriftStats().maxStale,
       });
       prevEngine = eng;
       binStart = now;
@@ -406,6 +442,7 @@ export function installPerfRecorder(): void {
         an: anim.an,
         anims: anim.names.join(','),
         p: location.pathname,
+        step: Math.round(step * 10) / 10,
       });
     }
   };
@@ -434,6 +471,7 @@ export function installPerfRecorder(): void {
     totalScrollPx = 0;
     census = { visArea: 0, urlArea: 0, blurArea: 0, nested: 0 };
     prevEngine = glassStats();
+    resetGlassDrift();
     filterCountStart = countFilters();
     window.addEventListener('scroll', onScroll, { passive: true, capture: true });
     try {
@@ -507,6 +545,7 @@ export function installPerfRecorder(): void {
       filterCountStart,
       filterCountEnd: countFilters(),
       engine: glassStats(),
+      drift: glassDriftStats(),
     };
     window.__perf!.report = report;
     return report;

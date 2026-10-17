@@ -73,7 +73,6 @@ import {
 } from './lensEngine';
 import type { MapBuildRequest, MapBuildResponse } from './mapWorker';
 import { cssUnescape, plateURLFromComputed } from './cssUrl';
-import { ScrollLead } from './scrollLead';
 import { GlassRenderer, type GlassKind, type GlassPaintParams } from './webglRenderer';
 
 /* ───────────────────── Ladder ───────────────────── */
@@ -143,6 +142,8 @@ const webglSupported = (() => {
 })();
 
 let lastDrawCount = 0;
+/** Timestamp of the previous glass frame — feeds the drift ring's dt. */
+let lastGlFrameT = 0;
 
 let renderMode: RenderMode = 'css';
 let renderer: GlassRenderer | null = null;
@@ -159,33 +160,71 @@ let plateRaw = '';
  *  read. Escaped input is not a fetchable URL (the `\` reads as a path
  *  separator) — leaving it verbatim killed every plate request on iPhone. */
 let plateEsc = false;
-/** Display-time lead state (scrollLead.ts): a smoothed scroll velocity so
- *  the glass is painted where the compositor will DISPLAY it, not where the
- *  main thread last observed it — without the per-frame oscillation the raw
- *  v1 delta caused (reverted: rim stutter). */
-const scrollLead = new ScrollLead();
-/** Scroll-lead configuration for the display-time compensation (glFrame).
- *  Resolution order: window.__glassLead (A/B harness) > ?laglead= URL param >
- *  default. Values: 0 = off (legacy); -1 = auto — one measured display
- *  interval of smoothed velocity (shipped default; zero at rest, so idle
- *  output is byte-identical); N > 0 = lead by N ms. */
-const leadParam: number | null = (() => {
-  try {
-    const v = new URLSearchParams(location.search).get('laglead');
-    if (v === null) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  } catch {
-    return null;
-  }
-})();
-function glassLeadMs(): number {
-  const w = window as unknown as { __glassLead?: number };
-  if (typeof w.__glassLead === 'number') return w.__glassLead;
-  return leadParam ?? -1;
-}
 const paintCache = new WeakMap<HTMLElement, PaintEntry>();
 const webglDrawSet = new Set<HTMLElement>();
+
+/* ── Panel-drift diagnostics (the ?perf=1 payload) ────────────────────────
+   The reported symptom: "panels fall behind the scroll and slide/bounce".
+   Root question: between two glass paints, how far did the COMPOSITOR move
+   the page? That gap IS the visual lag of the panels, in CSS px:
+     · dispDrift = the scroll delta the paint loop observed this frame
+       (compositor movement between paint N-1 and N) — nonzero while
+       scrolling, ±0 at rest (its sign flips with direction, magnitude =
+       how many px the panels were behind at paint time);
+     · sincePaint = |scrollY - lastPaintedScrollY| measured AT PAINT time —
+       how stale the painted position was when the frame drew;
+     · maxStale = the worst sincePaint of the whole recording (the number
+       that reads as "the glass was N px behind the text at its worst");
+     · a 32-slot ring of the last frames (drift, sincePaint, dt) so a bounce
+       or slide-back is visible as a waveform, not a guess. */
+const drift = {
+  ring: [] as Array<[number, number, number]>, // [driftPx, sincePaintPx, dtMs]
+  ringN: 0,
+  lastScrollY: 0,
+  lastPaintY: 0,
+  maxStale: 0,
+  staleSum: 0,
+  staleFrames: 0,
+};
+function driftSample(scrollY: number, now: number, dt: number): void {
+  const d = scrollY - drift.lastScrollY;
+  const stale = Math.abs(scrollY - drift.lastPaintY);
+  drift.lastScrollY = scrollY;
+  drift.ring[drift.ringN & 31] = [Math.round(d * 10) / 10, Math.round(stale * 10) / 10, Math.round(dt * 10) / 10];
+  drift.ringN++;
+  if (stale > drift.maxStale) drift.maxStale = stale;
+  if (stale > 0.5) {
+    drift.staleSum += stale;
+    drift.staleFrames++;
+  }
+}
+/** Reset + read the drift block for the perf report (live view of the ring). */
+export function glassDriftStats(): {
+  ring: Array<[number, number, number]>;
+  maxStale: number;
+  meanStale: number;
+  staleFrames: number;
+} {
+  const n = Math.min(drift.ringN, 32);
+  const out: Array<[number, number, number]> = [];
+  for (let i = Math.max(0, drift.ringN - 32); i < drift.ringN; i++) {
+    out.push(drift.ring[i & 31]);
+  }
+  return {
+    ring: out.slice(Math.max(0, out.length - n)),
+    maxStale: Math.round(drift.maxStale * 10) / 10,
+    meanStale: drift.staleFrames ? Math.round((drift.staleSum / drift.staleFrames) * 10) / 10 : 0,
+    staleFrames: drift.staleFrames,
+  };
+}
+export function resetGlassDrift(): void {
+  drift.ringN = 0;
+  drift.maxStale = 0;
+  drift.staleSum = 0;
+  drift.staleFrames = 0;
+  drift.lastScrollY = 0;
+  drift.lastPaintY = 0;
+}
 
 /* Engine counters — the ?perf=1 oracle for the map pipeline. posted =
    builds sent to the worker, hits = panels dressed from cache (sub-frame),
@@ -767,26 +806,17 @@ function glFrame(): void {
   const vh = window.innerHeight;
   const M = 96;
 
-  /* Display-time compensation (scrollLead.ts, v2). The canvas is fixed and
-     painted on the main thread while the DOM scrolls on the compositor's
-     clock; painting at the read-time position trails the text by one display
-     interval (measured 60-98px in the throttled-capture A/B) — "panels are
-     late to their location on scroll". The lead rides a SMOOTHED velocity so
-     the offset cannot oscillate (v1's raw delta stuttered the rim). Rest
-     output is exactly 0 — byte-identical to the legacy path. */
-  const leadPx = scrollLead.update(
-    window.scrollY,
-    performance.now(),
-    glassLeadMs(),
-    Math.max(600, Math.round(vh * 0.7)),
-  );
-  const leadOff = -leadPx; // view scrolls down by leadPx → drawn panels rise
-  /* Applied-lead probe (dev): the offset lives only inside this loop; a
-     scripted gesture reads it per frame (window.__glassLeadPx) to verify
-     smoothness (no per-frame spikes) and rest-identity (exactly 0 when
-     stopped). One property write per frame; no DOM effect. */
-  (window as unknown as { __glassLeadPx?: number }).__glassLeadPx = leadPx;
-  const cull = M + Math.abs(leadOff);
+  /* Panel position = read-time scroll position (±0 lead). The display-time
+     lead experiments (v1 raw delta, v2 smoothed EMA) are REMOVED: both
+     cancelled the one-interval trail in principle, but the predicted offset
+     manifests as the glass sliding ahead and easing back on every flick —
+     the reported "slide and bounce weirdly". The honest fix for the trail
+     is measuring it (drift ring, below) and attacking the paint cadence,
+     not faking position. */
+  const nowMs = performance.now();
+  driftSample(window.scrollY, nowMs, nowMs - lastGlFrameT);
+  lastGlFrameT = nowMs;
+  drift.lastPaintY = window.scrollY;
 
   let drawn = 0;
   for (const el of webglDrawSet) {
@@ -795,14 +825,14 @@ function glFrame(): void {
       continue;
     }
     const rect = el.getBoundingClientRect();
-    if (rect.bottom < -cull || rect.top > vh + cull || rect.right < -M || rect.left > vw + M) continue;
+    if (rect.bottom < -M || rect.top > vh + M || rect.right < -M || rect.left > vw + M) continue;
     if (rect.width < 2 || rect.height < 2) continue;
     const entry = paintCache.get(el);
     if (!entry) continue;
     try {
       r.drawPanel(
         entry.kind,
-        { left: rect.left, top: rect.top + leadOff, width: rect.width, height: rect.height },
+        { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
         entry.params,
         effectiveAlpha(el),
       );
@@ -822,7 +852,7 @@ function shutdownWebgl(lost: boolean): void {
     cancelAnimationFrame(glRaf);
     glRaf = 0;
   }
-  scrollLead.reset();
+  resetGlassDrift();
   if (renderer) {
     renderer.plateURL = ''; // stop any pending plate retries on a dead renderer
     try {
