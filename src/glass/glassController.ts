@@ -1065,15 +1065,12 @@ function flushSync(): void {
       // clears are layout-free.
       if (el.dataset.glassPaint) untrackWebgl(el);
       if (!glassAllowed()) continue;
-      /* In WebGL mode, a non-placeable panel keeps the STYLESHEET material
-         (blur + saturate — GPU-composited) and never gets an SVG url() bend
-         graph. Those panels live inside overlays/scroll-clips where their
-         backdrop is the scrim, not the plate: the bend there is invisible
-         while the filter graph runs at full panel resolution every frame —
-         measured on /teacher/settings/questions: 4 such panels = 1.56M px
-         of url() raster per frame, floor 12fps. Only the no-WebGL CSS path
-         still dresses them. */
-      continue;
+      // NOTE (2026-10-18): a cull lived here that kept non-placeable panels
+      // on plain blur with NO url() graph. It removed their bend + specular
+      // rim (user: "the menu panels and the questions big panel lose their
+      // rim and bend") — the actual still-frame cost was the perpetual
+      // pulse animation, which is gone. Fall-through restored: these panels
+      // dress through the engine like every other CSS panel.
     }
     // Lever A: offscreen panels park on blur-only. Checked BEFORE
     // getComputedStyle so an offscreen panel costs one rect (same layout
