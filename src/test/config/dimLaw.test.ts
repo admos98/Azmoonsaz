@@ -115,24 +115,56 @@ describe('dim law — highlight-weighted wash toward the tint', () => {
     }
   });
 
+  it('dark white-veil: lifts only deep darks, contributes zero at white', () => {
+    // The user's "very very subtle white tint" for dark mode: on dark
+    // backdrops the wash alone moves nothing (backdrop ≈ tint), so the
+    // material needs its own faint presence. Input-weighted (1 − x/255)²:
+    //   · black lifts by L·255 = 0.03·255 = 7.65;
+    //   · pure white contributes exactly 0 (the wash's own domain);
+    //   · light carries lift = 0 → byte-identical to the pure wash.
+    expect(dimChannel(0, 0.32, 20, 0.03)).toBeCloseTo(0.03 * 255, 6);
+    expect(dimChannel(255, 0, 20, 0.03)).toBeCloseTo(255, 6);
+    expect(dimChannel(0, 0.32, 20, 0)).toBe(0);
+    expect(dimChannel(128, 0.32, 20, 0)).toBe(dimChannel(128, 0.32, 20));
+    // clamp: 0.25 max (≈ 64/255 at black), negatives → 0
+    expect(dimChannel(0, 0, 20, 9)).toBeCloseTo(0.25 * 255, 6);
+    expect(dimChannel(0, 0, 20, -1)).toBe(0);
+  });
+
+  it('wash + veil composes monotonically (dark 0.32 / 0.03)', () => {
+    let prev = -1;
+    for (let x = 0; x <= 255; x++) {
+      const y = dimChannel(x, 0.32, 20, 0.03);
+      expect(y).toBeGreaterThanOrEqual(prev - 1e-9);
+      prev = y;
+    }
+  });
+
   it('both paint paths consume the SAME law (CSS chain + shader)', () => {
     const lensEngine = readFileSync(join(root, 'src/glass/lensEngine.ts'), 'utf8');
     expect(lensEngine).toMatch(/dimTableValues\(/);
+    expect(lensEngine).toMatch(/dimTableValues\(b, p\.dimTint\[[012]\], p\.dimLift\)/);
     const renderer = readFileSync(join(root, 'src/glass/webglRenderer.ts'), 'utf8');
-    // the shader's wash matches dimChannel exactly
+    // the shader's wash matches dimChannel exactly (pre-clamped input, the
+    // same form mapMath uses before the veil term)
     expect(renderer).toMatch(
-      /col = col \+ u_dim \* col \* \(vec3\(u_dimTr, u_dimTg, u_dimTb\) \/ 255\.0 - col\)/,
+      /col = pre \+ u_dim \* pre \* \(vec3\(u_dimTr, u_dimTg, u_dimTb\) \/ 255\.0 - pre\)/,
     );
+    // …and the white-veil term is input-weighted, same u² shape
+    expect(renderer).toMatch(/u_dimLift \* u \* u/);
     // regression guards: neither the affine boost ratios nor the flat
     // multiply may return
     expect(renderer).not.toMatch(/1\.0526|1\.4737/);
     expect(renderer).not.toMatch(/col \*= vec3\(u_dim/);
     expect(readFileSync(join(root, 'src/glass/mapMath.ts'), 'utf8')).not.toMatch(/1\.0526|1\.4737/);
-    // both dim bases agree per theme (wash target + lite/off fill)
+    // both dim bases agree per theme (wash target + lite/off fill); the
+    // veil token: 0 in light, 0.03 in dark
     const themes = readFileSync(join(root, 'src/styles/themes.css'), 'utf8');
     expect(themes).toMatch(/--dim-tint: 31 29 41/);
     expect(themes).toMatch(/--glass-dim-tint: 31 29 41/);
     expect(themes).toMatch(/--dim-tint: 16 15 28/);
     expect(themes).toMatch(/--glass-dim-tint: 16 15 28/);
+    expect(themes).toMatch(/--glass-dim-lift: 0;/);
+    expect(themes).toMatch(/--glass-dim-lift: 0\.03;/);
   });
 });

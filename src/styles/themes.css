@@ -130,6 +130,10 @@
   --lens-menu-sat: 1.4;
   --lens-menu-blur: 3px;
   --dim-tint: 31 29 41; /* deep slate — the wash target (see the wash law in mapMath) */
+  /* White-veil lift: 0 in light — a light material never needs the dark
+     separation trick, and any veil would grey the warm paper. Dark carries
+     the value (see the dark scope). */
+  --glass-dim-lift: 0;
   --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
   --lens-blur: 1px; /* Blur Level 1.0px (kube tune) */
   --pane-blur: calc(var(--lens-blur) * 2); /* nested: twice the lens blur */
@@ -332,6 +336,16 @@
   --dim-tint: 16 15 28;
   /* same target for the filter wash */
   --glass-dim-tint: 16 15 28;
+  /* White-veil lift — the user's "in dark mode... maybe a very very subtle
+     white tint". On dark backdrops the wash alone moves almost nothing
+     (backdrop ≈ tint), so the dim was invisible ("useless"); a pure lift
+     would grey everything. This is the professional split: the wash still
+     compresses highlights toward the tint, and a (1−x)²-weighted white
+     veil lifts ONLY the deepest darks by lift·255 ≈ 7.6/255 (≈3%) — the
+     material reads as its own smoky layer over a dark backdrop, whites are
+     untouched (veil weight 0 at x=255), and nothing greys. 0.03 = tuned
+     "very very subtle"; single-token tunable. */
+  --glass-dim-lift: 0.03;
   --glass-dim-a1: 0;
   --glass-dim-a2: 0;
   --glass-text-ambient: 0 0 0;

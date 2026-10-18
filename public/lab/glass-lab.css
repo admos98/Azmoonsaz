@@ -37,6 +37,7 @@
   --lens-menu-sat: 1.4;
   --lens-dim: 0.12;
   --dim-tint: 31 29 41;
+  --glass-dim-lift: 0;
   --pane-blur: 2px;
   --frost-blur: 2px;
   --field-blur: 2px;
@@ -70,6 +71,7 @@
   --lens-menu-sat: 1.4;
   --lens-dim: 0.14;
   --dim-tint: 16 15 28;
+  --glass-dim-lift: 0.03;
   --glass-bloom-line-a: 0.05;
   --glass-bloom-a: 0.05;
   --glass-rim-fade: 0.12;

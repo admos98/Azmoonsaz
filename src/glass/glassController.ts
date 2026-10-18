@@ -163,6 +163,26 @@ let renderer: GlassRenderer | null = null;
 let glCanvas: HTMLCanvasElement | null = null;
 let glRaf = 0;
 let glReady = false;
+/** Compositor scroll-sync (see the #glass-canvas keyframes in base.css).
+ *  True when this engine runs scroll-driven animations; then every painted
+ *  frame publishes its scroll offset to --glass-sync and the compositor
+ *  cancels the live scroll delta for us — glass stays locked to its DOM
+ *  instead of trailing by a frame. False (Firefox today) keeps the classic
+ *  fixed-canvas behavior with no var writes at all. */
+const SCROLL_SYNC_SUPPORTED =
+  typeof CSS !== 'undefined' &&
+  typeof CSS.supports === 'function' &&
+  CSS.supports('animation-timeline', 'scroll()');
+/** The scroll offset the last painted frame was drawn for. Published to
+ *  --glass-sync at paint time; the compositor reads it on the animation
+ *  clock. -1 = nothing painted yet (the var must not exist before the first
+ *  real paint, or the canvas would translate before its backdrop is ready). */
+let syncPaintY = -1;
+/** The scroller's travel (scrollHeight − clientHeight), published to
+ *  --glass-range when it changes. The sync keyframes need it because the
+ *  scroll() timeline's progress is normalized 0..1 — `translate(painted −
+ *  progress·range)` is the un-normalized form. */
+let syncRange = -1;
 let webglBroken = false;
 let shellElCache: HTMLElement | null = null;
 let plateURL = '';
@@ -198,19 +218,17 @@ const drift = {
   maxStale: 0,
   staleSum: 0,
   staleFrames: 0,
-  lastLead: 0,
 };
 function driftSample(scrollY: number, now: number, dt: number): void {
   const d = scrollY - drift.lastScrollY;
-  // stale = how far the PAINTED position is from where the compositor is
-  // RIGHT NOW: the panel is drawn at (scrollY + lead), and the display will
-  // show scrollY + lead_pending; with the one-frame lead the residual is
-  // |lead − observed motion|, i.e. exactly what is left of the trail after
-  // compensation. (Reading |scrollY − lastPaintY| instead would just report
-  // the previous frame's motion and could never go to zero while scrolling.)
-  const stale = Math.abs(d - (drift.lastLead ?? 0));
+  // stale = CONTENT freshness bound: how far the page moved since the last
+  // PAINT while that paint's pixels are still displayed. Since the compositor
+  // scroll-sync landed, the canvas BOX tracks the DOM exactly at display
+  // time (translate = painted − live); this number is what is left of the
+  // visual error — the internal backdrop sample's staleness — and it goes to
+  // 0 on the next paint and to 0 at rest.
+  const stale = Math.abs(scrollY - drift.lastPaintY);
   drift.lastScrollY = scrollY;
-  drift.lastLead = d;
   drift.ring[drift.ringN & 31] = [Math.round(d * 10) / 10, Math.round(stale * 10) / 10, Math.round(dt * 10) / 10];
   drift.ringN++;
   if (stale > drift.maxStale) drift.maxStale = stale;
@@ -247,7 +265,6 @@ export function resetGlassDrift(): void {
   // sample report the whole document offset as one giant "stale" step.
   drift.lastScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
   drift.lastPaintY = drift.lastScrollY;
-  drift.lastLead = 0;
 }
 
 /* Engine counters — the ?perf=1 oracle for the map pipeline. posted =
@@ -363,6 +380,7 @@ function defaultParamsFromRoot(): LensParams {
     cornerExp: cssNum(cs, '--corner-exp', 3),
     dim: cssNum(cs, '--lens-dim', 0.15),
     dimTint: dimTintOf(cs),
+    dimLift: dimLiftOf(cs),
   };
 }
 
@@ -426,6 +444,17 @@ function dimTintOf(cs: CSSStyleDeclaration): [number, number, number] {
   const nums = raw.map((n) => parseFloat(n)).filter((n) => Number.isFinite(n));
   if (nums.length >= 3) return [nums[0], nums[1], nums[2]];
   return [31, 29, 41];
+}
+
+/** The dark white-veil lift from --glass-dim-lift ("0" light, "0.03" dark):
+ *  a (1−x)²-weighted white tint that lifts ONLY the deepest darks ≈3.0/255
+ *  so a dark material reads as its own faint layer over a dark backdrop
+ *  ("in dark mode dimming is useless" — the wash alone moves nothing when
+ *  backdrop ≈ tint). Whites stay untouched (veil weight 0 at 255). Light
+ *  carries 0: a veil over warm paper would only grey it. */
+function dimLiftOf(cs: CSSStyleDeclaration): number {
+  const v = parseFloat(cs.getPropertyValue('--glass-dim-lift'));
+  return Number.isFinite(v) ? Math.max(0, Math.min(0.25, v)) : 0;
 }
 
 /** The fill gradient's tint from --glass-p-tint (light 255 255 255, dark
@@ -672,6 +701,7 @@ function paramsForWebgl(el: HTMLElement, cs: CSSStyleDeclaration): GlassPaintPar
     cornerExp: cssNum(cs, '--corner-exp', 3),
     dim: cssNum(cs, '--lens-dim', 0.15),
     dimTint: dimTintOf(cs),
+    dimLift: dimLiftOf(cs),
     blur,
     /* Masked rim saturation stays at the lab's 1.15 for every drawn family.
        The CHAIN-level saturate (blur → saturate → url) is what only glx/glx-
@@ -755,6 +785,11 @@ function tryInitWebgl(): void {
     canvas.setAttribute('aria-hidden', 'true');
     shell.insertBefore(canvas, shell.firstChild);
     const r = new GlassRenderer(canvas);
+    /* Overscan (--glass-ov on the canvas): the sync translate moves the box
+       by up to a frame of motion each way, so the shader must lay panels and
+       the plate sample over a taller canvas — 0 when the engine has no
+       scroll-driven animations (the @supports guard zeroes the token). */
+    r.ov = parseFloat(getComputedStyle(canvas).getPropertyValue('--glass-ov')) || 0;
     canvas.addEventListener('webglcontextlost', () => shutdownWebgl(true), false);
     renderer = r;
     glCanvas = canvas;
@@ -822,8 +857,11 @@ function glFrame(): void {
   }
   /* Resize first (cheap; it is a no-op unless the canvas box changed) and
      treat a real buffer re-allocation as a dirty frame — the buffer is
-     cleared by the browser on resize. The REST of the frame (clear +
-     backdrop + panels) runs only past the idle gate below. */
+     cleared by the browser on resize. The REST of the frame (clear + panels)
+     runs only past the idle gate below. NO backdrop draw: the canvas is
+     GLASS-ONLY since the compositor scroll-sync — the plate stays the DOM
+     layer UNDER the canvas (base.css), the shader samples it as a texture,
+     and the translated canvas must never drag it. */
   const before = `${canvas.width}x${canvas.height}`;
   r.resizeFrame();
   const resized = before !== `${canvas.width}x${canvas.height}`;
@@ -842,37 +880,22 @@ function glFrame(): void {
   const vh = window.innerHeight;
   const M = 96;
 
-  /* Panel placement — ONE-FRAME LEAD, derived from this frame's REAL delta.
-     Measured (drift ring, ?perf=1): the canvas paints at rAF-time scroll
-     while the compositor has already advanced one frame, so glass trails
-     its own DOM contents by up to one frame of motion (maxStale 37px on the
-     dashboard run while fps was a clean 60). A document-anchored canvas
-     would fix this by construction but is IMPOSSIBLE here: GL
-     MAX_TEXTURE_SIZE is 8192, and a 6000px document needs a 12000px buffer.
-     So the canvas stays viewport-sized and we cancel the measured error
-     instead: lead = the scroll delta the PREVIOUS frame saw, clamped to
-     the motion actually on screen. It is:
-       · exactly 0 at rest (no delta → no offset → idle frames are
-         pixel-identical to today),
-       · bounded by the real per-frame motion (cannot overshoot into the
-         "slides ahead and eases back" artifact the EMA version produced —
-         that came from extrapolating velocity, not from using the observed
-         delta),
-       · re-derived every frame, so a flick reversal changes it the same
-         frame.
-     clamp ±120px: a fast flick steps ~60-120px per frame; beyond that the
-     frame was long (jank), and guessing that far ahead is worse than
-     trailing. */
+  /* Panel placement — LIVE layout rects, no lead term. The stale-vs-display
+     correction now happens ON THE COMPOSITOR (see base.css sync keyframes):
+     this frame paints at scrollY yNow and publishes yNow to --glass-sync;
+     the compositor translates the canvas by (yNow − liveY) so the glass
+     displays EXACTLY where the DOM is. Painting at the raw rect (rather
+     than rect+lead) is required for correctness: the shader samples the
+     plate texture in unmoved viewport coordinates, and rect.top already IS
+     the panel's position at yNow.
+     History: a display-time lead lived here for two generations; both were
+     removed (v1 stuttered, v2's EMA decay read as "sliding ahead and easing
+     back"). The lead is now exact and compositor-owned, not estimated. */
   const yNow = window.scrollY;
-  const rawStep = yNow - drift.lastScrollY;
-  const lead = Math.max(-120, Math.min(120, rawStep));
   const nowMs = performance.now();
   driftSample(yNow, nowMs, nowMs - lastGlFrameT);
   lastGlFrameT = nowMs;
   drift.lastPaintY = yNow;
-  /* Probe: the lead actually applied this frame. One property write, read
-     only by the ?perf=1 harness / dev probes; no DOM effect. */
-  (window as unknown as { __glassLeadPx?: number }).__glassLeadPx = lead;
 
   /* IDLE GATE — do not repaint an unchanged frame. The canvas is fixed and
      full-viewport: repainting it at 60Hz while nothing moves burns GPU on
@@ -896,9 +919,40 @@ function glFrame(): void {
   lastIdleKey = idleKey;
   glDirty = false;
 
+  /* Publish the sync state to the compositor — ONLY past the gate, because
+     the var is a claim: "the pixels now being painted correspond to scroll
+     offset yNow". The glass-sync timeline (base.css) reads it and translates
+     the canvas by (painted − live) on the compositor clock, so painted glass
+     is displayed exactly where the DOM is at display time — no trail, at any
+     velocity. --glass-range is the scroller's travel: the timeline progress
+     is normalized 0..1, so translate = yNow − progress·range must know the
+     un-normalized range. Range uses clientHeight (NOT innerHeight): that is
+     the exact denominator of the root scroll range and of the scroll()
+     timeline. Engines without scroll-driven animations never reach this
+     block (SCROLL_SYNC_SUPPORTED is false, and the @supports guard in
+     base.css additionally disables the animation itself). */
+  if (SCROLL_SYNC_SUPPORTED) {
+    const range = Math.max(
+      0,
+      document.documentElement.scrollHeight - document.documentElement.clientHeight,
+    );
+    /* Vars go on the CANVAS, not <html>: custom-property changes on the root
+       invalidate style for the whole (inheriting) subtree — a per-frame
+       full-document invalidation. On the canvas the invalidation is scoped
+       to the single animated element. */
+    if (range !== syncRange) {
+      syncRange = range;
+      canvas.style.setProperty('--glass-range', `${range}px`);
+    }
+    if (yNow !== syncPaintY) {
+      syncPaintY = yNow;
+      canvas.style.setProperty('--glass-sync', `${yNow}px`);
+      (window as unknown as { __glassSyncPx?: number }).__glassSyncPx = yNow;
+    }
+  }
+
   // Past the gate: this frame is actually (re)painted.
   r.beginFrame();
-  r.drawBackdrop();
 
   let drawn = 0;
   for (const el of webglDrawSet) {
@@ -914,9 +968,10 @@ function glFrame(): void {
     try {
       r.drawPanel(
         entry.kind,
-        // top + lead: paint where the compositor will DISPLAY this frame
-        // (one frame of measured motion), so glass locks to its contents.
-        { left: rect.left, top: rect.top + lead, width: rect.width, height: rect.height },
+        // Raw live rect: the compositor's sync translate places the canvas so
+        // these pixels land exactly where the DOM is at display time. Any
+        // per-panel lead on top of that would double-correct.
+        { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
         entry.params,
         effectiveAlpha(el),
       );
@@ -938,6 +993,10 @@ function shutdownWebgl(lost: boolean): void {
     glRaf = 0;
   }
   resetGlassDrift();
+  // The sync vars live inline on the canvas element and die with it; reset
+  // the module state so a later re-mount starts clean.
+  syncPaintY = -1;
+  syncRange = -1;
   if (renderer) {
     renderer.plateURL = ''; // stop any pending plate retries on a dead renderer
     try {
@@ -1090,7 +1149,7 @@ function flushSync(): void {
     const radius = radiusOf(el, cs, cssNum(cs, '--lens-radius', 21));
     const chainBase = chainOf(el, cs);
     const withDim = kind !== 'drop' && p.dim > 0;
-    const quickKey = `${kind}|${w}x${h}|${Math.round(radius)}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
+    const quickKey = `${kind}|${w}x${h}|${Math.round(radius)}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}|${(p.dimLift ?? 0).toFixed(3)}`;
     if (el.dataset.lastQuickKey === quickKey) continue;
     todo.push({ el, kind, w, h, radius, p, chainBase, withDim, quickKey });
   }
@@ -1134,7 +1193,7 @@ function dressPanel(t: PendingPanel, entry: BucketEntry): void {
     return;
   }
   const mapKey = `${kind}|${w}x${h}|${Math.round(radius)}`;
-  const filterKey = `${mapKey}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}`;
+  const filterKey = `${mapKey}|${withDim ? 1 : 0}|${p.specOpacity}|${p.specSaturation}|${p.dim.toFixed(3)}|${(p.dimLift ?? 0).toFixed(3)}`;
   let id = FILTERS.get(filterKey);
   if (!id || !document.getElementById(id)) {
     id = `lg-${++seq}`;
@@ -1299,6 +1358,7 @@ function readParams(cs: CSSStyleDeclaration): LensParams {
     cornerExp: cssNum(cs, '--corner-exp', 3),
     dim: cssNum(cs, '--lens-dim', 0.15),
     dimTint: dimTintOf(cs),
+    dimLift: dimLiftOf(cs),
   };
 }
 

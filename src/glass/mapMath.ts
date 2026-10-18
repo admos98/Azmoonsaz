@@ -70,6 +70,13 @@ export interface LensParams {
   cornerExp: number; // superellipse exponent, must match CSS --corner-exp
   dim: number; // rgb-dim wash 0..1 (per theme)
   dimTint: [number, number, number]; // 0..255
+  /** Dark white-veil lift 0..0.25 (--glass-dim-lift; 0 in light). A
+   *  (1−x)²-weighted white tint added AFTER the wash that lifts only the
+   *  deepest darks (≈ L·255 at black, 0 at white): on dark backdrops the
+   *  wash alone moves nothing (backdrop ≈ tint), so the material needs its
+   *  own faint presence to read as a layer — "a very very subtle white
+   *  tint", without greying anything. */
+  dimLift?: number;
 }
 
 function refract2D(nx: number, ny: number, eta: number): [number, number] | null {
@@ -368,11 +375,21 @@ export function dimStrength(p: LensParams): number {
 }
 
 /** One channel of the wash, in 0..255 space. Pure, side-effect free. */
-export function dimChannel(inp: number, b: number, tintCh: number): number {
+export function dimChannel(inp: number, b: number, tintCh: number, lift = 0): number {
   const x = Math.max(0, Math.min(255, inp));
   const t = Math.max(0, Math.min(255, tintCh));
   const k = Math.max(0, Math.min(0.5, b));
-  return x + k * (x / 255) * (t - x);
+  const w = x + k * (x / 255) * (t - x);
+  /* White-veil lift (dark theme): weight (1 − x/255)² on the INPUT value →
+     lifts ONLY the deep darks (+L·255 ≈ 7.6/255 at black — the "very very
+     subtle white tint" read), contributes EXACTLY zero at pure white (the
+     wash's own domain), ~1.9/255 at mid. Composes with the wash
+     monotonically: wash' ≥ 1 − x/255 and |veil'| ≤ 2L/255, so the sum stays
+     non-decreasing across the clamped range (pinned). */
+  const L = Math.max(0, Math.min(0.25, lift));
+  if (L === 0) return w;
+  const u = 1 - x / 255;
+  return w + L * 255 * u * u;
 }
 
 /** feFunc tableValues for one channel: 33 samples (step 255/32), linear
@@ -380,11 +397,11 @@ export function dimChannel(inp: number, b: number, tintCh: number): number {
  *  is < 0.09/255 across the whole range (curvature bound b/4096 in
  *  normalized units) — two orders under the accepted 2/255 LSB tolerance —
  *  while costing ~600B of markup instead of 4KB for 256 exact samples. */
-export function dimTableValues(b: number, tintCh: number): string {
+export function dimTableValues(b: number, tintCh: number, lift = 0): string {
   const n = 33;
   const out: string[] = [];
   for (let i = 0; i < n; i++) {
-    out.push((dimChannel((255 * i) / (n - 1), b, tintCh) / 255).toFixed(4));
+    out.push((dimChannel((255 * i) / (n - 1), b, tintCh, lift) / 255).toFixed(4));
   }
   return out.join(' ');
 }

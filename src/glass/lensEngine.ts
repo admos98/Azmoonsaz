@@ -125,9 +125,9 @@ export function buildFilterMarkup(
   const dim = withDim
     ? `
       <feComponentTransfer in="withSaturation" result="dimmed">
-        <feFuncR type="table" tableValues="${esc(dimTableValues(b, p.dimTint[0]))}"/>
-        <feFuncG type="table" tableValues="${esc(dimTableValues(b, p.dimTint[1]))}"/>
-        <feFuncB type="table" tableValues="${esc(dimTableValues(b, p.dimTint[2]))}"/>
+        <feFuncR type="table" tableValues="${esc(dimTableValues(b, p.dimTint[0], p.dimLift))}"/>
+        <feFuncG type="table" tableValues="${esc(dimTableValues(b, p.dimTint[1], p.dimLift))}"/>
+        <feFuncB type="table" tableValues="${esc(dimTableValues(b, p.dimTint[2], p.dimLift))}"/>
       </feComponentTransfer>`
     : '';
   // withDim=false: no dim CT at all (the old chain emitted two identity

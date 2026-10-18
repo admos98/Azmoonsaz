@@ -40,6 +40,12 @@ function readParams() {
     cornerExp: num('--corner-exp', 2),
     dim: num('--lens-dim', 0.1),
     dimTint: [31, 29, 41],
+    /* Dark white-veil lift — read from the token so the lab's two themes
+       match the app exactly (light 0, dark 0.03). */
+    dimLift: (() => {
+      const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--glass-dim-lift'));
+      return Number.isFinite(v) ? v : 0;
+    })(),
     /* These four were MISSING, and both absences were silently corrupting the
        A/B:
          · radius — css-engine.js:77 reads params.radius to size the maps. No

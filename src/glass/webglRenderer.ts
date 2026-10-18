@@ -126,6 +126,11 @@ uniform float u_dpr;
 uniform sampler2D u_plate;
 uniform vec2  u_plateSize;
 
+/** Vertical overscan, CSS px (--glass-ov on the canvas): the box extends
+    this far past both viewport edges so the compositor sync translate has
+    painted coverage to move into. 0 on engines without the sync. */
+uniform float u_ov;
+
 uniform float u_radius;
 uniform float u_cornerExp;
 uniform float u_circle;
@@ -146,6 +151,7 @@ uniform float u_dim;
 uniform float u_dimTr;      // dim tint, 0..255 (the wash target)
 uniform float u_dimTg;
 uniform float u_dimTb;
+uniform float u_dimLift;    // dark white-veil: (1−x)² white tint on deep darks
 uniform float u_specOpacity;
 uniform float u_gsat;       // global saturate from the CSS chain (glx 1.5, lens 1)
 uniform float u_alpha;       // the panel's own inline opacity (motion fades)
@@ -181,8 +187,16 @@ float borderDist(vec2 p, vec2 half_, float r, float n, float circle) {
 }
 
 vec2 plateUV(vec2 viewCss) {
-  float ps = max(u_res.x / u_dpr / u_plateSize.x, u_res.y / u_dpr / u_plateSize.y);
-  return (viewCss - (u_res / u_dpr) * 0.5) / (u_plateSize * ps) + 0.5;
+  /* viewCss arrives in VIEWPORT space (the DOM plate layer's own space; the
+     fragment flips out of canvas space by minus u_ov first). The plate box
+     is the viewport (vw x vh) — the canvas is 2*u_ov taller, so the
+     viewport height is u_res.y/dpr minus 2*u_ov. The sample must register
+     with the CSS cover/center background of #app-teacher-shell::before:
+     same box, same cover scale. */
+  float pw = u_res.x / u_dpr;
+  float ph = u_res.y / u_dpr - 2.0 * u_ov;
+  float ps = max(pw / u_plateSize.x, ph / u_plateSize.y);
+  return (viewCss - vec2(pw, ph) * 0.5) / (u_plateSize * ps) + 0.5;
 }
 
 vec3 backdropAt(vec2 viewCss) {
@@ -238,7 +252,7 @@ void main() {
   if (u_maskProbe > 0.5) { outColor = vec4(vec3(inside), 1.0); return; }
   if (inside <= 0.0) discard;
 
-  vec2 viewCss = v_view / u_dpr;
+  vec2 viewCss = v_view / u_dpr - vec2(0.0, u_ov);
   vec3 back = blurred(viewCss, u_blur);
   /* feDisplacementMap semantics: read the map at THIS pixel, offset the source
      sample by (R-0.5)*scale, (G-0.5)*scale. Same numbers feDisplacementMap
@@ -268,8 +282,19 @@ void main() {
      tinted glass, not the uniform crush of a flat multiply). Clamp first:
      CSS clamps between filter primitives, so the input here is [0,1]. */
   if (u_dim > 0.0) {
-    col = clamp(col, 0.0, 1.0);
-    col = col + u_dim * col * (vec3(u_dimTr, u_dimTg, u_dimTb) / 255.0 - col);
+    vec3 pre = clamp(col, 0.0, 1.0);
+    col = pre + u_dim * pre * (vec3(u_dimTr, u_dimTg, u_dimTb) / 255.0 - pre);
+    /* White-veil lift (dark theme): a (1−x)²-weighted white tint on the
+       INPUT value — lifts ONLY the deepest darks (≈ u_dimLift·255 at black),
+       EXACTLY zero at pure white (the wash's own domain). On dark backdrops
+       the wash alone moves nothing (backdrop ≈ tint); this is what makes
+       the material read as its own faint layer there — the "very very
+       subtle white tint" — without greying mids or touching highlights.
+       0 in light. Mirrors mapMath.dimChannel (input-weighted). */
+    if (u_dimLift > 0.0) {
+      vec3 u = vec3(1.0) - pre;
+      col = col + u_dimLift * u * u;
+    }
   }
 
   /* specular arc — the chain's final blend, over the dimmed result. */
@@ -433,6 +458,10 @@ export class GlassRenderer {
   /** Dev-only: paint each panel's inside mask into R (deterministic corner
    *  verification via gl.readPixels). Never enabled in production paths. */
   maskProbe = false;
+  /** Vertical overscan in CSS px (--glass-ov): the canvas box extends this
+   *  far past both viewport edges (compositor sync headroom). 0 disables —
+   *  panel rects and the plate sample then map 1:1, the pre-sync geometry. */
+  ov = 0;
 
   /** Plate pipeline telemetry — the last stage the load reached. Travels into
    *  the ?perf=1 report (engine.plate) so a field failure names the step
@@ -456,7 +485,13 @@ export class GlassRenderer {
 
   constructor(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', {
-      alpha: false,
+      /* alpha:true — the canvas is GLASS-ONLY since the compositor scroll-
+         sync: everything outside the painted panels must be TRANSPARENT so
+         the DOM plate layer (z-0, under the canvas) shows through. The
+         shader already outputs premultiplied alpha; the pre-sync build used
+         alpha:false because it painted the full-viewport plate itself, and
+         an opaque black backbuffer was never safe to show early. */
+      alpha: true,
       antialias: false,
       depth: false,
       stencil: false,
@@ -893,7 +928,8 @@ export class GlassRenderer {
     const f1 = (name: string, v: number) => gl.uniform1f(this.uni(p, name), Number.isFinite(v) ? v : 0);
     gl.uniform2f(this.uni(p, 'u_res'), this.frameW, this.frameH);
     gl.uniform1f(this.uni(p, 'u_dpr'), dpr);
-    gl.uniform2f(this.uni(p, 'u_rect'), rect.left * dpr, rect.top * dpr);
+    gl.uniform1f(this.uni(p, 'u_ov'), this.ov);
+    gl.uniform2f(this.uni(p, 'u_rect'), rect.left * dpr, (rect.top + this.ov) * dpr);
     gl.uniform2f(this.uni(p, 'u_size'), rect.width * dpr, rect.height * dpr);
     gl.uniform1f(
       this.uni(p, 'u_radius'),
@@ -922,6 +958,7 @@ export class GlassRenderer {
     gl.uniform1f(this.uni(p, 'u_dimTr'), params.dimTint[0]);
     gl.uniform1f(this.uni(p, 'u_dimTg'), params.dimTint[1]);
     gl.uniform1f(this.uni(p, 'u_dimTb'), params.dimTint[2]);
+    gl.uniform1f(this.uni(p, 'u_dimLift'), params.dimLift ?? 0);
     f1('u_specOpacity', params.specOpacity);
     f1('u_gsat', params.gsat);
     f1('u_alpha', alpha);

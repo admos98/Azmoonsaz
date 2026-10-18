@@ -115,6 +115,7 @@ uniform float u_dim;
 uniform float u_dimTr;      // dim tint, 0..255 (the wash target)
 uniform float u_dimTg;
 uniform float u_dimTb;
+uniform float u_dimLift;    // dark white-veil: (1−x)² white tint on deep darks
 uniform float u_specOpacity;
 uniform float u_gsat;       // chain saturate (glx 1.5, lens 1)
 
@@ -232,10 +233,15 @@ void main() {
 
   /* dim wash — Apple's highlight-weighted wash toward the tint (mirrors
      webglRenderer): whites move the full distance, blacks never move, all
-     channels converge on ONE tint (hue survives). */
+     channels converge on ONE tint (hue survives). Dark adds the white-veil
+     lift — input-weighted (1−x)², deep darks only, 0 at white. */
   if (u_dim > 0.0) {
-    col = clamp(col, 0.0, 1.0);
-    col = col + u_dim * col * (vec3(u_dimTr, u_dimTg, u_dimTb) / 255.0 - col);
+    vec3 pre = clamp(col, 0.0, 1.0);
+    col = pre + u_dim * pre * (vec3(u_dimTr, u_dimTg, u_dimTb) / 255.0 - pre);
+    if (u_dimLift > 0.0) {
+      vec3 u = vec3(1.0) - pre;
+      col = col + u_dimLift * u * u;
+    }
   }
 
   /* specular arc — the chain's final blend, over the dimmed result. */
@@ -518,6 +524,7 @@ export class GlassRenderer {
     gl.uniform1f(u('u_dimTr'), params.dimTint[0]);
     gl.uniform1f(u('u_dimTg'), params.dimTint[1]);
     gl.uniform1f(u('u_dimTb'), params.dimTint[2]);
+    f1('u_dimLift', params.dimLift ?? 0);
     f1('u_specOpacity', params.specOpacity);
     gl.uniform1f(u('u_maskProbe'), this.maskProbe ? 1 : 0);
     gl.uniform4f(u('u_scrollRect'), ...scroll.rect);

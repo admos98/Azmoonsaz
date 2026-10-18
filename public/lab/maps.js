@@ -235,19 +235,25 @@ export function dimStrength(p) {
 }
 
 /** One channel of the wash, 0..255. Mirrors src/glass/mapMath.ts exactly. */
-export function dimChannel(inp, b, tintCh) {
+export function dimChannel(inp, b, tintCh, lift = 0) {
   const x = Math.max(0, Math.min(255, inp));
   const t = Math.max(0, Math.min(255, tintCh));
   const k = Math.max(0, Math.min(0.5, b));
-  return x + k * (x / 255) * (t - x);
+  const w = x + k * (x / 255) * (t - x);
+  /* White-veil lift (dark theme) — input-weighted (1−x)², mirrors mapMath:
+     lifts deep darks ≈ L·255, exactly 0 at white. */
+  const L = Math.max(0, Math.min(0.25, lift));
+  if (L === 0) return w;
+  const u = 1 - x / 255;
+  return w + L * 255 * u * u;
 }
 
 /** feFunc tableValues for one channel: 33 samples, linear interpolation. */
-export function dimTableValues(b, tintCh) {
+export function dimTableValues(b, tintCh, lift = 0) {
   const n = 33;
   const out = [];
   for (let i = 0; i < n; i++) {
-    out.push((dimChannel((255 * i) / (n - 1), b, tintCh) / 255).toFixed(4));
+    out.push((dimChannel((255 * i) / (n - 1), b, tintCh, lift) / 255).toFixed(4));
   }
   return out.join(' ');
 }
@@ -399,7 +405,7 @@ export function buildFilterNode(doc, id, dispURL, specURL, maxAbs, p, withDim, W
     const add = (ch, i) => {
       const f = el('feFunc' + ch);
       f.setAttribute('type', 'table');
-      f.setAttribute('tableValues', dimTableValues(b, p.dimTint[i]));
+      f.setAttribute('tableValues', dimTableValues(b, p.dimTint[i], p.dimLift));
       ct.appendChild(f);
     };
     add('R', 0);

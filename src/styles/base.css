@@ -118,12 +118,15 @@ body {
 }
 
 /* ─── WebGL paint path — the primary glass renderer ───
-   glassController.ts draws the plate + every in-flow lens/pane/drop/glx
-   panel into one fixed canvas (#glass-canvas, z-1) between the plate (z-0)
-   and the content (z-10). The swap is ATOMIC: the canvas stays display:none
-   and the DOM plate visible until html[data-glass-render='webgl'] lands (set
-   only after the plate texture is uploaded), at which point the canvas
-   shows, the DOM plate hides, and every drawn panel
+   glassController.ts draws every in-flow lens/pane/drop/glx panel into one
+   fixed canvas (#glass-canvas, z-1) between the plate (z-0) and the content
+   (z-10). Since the compositor scroll-sync (2026-10-18) the canvas is
+   GLASS-ONLY: the plate stays the DOM layer under it — the canvas is
+   translated by a scroll() timeline, so anything painted into it (like the
+   plate) would drag during scroll. The swap is still atomic: the canvas
+   stays display:none until html[data-glass-render='webgl'] lands (set only
+   after the plate texture — the glass shader's backdrop source — is
+   uploaded), at which point the canvas shows and every drawn panel
    ([data-glass-paint='webgl']) drops to a transparent frame — the shader
    paints its material, the panel carries only its content. A lost context removes the
    attribute and the classic CSS path resumes. Panels NOT drawn (glx-dark,
@@ -132,7 +135,17 @@ body {
 #glass-canvas {
   display: none;
   position: fixed;
-  inset: 0;
+  /* Vertical overscan: the sync translate moves the canvas by
+     (painted − live) — up to a frame of motion each way — so the box needs
+     coverage BEYOND both viewport edges, or an entering band would show
+     its bare DOM for one frame (a glass-less edge during motion). 64px per
+     side covers ordinary scroll and most flings. The buffer spans
+     viewport + 2·ov; the draw loop shifts panel rects by ov and the plate
+     sample by −ov (u_ov), so every mapping stays viewport-exact. */
+  --glass-ov: 64px;
+  left: 0;
+  right: 0;
+  top: calc(-1 * var(--glass-ov));
   /* A canvas is a REPLACED element: inset alone does not stretch it — the
      buffer would be magnified to the viewport (the lab's DPR2 softness bug). */
   width: 100%;
@@ -141,16 +154,78 @@ body {
      re-sizes its buffer mid-scroll on iOS 26 (URL bar collapse), forcing a
      resize + re-alloc + full redraw every frame of the animation. lvh is
      constant; the panel draw loop maps layout coords 1:1 to the buffer. */
-  height: 100lvh;
+  height: calc(100lvh + 2 * var(--glass-ov));
   z-index: 1;
   pointer-events: none;
+  /* Runtime-published sync state (written by glassController at paint time):
+     --glass-sync = the scroll offset the last painted frame was drawn for,
+     --glass-range = the scroller's travel. Defined here as the initial value
+     so the token integrity check sees an owner and the first frames before
+     any paint translate by 0. */
+  --glass-sync: 0px;
+  --glass-range: 0px;
+  /* ── Compositor scroll-sync ───────────────────────────────────────────
+     Why: the canvas paints on the main-thread rAF clock while the page
+     scrolls on the COMPOSITOR clock. With the canvas merely `fixed`, glass
+     can only move when a frame is painted, so in motion it trails its own
+     DOM contents by up to one display interval — the field report's
+     `drift.maxStale 17px, staleFrames 197` at a clean 60fps / 0 longtasks.
+     Tuning cannot close that gap; only the compositor can, because only it
+     knows the scroll position at display time.
+
+     How: the paint loop writes the scroll offset it PAINTED AT into
+     --glass-sync (per frame, at paint time — one custom-property write) and
+     the scroller's travel into --glass-range. This timeline then translates
+     the canvas by (painted − live) scroll, so at the moment the compositor
+     displays frame N the canvas box sits at exactly `painted_N − live_N`
+     and the pixels painted for offset `painted_N` land where the DOM *is*:
+     locked, not trailing. Because the compensation is a pure function of
+     the live scroll position, it is correct at ANY velocity and for
+     fling/momentum, and a cancelled or dropped frame IS compensated on the
+     next display update rather than leaving the panel parked behind.
+     `scroll(root block)` matches window scroll (the shell scrolls the
+     document). The canvas is GLASS-ONLY — the plate stays the DOM layer
+     under it (a translated canvas must never drag the backdrop). Verified
+     in the lab (scratch/sync-lab.mjs): canvas box == painted − live with
+     max error 0.0px, live var and frozen var alike. */
+  animation: glass-sync linear both;
+  animation-timeline: scroll(root block);
+}
+@keyframes glass-sync {
+  from {
+    transform: translateY(var(--glass-sync, 0px));
+  }
+  to {
+    transform: translateY(calc(var(--glass-sync, 0px) - var(--glass-range, 0px)));
+  }
+}
+/* Engines without scroll-driven animations (Firefox today, older WebKit)
+   keep the pre-sync behavior: the var is simply never animated, and the
+   canvas translates by a constant — i.e. it stays where it is drawn. The
+   frame loop only writes --glass-sync when the feature actually exists, so
+   this block is documentation as much as a guard. */
+@supports not (animation-timeline: scroll()) {
+  #glass-canvas {
+    animation: none;
+    /* No sync translate → no overscan: the box pins back to the viewport
+       (geometry identical to the pre-sync build; u_ov reads 0). */
+    --glass-ov: 0px;
+    top: 0;
+    height: 100%;
+    height: 100lvh;
+  }
 }
 :root[data-glass-render='webgl'] #glass-canvas {
   display: block;
 }
 :root[data-glass-render='webgl'] #app-teacher-shell::before {
-  /* the canvas carries the plate — the DOM twin must not double it */
-  display: none;
+  /* The plate STAYS the DOM layer under the canvas (z-0 under z-1): the
+     compositor scroll-sync translates the canvas element, and layers under
+     a non-translated fixed backdrop are exactly where a backdrop belongs.
+     (Until 2026-10-18 the canvas painted the plate itself and this rule
+     hid the twin; a translated canvas would have dragged a painted plate,
+     so the plate moved out of the canvas — the canvas is GLASS-ONLY.) */
+  display: block;
 }
 :root[data-glass-render='webgl'] [data-glass-paint='webgl'] {
   /* Transparent frame. backdrop-filter must die COMPLETELY: blurring the

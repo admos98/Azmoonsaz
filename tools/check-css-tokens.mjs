@@ -33,6 +33,10 @@ const ALLOWLIST = new Set([
   '--eg-x',
   '--eg-y',
   '--eg-boost',
+  // Read from TypeScript (glassController.dimLiftOf) via getComputedStyle —
+  // the dark white-veil lift is a shader/CSS-filter parameter, not a style
+  // property; no CSS rule can reference it.
+  '--glass-dim-lift',
   // Tailwind v4 injects its internals at runtime; we may reference them.
   '--tw-blur',
   '--tw-brightness',
@@ -114,7 +118,13 @@ for (const [name, sites] of referenced) {
 // be intentional staging, but the pile may never GROW (F-7).
 const dead = [];
 for (const [name, where] of defined) {
-  if (!referenced.has(name) && !name.startsWith('--spacing') && !name.startsWith('--radius') && !name.startsWith('--text')) {
+  if (
+    !referenced.has(name) &&
+    !ALLOWLIST.has(name) && // JS-consumed tokens (getPropertyValue) can never be var()-referenced
+    !name.startsWith('--spacing') &&
+    !name.startsWith('--radius') &&
+    !name.startsWith('--text')
+  ) {
     dead.push(`${name}  (defined at ${where})`);
   }
 }

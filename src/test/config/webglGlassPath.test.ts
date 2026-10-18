@@ -98,6 +98,41 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(css).toMatch(/#app-teacher-shell::before\s*\{[^}]*height:\s*100lvh/);
   });
 
+  it('the compositor scroll-sync: timeline keyframes + glass-only canvas', () => {
+    // The canvas paints on the rAF clock, the DOM scrolls on the compositor
+    // clock — in-motion the glass trailed by up to a frame (maxStale 17px at
+    // 60fps/0 longtasks in the field report). The fix: a scroll() timeline
+    // translates the canvas by (painted − live) so painted pixels display
+    // where the DOM is. Both the animation and the two vars it reads are
+    // load-bearing; the @supports guard keeps the fallback engines inert.
+    expect(css).toMatch(/#glass-canvas\s*\{[^}]*animation:\s*glass-sync\s+linear\s+both/);
+    expect(css).toMatch(/#glass-canvas\s*\{[^}]*animation-timeline:\s*scroll\(root\s+block\)/);
+    expect(css).toMatch(/@keyframes\s+glass-sync/);
+    expect(css).toMatch(
+      /glass-sync[^@]*?from\s*\{[^}]*translateY\(var\(--glass-sync,\s*0px\)\)/s,
+    );
+    expect(css).toMatch(
+      /glass-sync[^@]*?to\s*\{[^}]*translateY\(calc\(var\(--glass-sync,\s*0px\)\s*-\s*var\(--glass-range,\s*0px\)\)\)/s,
+    );
+    // The canvas is GLASS-ONLY: the plate must stay VISIBLE as the DOM layer
+    // under it (a translated canvas would drag a painted plate), and the
+    // controller must not draw the backdrop pass into the canvas anymore.
+    const plateBlock = css.match(/:root\[data-glass-render='webgl'\]\s*#app-teacher-shell::before\s*\{([^}]*)\}/);
+    expect(plateBlock).not.toBeNull();
+    expect(plateBlock![1]).toMatch(/display:\s*block/);
+    expect(code(controller)).not.toMatch(/r\.drawBackdrop\(\)/);
+    // The sync vars are published from the frame loop, only past the paint
+    // gate (the var claims "the pixels on screen correspond to this scroll
+    // offset" — a var written on a skipped frame would translate the canvas
+    // against pixels that were never repainted).
+    expect(controller).toMatch(/canvas\.style\.setProperty\('--glass-sync'/);
+    expect(controller).toMatch(/canvas\.style\.setProperty\('--glass-range'/);
+    expect(controller).toContain('SCROLL_SYNC_SUPPORTED');
+    expect(controller).toMatch(/CSS\.supports\('animation-timeline',\s*'scroll\(\)'\)/);
+    // Alpha compositing: glass-only canvas must be transparent outside panels.
+    expect(renderer).toMatch(/alpha:\s*true/);
+  });
+
   it('the controller mounts the renderer as the FIRST choice, CSS as fallback', () => {
     expect(controller).toContain("from './webglRenderer'");
     expect(controller).toContain('new GlassRenderer(');

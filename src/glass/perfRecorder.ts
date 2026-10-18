@@ -222,8 +222,13 @@ interface PerfReport {
   engine: GlassEngineStats;
   /** Panel-position drift — the "panels fall behind / slide / bounce"
    *  payload. Measured in the glass frame loop itself:
-   *    maxStale   — worst |scrollY − lastPaintedScrollY| at paint time (px):
-   *                 "the glass was N px behind the text at its worst";
+   *    maxStale   — worst |paint_y − prevPaint_y| seen at paint time (px):
+   *                 how far the page advanced between two glass paints while
+   *                 the older paint's pixels were still displayed. Since the
+   *                 compositor scroll-sync landed this is the CONTENT
+   *                 freshness bound (the glass BOX tracks the DOM exactly at
+   *                 display time; the internal backdrop sample is this many
+   *                 px stale until the next paint);
    *    meanStale  — average of nonzero staleness across the run;
    *    staleFrames— frames where the painted position was > 0.5px stale;
    *    ring       — the last 32 frames as [driftPx, stalePx, dtMs]:
