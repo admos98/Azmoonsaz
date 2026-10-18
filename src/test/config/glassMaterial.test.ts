@@ -171,14 +171,15 @@ describe('glass material contract (pixel-audit gates)', () => {
     // (the ::after fill-feather left with .glass-edge: one fill, one filter,
     // on the element itself)
     // glx-strong keeps its modal fill boost through derived alphas — and the
-    // boost is a TOKEN so dark can take more: at 0.18 a white heading behind
-    // a dark menu transmitted as a blurred band (+83 lum over the floor).
-    // 0.36+0.34 = 0.70 plus the dark 26px body blur measures +35. Cards take
-    // no boost (glx = a1), so this never touches them.
+    // boost is a TOKEN so each theme tunes it: light 0.24/0.17 (menu
+    // material near 80% opacity); dark REDUCED to 0.16/0.12 — measured, the
+    // old 0.36+0.34 = 0.70 composite kept only 33% of the backdrop's chroma
+    // (the near-opaque navy film = "plastic"), 0.52 keeps ~2.4x that while
+    // the 26px body blur still suppresses the band. Cards take no boost.
     expect(css).toMatch(/--glass-p-fa1:\s*calc\(var\(--glass-p-a1\) \+ var\(--glass-p-boost1\)\)/);
     expect(token('--glass-p-boost1')).toBe('0.24');
-    expect(token('--glass-p-boost1', ":root[data-theme='dark']")).toBe('0.34');
-    expect(token('--glass-p-boost2', ":root[data-theme='dark']")).toBe('0.26');
+    expect(token('--glass-p-boost1', ":root[data-theme='dark']")).toBe('0.16');
+    expect(token('--glass-p-boost2', ":root[data-theme='dark']")).toBe('0.12');
     // dark strong-tier body blur: the 22px experiment still let the band
     // through (+44); 26px cuts it to +35. Light keeps the 12-20px chrome band.
     expect(token('--glass-p-blur', ":root[data-theme='dark']")).toBe('26px');
@@ -688,11 +689,11 @@ describe('glass material contract (pixel-audit gates)', () => {
     // A: menus run 3px in BOTH themes — the heavy lift moved into the dim
     // (see the dim-first pins below); blur only softens contours now.
     expect(css).toMatch(
-      /:root:not\(\[data-theme='dark'\]\) \.lens\.lens--menu\s*\{\s*backdrop-filter:\s*blur\(3px\);/s,
+      /:root:not\(\[data-theme='dark'\]\) \.lens\.lens--menu\s*\{\s*backdrop-filter:\s*blur\(3px\)\s+saturate\(var\(--lens-menu-sat/s,
     );
     // dark carries no extra blur anymore (6+2px was the plastic smear)
     expect(css).toMatch(
-      /:root\[data-theme='dark'\] \.lens\.lens--menu\s*\{\s*backdrop-filter:\s*blur\(var\(--lens-menu-blur\)\);/s,
+      /:root\[data-theme='dark'\] \.lens\.lens--menu\s*\{\s*backdrop-filter:\s*blur\(var\(--lens-menu-blur\)\)\s+saturate\(var\(--lens-menu-sat/s,
     );
     expect(css).not.toMatch(/blur\(calc\(var\(--lens-menu-blur\) \+ 2px\)\)/);
     // B: contain: layout paint on both floating wrappers (invalidation stays
@@ -705,10 +706,13 @@ describe('glass material contract (pixel-audit gates)', () => {
       /fixed z-\[60\] @container contain-menu/,
     );
     // dim-first menus: the highlight-weighted wash carries the readability,
-    // 3px blur only softens contours; 0.35/0.32 = the deep wash (whites head
-    // for the tint, blacks stay black — "dimmer, not plastic").
-    expect(token('--lens-menu-dim')).toBe('0.35'); // the deep wash — whites head for the slate (255→~177); blacks stay black
-    expect(token('--lens-menu-dim', darkScope)).toBe('0.32'); // dark: whites wash toward the glass navy
+    // the 3px blur softens contours, and the menu SATURATE keeps the
+    // backdrop's hue alive through the wash (vibrancy: without it the chain
+    // returns 33% chroma = grey paint).
+    expect(token('--lens-menu-dim')).toBe('0.30'); // the wash — blacks stay black, sat carries hue
+    expect(token('--lens-menu-dim', darkScope)).toBe('0.32');
+    expect(token('--lens-menu-sat')).toBe('1.4');
+    expect(token('--lens-menu-sat', darkScope)).toBe('1.4');
     // the hamburger header no longer repeats the hero's date (1H)
     expect(component('src/components/Topbar.tsx')).not.toMatch(/formatPersianDate/);
     // ── the family rides every structural rule ──

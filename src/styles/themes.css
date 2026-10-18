@@ -118,11 +118,16 @@
      dark, clear variant over bright media (HIG) — is deliberately NOT
      applied: regular-variant app surfaces are not media-backed clear glass. */
   /* Floating menu material — the DIM carries readability; 3px blur only
-     softens contours. 0.35 is the deepest monotone-safe wash: whites drop
-     to ~177 (215→~161 at the plate anchor — clearly dimmer than the page),
-     mids ease down (128→~111), blacks untouched. Not "plastic dark": the
-     tint stays slate, blacks stay black, hue structure survives. */
-  --lens-menu-dim: 0.35;
+     softens contours. 0.30 EASED from 0.35: the menu chain now saturates
+     (--lens-menu-sat) before the wash, so the backdrop's own hue comes
+     through instead of dying — measured (scratch/dim-math): warm cream
+     keeps 64% of its chroma vs 33% with the bare wash (the "putty" read).
+     The 0.55 first pass read near-black; 0.35 bare read plastic. */
+  --lens-menu-dim: 0.30;
+  /* Menu vibrancy — Apple dims LUMINANCE but keeps (boosts) chroma behind
+     material (their vibrancy system). A menu chain without saturate is
+     grey paint over the backdrop; this is the token that makes it glass. */
+  --lens-menu-sat: 1.4;
   --lens-menu-blur: 3px;
   --dim-tint: 31 29 41; /* deep slate — the wash target (see the wash law in mapMath) */
   --glass-fill: 0; /* Glass Background Opacity — CSS fill for lite/off tiers */
@@ -284,11 +289,10 @@
   --color-focus-ring: rgba(245, 179, 1, 0.72);
 
   /* Menu bleed (1H) + dim-first readability pass: the dim carries the
-     readability, the 3px blur only softens contours. 0.32 under the wash
-     law: white bands behind menus wash toward the glass navy (255→~178),
-     the dark plate itself barely moves (structure intact), blacks stay
-     black. "A bit darker, not plastic dark." */
+     readability, the 3px blur only softens contours. Same saturate
+     contract as light (--lens-menu-sat): luminance down, chroma alive. */
   --lens-menu-dim: 0.32;
+  --lens-menu-sat: 1.4;
 
   --glass-scrim-a: 0.35;
   --glass-scrim-color: 0 0 0;
@@ -303,14 +307,15 @@
   --glass-p-a1: 0.36;
   --glass-p-a2: 0.28;
   --glass-p-tint: 16 15 28;
-  /* dark strong boost: menus/modals float over the BUSIEST content (a white
-     heading, an accent button) — at 0.18 a solid white block behind the menu
-     transmitted as a blurred band +83 luminance over the panel floor (the
-     "extra line behind the dark panels"). 0.36+0.34 = 0.70 with the 26px body
-     blur measures +35 — the backdrop stops reading as a line. Cards (glx)
-     take NO boost; they stay at a1. */
-  --glass-p-boost1: 0.34;
-  --glass-p-boost2: 0.26;
+  /* dark strong boost: PROPORTIONALLY REDUCED (0.34/0.26 -> 0.16/0.12).
+     Measured (scratch/dim-math): at the old 0.36+0.34 = 0.70 composite, a
+     gold blob behind a modal landed at 33% chroma — the near-opaque navy
+     film that reads as plastic. At 0.36+0.16 = 0.52 the same blob keeps
+     57%: the saturated backdrop still glows through (Apple's dark material
+     is SMOKE, not a slab), while the 26px body blur keeps the +35 band
+     suppression that motivated the boost. */
+  --glass-p-boost1: 0.16;
+  --glass-p-boost2: 0.12;
   /* Dark body blur — glx-strong only (glx uses --glass-bg-blur). iOS dark
      materials blur heavier than light; 22px still let the band through (+44),
      26px cuts it. */

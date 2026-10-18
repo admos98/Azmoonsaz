@@ -219,7 +219,8 @@ function chainBase(el) {
   if (el.classList.contains('glx-dark')) return 'blur(10px) saturate(1.4)';
   if (el.classList.contains('glx'))
     return `blur(${num('--glass-bg-blur', 8).toFixed(2)}px) saturate(${num('--glass-bg-sat', 1.5)})`;
-  if (el.classList.contains('lens--menu')) return `blur(${num('--lens-menu-blur', 3).toFixed(2)}px)`;
+  if (el.classList.contains('lens--menu'))
+    return `blur(${num('--lens-menu-blur', 3).toFixed(2)}px) saturate(${num('--lens-menu-sat', 1.4)})`;
   if (el.classList.contains('pane')) return `blur(${(num('--lens-blur', 1) * 2).toFixed(2)}px)`;
   if (el.classList.contains('drop')) return `blur(${num('--drop-blur', 0.5).toFixed(2)}px)`;
   return `blur(${num('--lens-blur', 1).toFixed(2)}px)`;

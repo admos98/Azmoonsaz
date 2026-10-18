@@ -31,18 +31,23 @@
    fallback matches until it attaches. */
 .lens.lens--menu {
   --lens-dim: var(--lens-menu-dim);
-  backdrop-filter: blur(var(--lens-menu-blur));
+  /* Vibrancy: the backdrop's own colour must survive the dim. A bare
+     blur+wash chain returns 33% of the backdrop's chroma (measured) —
+     grey paint. saturate() before the url() pass keeps the hue alive
+     through the wash (the "smoked glass" read). */
+  backdrop-filter: blur(var(--lens-menu-blur)) saturate(var(--lens-menu-sat, 1.4));
 }
 /* Dark: no extra blur anymore — the dim floor on a dark page IS the
-   readability (6+2px was the plastic smear). Same token as light. */
+   readability (6+2px was the plastic smear). Same token as light, same
+   saturate contract. */
 :root[data-theme='dark'] .lens.lens--menu {
-  backdrop-filter: blur(var(--lens-menu-blur));
+  backdrop-filter: blur(var(--lens-menu-blur)) saturate(var(--lens-menu-sat, 1.4));
 }
 /* Light-only menu blur, same number: 3px on the densest panels. The heavy
    lift moved into --lens-menu-dim — readability from the dimming wash,
    blur only for contour softening. */
 :root:not([data-theme='dark']) .lens.lens--menu {
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px) saturate(var(--lens-menu-sat, 1.4));
 }
 /* Floating menu containment: hover transitions inside the dropdowns used to
    invalidate style/paint up the tree (Topbar -> header -> page). contain:

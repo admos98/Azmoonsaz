@@ -516,7 +516,7 @@ function chainOf(el: Element, cs: CSSStyleDeclaration): string {
     return `blur(${cssNum(cs, '--glass-bg-blur', 8).toFixed(2)}px)${sat(cssNum(cs, '--glass-bg-sat', 1.5))}`;
   if (el.classList.contains('lens')) {
     if (el.classList.contains('lens--menu'))
-      return `blur(${cssNum(cs, '--lens-menu-blur', 3).toFixed(2)}px)`;
+      return `blur(${cssNum(cs, '--lens-menu-blur', 3).toFixed(2)}px)${sat(cssNum(cs, '--lens-menu-sat', 1.4))}`;
     return `blur(${lensBlur.toFixed(2)}px)`;
   }
   if (el.classList.contains('pane')) return `blur(${(lensBlur * 2).toFixed(2)}px)`;
@@ -652,12 +652,14 @@ function paramsForWebgl(el: HTMLElement, cs: CSSStyleDeclaration): GlassPaintPar
      measured +6/255 off (glx-parity bisect). --glass-fill is 0 on the full
      tier, so this is inert machinery for lite/off tiers only. */
   /* Masked rim saturation stays at the lab's 1.15 for every drawn family.
-     The CHAIN-level saturate (blur → saturate → url) is what only glx/glx-
-     strong carry; it feeds u_gsat (applied after the displacement sample). */
+     The CHAIN-level saturate (blur → saturate → url) is what glx/glx-strong
+     carry — and now menus too (--lens-menu-sat, the vibrancy contract);
+     it feeds u_gsat (applied after the displacement sample). */
   const sat = 1.15;
   let gsat = 1;
   if (isGlxStrong) gsat = cssNum(cs, '--glass-p-sat', 1.5);
   else if (isGlx) gsat = cssNum(cs, '--glass-bg-sat', 1.5);
+  else if (el.classList.contains('lens--menu')) gsat = cssNum(cs, '--lens-menu-sat', 1.4);
   return {
     bezel: cssNum(cs, '--lens-bezel', 14),
     thickness: cssNum(cs, '--lens-thickness', 66),
