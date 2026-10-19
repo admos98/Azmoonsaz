@@ -42,7 +42,7 @@ const OVERRIDES = new Map([
   // Finding 5 blesses a documented cap for it.
   ['src/glass/mapMath.ts', 407],
   ['src/glass/perfRecorder.ts', 664],
-  ['src/pages/student/SecureExamPortal.tsx', 630],
+  // SecureExamPortal: 892→73 (wiring shell; logic in features/secure-exam/*) — OVERRIDES removed, generic 400 cap applies.
   ['src/pages/teacher/Dashboard.tsx', 627],
   ['src/pages/teacher/NewExam.tsx', 602],
   ['src/pages/dev/FixtureGallery.tsx', 492],
