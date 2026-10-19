@@ -263,7 +263,7 @@ export default function Exams({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <StatusBadge status={ex.status} />
-                    <span className="text-micro text-[var(--color-text-tertiary)] font-mono font-bold select-all frost px-2 py-0.5 rounded-md">
+                    <span className="text-label-muted font-mono select-all frost px-2 py-0.5 rounded-md">
                       کد ورود: {ex.examCode}
                     </span>
                   </div>

@@ -21,6 +21,8 @@ export * from './Tabs';
 export * from './Modal';
 export * from './EmptyState';
 export * from './ConfirmDialog';
+export * from './UnsavedChangesGuard';
+export * from './FieldLabel';
 export * from './Table';
 export * from './PageHeader';
 export * from './StatCard';

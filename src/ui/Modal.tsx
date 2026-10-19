@@ -185,7 +185,7 @@ export const Modal = ({
               <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-glass-light-stroke)] shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
                   {icon && <span className="shrink-0 text-[var(--color-accent)]">{icon}</span>}
-                  <h3 className="text-label md:text-body font-black text-[var(--color-text-primary)] text-right">
+                  <h3 className="text-label md:text-body text-[var(--color-text-primary)] text-right">
                     {title}
                   </h3>
                 </div>

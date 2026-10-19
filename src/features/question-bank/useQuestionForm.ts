@@ -111,7 +111,7 @@ export function useQuestionForm(
       }
       drawerWasOpenRef.current = showAddEditDrawer;
     }, [showAddEditDrawer, questionFormSnapshot]);
-    const guardQuestionDraft = useUnsavedChanges(
+    const { guarded: guardQuestionDraft, dialogProps: questionDraftDialog } = useUnsavedChanges(
       showAddEditDrawer && questionFormSnapshot !== savedQuestionFormSnapshot,
     );
     const closeQuestionEditor = () => guardQuestionDraft(() => setShowAddEditDrawer(false));
@@ -260,5 +260,5 @@ export function useQuestionForm(
       ]);
     };
 
-  return { formGrade, setFormGrade, formSubject, setFormSubject, formSection, setFormSection, formType, setFormType, formDifficulty, setFormDifficulty, formPoints, setFormPoints, formText, setFormText, formTitle, setFormTitle, formTagsString, setFormTagsString, formExplanation, setFormExplanation, formSampleAnswer, setFormSampleAnswer, formImageUrl, setFormImageUrl, formOptions, setFormOptions, formCorrectTrueFalse, setFormCorrectTrueFalse, formFillBlanks, setFormFillBlanks, formMatchingPairs, setFormMatchingPairs, formOrderingItems, setFormOrderingItems, formRubrics, setFormRubrics, formParts, setFormParts, questionFormSnapshot, guardQuestionDraft, closeQuestionEditor, handleImageUpload, addOptionRow, removeOptionRow, handleOptionCorrectChange, addRubricRow, removeRubricRow, addPartRow, removePartRow, resetFormValues };
+  return { formGrade, setFormGrade, formSubject, setFormSubject, formSection, setFormSection, formType, setFormType, formDifficulty, setFormDifficulty, formPoints, setFormPoints, formText, setFormText, formTitle, setFormTitle, formTagsString, setFormTagsString, formExplanation, setFormExplanation, formSampleAnswer, setFormSampleAnswer, formImageUrl, setFormImageUrl, formOptions, setFormOptions, formCorrectTrueFalse, setFormCorrectTrueFalse, formFillBlanks, setFormFillBlanks, formMatchingPairs, setFormMatchingPairs, formOrderingItems, setFormOrderingItems, formRubrics, setFormRubrics, formParts, setFormParts, questionFormSnapshot, guardQuestionDraft, questionDraftDialog, closeQuestionEditor, handleImageUpload, addOptionRow, removeOptionRow, handleOptionCorrectChange, addRubricRow, removeRubricRow, addPartRow, removePartRow, resetFormValues };
 }

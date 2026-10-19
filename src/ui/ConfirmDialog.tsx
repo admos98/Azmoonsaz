@@ -57,7 +57,7 @@ export const ConfirmDialog = ({
         </div>
         {/* no title echo here — the Modal header already announces it;
             repeating it in the body read the title twice */}
-        <p className="text-caption text-[var(--color-text-tertiary)] leading-relaxed font-semibold">
+        <p className="text-label-muted leading-relaxed">
           {message}
         </p>
       </div>

@@ -52,7 +52,7 @@ export const PageHeader = ({
         </div>
       )}
       <div className="min-w-0">
-        <Heading className="text-heading-3 font-black text-[var(--color-text-primary)]">
+        <Heading className="text-heading-3 text-[var(--color-text-primary)]">
           {title}
         </Heading>
         {subtitle && (

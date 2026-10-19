@@ -42,6 +42,7 @@ import {
   DifficultyBadge,
   Dropdown,
   EmptyState,
+  FieldLabel,
   IconButton,
   Input,
   Modal,
@@ -50,6 +51,7 @@ import {
   SearchInput,
   Textarea,
   TextLink,
+  UnsavedChangesGuard,
 } from '../../ui';
 import { AbsenceArt } from '../../components/AbsenceArt';
 import { PanelCrest } from '../../components/PanelCrest';
@@ -188,6 +190,7 @@ export default function Questions() {
     addPartRow,
     removePartRow,
     resetFormValues,
+    questionDraftDialog,
   } = useQuestionForm(showAddEditDrawer, setShowAddEditDrawer, showToast);
   /* Preview mounts one frame past drawer open (see drawer-live-visual): the
      open animation's first frame commits the light form tree only, then the
@@ -477,7 +480,7 @@ export default function Questions() {
             onClick={() => void handleCleanupImages()}
             disabled={cleaningImages}
             title="حذف تصاویر بلااستفاده"
-            className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro font-bold cursor-pointer disabled:opacity-50 shrink-0"
+            className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro cursor-pointer disabled:opacity-50 shrink-0"
           >
             {cleaningImages ? 'در حال پاک‌سازی…' : 'پاک‌سازی تصاویر بلااستفاده'}
           </button>
@@ -488,7 +491,7 @@ export default function Questions() {
             onClick={() => void handleMigrateImages()}
             disabled={migratingImages}
             title="انتقال تصاویر قدیمی به فضای امن"
-            className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro font-bold cursor-pointer disabled:opacity-50 shrink-0"
+            className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro cursor-pointer disabled:opacity-50 shrink-0"
           >
             {migratingImages ? 'در حال انتقال…' : 'انتقال تصاویر قدیمی'}
           </button>
@@ -507,9 +510,9 @@ export default function Questions() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Search text */}
           <div className="space-y-1">
-            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            <FieldLabel>
               جستجو در متن سوال یا برچسب‌ها:
-            </label>
+            </FieldLabel>
             <SearchInput
               placeholder="کلمه کلیدی، عنوان، هشتگ یا درس..."
               value={searchQuery}
@@ -519,9 +522,9 @@ export default function Questions() {
 
           {/* Type Filter */}
           <div className="space-y-1">
-            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            <FieldLabel>
               نوع قالب‌بندی سوال:
-            </label>
+            </FieldLabel>
             <Dropdown
               compact
               value={selectedType}
@@ -545,9 +548,9 @@ export default function Questions() {
 
           {/* Grade Filter */}
           <div className="space-y-1">
-            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            <FieldLabel>
               پایه تحصیلی:
-            </label>
+            </FieldLabel>
             <Dropdown
               compact
               value={selectedGrade}
@@ -572,9 +575,9 @@ export default function Questions() {
 
           {/* Subject Filter */}
           <div className="space-y-1">
-            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            <FieldLabel>
               درس یا موضوع:
-            </label>
+            </FieldLabel>
             <Dropdown
               compact
               value={selectedSubject}
@@ -588,9 +591,9 @@ export default function Questions() {
 
           {/* Section/Chapter Filter */}
           <div className="space-y-1">
-            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            <FieldLabel>
               بخش یا فصل کتاب:
-            </label>
+            </FieldLabel>
             <Dropdown
               compact
               value={selectedSection}
@@ -604,9 +607,9 @@ export default function Questions() {
 
           {/* Difficulty Filter */}
           <div className="space-y-1">
-            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            <FieldLabel>
               سطح سختی سوال:
-            </label>
+            </FieldLabel>
             <Dropdown
               compact
               value={selectedDifficulty}
@@ -622,9 +625,9 @@ export default function Questions() {
 
           {/* Selective Tag Filter */}
           <div className="space-y-1">
-            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            <FieldLabel>
               برچسب‌ها (هشتگ):
-            </label>
+            </FieldLabel>
             <Dropdown
               compact
               value={selectedTag}
@@ -638,9 +641,9 @@ export default function Questions() {
 
           {/* Completeness Status Filter */}
           <div className="space-y-1">
-            <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+            <FieldLabel>
               وضعیت کاملی سوال:
-            </label>
+            </FieldLabel>
             <Dropdown
               compact
               value={selectedStatus}
@@ -793,12 +796,12 @@ export default function Questions() {
                             {getTypeNameInPersian(q.type)}
                           </span>
 
-                          <span className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 px-2.5 py-0.5 rounded-md text-micro font-bold">
+                          <span className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 px-2.5 py-0.5 rounded-md text-micro">
                             نمره: {toPersianDigits(q.points)}
                           </span>
 
                           {subquestionsCount > 0 && (
-                            <span className="bg-[var(--color-info-soft)]/30 text-[var(--color-info)] border border-[var(--color-info)]/20 px-2 py-0.5 rounded-md text-micro font-bold font-semibold">
+                            <span className="bg-[var(--color-info-soft)]/30 text-[var(--color-info)] border border-[var(--color-info)]/20 px-2 py-0.5 rounded-md text-micro font-semibold">
                               {toPersianDigits(subquestionsCount)} مینی‌سوال تابعه
                             </span>
                           )}
@@ -811,7 +814,7 @@ export default function Questions() {
                           )}
 
                           {q.completenessStatus === 'incomplete' && (
-                            <span className="bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] border border-[var(--color-danger)]/10 px-2 py-0.5 rounded-md text-micro font-bold flex items-center gap-0.5">
+                            <span className="bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] border border-[var(--color-danger)]/10 px-2 py-0.5 rounded-md text-micro flex items-center gap-0.5">
                               <AlertCircle className="w-3" />
                               پیش‌نویس
                             </span>
@@ -825,7 +828,7 @@ export default function Questions() {
                           {q.tags?.slice(0, 2).map((tag, i) => (
                             <span
                               key={i}
-                              className="text-micro text-[var(--color-accent)] glx field border px-1.5 py-0.5 rounded-md font-bold"
+                              className="text-micro text-[var(--color-accent)] glx field border px-1.5 py-0.5 rounded-md"
                             >
                               #{tag}
                             </span>
@@ -955,7 +958,7 @@ export default function Questions() {
                             </td>
 
                             {/* Score Gained */}
-                            <td className="p-4 text-center font-bold text-[var(--color-warning)] font-mono text-micro">
+                            <td className="p-4 text-center text-[var(--color-warning)] font-mono text-micro">
                               {toPersianDigits(q.points)}
                             </td>
 
@@ -1180,16 +1183,16 @@ export default function Questions() {
           <form id="question-editor-form" onSubmit={handleSaveQuestion} className="space-y-4">
             {/* 1. Grade, Subject, Section, Difficulty */}
             <div className="pane p-4 rounded-2xl space-y-3">
-              <span className="font-bold text-[var(--color-text-primary)] text-micro block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">
+              <span className="text-[var(--color-text-primary)] text-micro block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">
                 شناسنامه علمی سوال
               </span>
 
               <div className="grid grid-cols-2 gap-3.5">
                 {/* Grade Selector */}
                 <div className="space-y-1">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                  <FieldLabel>
                     پایه تحصیلی:
-                  </label>
+                  </FieldLabel>
                   <Dropdown
                     value={formGrade}
                     onChange={(v) => setFormGrade(v)}
@@ -1235,9 +1238,9 @@ export default function Questions() {
 
                 {/* Difficulty */}
                 <div className="space-y-1">
-                  <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+                  <FieldLabel>
                     سطح سختی علمی:
-                  </label>
+                  </FieldLabel>
                   <Dropdown
                     value={formDifficulty}
                     onChange={(v) => setFormDifficulty(v as 'easy' | 'medium' | 'hard')}
@@ -1277,9 +1280,9 @@ export default function Questions() {
 
             {/* 2. Type selection picker */}
             <div className="space-y-1.5">
-              <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+              <FieldLabel>
                 انتخاب قالب بندی ساختاری سوال (۱۱ نوع):
-              </label>
+              </FieldLabel>
               <Dropdown
                 value={formType}
                 onChange={(v) => setFormType(v as QuestionType)}
@@ -1326,13 +1329,13 @@ export default function Questions() {
 
             {/* 4. IMAGE SUPPORT: UPLOAD & PREVIEW */}
             <div className="relative pane p-4 rounded-xl space-y-2">
-              <span className="text-micro text-[var(--color-text-primary)] font-bold block">
+              <span className="text-micro text-[var(--color-text-primary)] block">
                 الصاق پرونده تصویر برای کل سوال (اختیاری):
               </span>
 
               <div className="flex items-center gap-3">
                 {/* Hidden manual selector */}
-                <label className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] text-micro rounded-xl font-bold cursor-pointer transition-all flex items-center gap-1">
+                <label className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] text-micro rounded-xl cursor-pointer transition-all flex items-center gap-1">
                   <ImageIcon className="w-3.5 h-3.5" />
                   <span>انتخاب فایل تصویر</span>
                   <input
@@ -1370,13 +1373,13 @@ export default function Questions() {
               formType === 'image_based') && (
               <div className="pane p-4.5 rounded-2xl space-y-4">
                 <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2 mb-1">
-                  <span className="font-bold text-[var(--color-text-primary)] text-micro">
+                  <span className="text-[var(--color-text-primary)] text-micro">
                     سازنده گزینه‌های آزمون (تعداد کلید گزینه‌ها)
                   </span>
                   <button
                     type="button"
                     onClick={addOptionRow}
-                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded-lg text-micro font-bold cursor-pointer"
+                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded-lg text-micro cursor-pointer"
                   >
                     + افزودن گزینه نو
                   </button>
@@ -1387,7 +1390,7 @@ export default function Questions() {
                     <div key={opt.id} className="pane p-3 rounded-xl space-y-2 text-right">
                       <div className="flex items-center gap-2 flex-wrap">
                         {/* Is correct tick check */}
-                        <label className="flex items-center gap-1 text-micro font-bold text-[var(--color-text-secondary)] cursor-pointer">
+                        <label className="flex items-center gap-1 text-micro text-[var(--color-text-secondary)] cursor-pointer">
                           <input
                             type={formType === 'multiple_choice' ? 'checkbox' : 'radio'}
                             name="drawer-opt-correct"
@@ -1446,7 +1449,7 @@ export default function Questions() {
                             پیوست عکس گزینه (الزامی برای سوال تصویری):
                           </span>
                           <div className="flex items-center gap-2">
-                            <label className="px-2 py-1 btn-glass btn-glass--quiet border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro font-bold cursor-pointer shrink-0">
+                            <label className="px-2 py-1 btn-glass btn-glass--quiet border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro cursor-pointer shrink-0">
                               <span>الحاق تصویر</span>
                               <input
                                 type="file"
@@ -1492,7 +1495,7 @@ export default function Questions() {
             {/* True / False picker builder */}
             {formType === 'true_false' && (
               <div className="relative pane p-4 rounded-xl space-y-2">
-                <span className="font-bold text-[var(--color-text-secondary)] text-micro block">
+                <span className="text-[var(--color-text-secondary)] text-micro block">
                   انتخاب گزینه پاسخ درست:
                 </span>
                 <div className="flex gap-4">
@@ -1543,7 +1546,7 @@ export default function Questions() {
                   <button
                     type="button"
                     onClick={() => setFormFillBlanks([...formFillBlanks, ''])}
-                    className="px-2 py-0.5 btn-glass btn-glass--primary rounded text-micro font-bold"
+                    className="px-2 py-0.5 btn-glass btn-glass--primary rounded text-micro"
                   >
                     + الحاق محل جدید
                   </button>
@@ -1552,7 +1555,7 @@ export default function Questions() {
                 <div className="space-y-2">
                   {formFillBlanks.map((fb, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
-                      <span className="text-micro text-[var(--color-text-tertiary)] font-bold w-12 shrink-0">
+                      <span className="text-label-muted w-12 shrink-0">
                         جای خالی {idx + 1}:
                       </span>
                       <input
@@ -1590,7 +1593,7 @@ export default function Questions() {
             {formType === 'matching' && (
               <div className="pane p-4.5 rounded-2xl space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-bold text-[var(--color-text-primary)] text-micro">
+                  <span className="text-[var(--color-text-primary)] text-micro">
                     پلاس لغات تطبیقی وصل‌کردنی
                   </span>
                   <button
@@ -1598,7 +1601,7 @@ export default function Questions() {
                     onClick={() =>
                       setFormMatchingPairs([...formMatchingPairs, { left: '', right: '' }])
                     }
-                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded-lg text-micro font-bold cursor-pointer"
+                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded-lg text-micro cursor-pointer"
                   >
                     + درج جفت جدید
                   </button>
@@ -1662,13 +1665,13 @@ export default function Questions() {
             {formType === 'ordering' && (
               <div className="relative pane p-4 rounded-xl space-y-3">
                 <div className="flex justify-between items-center pb-2 border-b">
-                  <span className="font-bold text-micro text-[var(--color-text-primary)]">
+                  <span className="text-micro text-[var(--color-text-primary)]">
                     سازنده ترتیب قرارگیری گام‌ها (قدیم به جدید)
                   </span>
                   <button
                     type="button"
                     onClick={() => setFormOrderingItems([...formOrderingItems, ''])}
-                    className="px-2 py-0.5 btn-glass btn-glass--primary rounded text-micro font-bold"
+                    className="px-2 py-0.5 btn-glass btn-glass--primary rounded text-micro"
                   >
                     + گام جدید
                   </button>
@@ -1677,7 +1680,7 @@ export default function Questions() {
                 <div className="space-y-2">
                   {formOrderingItems.map((item, idx) => (
                     <div key={idx} className="flex gap-2 items-center pane p-2 rounded-lg">
-                      <span className="text-micro font-bold text-[var(--color-text-tertiary)] w-12 shrink-0">
+                      <span className="text-label-muted w-12 shrink-0">
                         رتبه {idx + 1}:
                       </span>
                       <input
@@ -1725,13 +1728,13 @@ export default function Questions() {
                 {/* Rubric Criteria dynamic builder */}
                 <div className="bg-[var(--color-danger-soft)]/40/50 p-4 rounded-2xl border border-[var(--color-danger)]/10 space-y-3">
                   <div className="flex justify-between items-center border-b border-[var(--color-danger)]/10 pb-2">
-                    <span className="font-bold text-[var(--color-danger)] text-micro">
+                    <span className="text-[var(--color-danger)] text-micro">
                       معیارهای خرد بارم‌بندی پاسخ تشریحی (Rubrics Builder)
                     </span>
                     <button
                       type="button"
                       onClick={addRubricRow}
-                      className="px-3 py-1 btn-glass btn-glass--danger rounded-lg text-micro font-bold transition-all cursor-pointer"
+                      className="px-3 py-1 btn-glass btn-glass--danger rounded-lg text-micro transition-all cursor-pointer"
                     >
                       + معیار جدید
                     </button>
@@ -1830,13 +1833,13 @@ export default function Questions() {
             {(formType === 'reading_comprehension' || formType === 'cloze') && (
               <div className="pane p-4.5 rounded-2xl space-y-3">
                 <div className="flex justify-between items-center border-b pb-2">
-                  <span className="font-bold text-[var(--color-text-primary)] text-micro">
+                  <span className="text-[var(--color-text-primary)] text-micro">
                     بخش‌ها و زیرسوالات تابعه ({formParts.length} مینی‌سوال)
                   </span>
                   <button
                     type="button"
                     onClick={addPartRow}
-                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded text-micro font-bold"
+                    className="px-2.5 py-1 btn-glass btn-glass--primary rounded text-micro"
                   >
                     + افزودن زیرسوال تابعه
                   </button>
@@ -1854,7 +1857,7 @@ export default function Questions() {
                       >
                         &times;
                       </TextLink>
-                      <span className="glx-inset rounded px-1.5 py-0.5 text-micro font-bold text-[var(--color-text-secondary)] block w-20 text-center">
+                      <span className="glx-inset rounded px-1.5 py-0.5 text-micro text-[var(--color-text-secondary)] block w-20 text-center">
                         بخش شماره {idx + 1}
                       </span>
 
@@ -1898,7 +1901,7 @@ export default function Questions() {
                           تصویر مینی‌سوال (اختیاری):
                         </span>
                         <div className="flex items-center gap-2">
-                          <label className="px-2 py-1 btn-glass btn-glass--quiet border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro font-bold cursor-pointer shrink-0">
+                          <label className="px-2 py-1 btn-glass btn-glass--quiet border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro cursor-pointer shrink-0">
                             <span>الحاق تصویر</span>
                             <input
                               type="file"
@@ -1963,6 +1966,8 @@ export default function Questions() {
         onConfirm={confirmDeleteQuestion}
         onCancel={cancelDelete}
       />
+
+      <UnsavedChangesGuard {...questionDraftDialog} title="بستن بدون ذخیره؟" confirmText="بستن بدون ذخیره" />
     </div>
   );
 }

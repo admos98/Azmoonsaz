@@ -28,7 +28,7 @@ export default function SettingsHub({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-heading-2 font-black">تنظیمات و منابع</h1>
+          <h1 className="text-heading-2">تنظیمات و منابع</h1>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             پیکربندی سامانه و مدیریت بانک سوالات
           </p>

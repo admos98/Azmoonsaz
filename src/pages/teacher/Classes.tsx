@@ -11,6 +11,7 @@ import {
  Card,
  ConfirmDialog,
  Dropdown,
+ UnsavedChangesGuard,
  Modal,
  Table,
 } from '../../ui';
@@ -37,7 +38,7 @@ export default function Classes() {
  const [editingClass, setEditingClass] = useState<ClassGroup | null>(null);
  const [formData, setFormData] = useState({ name: '', grade: '' });
  const [savedFormData, setSavedFormData] = useState(formData);
- const guardClassDraft = useUnsavedChanges(
+ const { guarded: guardClassDraft, dialogProps: classDraftDialog } = useUnsavedChanges(
  isModalOpen && JSON.stringify(formData) !== JSON.stringify(savedFormData),
  );
  const closeClassEditor = () => guardClassDraft(() => setIsModalOpen(false));
@@ -129,7 +130,7 @@ export default function Classes() {
  <div className="space-y-6" dir="rtl">
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-heading-1 font-black text-[var(--color-text-primary)]">
+ <h1 className="text-heading-1 text-[var(--color-text-primary)]">
  مدیریت گروه‌های کلاسی
  </h1>
  <p className="text-label text-[var(--color-text-tertiary)] mt-1">
@@ -223,7 +224,7 @@ export default function Classes() {
  <p className="font-bold text-[var(--color-text-primary)]">{cls.name}</p>
  <p className="text-micro text-[var(--color-text-tertiary)]">پایه {cls.grade}</p>
  </div>
- <span className="text-micro font-bold bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-1 rounded-lg">
+ <span className="text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)] px-2 py-1 rounded-lg">
  {formatPersianNumber(cls.studentCount)} دانش‌آموز
  </span>
  </div>
@@ -319,6 +320,8 @@ export default function Classes() {
  onConfirm={confirmDeleteClass}
  onCancel={() => setClassToDelete(null)}
  />
+
+ <UnsavedChangesGuard {...classDraftDialog} title="خروج بدون ذخیره؟" />
  </div>
  );
 }

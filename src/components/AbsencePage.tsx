@@ -29,7 +29,7 @@ export function AbsencePage({
       <div className="flex w-full max-w-md flex-col items-center gap-5 text-center">
         <AbsenceArt kind={kind} size={200} />
         <div className="space-y-2">
-          <h1 className="text-heading-2 font-black text-[var(--color-text-primary)]">
+          <h1 className="text-heading-2 text-[var(--color-text-primary)]">
             {title}
           </h1>
           <p className="text-caption text-[var(--color-text-tertiary)]">{description}</p>

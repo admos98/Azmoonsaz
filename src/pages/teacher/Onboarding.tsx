@@ -81,7 +81,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4 shadow-lg shadow-[var(--color-accent)]/10">
             <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
           </div>
-          <h1 className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+          <h1 className="text-heading-1 text-[var(--color-text-primary)] tracking-tight">
             خوش آمدید!
           </h1>
           <p className="text-label text-[var(--color-text-tertiary)] mt-1">
@@ -90,7 +90,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         </div>
 
         <div className="mb-4" aria-label="پیشرفت تکمیل اطلاعات">
-          <div className="mb-1 flex justify-between text-micro font-bold text-[var(--color-text-secondary)]">
+          <div className="mb-1 flex justify-between text-micro text-[var(--color-text-secondary)]">
             <span>تکمیل اطلاعات اولیه</span>
             <span>
               {schoolName.trim() && (subject !== 'سایر' ? subject : customSubject).trim()
@@ -164,7 +164,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-glass btn-glass--primary font-bold text-label py-3 rounded-xl cursor-pointer"
+              className="w-full btn-glass btn-glass--primary text-label py-3 rounded-xl cursor-pointer"
             >
               {loading ? 'در حال ذخیره...' : 'شروع کنید'}
             </button>

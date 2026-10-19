@@ -119,10 +119,10 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
         <div className="dashboard-hero-content relative z-10">
           <div className="dashboard-hero-copy text-right">
-            <span className="text-[var(--color-text-secondary)] text-micro font-bold tracking-wide px-0 py-1 block w-fit opacity-80">
+            <span className="text-[var(--color-text-secondary)] text-micro tracking-wide px-0 py-1 block w-fit opacity-80">
               {formatPersianDate(new Date().toISOString())} — پنل مدیریت
             </span>
-            <h1 className="text-heading-2 md:text-display font-black mt-3 leading-tight text-[var(--color-text-primary)]">
+            <h1 className="text-heading-2 md:text-display mt-3 leading-tight text-[var(--color-text-primary)]">
               سلام، استاد {greetingName ? `${greetingName} ` : ''}عزیز
             </h1>
             <p className="text-caption md:text-label mt-2 max-w-2xl leading-relaxed text-[var(--color-text-secondary)]">
@@ -151,7 +151,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
                 id="hero-btn-questions"
                 type="button"
                 onClick={() => onNavigate('questions')}
-                className="px-5 py-3 btn-glass btn-glass--quiet text-[var(--color-text-primary)] rounded-xl text-caption font-semibold transition-all cursor-pointer"
+                className="px-5 py-3 btn-glass btn-glass--quiet text-[var(--color-text-primary)] rounded-xl text-caption transition-all cursor-pointer"
               >
                 افزودن سوال جدید
               </button>
@@ -236,7 +236,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
 
         {/* 3. Quick Actions Row */}
         <div className="relative lens p-6 rounded-2xl text-right" id="quick-actions-section">
-          <h2 className="text-label font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+          <h2 className="text-label text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
             <span>اقدامات سریع</span>
           </h2>
 
@@ -342,7 +342,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <div className="lens p-6 rounded-3xl" id="section-upcoming-exams">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-label font-bold text-[var(--color-text-primary)]">
+                <h2 className="text-label text-[var(--color-text-primary)]">
                   آزمون‌های فعال و پیش‌رو
                 </h2>
                 <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
@@ -436,7 +436,7 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           <div className="lens rounded-3xl overflow-hidden" id="section-recent-submissions">
             <div className="p-6 border-b border-[var(--color-glass-light-stroke)] flex justify-between items-center">
               <div>
-                <h2 className="text-label font-bold text-[var(--color-text-primary)]">
+                <h2 className="text-label text-[var(--color-text-primary)]">
                   آخرین پاسخ‌برگ‌های ارسال شده دانش‌آموزان
                 </h2>
                 <p className="text-micro text-[var(--color-text-tertiary)] mt-1">

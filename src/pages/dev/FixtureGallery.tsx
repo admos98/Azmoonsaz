@@ -43,7 +43,7 @@ function Section({
   return (
     <section className="space-y-4">
       <header className="space-y-1">
-        <h2 className="text-heading-3 font-extrabold text-[var(--color-text-primary)]">{title}</h2>
+        <h2 className="text-heading-3 text-[var(--color-text-primary)]">{title}</h2>
         {hint ? <p className="text-caption text-[var(--color-text-tertiary)]">{hint}</p> : null}
       </header>
       {children}
@@ -167,7 +167,7 @@ export default function FixtureGallery() {
             <div className="flex items-center gap-3">
               <TheMark variant="core" size={40} animated={false} />
               <div>
-                <h1 className="text-heading-1 font-extrabold text-[var(--color-text-primary)]">
+                <h1 className="text-heading-1 text-[var(--color-text-primary)]">
                   آزمایشگاه مواد
                 </h1>
                 <p className="text-caption text-[var(--color-text-tertiary)]">
@@ -175,7 +175,7 @@ export default function FixtureGallery() {
                 </p>
               </div>
             </div>
-            <span className="rounded-full border border-[var(--color-glass-light-stroke)] px-3 py-1 text-micro font-bold text-[var(--color-text-tertiary)]">
+            <span className="rounded-full border border-[var(--color-glass-light-stroke)] px-3 py-1 text-label-muted">
               /dev/fixtures
             </span>
           </div>
@@ -184,7 +184,7 @@ export default function FixtureGallery() {
           <div className="lens rounded-2xl p-4">
             <div className="flex flex-wrap gap-6">
               <div className="space-y-2">
-                <p className="text-label font-bold text-[var(--color-text-secondary)]">پوسته</p>
+                <p className="text-label text-[var(--color-text-secondary)]">پوسته</p>
                 <div className="flex flex-wrap gap-2">
                   {(['light', 'dark', 'system'] as ThemePreference[]).map((p) => (
                     <Button
@@ -199,7 +199,7 @@ export default function FixtureGallery() {
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-label font-bold text-[var(--color-text-secondary)]">حرکت</p>
+                <p className="text-label text-[var(--color-text-secondary)]">حرکت</p>
                 <div className="flex flex-wrap gap-2">
                   {(['system', 'reduced'] as MotionPreference[]).map((m) => (
                     <Button
@@ -232,7 +232,7 @@ export default function FixtureGallery() {
             <div className="relative grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
               {MATERIALS.map((m) => (
                 <div key={m.name} className={`relative ${m.cls} rounded-3xl p-5`}>
-                  <p className="text-label font-black text-[var(--color-gold)]">{m.name}</p>
+                  <p className="text-label text-[var(--color-gold)]">{m.name}</p>
                   <p className="text-caption text-[var(--color-text-tertiary)]">{m.job}</p>
                   <p className="mt-3 text-body text-[var(--color-text-primary)]">
                     خوانایی متن روی این سطح باید بدون تلاش انجام شود.
@@ -257,7 +257,7 @@ export default function FixtureGallery() {
                 key={e.id}
                 className="rounded-2xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)] p-4 text-center"
               >
-                <p className="text-micro font-bold text-[var(--color-text-secondary)]">{e.id}</p>
+                <p className="text-micro text-[var(--color-text-secondary)]">{e.id}</p>
                 <p className="mt-1 text-micro text-[var(--color-text-tertiary)]">{e.job}</p>
               </div>
             ))}
@@ -400,12 +400,12 @@ export default function FixtureGallery() {
                 className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)] p-4"
               >
                 <TheMark variant={v} size={56} animated={false} />
-                <span className="text-micro font-bold text-[var(--color-text-tertiary)]">{v}</span>
+                <span className="text-label-muted">{v}</span>
               </div>
             ))}
             <div className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)] p-4">
               <MarkBubble />
-              <span className="text-micro font-bold text-[var(--color-text-tertiary)]">bubble</span>
+              <span className="text-label-muted">bubble</span>
             </div>
           </div>
         </Section>
@@ -479,7 +479,7 @@ export default function FixtureGallery() {
             </p>
             <button
               type="button"
-              className="mt-1 text-micro font-bold text-[var(--color-gold)]"
+              className="mt-1 text-micro text-[var(--color-gold)]"
               onClick={() => setToast(false)}
             >
               بستن

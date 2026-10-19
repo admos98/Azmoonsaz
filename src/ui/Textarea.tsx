@@ -65,7 +65,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
  />
  {maxCount !== undefined && (
  <p
- className="text-micro text-[var(--color-text-tertiary)] font-semibold tabular-nums text-left"
+ className="text-label-muted tabular-nums text-left"
  dir="ltr"
  aria-live="polite"
  >
@@ -75,7 +75,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
  {error && (
  <p
  id={`${fieldId}-error`}
- className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1"
+ className="text-micro text-[var(--color-danger)] flex items-center gap-1 mt-1"
  >
  <AlertCircle className="w-3.5 h-3.5" />
  <span>{error}</span>
@@ -84,7 +84,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
  {!error && helperText && (
  <p
  id={`${fieldId}-helper`}
- className="text-micro text-[var(--color-text-tertiary)] font-semibold"
+ className="text-label-muted"
  >
  {helperText}
  </p>

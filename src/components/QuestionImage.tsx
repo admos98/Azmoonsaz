@@ -53,7 +53,7 @@ export function ResolvedImage({
 /** Badge shown under grandfathered (pre-pipeline) images. */
 export function LegacyImageBadge() {
   return (
-    <span className="text-micro text-[var(--color-warning)] font-bold">
+    <span className="text-micro text-[var(--color-warning)]">
       تصویر قدیمی — برای امنیت بیشتر دوباره بارگذاری کنید
     </span>
   );
@@ -93,7 +93,7 @@ export function QuestionImageInput({
 
   return (
     <div className="flex items-center gap-2">
-      <label className="px-2 py-1 btn-glass btn-glass--quiet border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro font-bold cursor-pointer shrink-0 inline-flex items-center gap-1">
+      <label className="px-2 py-1 btn-glass btn-glass--quiet border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] rounded-md text-micro cursor-pointer shrink-0 inline-flex items-center gap-1">
         <ImagePlus className="w-3.5 h-3.5" />
         <span>{value ? 'تعویض تصویر' : 'الحاق تصویر'}</span>
         <input

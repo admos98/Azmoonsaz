@@ -1,6 +1,5 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * @license SPDX-License-Identifier: Apache-2.0
  */
 
 import React, { useState, useMemo } from 'react';
@@ -29,13 +28,14 @@ import { Exam, StudentAnswer } from '../../types';
 import {
  Button,
  Card,
- Table,
- Dropdown,
- StatCard,
- SearchInput,
  ConfirmDialog,
+ Dropdown,
+ FieldLabel,
  IconButton,
  PillButton,
+ SearchInput,
+ StatCard,
+ Table,
  TextLink,
 } from '../../ui';
 import { useToast } from '../../hooks/useToast';
@@ -201,15 +201,15 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  </IconButton>
  <div>
  <div className="flex items-center gap-2">
- <span className="px-2.5 py-0.5 rounded-full text-micro font-bold bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+ <span className="px-2.5 py-0.5 rounded-full text-micro bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
  دبیرخانه آنلاین آزمون‌ساز
  </span>
  <span className="text-[var(--color-text-tertiary)] text-caption">/</span>
- <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
+ <span className="text-label-muted">
  ارزیابی پیشرفته تستی و تشریحی
  </span>
  </div>
- <h1 className="text-body md:text-heading-3 font-black text-[var(--color-text-primary)] mt-1">
+ <h1 className="text-body md:text-heading-3 font-bold text-[var(--color-text-primary)] mt-1">
  نتایج و تصحیح آزمون
  </h1>
  <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
@@ -343,7 +343,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-3">
  <div className="flex items-center gap-2">
  <Filter className="w-4.5 h-4.5 text-[var(--color-accent)]" />
- <h2 className="text-caption font-black text-[var(--color-text-primary)]">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)]">
  فیلترها و محدودسازی کارنامه داوطلبان
  </h2>
  </div>
@@ -368,7 +368,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <div className="space-y-1.5">
  <label
  htmlFor="results-search-input"
- className="text-micro text-[var(--color-text-tertiary)] font-bold block"
+ className="text-label-muted block"
  >
  جستجوی داوطلب بر اساس نام
  </label>
@@ -383,9 +383,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  {/* Class Group Select */}
  <div className="space-y-1.5">
- <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+ <FieldLabel>
  فیلتر بر اساس کلاس
- </label>
+ </FieldLabel>
  <Dropdown
  value={classFilter}
  onChange={setClassFilter}
@@ -401,9 +401,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  {/* Attendance Status */}
  <div className="space-y-1.5">
- <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+ <FieldLabel>
  وضعیت ارسال پاسخ‌برگ
- </label>
+ </FieldLabel>
  <Dropdown
  value={participationFilter}
  onChange={setParticipationFilter}
@@ -419,9 +419,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  {/* Descriptive grading status */}
  <div className="space-y-1.5">
- <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+ <FieldLabel>
  وضعیت تصحیح تشریحی
- </label>
+ </FieldLabel>
  <Dropdown
  value={correctionFilter}
  onChange={setCorrectionFilter}
@@ -436,9 +436,9 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  {/* Score scale bounds */}
  <div className="space-y-1.5">
- <label className="text-micro text-[var(--color-text-tertiary)] font-bold block">
+ <FieldLabel>
  بازه نمره نهایی دانش‌آموز
- </label>
+ </FieldLabel>
  <Dropdown
  value={scoreRangeFilter}
  onChange={setScoreRangeFilter}
@@ -465,7 +465,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  >
  <div className="flex items-center justify-between border-b border-[var(--color-glass-light-stroke)] pb-2">
  <div>
- <h2 className="text-label font-bold text-[var(--color-text-primary)]">
+ <h2 className="text-label text-[var(--color-text-primary)]">
  لیست پاسخ‌برگ‌ها و وضعیت ثبت نمرات
  </h2>
  <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
@@ -556,7 +556,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  {isAbsent || isOngoing ? (
  <span className="text-[var(--color-text-tertiary)]">—</span>
  ) : !row.hasDescriptive ? (
- <span className="text-[var(--color-text-tertiary)] font-semibold text-caption">
+ <span className="text-label-muted text-[var(--color-text-secondary)]">
  تستی محض
  </span>
  ) : isGraded ? (
@@ -709,10 +709,10 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <ArrowRight className="w-5 h-5" />
  </IconButton>
  <div>
- <span className="text-micro font-bold text-[var(--color-accent)] block bg-[var(--color-accent-soft)]/30 px-2.5 py-0.5 rounded-full w-fit">
+ <span className="text-micro text-[var(--color-accent)] block bg-[var(--color-accent-soft)]/30 px-2.5 py-0.5 rounded-full w-fit">
  مدیریت پاسخ‌برگ داوطلب
  </span>
- <h2 className="text-heading-3 font-black text-[var(--color-text-primary)] mt-1">
+ <h2 className="text-heading-3 text-[var(--color-text-primary)] mt-1">
  پاسخ‌برگ تحویلی: {activeSubmission.studentName}
  </h2>
  </div>
@@ -738,7 +738,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  <div className="pane px-4 py-2.5 rounded-2xl flex items-center gap-4 text-caption">
  <div>
- <span className="text-[var(--color-text-tertiary)] font-bold block text-micro mb-0.5">
+ <span className="text-label-muted block mb-0.5">
  ثبت نهایی ساعت:
  </span>
  <span className="font-mono text-[var(--color-text-secondary)] font-bold">
@@ -755,10 +755,10 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  </div>
  <div className="w-[1px] h-8 bg-[var(--color-glass-light-stroke)]" />
  <div className="text-left">
- <span className="text-[var(--color-text-tertiary)] font-bold block text-micro mb-0.5 text-right">
+ <span className="text-label-muted block mb-0.5 text-right">
  میانگین پیشرفت بارم:
  </span>
- <span className="text-[var(--color-accent)] font-black text-label block">
+ <span className="text-[var(--color-accent)] text-label block">
  %
  {toPersianDigits(
  Number(
@@ -795,11 +795,11 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  >
  {/* Section heading bar */}
  <div className="flex justify-between items-center border-b border-[var(--color-glass-light-stroke)] pb-2.5">
- <span className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-1.5">
+ <span className="text-caption font-bold text-[var(--color-text-primary)] flex items-center gap-1.5">
  <BookOpen className="w-4.5 h-4.5 text-[var(--color-accent)]" />
  <span>سؤال {toPersianDigits(idx + 1)}</span>
  <span className="text-[var(--color-text-tertiary)]">|</span>
- <span className="text-micro text-[var(--color-text-tertiary)] font-bold">
+ <span className="text-label-muted">
  قالب:{' '}
  {q.type === 'single_choice'
  ? 'چهار گزینه‌ای (تستی)'
@@ -816,7 +816,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  : 'معمولی تشریحی'}
  </span>
  </span>
- <span className="bg-[var(--color-accent-soft)]/60 border border-[var(--color-accent-soft)] text-[var(--color-accent)] font-black px-2.5 py-0.5 rounded-lg text-micro">
+ <span className="bg-[var(--color-accent-soft)]/60 border border-[var(--color-accent-soft)] text-[var(--color-accent)] px-2.5 py-0.5 rounded-lg text-micro">
  حداکثر سهم بارم: {toPersianDigits(q.points)} امتیاز
  </span>
  </div>
@@ -839,7 +839,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Student Answer */}
  <div className="space-y-1">
- <span className="text-micro text-[var(--color-danger)] font-bold block">
+ <span className="text-micro text-[var(--color-danger)] block">
  ● کاندید انتخابی دانش‌آموز:
  </span>
  <div className="pane rounded-xl p-3 text-caption font-bold text-[var(--color-text-secondary)]">
@@ -893,7 +893,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  {/* Correct Key */}
  <div className="space-y-1">
- <span className="text-micro text-[var(--color-success)] font-bold block">
+ <span className="text-micro text-[var(--color-success)] block">
  ✔ کلید پاسخ آزمون‌ساز:
  </span>
  <div className="pane border-[var(--color-success)]/10 rounded-xl p-3 text-caption font-bold text-[var(--color-text-secondary)]">
@@ -940,7 +940,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  </div>
 
  {/* Interactive Score result feedback badge */}
- <div className="pt-2 border-t border-[var(--color-glass-light-stroke)]/60 mt-1 flex justify-between items-center text-micro font-bold">
+ <div className="pt-2 border-t border-[var(--color-glass-light-stroke)]/60 mt-1 flex justify-between items-center text-micro">
  <span className="text-[var(--color-text-tertiary)]">
  رتبه‌بندی نمره‌دهی خودکار سیستم:
  </span>
@@ -969,7 +969,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  {/* Student Answer Sheet design */}
  <div className="space-y-1">
- <span className="text-micro text-[var(--color-accent)] font-bold block">
+ <span className="text-micro text-[var(--color-accent)] block">
  ● برگه دست‌نویس داوطلب:
  </span>
  <div className="pane rounded-xl p-4 text-caption font-bold text-[var(--color-text-primary)] font-sans leading-relaxed whitespace-pre-wrap min-h-[110px]">
@@ -983,14 +983,14 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  {/* Perfect Farsi Sample template */}
  <div className="space-y-1">
- <span className="text-micro text-[var(--color-success)] font-bold block">
+ <span className="text-micro text-[var(--color-success)] block">
  ✔ پاسخ نمونه طراح (کلید تشریحی):
  </span>
- <div className="bg-[var(--color-success-soft)]/20 border border-[var(--color-success)]/15 rounded-xl p-4 text-caption font-semibold text-[var(--color-text-secondary)] leading-relaxed min-h-[110px]">
+ <div className="bg-[var(--color-success-soft)]/20 border border-[var(--color-success)]/15 rounded-xl p-4 text-caption text-[var(--color-text-secondary)] leading-relaxed min-h-[110px]">
  {q.correctAnswer
  ? String(q.correctAnswer)
  : 'تحلیل مستند و حاوی واژگان علمی مقتضی نمره بالا بر اساس توفیقات درسی ملاک است.'}
- <div className="mt-3 text-micro text-[var(--color-text-tertiary)] border-t border-[var(--color-glass-light-stroke)]/50 pt-2 font-bold leading-5">
+ <div className="mt-3 text-label-muted border-t border-[var(--color-glass-light-stroke)]/50 pt-2 leading-5">
  <span>
  کتاب درسی: مبحث مرتبط با ردیف درستی محتوایی آزمون سراسری امسال.
  </span>
@@ -1002,7 +1002,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  {/* 5. SPECIFICATION REQ: Rubric criteria table for descriptive evaluation */}
  <div className="space-y-2.5 pane p-4 rounded-xl">
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[var(--color-danger)]/10/60 pb-2">
- <span className="text-micro font-black text-[var(--color-danger)]/80 block">
+ <span className="text-micro text-[var(--color-danger)]/80 block">
  جدول بارم‌بندی تفصیلی تصحیح (Rubrics):
  </span>
  </div>
@@ -1083,7 +1083,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  [q.id]: false,
  }));
  }}
- className="w-20 px-2 py-1.5 border rounded-lg glx field text-center font-black text-[var(--color-text-primary)] text-label focus:ring-1 focus:ring-[var(--color-accent)]/40 font-mono"
+ className="w-20 px-2 py-1.5 border rounded-lg glx field text-center text-[var(--color-text-primary)] text-label focus:ring-1 focus:ring-[var(--color-accent)]/40 font-mono"
  />
  </td>
  </tr>
@@ -1096,7 +1096,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  {/* Feedback text row */}
  <div className="space-y-1.5" id="teacher-comment-box">
- <label className="text-micro text-[var(--color-text-tertiary)] font-bold block flex items-center gap-1">
+ <label className="text-label-muted block flex items-center gap-1">
  <MessageSquare className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
  <span>بازخورد و رهنمود دبیر به صورت تفصیلی:</span>
  </label>
@@ -1115,7 +1115,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  }));
  }}
  placeholder="رهنمودهای آموزشی خود را بنویسید (مثال: پاراگراف اول فاقد مستند بومی است، بقیه بخش‌ها غنی بود)."
- className="w-full glx field border text-caption text-[var(--color-text-secondary)] p-2.5 rounded-xl focus:border-[var(--color-accent)]/40 leading-relaxed font-semibold transition-colors"
+ className="w-full glx field border text-caption text-[var(--color-text-secondary)] p-2.5 rounded-xl focus:border-[var(--color-accent)]/40 leading-relaxed transition-colors"
  />
  </div>
 
@@ -1157,25 +1157,25 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <div className="pane rounded-3xl p-5 sticky top-6 space-y-5 text-right">
  <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-3">
  <Award className="w-5 h-5 text-[var(--color-accent)]" />
- <h2 className="text-caption font-black text-[var(--color-text-primary)]">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)]">
  کاردکس جمع‌بندی تصحیح
  </h2>
  </div>
 
  {/* Live Grade preview indicator */}
  <div className="bg-gradient-to-br from-[var(--color-accent-soft)]/50 to-[var(--color-glass-light-fill)] border border-[var(--color-accent)]/20 rounded-2xl p-5 text-center space-y-1 mt-2">
- <span className="text-micro text-[var(--color-accent)] font-bold block">
+ <span className="text-micro text-[var(--color-accent)] block">
  مجموع نمرات اکتسابی و نهایی
  </span>
- <div className="text-heading-1 font-black text-[var(--color-accent)] font-mono">
+ <div className="text-heading-1 text-[var(--color-accent)] font-mono">
  {toPersianDigits(
  (Object.values(assignedScores) as number[]).reduce((sum, s) => sum + s, 0),
  )}{' '}
- <span className="text-caption text-[var(--color-text-tertiary)] font-bold">
+ <span className="text-label-muted">
  از {toPersianDigits(activeSubmission.maxScore)}
  </span>
  </div>
- <div className="text-micro text-[var(--color-text-tertiary)] font-semibold pt-1">
+ <div className="text-label-muted pt-1">
  <span>
  خودکار سیستم: {toPersianDigits(activeSubmission.autoScore)} بارم نسیب شده
  </span>
@@ -1204,7 +1204,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
 
  {/* Correction Progress meter list */}
  {hasDescriptiveQuestions && (
- <div className="pane rounded-2xl p-4 text-micro font-bold text-[var(--color-text-secondary)] space-y-3">
+ <div className="pane rounded-2xl p-4 text-micro text-[var(--color-text-secondary)] space-y-3">
  <span className="text-[var(--color-text-tertiary)] block pb-1 border-b">
  وضعیت تصحیح سوالات تشریحی:
  </span>
@@ -1213,7 +1213,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <span className="text-[var(--color-text-tertiary)] block text-micro">
  تایید شده
  </span>
- <span className="text-label font-black text-[var(--color-success)] font-mono">
+ <span className="text-label text-[var(--color-success)] font-mono">
  {toPersianDigits(
  Object.values(savedDescriptiveQuestions).filter(Boolean).length,
  )}
@@ -1223,7 +1223,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <span className="text-[var(--color-text-tertiary)] block text-micro">
  در انتظار بررسی
  </span>
- <span className="text-label font-black text-[var(--color-warning)] font-mono">
+ <span className="text-label text-[var(--color-warning)] font-mono">
  {toPersianDigits(getUngradedDescriptiveQuestionsCount())}
  </span>
  </div>
@@ -1253,7 +1253,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  type="button"
  id="btn-grading-finalize-worksheet"
  onClick={handleFinalizeGrading}
- className="w-full py-3 btn-glass btn-glass--success rounded-xl text-caption font-black flex items-center justify-center gap-2 cursor-pointer"
+ className="w-full py-3 btn-glass btn-glass--success rounded-xl text-caption font-bold flex items-center justify-center gap-2 cursor-pointer"
  >
  <CheckCircle2 className="w-4 h-4" />
  <span>تکمیل تصحیح و ثبت نهایی کارنامه</span>
@@ -1261,7 +1261,7 @@ export default function ExamResults({ exam, onBack }: ExamResultsProps) {
  <button
  type="button"
  onClick={() => setSelectedSubmissionId(null)}
- className="w-full py-2.5 btn-glass btn-glass--quiet text-[var(--color-text-tertiary)] rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border-[var(--color-glass-light-stroke)]"
+ className="w-full py-2.5 btn-glass btn-glass--quiet rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border-[var(--color-glass-light-stroke)]"
  >
  <span>انصراف و بازگشت</span>
  </button>

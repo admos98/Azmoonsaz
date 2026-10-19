@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy, useCallback } from 
 import { TeacherProvider } from './contexts/TeacherContext';
 import type { Teacher } from './types';
 import Topbar from './components/Topbar';
-import { BubbleLoader } from './components/BubbleLoader';
+import { BootScreen, PageSkeleton } from './shell/BootScreens';
 import { AbsencePage } from './components/AbsencePage';
 import Login from './pages/teacher/Login';
 import Onboarding from './pages/teacher/Onboarding';
@@ -58,23 +58,6 @@ const FixtureGallery = import.meta.env.DEV
   : null;
 // Dev-only topbar harness (`/dev/topbar`) — same gate, real Topbar + mock teacher.
 const TopbarHarness = import.meta.env.DEV ? lazy(() => import('./pages/dev/TopbarHarness')) : null;
-
-/** Full-page boot state. Used for the auth handshake and as the Suspense
- *  fallback on route-level code boundaries. */
-function BootScreen({ label }: { label: string }) {
-  return (
-    <div
-      className="grid min-h-dvh place-items-center bg-[var(--color-page-bg)]"
-      role="status"
-      aria-label={label}
-    >
-      <div className="space-y-4 text-center">
-        <BubbleLoader label={null} />
-        <p className="text-label text-[var(--color-text-secondary)]">{label}</p>
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
@@ -432,23 +415,7 @@ export default function App() {
           {/* Dynamic Page Router — floats above bg stage */}
           <main className="p-4 lg:p-8 flex-1 bg-transparent" id="router-view-box" aria-label="محتوای اصلی">
             <div id="main-content" tabIndex={-1} className="outline-none">
-            <Suspense
-              fallback={
-                <div className="space-y-6" id="page-skeleton">
-                  <div className="h-8 w-48 bg-[var(--color-glass-light-fill)] skeleton rounded-xl" />
-                  <div className="h-40 bg-[var(--color-glass-light-fill)] skeleton rounded-3xl" />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-32 bg-[var(--color-glass-light-fill)] skeleton rounded-3xl"
-                      />
-                    ))}
-                  </div>
-                  <div className="h-60 bg-[var(--color-glass-light-fill)] skeleton rounded-3xl" />
-                </div>
-              }
-            >
+            <Suspense fallback={<PageSkeleton />}>
               {renderTeacherContent()}
             </Suspense>
             </div>

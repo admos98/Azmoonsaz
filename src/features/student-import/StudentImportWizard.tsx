@@ -364,7 +364,7 @@ export default function StudentImportWizard({
             ) : (
               <AlertTriangle className="mx-auto mb-3 h-12 w-12 text-[var(--color-danger)]" />
             )}
-            <h3 className="text-heading-3 font-black">
+            <h3 className="text-heading-3">
               {importResult.imported > 0 ? 'ورود اطلاعات انجام شد' : 'هیچ ردیفی ثبت نشد'}
             </h3>
             <p className="mt-2 text-caption text-[var(--color-text-secondary)]">

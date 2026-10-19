@@ -33,7 +33,7 @@ export const Badge = ({ variant = 'info', children, className = '' }: BadgeProps
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-micro font-bold rounded-lg border leading-none ${styleString} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-micro rounded-lg border leading-none ${styleString} ${className}`}
     >
       {children}
     </span>

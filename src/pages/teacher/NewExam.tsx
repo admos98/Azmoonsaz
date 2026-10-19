@@ -157,7 +157,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
             <ArrowRight className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-label font-black text-[var(--color-text-primary)]">
+            <h1 className="text-label text-[var(--color-text-primary)]">
               طراح هوشمند و گام‌به‌گام آزمون
             </h1>
             <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
@@ -190,7 +190,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       {step === 1 && (
         <div className="p-6 md:p-8 space-y-6 text-right">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3">
-            <h2 className="text-caption font-black text-[var(--color-text-primary)]">
+            <h2 className="text-caption font-bold text-[var(--color-text-primary)]">
               گام اول: مشخصات و مقطع تحصیلی آزمون
             </h2>
             <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
@@ -296,7 +296,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
         <div className="p-6 md:p-8 space-y-6 text-right">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3 flex justify-between items-center">
             <div>
-              <h2 className="text-caption font-black text-[var(--color-text-primary)]">
+              <h2 className="text-caption font-bold text-[var(--color-text-primary)]">
                 گام دوم: گزینش سوالات تالیفی یا بانک ملی
               </h2>
               <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
@@ -312,7 +312,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           {/* Quick select database */}
           <div className="space-y-3">
             {questionsLoading && (
-              <div className="p-6 rounded-2xl border-[var(--color-glass-light-stroke)] pane text-center text-caption font-bold text-[var(--color-text-tertiary)]">
+              <div className="p-6 rounded-2xl border-[var(--color-glass-light-stroke)] pane text-center text-label-muted">
                 در حال دریافت سوالات از بانک سوالات...
               </div>
             )}
@@ -350,7 +350,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
                           {q.points} امتیاز
                         </span>
                       </div>
-                      <h5 className="text-caption font-black text-[var(--color-text-primary)]">
+                      <h5 className="text-caption font-bold text-[var(--color-text-primary)]">
                         {q.title}
                       </h5>
                       <p className="text-micro text-[var(--color-text-tertiary)] leading-normal line-clamp-1">
@@ -368,7 +368,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
       {step === 3 && (
         <div className="p-6 md:p-8 space-y-6 text-right">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3">
-            <h2 className="text-caption font-black text-[var(--color-text-primary)]">
+            <h2 className="text-caption font-bold text-[var(--color-text-primary)]">
               گام سوم: محدوده‌گذاری زمانی و ابزار ضد تقلب
             </h2>
             <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
@@ -459,14 +459,14 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
         <div className="p-6 md:p-8 space-y-6 text-right">
           <div className="border-b border-[var(--color-glass-light-stroke)] pb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-caption font-black text-[var(--color-text-primary)]">
+              <h2 className="text-caption font-bold text-[var(--color-text-primary)]">
                 گام پایانی: مرور کلی ساختار آزمون
               </h2>
               <p className="text-micro text-[var(--color-text-tertiary)] mt-1">
                 تنظیمات را بررسی کنید و سپس کدهای ورود را منتشر کنید.
               </p>
             </div>
-            <span className="px-3 py-1 bg-[var(--color-success-soft)] text-[var(--color-success)] text-micro font-bold rounded-full">
+            <span className="px-3 py-1 bg-[var(--color-success-soft)] text-[var(--color-success)] text-micro rounded-full">
               آماده برای انتشار نهایی
             </span>
           </div>
@@ -474,7 +474,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           <div className="p-5 rounded-2xl border-[var(--color-glass-light-stroke)] pane space-y-4 max-w-2xl text-caption text-[var(--color-text-secondary)] leading-relaxed">
             <div>
               <span className="text-[var(--color-text-tertiary)] block mb-1">عنوان آزمون:</span>
-              <p className="font-bold text-[var(--color-text-primary)] text-label">
+              <p className="text-[var(--color-text-primary)] text-label">
                 {title || 'امتحان معرفی نشده'}
               </p>
             </div>
@@ -511,7 +511,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
                 <span className="text-[var(--color-text-tertiary)] block mb-1">
                   بارم به ازای کل آزمون:
                 </span>
-                <p className="font-bold text-[var(--color-accent)] text-label">
+                <p className="text-[var(--color-accent)] text-label">
                   {totalPoints} نمره
                 </p>
               </div>
@@ -543,7 +543,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               type="button"
               id="wizard-btn-prev"
               onClick={() => setStep(step - 1)}
-              className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl text-caption font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl text-caption transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowRight className="w-4 h-4" />
               <span>مرحله قبلی</span>
@@ -555,7 +555,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
           <button
             type="button"
             onClick={onBack}
-            className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-tertiary)] rounded-xl text-caption font-semibold cursor-pointer"
+            className="px-4 py-2 btn-glass btn-glass--quiet rounded-xl text-caption cursor-pointer"
           >
             انصراف و خروج
           </button>
@@ -588,7 +588,7 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
               type="button"
               id="wizard-btn-publish"
               onClick={handlePublish}
-              className="px-5 py-2 btn-glass btn-glass--success rounded-xl text-caption font-black flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2 btn-glass btn-glass--success rounded-xl text-caption font-bold flex items-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-4.5 h-4.5" />
               <span>ثبت، زمان‌بندی و انتشار آزمون عمومی</span>

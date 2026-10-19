@@ -91,7 +91,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
               <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
             </div>
-            <p className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+            <p className="text-heading-1 text-[var(--color-text-primary)] tracking-tight">
               آزمون‌ساز
             </p>
           </div>
@@ -99,7 +99,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full">
               <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
             </div>
-            <h1 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+            <h1 className="text-heading-3 text-[var(--color-text-primary)]">
               رمز عبور با موفقیت تغییر کرد
             </h1>
             <p className="text-label text-[var(--color-text-tertiary)]">
@@ -108,7 +108,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <button
               type="button"
               onClick={onDone}
-              className="w-full btn-glass btn-glass--primary font-bold text-label py-3 rounded-xl cursor-pointer"
+              className="w-full btn-glass btn-glass--primary text-label py-3 rounded-xl cursor-pointer"
             >
               ورود
             </button>
@@ -126,12 +126,12 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4">
               <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
             </div>
-            <p className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+            <p className="text-heading-1 text-[var(--color-text-primary)] tracking-tight">
               آزمون‌ساز
             </p>
           </div>
           <div className="lens rounded-3xl shadow-2xl p-8 text-center space-y-4">
-            <h1 className="text-label font-bold text-[var(--color-danger)]">
+            <h1 className="text-label text-[var(--color-danger)]">
               {error || 'لینک بازیابی نامعتبر یا منقضی شده است.'}
             </h1>
             <TextLink size="md" bold onClick={onDone}>
@@ -150,7 +150,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-[var(--color-accent-soft)] rounded-3xl mb-4 shadow-lg shadow-lg">
             <GraduationCap className="w-10 h-10 text-[var(--color-accent)]" />
           </div>
-          <p className="text-heading-1 font-black text-[var(--color-text-primary)] tracking-tight">
+          <p className="text-heading-1 text-[var(--color-text-primary)] tracking-tight">
             آزمون‌ساز
           </p>
           <h1 className="text-label text-[var(--color-text-tertiary)] mt-1">تغییر رمز عبور</h1>
@@ -191,7 +191,7 @@ export default function ResetPassword({ onDone }: ResetPasswordProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-glass btn-glass--primary font-bold text-label py-3 rounded-xl cursor-pointer"
+              className="w-full btn-glass btn-glass--primary text-label py-3 rounded-xl cursor-pointer"
             >
               {loading ? 'در حال ذخیره...' : 'ذخیره رمز جدید'}
             </button>

@@ -63,7 +63,7 @@ export const StatCard = ({
   return (
     <Card glassLayer={glassLayer} id={id} className={`flex flex-col justify-between ${className}`}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-micro font-bold text-[var(--color-text-tertiary)]">{label}</span>
+        <span className="text-label-muted">{label}</span>
         {icon && <div className={`p-2.5 rounded-xl shrink-0 ${statToneChips[tone]}`}>{icon}</div>}
       </div>
       <div className="mt-4">

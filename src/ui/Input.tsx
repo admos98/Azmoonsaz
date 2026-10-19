@@ -78,7 +78,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
  {error && (
  <p
  id={`${inputId}-error`}
- className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1"
+ className="text-micro text-[var(--color-danger)] flex items-center gap-1 mt-1"
  >
  <AlertCircle className="w-3.5 h-3.5" />
  <span>{error}</span>
@@ -87,7 +87,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
  {!error && helperText && (
  <p
  id={`${inputId}-helper`}
- className="text-micro text-[var(--color-text-tertiary)] font-semibold"
+ className="text-label-muted"
  >
  {helperText}
  </p>

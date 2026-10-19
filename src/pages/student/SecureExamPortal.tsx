@@ -561,7 +561,7 @@ export default function SecureExamPortal({
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-label font-black text-[var(--color-text-primary)]">
+              <h1 className="text-label text-[var(--color-text-primary)]">
                 درگاه امن آزمون (آلفا نسخه ۲)
               </h1>
               <p className="text-micro text-[var(--color-text-secondary)]">
@@ -638,7 +638,7 @@ export default function SecureExamPortal({
                   <ShieldCheck className="w-4 h-4" />
                 )
               }
-              className="w-full py-3 text-label font-black"
+              className="w-full py-3 text-label"
             >
               ورود امن به آزمون
             </Button>
@@ -688,7 +688,7 @@ export default function SecureExamPortal({
                   <ShieldCheck className="w-4 h-4" />
                 )
               }
-              className="w-full py-3 text-label font-black"
+              className="w-full py-3 text-label"
             >
               ثبت رمز و ورود به آزمون
             </Button>
@@ -726,7 +726,7 @@ export default function SecureExamPortal({
                   <Clock className="w-4 h-4" />
                 )
               }
-              className="px-6 py-3 text-label font-black"
+              className="px-6 py-3 text-label"
             >
               دریافت سوالات و شروع آزمون
             </Button>
@@ -744,7 +744,7 @@ export default function SecureExamPortal({
             {guard.total > 0 && (
               <div
                 role="status"
-                className="lens rounded-2xl p-3 border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)]/40 text-[var(--color-warning)] text-caption font-black flex items-center gap-2"
+                className="lens rounded-2xl p-3 border border-[var(--color-warning)]/30 bg-[var(--color-warning-soft)]/40 text-[var(--color-warning)] text-caption font-bold flex items-center gap-2"
               >
                 <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <span>
@@ -856,7 +856,7 @@ export default function SecureExamPortal({
         {phase === 'submitted' && (
           <div className="lens rounded-3xl p-6 md:p-8 max-w-xl mx-auto text-center space-y-4">
             <CheckCircle2 className="w-16 h-16 text-[var(--color-success)] mx-auto" />
-            <h2 className="font-black text-[var(--color-text-primary)] text-heading-3">
+            <h2 className="text-[var(--color-text-primary)] text-heading-3">
               پاسخ شما با موفقیت در سامانه ثبت نهایی شد.
             </h2>
             <p className="text-caption text-[var(--color-text-tertiary)] leading-relaxed">

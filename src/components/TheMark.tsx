@@ -36,8 +36,8 @@ export function TheMark({
   animated = true,
   className = '',
 }: TheMarkProps) {
-  const ink = 'var(--color-ink, #221E4A)';
-  const gold = 'var(--color-gold, #F5B301)';
+  const ink = 'var(--color-ink)';
+  const gold = 'var(--color-gold)';
   const popClass = animated ? 'goldpop' : '';
 
   if (variant === 'row') {
@@ -145,8 +145,8 @@ export function MarkBubble({
   className = '',
   onClick,
 }: MarkBubbleProps) {
-  const ink = 'var(--color-ink, #221E4A)';
-  const gold = 'var(--color-gold, #F5B301)';
+  const ink = 'var(--color-ink)';
+  const gold = 'var(--color-gold)';
   const r = size / 2;
   const stroke = Math.round(r * 0.22 * 10) / 10;
 

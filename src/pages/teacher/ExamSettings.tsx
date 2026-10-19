@@ -36,6 +36,7 @@ import {
  SearchInput,
  Textarea,
  TextLink,
+ UnsavedChangesGuard,
  Toggle,
 } from '../../ui';
 import { Seal } from '../../components/Seal';
@@ -103,8 +104,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  // Classes and students ride the shared collections cache — no private fetch.
  const { classGroups, students: allStudents } = useTeacherCollections();
  const [studentSearchQuery, setStudentSearchQuery] = useState<string>('');
- // Join link is DERIVED from the server-issued exam code — the old client-
- // minted AZMOON-7-XXXXXX link never matched exam_code in the DB, so it 404'd.
+ // Join link is DERIVED from exam_code (the old client-minted link 404'd).
  const examLink = exam.examCode ? `/secure-exam/${exam.examCode}` : '';
  const [isCopied, setIsCopied] = useState<boolean>(false);
  const [showRecommendationsApplied, setShowRecommendationsApplied] = useState<boolean>(false);
@@ -134,10 +134,9 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  examStatus,
  ]);
  const [savedSnapshot, setSavedSnapshot] = useState(editorSnapshot);
- const guardUnsavedAction = useUnsavedChanges(editorSnapshot !== savedSnapshot);
+ const { guarded: guardUnsavedAction, dialogProps: unsavedDialog } = useUnsavedChanges(editorSnapshot !== savedSnapshot);
  const handleBack = () => guardUnsavedAction(onBack);
 
- // Class selection handler
  const handleToggleClass = (classId: string) => {
  const relatedStudents = allStudents
  .filter((s) => s.classGroupId === classId)
@@ -396,7 +395,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  <div className="relative z-10 space-y-3">
  <div className="flex items-center gap-2">
  <Sparkles className="w-5 h-5 text-[var(--color-warning)]/70 shrink-0" />
- <p className="text-caption font-extrabold text-[var(--color-text-on-solid)]">
+ <p className="text-caption font-bold text-[var(--color-text-on-solid)]">
  سامانه هوشمند پیکربندی رسمی (ویژه ارزشیابی نهایی)
  </p>
  </div>
@@ -438,7 +437,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  </div>
 
  {showRecommendationsApplied && (
- <div className="p-3 bg-[var(--color-success-solid)]/25 border border-[var(--color-success)]/20 text-[var(--color-success)] rounded-xl text-micro font-bold flex items-center gap-2">
+ <div className="p-3 bg-[var(--color-success-solid)]/25 border border-[var(--color-success)]/20 text-[var(--color-success)] rounded-xl text-micro flex items-center gap-2">
  <CheckCircle className="w-4.5 h-4.5" />
  <span>معیارهای امنیتی با موفقیت روی برگه آزمون سوار و ذخیره شدند!</span>
  </div>
@@ -448,7 +447,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
  {/* SECTION 1: زمان‌بندی آزمون */}
  <div className="relative lens p-6 rounded-3xl space-y-4">
- <h2 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
  <Calendar className="w-5 h-5 text-[var(--color-accent)]" />
  <span>۱. زمان‌بندی دقیق برگزاری آزمون</span>
  </h2>
@@ -553,7 +552,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
  {/* SECTION 2: دسترسی دانش‌آموزان */}
  <div className="relative lens p-6 rounded-3xl space-y-4">
- <h2 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
  <Users className="w-5 h-5 text-[var(--color-accent)]" />
  <span>۲. سطوح دسترسی و حضور دانش‌آموزان</span>
  </h2>
@@ -610,7 +609,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  <button
  type="button"
  onClick={() => setLimitToSpecificStudents(!limitToSpecificStudents)}
- className={`px-3 py-1 rounded-xl text-micro font-extrabold transition-all cursor-pointer ${
+ className={`px-3 py-1 rounded-xl text-micro font-bold transition-all cursor-pointer ${
  limitToSpecificStudents
  ? 'bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] border border-[var(--color-danger)]/20'
  : 'glx-inset text-[var(--color-text-secondary)] hover:glx-inset'
@@ -751,14 +750,14 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  {/* SECTION 3: رفتار پیشرفته آزمون */}
  <details className="group pane rounded-3xl">
  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
- <span className="flex items-center gap-2 text-caption font-extrabold text-[var(--color-text-primary)]">
+ <span className="flex items-center gap-2 text-caption font-bold text-[var(--color-text-primary)]">
  <Lock className="w-5 h-5 text-[var(--color-accent)]" />
  <span>۳. رفتار و کنترل‌های پیشرفته آزمون</span>
  </span>
- <span className="text-micro font-bold text-[var(--color-accent)] group-open:hidden">
+ <span className="text-micro text-[var(--color-accent)] group-open:hidden">
  نمایش تنظیمات
  </span>
- <span className="hidden text-micro font-bold text-[var(--color-accent)] group-open:inline">
+ <span className="hidden text-micro text-[var(--color-accent)] group-open:inline">
  بستن تنظیمات
  </span>
  </summary>
@@ -837,7 +836,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  : 'border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
  }`}
  >
- <span className="block text-caption font-extrabold flex items-center gap-1.5">
+ <span className="block text-caption font-bold flex items-center gap-1.5">
  <Laptop className="w-4 h-4 text-[var(--color-accent)]" />
  <span>نمایش یک سوال در هر صفحه</span>
  </span>
@@ -861,7 +860,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  : 'border-[var(--color-glass-light-stroke)] text-[var(--color-text-secondary)] hover:brightness-105'
  }`}
  >
- <span className="block text-caption font-extrabold flex items-center gap-1.5">
+ <span className="block text-caption font-bold flex items-center gap-1.5">
  <FileText className="w-4 h-4 text-[var(--color-accent)]" />
  <span>نمایش همه سوالات در یک صفحه</span>
  </span>
@@ -881,7 +880,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  <div className="flex items-start gap-4">
  <Toggle checked={beastMode} onChange={setBeastMode} className="mt-1" />
  <div className="space-y-1.5 flex-1">
- <span className="text-caption font-black text-[var(--color-text-primary)] flex items-center gap-2">
+ <span className="text-caption font-bold text-[var(--color-text-primary)] flex items-center gap-2">
  <ShieldAlert
  className={`w-5 h-5 ${beastMode ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-tertiary)]'}`}
  />
@@ -895,7 +894,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  </p>
 
  {beastMode && (
- <div className="pt-2 flex items-center gap-1.5 text-micro font-bold text-[var(--color-danger)]">
+ <div className="pt-2 flex items-center gap-1.5 text-micro text-[var(--color-danger)]">
  <Zap className="w-3.5 h-3.5 text-[var(--color-danger)] animate-pulse" />
  <span>حفاظت فعال دسکتاپی روشن - سیستم ضد شبیه‌سازها به صف شدند</span>
  </div>
@@ -908,7 +907,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
  {/* SECTION 4: نمایش نتیجه */}
  <div className="relative lens p-6 rounded-3xl space-y-4">
- <h2 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
  <Eye className="w-5 h-5 text-[var(--color-accent)]" />
  <span>۴. الگوهای انتشار نتایج و کارنامه</span>
  </h2>
@@ -1034,7 +1033,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
  {/* SECTION 5: دستورالعمل قبل از شروع */}
  <div className="relative lens p-6 rounded-3xl space-y-4">
- <h2 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)] flex items-center gap-2 pb-2.5 border-b border-[var(--color-glass-light-stroke)]">
  <FileText className="w-5 h-5 text-[var(--color-accent)]" />
  <span>۵. دستورالعمل نمایش قبل از شروع آزمون</span>
  </h2>
@@ -1061,7 +1060,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  <div className="col-span-1 space-y-5">
  {/* SECTION 6: پنل مرور نهایی */}
  <div className="lens p-6 rounded-3xl space-y-4">
- <h2 className="text-caption font-black text-[var(--color-text-primary)] pb-2.5 border-b border-[var(--color-glass-light-stroke)] flex items-center gap-1.5">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)] pb-2.5 border-b border-[var(--color-glass-light-stroke)] flex items-center gap-1.5">
  <Compass className="w-5 h-5 text-[var(--color-accent)]" />
  <span>مرور نهایی برگه</span>
  </h2>
@@ -1147,7 +1146,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  </div>
  <div className="flex justify-between items-center">
  <span className="text-[var(--color-text-primary)]">مدت انقضای پاسخ‌گو:</span>
- <span className="font-bold text-[var(--color-text-primary)] font-mono text-micro">
+ <span className="text-[var(--color-text-primary)] font-mono text-micro">
  {toPersianDigits(durationMinutes)} دقیقه
  </span>
  </div>
@@ -1190,7 +1189,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
  {/* SECTION 7: بررسی عیوب و اعتبارسنجی قبل انتشار */}
  <div className="lens p-6 rounded-3xl space-y-3.5">
- <h2 className="text-caption font-extrabold text-[var(--color-text-primary)] flex items-center gap-1.5 pb-2 border-b border-[var(--color-glass-light-stroke)]">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)] flex items-center gap-1.5 pb-2 border-b border-[var(--color-glass-light-stroke)]">
  <ShieldAlert className="w-4.5 h-4.5 text-[var(--color-text-tertiary)]" />
  <span>پایش عیوب طراحی (اعتبارسنجی)</span>
  </h2>
@@ -1210,7 +1209,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  <div className="bg-[var(--color-danger-soft)]/40/70 border border-[var(--color-danger)]/20 rounded-2xl p-4.5 space-y-2.5">
  <div className="flex items-center gap-2 text-[var(--color-danger)]/80">
  <AlertTriangle className="w-4.5 h-4.5 text-[var(--color-danger)] shrink-0" />
- <span className="text-micro font-black">
+ <span className="text-micro">
  خطاهای برجا مانده از طراحی ({toPersianDigits(validationErrors.length)} مورد):
  </span>
  </div>
@@ -1227,7 +1226,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
 
  {/* SECTION 8: عملیات انتشار و ساخت لینک */}
  <div className="lens p-6 rounded-3xl border-[var(--color-accent)]/20/80 space-y-4">
- <h2 className="text-caption font-black text-[var(--color-text-primary)] pb-2 border-b border-[var(--color-accent)]/10/50 flex items-center gap-1.5">
+ <h2 className="text-caption font-bold text-[var(--color-text-primary)] pb-2 border-b border-[var(--color-accent)]/10/50 flex items-center gap-1.5">
  <Play className="w-4.5 h-4.5 text-[var(--color-accent)]" />
  <span>انتشار نهایی برگه آزمون</span>
  </h2>
@@ -1259,7 +1258,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  type="button"
  onClick={handlePublishExam}
  disabled={validationErrors.length > 0}
- className={`w-full py-3 rounded-2xl text-caption font-black transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
+ className={`w-full py-3 rounded-2xl text-caption font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs ${
  validationErrors.length > 0
  ? 'bg-[var(--color-glass-light-fill)] text-[var(--color-text-tertiary)] border border-[var(--color-glass-light-stroke)] cursor-not-allowed'
  : 'bg-[var(--color-accent-solid)] hover:bg-[var(--color-accent-solid-hover)] text-[var(--color-text-on-solid)] border border-[var(--color-accent)]/20'
@@ -1275,7 +1274,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  (carried rejection: never inside a one-line toast). */}
  <Seal size={96} />
  <div className="space-y-0.5">
- <span className="text-micro font-black block">آزمون به جریان منتشر شد!</span>
+ <span className="text-micro block">آزمون به جریان منتشر شد!</span>
  <p className="text-micro text-[var(--color-success)]/90 leading-normal">
  ورود دانش‌آموزان به صورت لایو با لینک زیر برقرار و گزارش پاسخ‌ها زنده بر
  مانیتور معلم در دسترس است.
@@ -1289,7 +1288,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  onClick={() => {
  setExamStatus('draft');
  }}
- className="w-full py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl text-micro font-bold border-[var(--color-glass-light-stroke)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+ className="w-full py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl text-micro border-[var(--color-glass-light-stroke)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
  >
  <RefreshCw className="w-3.5 h-3.5" />
  <span>برگرداندن به حالت پیش‌نویس (انصراف موقت)</span>
@@ -1300,7 +1299,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  {/* Server-issued exam link panel (derived from exam.examCode) */}
  {examStatus !== 'draft' && examLink && (
  <div className="p-3 pane rounded-2xl border-[var(--color-accent)]/20 space-y-2.5">
- <span className="text-micro font-bold text-[var(--color-text-primary)] flex items-center gap-1">
+ <span className="text-micro text-[var(--color-text-primary)] flex items-center gap-1">
  <Link className="w-3.5 h-3.5 text-[var(--color-accent)]" />
  <span>لینک اختصاصی شرکت در آزمون صادر شد:</span>
  </span>
@@ -1335,7 +1334,7 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  <button
  type="button"
  onClick={handleBack}
- className="px-5 py-2.5 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl text-caption font-black cursor-pointer shadow-3xs border-[var(--color-glass-light-stroke)]"
+ className="px-5 py-2.5 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] rounded-xl text-caption font-bold cursor-pointer shadow-3xs border-[var(--color-glass-light-stroke)]"
  >
  انصراف و بازگشت
  </button>
@@ -1350,7 +1349,8 @@ export default function ExamSettings({ exam, onSave, onBack }: ExamSettingsProps
  </div>
  </div>
  </div>
- {toastElement}
+
+ <UnsavedChangesGuard {...unsavedDialog} title="خروج بدون ذخیره؟" /> {toastElement}
  </div>
  );
 }

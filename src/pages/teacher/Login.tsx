@@ -130,7 +130,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             <div className="inline-flex items-center justify-center w-20 h-20 glx-dark rounded-2xl mb-4 shadow-xl flex-shrink-0">
               <TheMark variant="core" size={48} animated={false} />
             </div>
-            <h1 className="text-heading-1 font-black text-[var(--color-ink)] tracking-tight">
+            <h1 className="text-heading-1 text-[var(--color-ink)] tracking-tight">
               آزمون‌ساز
             </h1>
             <p className="text-label text-[var(--color-text-secondary)] mt-1">پنل مدیریت اساتید</p>
@@ -164,7 +164,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
                 <button
                   type="submit"
-                  className="w-full btn-glass btn-glass--primary font-bold text-label py-3 rounded-xl cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full btn-glass btn-glass--primary text-label py-3 rounded-xl cursor-pointer flex items-center justify-center gap-2"
                 >
                   ادامه
                   <ArrowRight className="w-4 h-4" />
@@ -177,7 +177,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               <form onSubmit={handlePasswordSubmit} className="space-y-5">
                 <div className="text-center">
                   <p className="text-caption text-[var(--color-text-tertiary)]">ورود با</p>
-                  <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                  <p className="text-label text-[var(--color-text-primary)]" dir="ltr">
                     {email}
                   </p>
                   <TextLink
@@ -230,7 +230,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full btn-glass btn-glass--primary disabled:opacity-60 font-bold text-label py-3 rounded-xl cursor-pointer"
+                  className="w-full btn-glass btn-glass--primary disabled:opacity-60 text-label py-3 rounded-xl cursor-pointer"
                 >
                   {loading ? 'در حال بررسی...' : 'ورود'}
                 </button>
@@ -275,7 +275,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     یک رمز عبور برای حساب خود انتخاب کنید
                   </p>
                   <p
-                    className="text-label font-bold text-[var(--color-text-primary)] mt-2"
+                    className="text-label text-[var(--color-text-primary)] mt-2"
                     dir="ltr"
                   >
                     {email}
@@ -330,7 +330,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full btn-glass btn-glass--success disabled:opacity-60 font-bold text-label py-3 rounded-xl cursor-pointer"
+                  className="w-full btn-glass btn-glass--success disabled:opacity-60 text-label py-3 rounded-xl cursor-pointer"
                 >
                   {loading ? 'در حال ثبت‌نام...' : 'ساخت حساب'}
                 </button>
@@ -357,7 +357,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-success-soft)] rounded-full mb-2">
                   <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
                 </div>
-                <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+                <h2 className="text-heading-3 text-[var(--color-text-primary)]">
                   ایمیل تأیید ارسال شد
                 </h2>
                 <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
@@ -367,7 +367,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 </p>
                 <div className="glx-inset field rounded-xl px-4 py-3">
                   <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
-                  <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                  <p className="text-label text-[var(--color-text-primary)]" dir="ltr">
                     {email}
                   </p>
                 </div>
@@ -391,7 +391,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     لینک بازیابی رمز عبور به ایمیل شما ارسال می‌شود
                   </p>
                   <p
-                    className="text-label font-bold text-[var(--color-text-primary)] mt-2"
+                    className="text-label text-[var(--color-text-primary)] mt-2"
                     dir="ltr"
                   >
                     {email}
@@ -442,7 +442,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-warning-soft)] rounded-full mb-2">
                   <CheckCircle2 className="w-8 h-8 text-[var(--color-warning)]" />
                 </div>
-                <h2 className="text-heading-3 font-bold text-[var(--color-text-primary)]">
+                <h2 className="text-heading-3 text-[var(--color-text-primary)]">
                   لینک بازیابی ارسال شد
                 </h2>
                 <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
@@ -452,7 +452,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 </p>
                 <div className="glx-inset field rounded-xl px-4 py-3">
                   <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
-                  <p className="text-label font-bold text-[var(--color-text-primary)]" dir="ltr">
+                  <p className="text-label text-[var(--color-text-primary)]" dir="ltr">
                     {email}
                   </p>
                 </div>

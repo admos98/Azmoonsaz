@@ -41,8 +41,8 @@ function TheMarkHamburger({
   isHovered?: boolean;
   isOpen?: boolean;
 }) {
-  const ink = 'var(--color-ink, #221E4A)';
-  const gold = 'var(--color-gold, #F5B301)';
+  const ink = 'var(--color-ink)';
+  const gold = 'var(--color-gold)';
   const baseScale = isHovered && !isOpen ? 1.1 : 1; // pills expand on hover
   const pillWidth = size * 0.65 * baseScale; // horizontal bar width
   const pillHeight = size * 0.1 * baseScale; // bar thickness (thinner)
@@ -446,7 +446,7 @@ export default function Topbar({
             <Bell className="w-4.5 h-4.5" />
             {unreadCount > 0 && (
               <span
-                className="absolute top-1.5 right-1.5 flex items-center justify-center text-micro font-bold text-[var(--color-text-on-solid)] bg-[var(--color-danger-solid)] rounded-full ring-2 ring-[var(--color-surface)]"
+                className="absolute top-1.5 right-1.5 flex items-center justify-center text-micro text-[var(--color-text-on-solid)] bg-[var(--color-danger-solid)] rounded-full ring-2 ring-[var(--color-surface)]"
                 style={{ width: '18px', height: '18px' }}
                 aria-label={`${unreadCount} اعلان خوانه‌نشده`}
               >

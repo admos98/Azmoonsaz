@@ -76,7 +76,7 @@ export const Table = <T,>({
       >
         <table className="w-full text-right border-collapse text-caption md:text-label glx-inset">
           <thead>
-            <tr className="border-b border-[var(--color-glass-light-stroke)] text-[var(--color-text-tertiary)] font-bold text-micro md:text-caption">
+            <tr className="border-b border-[var(--color-glass-light-stroke)] text-label-muted text-[var(--color-text-secondary)]">
               {headers.map((col, idx) => {
                 const alignStyles: Record<NonNullable<TableColumn['align']>, string> = {
                   right: 'text-right',

@@ -156,7 +156,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-5">
-          <h2 className="text-label font-bold text-[var(--color-text-primary)]">ظاهر برنامه</h2>
+          <h2 className="text-label text-[var(--color-text-primary)]">ظاهر برنامه</h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             حالت سیستم با تغییر تنظیمات دستگاه، خودکار به‌روز می‌شود.
           </p>
@@ -171,7 +171,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-5">
-          <h2 className="text-label font-bold text-[var(--color-text-primary)]">میزان حرکت</h2>
+          <h2 className="text-label text-[var(--color-text-primary)]">میزان حرکت</h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             درخواست کاهش حرکت در تنظیمات دستگاه همیشه در اولویت است.
           </p>
@@ -186,7 +186,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-5">
-          <h2 className="text-label font-bold text-[var(--color-text-primary)]">
+          <h2 className="text-label text-[var(--color-text-primary)]">
             کیفیت شیشه‌ای (Liquid Glass)
           </h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
@@ -239,7 +239,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-5">
-          <h2 className="text-label font-bold text-[var(--color-text-primary)]">تراکم اطلاعات</h2>
+          <h2 className="text-label text-[var(--color-text-primary)]">تراکم اطلاعات</h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             حالت فشرده فقط فاصله فهرست‌ها و جدول‌ها را کاهش می‌دهد و اندازه ناحیه‌های لمسی اصلی را
             حفظ می‌کند.
@@ -256,7 +256,7 @@ export default function Settings() {
       <Card>
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-label font-bold text-[var(--color-text-primary)]">
+            <h2 className="text-label text-[var(--color-text-primary)]">
               بازنشانی فضای کاری
             </h2>
             <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
@@ -282,7 +282,7 @@ export default function Settings() {
 
       <Card>
         <div className="mb-4">
-          <h2 className="text-label font-bold text-[var(--color-text-primary)]">اعلان‌ها</h2>
+          <h2 className="text-label text-[var(--color-text-primary)]">اعلان‌ها</h2>
           <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
             اعلان‌های آزمون فعال فوری نمایش داده می‌شوند؛ پاسخ‌برگ‌ها در گروه اطلاع‌رسانی قرار
             می‌گیرند.
@@ -308,7 +308,7 @@ export default function Settings() {
 
       {/* Runtime Status Card */}
       <Card>
-        <h2 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-5">
+        <h2 className="text-label text-[var(--color-text-primary)] flex items-center gap-2 mb-5">
           <Server className="w-4 h-4 text-[var(--color-accent)]" />
           وضعیت سیستم
         </h2>
@@ -321,7 +321,7 @@ export default function Settings() {
               {isSecure ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
             </div>
             <div>
-              <p className="text-micro text-[var(--color-text-tertiary)] font-bold">حالت اجرا</p>
+              <p className="text-label-muted">حالت اجرا</p>
               <p className="text-caption text-[var(--color-text-secondary)] font-bold">
                 {modeLabel}
               </p>
@@ -335,7 +335,7 @@ export default function Settings() {
               <Shield className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-micro text-[var(--color-text-tertiary)] font-bold">سوپابیس</p>
+              <p className="text-label-muted">سوپابیس</p>
               <Badge variant={supabaseConfigured ? 'success' : 'slate'}>
                 {supabaseConfigured ? 'پیکربندی شده' : 'پیکربندی نشده'}
               </Badge>
@@ -347,7 +347,7 @@ export default function Settings() {
               <CheckCircle className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-micro text-[var(--color-text-tertiary)] font-bold">حالت آزمایشی</p>
+              <p className="text-label-muted">حالت آزمایشی</p>
               <Badge variant="success">غیرفعال</Badge>
             </div>
           </div>
@@ -355,7 +355,7 @@ export default function Settings() {
       </Card>
 
       <Card>
-        <h2 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-3">
+        <h2 className="text-label text-[var(--color-text-primary)] flex items-center gap-2 mb-3">
           <Shield className="w-4 h-4 text-[var(--color-gold-ink)]" />
           راهنمای امنیت آزمون
         </h2>
@@ -367,31 +367,31 @@ export default function Settings() {
 
       {/* App Info Card */}
       <Card>
-        <h2 className="text-label font-bold text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
+        <h2 className="text-label text-[var(--color-text-primary)] flex items-center gap-2 mb-4">
           <Info className="w-4 h-4 text-[var(--color-accent)]" />
           درباره برنامه
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
           <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
-            <p className="text-micro text-[var(--color-text-tertiary)] font-bold">نام سامانه</p>
+            <p className="text-label-muted">نام سامانه</p>
             <p className="text-caption text-[var(--color-text-secondary)] font-bold mt-1">
               آزمون‌ساز
             </p>
           </div>
           <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
-            <p className="text-micro text-[var(--color-text-tertiary)] font-bold">نسخه</p>
+            <p className="text-label-muted">نسخه</p>
             <p className="text-caption text-[var(--color-text-secondary)] font-bold mt-1">
               {toPersianDigits(__APP_VERSION__)}
             </p>
           </div>
           <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
-            <p className="text-micro text-[var(--color-text-tertiary)] font-bold">فریمورک</p>
+            <p className="text-label-muted">فریمورک</p>
             <p className="text-caption text-[var(--color-text-secondary)] font-bold mt-1">
               React 19 + Vite
             </p>
           </div>
           <div className="p-3 bg-[var(--color-glass-light-fill)] rounded-xl">
-            <p className="text-micro text-[var(--color-text-tertiary)] font-bold">میزبانی</p>
+            <p className="text-label-muted">میزبانی</p>
             <p className="text-caption text-[var(--color-text-secondary)] font-bold mt-1">Vercel</p>
           </div>
         </div>

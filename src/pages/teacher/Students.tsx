@@ -37,7 +37,7 @@ import {
   PageHeader,
   PillButton,
   SearchInput,
-} from '../../ui';
+  UnsavedChangesGuard,} from '../../ui';
 import { PanelCrest } from '../../components/PanelCrest';
 import { AbsenceArt } from '../../components/AbsenceArt';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
@@ -177,7 +177,7 @@ export default function Students() {
     formStatus,
   ]);
   const [savedFormSnapshot, setSavedFormSnapshot] = useState(formSnapshot);
-  const guardStudentDraft = useUnsavedChanges(
+  const { guarded: guardStudentDraft, dialogProps: studentDraftDialog } = useUnsavedChanges(
     showAddEditModal && formSnapshot !== savedFormSnapshot,
   );
   const closeStudentEditor = () => guardStudentDraft(() => setShowAddEditModal(false));
@@ -500,7 +500,7 @@ export default function Students() {
           {/* Grade filter */}
           <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
             <Filter className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
+            <span className="text-label-muted">
               پایه تحصیلی:
             </span>
             <Dropdown
@@ -520,7 +520,7 @@ export default function Students() {
           {/* Class Group filter */}
           <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
             <GraduationCap className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
+            <span className="text-label-muted">
               گروه کلاسی:
             </span>
             <Dropdown
@@ -538,7 +538,7 @@ export default function Students() {
           {/* Status filter */}
           <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
             <Activity className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-micro text-[var(--color-text-tertiary)] font-semibold">
+            <span className="text-label-muted">
               وضعیت دانش‌آموز:
             </span>
             <Dropdown
@@ -1109,7 +1109,7 @@ export default function Students() {
 
           {/* Error messages if form is incomplete */}
           {!formName && (
-            <p className="text-micro text-[var(--color-danger)] text-center font-bold">
+            <p className="text-micro text-[var(--color-danger)] text-center">
               برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.
             </p>
           )}
@@ -1153,7 +1153,7 @@ export default function Students() {
             </div>
 
             <div className="space-y-3">
-              <span className="text-micro font-bold text-[var(--color-text-primary)] block">
+              <span className="text-micro text-[var(--color-text-primary)] block">
                 امتحانات ثبت شده در دیتابیس کلاس‌ها:
               </span>
 
@@ -1167,7 +1167,7 @@ export default function Students() {
                         className="p-3.5 pane rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
                       >
                         <div>
-                          <h5 className="font-bold text-[var(--color-text-secondary)] text-micro">
+                          <h5 className="text-[var(--color-text-secondary)] text-micro">
                             {examItem?.title || sub.examCode}
                           </h5>
                           <span className="text-micro text-[var(--color-text-tertiary)] mt-1 block">
@@ -1187,9 +1187,9 @@ export default function Students() {
                               ? 'تصحیح نهایی شده'
                               : 'در حال سنجش یا نیازمند تصحیح'}
                           </span>
-                          <span className="text-micro font-bold text-[var(--color-text-primary)]">
+                          <span className="text-micro text-[var(--color-text-primary)]">
                             نمره:{' '}
-                            <strong className="text-caption font-black text-[var(--color-accent)]">
+                            <strong className="text-caption font-bold text-[var(--color-accent)]">
                               {toPersianDigits(sub.score)}
                             </strong>{' '}
                             از {toPersianDigits(sub.maxScore)}
@@ -1233,6 +1233,8 @@ export default function Students() {
         onConfirm={confirmDeleteStudent}
         onCancel={() => setStudentToDelete(null)}
       />
+
+ <UnsavedChangesGuard {...studentDraftDialog} title="خروج بدون ذخیره؟" />
     </div>
   );
 }

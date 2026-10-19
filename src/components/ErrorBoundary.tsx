@@ -39,7 +39,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
         >
           <div className="max-w-md w-full lens rounded-3xl p-8 text-center">
             <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-heading-2 font-bold text-[var(--color-text-primary)] mb-2">
+            <h2 className="text-heading-2 text-[var(--color-text-primary)] mb-2">
               خطایی رخ داد
             </h2>
             <p className="text-[var(--color-text-secondary)] mb-1 text-label">

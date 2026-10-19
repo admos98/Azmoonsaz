@@ -8,7 +8,7 @@ import {
   PageHeader,
   Tabs,
   Textarea,
-} from '../../ui';
+  UnsavedChangesGuard,} from '../../ui';
 import { PanelCrest } from '../../components/PanelCrest';
 import { Cut } from '../../components/Cut';
 import {
@@ -51,7 +51,7 @@ const makeId = () => crypto.randomUUID();
 const scheduleFieldClass =
   'w-full min-w-0 h-11 px-2 border border-[var(--color-glass-light-stroke)] rounded-xl bg-[var(--color-surface)] text-caption text-[var(--color-text-primary)]';
 const scheduleLabelClass =
-  'block mx-0.5 mb-1.5 text-micro font-bold text-[var(--color-text-tertiary)]';
+  'block mx-0.5 mb-1.5 text-label-muted';
 
 export default function TeacherProfile({
   initialTab = 'overview',
@@ -99,7 +99,7 @@ export default function TeacherProfile({
   const fileRef = useRef<HTMLInputElement>(null);
   const profileSnapshot = JSON.stringify([name, subject, bio, avatarUrl, schools, schedule]);
   const [savedProfileSnapshot, setSavedProfileSnapshot] = useState(profileSnapshot);
-  const guardProfileAction = useUnsavedChanges(profileSnapshot !== savedProfileSnapshot);
+  const { guarded: guardProfileAction, dialogProps: profileGuardDialog } = useUnsavedChanges(profileSnapshot !== savedProfileSnapshot);
   const handleTabChange = (next: ProfileTab) =>
     guardProfileAction(() => {
       setTab(next);
@@ -326,7 +326,7 @@ export default function TeacherProfile({
                   className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/50"
                 />
               ) : (
-                <span className="grid h-24 w-24 place-items-center rounded-3xl bg-[var(--color-ink)] text-heading-1 font-black text-[var(--color-text-on-solid)]">
+                <span className="grid h-24 w-24 place-items-center rounded-3xl bg-[var(--color-ink)] text-heading-1 text-[var(--color-text-on-solid)]">
                   {name[0] || 'م'}
                 </span>
               )}
@@ -346,7 +346,7 @@ export default function TeacherProfile({
               <p className="mb-1 text-caption font-bold text-[var(--color-text-secondary)]">
                 پروفایل حرفه‌ای دبیر
               </p>
-              <h1 className="text-heading-1 font-black">{name || 'پروفایل دبیر'}</h1>
+              <h1 className="text-heading-1">{name || 'پروفایل دبیر'}</h1>
               <p className="mt-2 text-label text-[var(--color-text-secondary)]">
                 {subject || 'درس تخصصی ثبت نشده'} ·{' '}
                 {schools.length ? `${schools.length} مدرسه` : 'مدرسه‌ای ثبت نشده'}
@@ -659,10 +659,10 @@ export default function TeacherProfile({
           </form>
         </Card>
       </div>
+    <UnsavedChangesGuard {...profileGuardDialog} title="خروج بدون ذخیره؟" />
     </div>
   );
 }
-
 function ProfileHeader({ tab, setTab }: { tab: ProfileTab; setTab: (tab: ProfileTab) => void }) {
   const tabs: Array<{ id: ProfileTab; label: string; icon: React.ReactNode }> = [
     { id: 'overview', label: 'پروفایل', icon: <UserRound className="h-4 w-4" /> },
@@ -672,7 +672,7 @@ function ProfileHeader({ tab, setTab }: { tab: ProfileTab; setTab: (tab: Profile
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h2 className="text-heading-2 font-black">مرکز دبیر و کلاس‌ها</h2>
+        <h2 className="text-heading-2">مرکز دبیر و کلاس‌ها</h2>
         <p className="mt-1 text-caption text-[var(--color-text-tertiary)]">
           پروفایل، دانش‌آموزان و برنامه تدریس در یک مکان
         </p>

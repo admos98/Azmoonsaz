@@ -202,7 +202,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
  {options.map((opt, i) => (
  <React.Fragment key={opt.value}>
  {opt.group && options[i - 1]?.group !== opt.group && (
- <div className="px-3.5 pt-2.5 pb-1 text-micro font-black text-[var(--color-text-tertiary)] sticky top-0 bg-[var(--color-paper-warm)]/90 chrome-blur">
+ <div className="px-3.5 pt-2.5 pb-1 text-label-muted sticky top-0 bg-[var(--color-paper-warm)]/90 chrome-blur">
  {opt.group}
  </div>
  )}
@@ -230,7 +230,7 @@ export const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
  {error && (
  <p
  id={`${dropdownId}-error`}
- className="text-micro text-[var(--color-danger)] font-bold flex items-center gap-1 mt-1"
+ className="text-micro text-[var(--color-danger)] flex items-center gap-1 mt-1"
  >
  <AlertCircle className="w-3.5 h-3.5" />
  <span>{error}</span>
