@@ -27,7 +27,8 @@ const NEW_FILE_LIMIT = 400;
 const OVERRIDES = new Map([
   // App.tsx: shell+router shrunk 451→427 via BootScreens extraction; ratchet steps down.
   ['src/App.tsx', 427],
-  ['src/pages/teacher/Questions.tsx', 1850],
+  // Questions.tsx: 1973→1416; type builders extracted to features/question-bank/builders/*.
+  ['src/pages/teacher/Questions.tsx', 1416],
   ['src/pages/teacher/ExamPreview.tsx', 1891],
   ['src/pages/teacher/ExamResults.tsx', 1307],
   ['src/pages/teacher/ExamSettings.tsx', 1356],
