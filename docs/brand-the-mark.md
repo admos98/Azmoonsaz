@@ -1,6 +1,11 @@
-# ExamForge Brand Spec — The Mark (علامت) V2.0
+# ExamForge Brand Spec — The Mark (علامت) V2.1
 
 Reference file for implementation. Exact SVG coordinates and rules below.
+
+> V2.1 note (2026-10-18): the ink value below is the SHIPPED token — the app
+> paints `--color-ink: #1a1a2e` (Vazirmatn-era re-tone; the earlier plum
+> `#221E4A` survives only in the art-tool palette, which keys masks on it).
+> Dark-mode strokes follow the shipped dark token (`#f5f6fa`), not raw cream.
 
 ## Formula
 - D = diameter (base unit)
@@ -9,7 +14,7 @@ Reference file for implementation. Exact SVG coordinates and rules below.
 - GOLD = always 3rd of 4 circles, always filled (never ring)
 
 ## Colors
-- Ink: #221E4A (circles, headings and solid fills)
+- Ink: #1a1a2e (circles, headings and solid fills — see the V2.1 note)
 - Gold: #F5B301 (answer mark, never changes)
 - Cream: #F7F1E4 (accents and light solids)
 - Muted: #6B6489 (secondary text)

@@ -25,8 +25,10 @@ const NEW_FILE_LIMIT = 400;
 // Grandfathered offenders (path relative to repo root -> max allowed lines).
 // Measured 2026-10-08. Numbers go DOWN, never up.
 const OVERRIDES = new Map([
+  // App.tsx: shell+router shrunk 451→427 via BootScreens extraction; ratchet steps down.
+  ['src/App.tsx', 427],
   ['src/pages/teacher/Questions.tsx', 1850],
-  ['src/pages/teacher/ExamPreview.tsx', 1923],
+  ['src/pages/teacher/ExamPreview.tsx', 1891],
   ['src/pages/teacher/ExamResults.tsx', 1307],
   ['src/pages/teacher/ExamSettings.tsx', 1356],
   ['src/pages/teacher/Students.tsx', 1163],
@@ -35,15 +37,17 @@ const OVERRIDES = new Map([
   ['src/glass/glassController.ts', 697],
   ['src/pages/teacher/TeacherProfile.tsx', 690],
   ['src/test/components/LibraryV2.test.tsx', 669],
+  // mapMath: DOM-free shared math (main thread + worker). Its size IS the render-contract
+  // documentation the audit pins (“DO NOT simplify any of these back”). FRONTEND-FINDINGS.md
+  // Finding 5 blesses a documented cap for it.
+  ['src/glass/mapMath.ts', 407],
   ['src/glass/perfRecorder.ts', 664],
   ['src/pages/student/SecureExamPortal.tsx', 630],
   ['src/pages/teacher/Dashboard.tsx', 627],
   ['src/pages/teacher/NewExam.tsx', 602],
-  ['src/components/QuestionRenderer.tsx', 550],
   ['src/pages/dev/FixtureGallery.tsx', 492],
   ['src/pages/teacher/Login.tsx', 469],
-  ['src/App.tsx', 451],
-  ['src/services/api.ts', 425],
+  ['src/services/api.ts', 417],
   ['src/features/student-import/StudentImportWizard.tsx', 423],
   ['src/pages/teacher/Settings.tsx', 416],
 ]);

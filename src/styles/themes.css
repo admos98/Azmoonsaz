@@ -285,6 +285,9 @@
   /* Dark hierarchy inverts: hints sit DIMMER than secondary (closer to the
      page), again with a deliberate gap between the two grays. */
   --color-text-tertiary: #8c8998;
+  /* Muted-label tier (dark) — mirrors the light token: labels that are
+     required reading, one step below body copy, well above the hint tier. */
+  --color-text-label-muted: #a09cb0;
   --color-text-on-dark: #f9fafb;
   --color-text-on-dark-secondary: #d1d5db;
 

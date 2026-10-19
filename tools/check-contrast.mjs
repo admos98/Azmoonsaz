@@ -125,6 +125,11 @@ const PAIRS = [
   // gold as content (icons/text on the brand surface) — F-10
   ['--color-gold-ink', '--color-page-bg', 4.5],
   ['--color-gold-ink', '--color-surface', 4.5],
+  // required-reading small labels (form field labels, data captions).
+  // Separate tier from tertiary (the HINT tier, 3.0:1 non-text floor):
+  // a bold label must never sit on the hint tier.
+  ['--color-text-label-muted', '--color-page-bg', 4.5],
+  ['--color-text-label-muted', '--color-surface', 4.5],
 ];
 
 const failures = [];
@@ -203,6 +208,14 @@ for (const file of walk(join(root, 'src'))) {
       const marker = INSTRUCTIONAL_MARKERS.find((k) => window.includes(k));
       if (marker) {
         usageViolations.push(`${file}:${idx + 1} tertiary@sub-14px carries instructional text (${marker})`);
+      }
+      /* role gate: bold tertiary is a LABEL, not a hint. 3.0:1 is the
+         non-text floor — fine for a decorative counter, a fail for text a
+         user must read to act. Bold/semibold/black/extrabold on the hint
+         tier means the element is required reading: it belongs on
+         text-label-muted (--color-text-label-muted, ≥4.5:1). */
+      if (/\bfont-(bold|black|extrabold|semibold)\b/.test(cls)) {
+        usageViolations.push(`${file}:${idx + 1} bold tertiary is a label, not a hint — use text-label-muted`);
       }
     }
   });

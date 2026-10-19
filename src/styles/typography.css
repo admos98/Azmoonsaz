@@ -46,6 +46,26 @@
   font-weight: 700;
   line-height: 1.2;
 }
+/* ─── Weight ownership ───
+   Every semantic utility above OWNS its weight. Call-site font-* overrides
+   exist only as deliberate emphasis: (1) a weight less than the utility's
+   (quieter — micro+semibold in dense chips), (2) heavier emphasis on
+   text-body, or (3) responsive pairs where bold carries the mobile intent
+   (caption md:label + font-bold). Same-weight overrides were swept out —
+   the tool: `npm run check:typography` fails any NEW same-pair regression;
+   add one there if a new utility lands. */
+
+/* ─── Muted-label tier — required-reading small labels ───
+   Form field labels and data captions: text the user MUST read, sitting a
+   step quieter than body copy but well above the hint tier. Consumes
+   --color-text-label-muted (4.53:1 light / 6.94:1 dark on page-bg).
+   Hint-only text stays on text-micro/caption + text-tertiary. */
+@utility text-label-muted {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-text-label-muted);
+}
 
 /* ─── PanelCrest ─── identity rail (V2): content column + crest column at
    ≥lg. The column is reserved in BOTH states — empty↔filled swaps only

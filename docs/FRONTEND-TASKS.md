@@ -53,6 +53,11 @@
       `useQuestionForm.ts`; extract the remaining view sections the same way.
 - [ ] **`src/pages/teacher/ExamPreview.tsx` — 1887 lines.** Only
       `src/features/exam-preview/usePreviewDrawerHandlers.ts` is extracted so far.
+- [ ] **`src/pages/teacher/ExamSettings.tsx` — 1356 lines** — first-class split
+      target; see `FRONTEND-FINDINGS.md` Finding 5 (supersedes this doc) for the
+      seam boundaries.
+- [ ] **`src/pages/teacher/ExamResults.tsx` — 1307 lines** — first-class split
+      target; see `FRONTEND-FINDINGS.md` Finding 5 for the seam boundaries.
 - [ ] **`src/pages/teacher/Students.tsx` — 1238 lines.**
 - [ ] **`src/pages/teacher/TeacherProfile.tsx` — 690 lines** (one sub-component
       only, `ProfileHeader`). Split schedule / schools / editor sections.

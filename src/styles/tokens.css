@@ -121,6 +121,11 @@
   /* Tertiary is the HINT tier — kept clearly lighter than secondary so the
      two grays never read as one accidental value (audit F5). */
   --color-text-tertiary: #8a8694;
+  /* Muted-label tier — small labels that are REQUIRED reading (form field
+     labels, data captions) but must sit a step quieter than body copy.
+     4.53:1 on page-bg / 5.13:1 on surface (AA at 12-13px). The HINT tier
+     above is 3.09:1 — decorative only, never a label. */
+  --color-text-label-muted: #6f6a7d;
   --color-text-on-dark: #f9fafb;
   --color-text-on-dark-secondary: #d1d5db;
 
