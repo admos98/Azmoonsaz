@@ -40,6 +40,21 @@ function applyTheme(preference: ThemePreference, resolvedTheme: ResolvedTheme) {
   root.dataset.themePreference = preference;
   root.dataset.theme = resolvedTheme;
   root.style.colorScheme = resolvedTheme;
+  // Browser-chrome tint follows the RESOLVED theme, not the OS one: the
+  // metas in index.html carry media=(prefers-color-scheme) selectors, which
+  // track the OS — an in-app light flip on a dark-OS phone would keep the
+  // status bar dark over a light page. Write both colors with the matching
+  // media so the browser always picks the one for the current OS scheme.
+  const plate = resolvedTheme === 'dark' ? '#131220' : '#f2efe8';
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+    const media = meta.getAttribute('media');
+    const isDark = media?.includes('dark') ?? false;
+    meta.setAttribute('content', isDark ? '#131220' : plate);
+    if (!media) meta.setAttribute('content', plate);
+  }
+  // Zero-alpha sentinel keeps BOTH media metas "valid" for schemes the app
+  // overrides — the last written one wins at the browser's discretion, which
+  // is exactly the resolved-theme behavior we want.
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
