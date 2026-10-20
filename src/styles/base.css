@@ -227,6 +227,25 @@ body {
      so the plate moved out of the canvas — the canvas is GLASS-ONLY.) */
   display: block;
 }
+
+/* ─── Overscroll containment (iOS mover №3, doc FRONTEND-TASKS M2b) ─────
+   iOS rubber-band overscroll visually translates FIXED layers: the plate
+   (::before) and #glass-canvas both ride the band at the ends of a fling,
+   the "background moves with scroll" report. `contain` stops the scroll
+   chain AT the shell (the app page) so a page-end fling no longer drags
+   the fixed glass stack; the OS keeps its bounce everywhere else in the
+   browser chrome. Nested scrollers (notif list, exam body, dropdowns,
+   modals, drawers) get `contain` too so their inner drags never hand off
+   into the shell scroll mid-gesture — Apple-style, not the blunt `none`
+   on html, which would kill the browser-level bounce for everything. */
+#app-teacher-shell {
+  overscroll-behavior-y: contain;
+}
+/* Every nested scroller inside the shell inherits containment with one
+   universal rule — no per-component class to keep in sync. */
+#app-teacher-shell * {
+  overscroll-behavior: contain;
+}
 :root[data-glass-render='webgl'] [data-glass-paint='webgl'] {
   /* Transparent frame. backdrop-filter must die COMPLETELY: blurring the
      already-bent canvas pixels is the double-glass the lab neutralized.

@@ -1,0 +1,17 @@
+perf(glass): overscroll containment on the shell + plate circles removed
+
+- M2b: #app-teacher-shell gets overscroll-behavior-y: contain, one
+  universal contain rule for every nested scroller inside it. iOS
+  rubber-band no longer translates the fixed plate + glass-canvas at
+  page ends ("background moves with scroll" on Safari phone).
+- M4: delete both circle groups from bg-d-light/dark.svg (8 circles:
+  2 gold discs + 6 rings) and re-render the .2x.webp raster twins
+  with tools/render-plate-rasters.mjs (bg-e/f/g twins bit-identical).
+- audit doc rewritten: M2 re-rooted to the station split (fixed
+  #glass-canvas plane vs DOM children plane), M2-A anchoring plan,
+  M1 chrome pass bound to "bend menu/topbar via WebGL on ALL engines".
+
+Gates: check:glass, check:tokens, check:contrast, check:theme,
+check:persian, typecheck, vitest 43f/315t — all green. Master doc
+docs/FRONTEND-TASKS.md is the contract; phases were committed on main
+(f89622e et al) and never pushed (user rule: push only on explicit go).
