@@ -32,7 +32,8 @@ const OVERRIDES = new Map([
   ['src/pages/teacher/ExamPreview.tsx', 1891],
   ['src/pages/teacher/ExamResults.tsx', 1307],
   ['src/pages/teacher/ExamSettings.tsx', 1356],
-  ['src/pages/teacher/Students.tsx', 1163],
+  // Students.tsx: 1240→889; roster views + NID helpers in features/student-roster/*.
+  ['src/pages/teacher/Students.tsx', 889],
   ['src/test/config/glassMaterial.test.ts', 908],
   ['src/components/Topbar.tsx', 906],
   ['src/glass/glassController.ts', 697],
