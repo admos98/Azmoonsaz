@@ -84,7 +84,16 @@
  * (cap 120) + 1s bins, so a minutes-long run stays pastable.
  */
 
-import { glassStats, glassDriftStats, resetGlassDrift, type GlassEngineStats } from './glassController';
+import { glassStats } from './glassController';
+import { glassDriftStats, resetGlassDrift } from './glassDrift';
+import {
+  type PerfReport,
+  type SurfaceInfo,
+  type AnimInfo,
+  type SlowFrame,
+  type BinSample,
+} from './perfReporterTypes';
+import { buildUi } from './perfRecorderUi';
 
 /** A frame slower than this is below 60fps. */
 const JANK_MS = 16.7;
@@ -108,142 +117,6 @@ const FLOW_SEL = '.lens, .pane, .drop, .glx, .glx-strong';
 /** A running animation matching this is a loading/entrance tell, not motion. */
 const LOADING_ANIM_RE = /pulse|shimmer|skeleton|spin|progress|fade|appear|enter/i;
 
-interface SlowFrame {
-  t: number; // ms since recording started
-  d: number; // frame duration ms
-  f: number; // live filter[id^="lg-"] count
-  scrollV: number; // px/s at this frame
-  scrolling: boolean; // scroll event within SCROLL_IDLE_MS
-  longOverlap: boolean; // a JS longtask covered this frame
-  visArea: number; // visible filtered px (last 1s census)
-  urlArea: number; // …of which carrying url() bend
-  blurArea: number; // …of which blur-only
-  nested: number; // visible nested-in-glass surfaces (pure cost)
-  tr: number; // elements mid-transition
-  an: number; // elements mid-keyframe-animation
-  anims: string; // top animation names (max 3, comma-joined)
-  p: string; // pathname
-  /** Page advance (px) since the previous frame — the one-frame visual
-   *  trail bound: the fixed glass canvas paints at rAF-time scroll, so on
-   *  a frame-step of N px the panels sit up to N px behind the compositor's
-   *  display position at display time. High + no longtask = cadence-bound. */
-  step: number;
-}
-
-interface BinSample {
-  t: number;
-  fps: number;
-  filters: number;
-  maps: number;
-  posted: number; // engine.posted delta this bin (map churn)
-  hits: number;
-  worker: number;
-  sync: number;
-  scrollPx: number;
-  longMs: number; // longtask ms landing in this bin
-  mutAdded: number; // DOM nodes added this bin (React storm detector)
-  tr: number;
-  an: number;
-  /** Cumulative panel staleness at this bin's close (drift.maxStale, px) —
-   *  flat bins mean the glass kept up; a jump marks the bin where it fell
-   *  behind. */
-  stale: number;
-}
-
-interface SurfaceInfo {
-  cls: string;
-  w: number;
-  h: number;
-  r: number;
-  n: number;
-  bf: string; // computed backdrop-filter, truncated
-  hasUrl: boolean;
-  nested: boolean;
-  inView: boolean;
-  area: number;
-  /** Flow family (.lens/.pane/.drop) — the families the WebGL shader draws.
-   *  A flow surface with glassPaint 'webgl' is transparent BY DESIGN (the
-   *  canvas paints it); one WITHOUT means it fell back to the CSS material. */
-  flow?: boolean;
-  /** data-glass-paint as set by the controller. */
-  glassPaint?: string | null;
-}
-
-interface AnimInfo {
-  name: string;
-  tag: string;
-  cls: string;
-  n: number;
-  /** Likely a loading/entrance tell rather than real motion — skeletons,
-   *  pulses, spinners, fade-ins. Timer-driven fps can never idle while one
-   *  runs (iPhone Safari measures this), so the reader must be able to
-   *  discount them. */
-  isLoading?: boolean;
-}
-
-interface PerfReport {
-  meta: {
-    url: string;
-    ua: string;
-    dpr: number;
-    viewport: string;
-    startedAt: string;
-    durationMs: number;
-    frames: number;
-  };
-  summary: {
-    avgFps: number;
-    p1Fps: number;
-    p50Ms: number;
-    p95Ms: number;
-    p99Ms: number;
-    worstMs: number;
-    jankFrames: number; // > 16.7ms
-    stutterFrames: number; // > 33ms
-    droppedEstimate: number; // frames a 60fps budget would have shown but did not
-    longTasks: { count: number; totalMs: number; worstMs: number };
-    fpsScroll: number; // avg fps on frames with recent scroll input
-    fpsStill: number; // avg fps on frames sitting still
-    scrollPx: number; // total scroll distance during the run
-    mutAdded: number; // total DOM nodes added (re-render storm detector)
-  };
-  /** Binned over the run so a slow PERIOD is visible, not just a slow frame. */
-  timeline: BinSample[];
-  /** The frames that hurt, with their context. This is the payload. */
-  worst: SlowFrame[];
-  /** Glass elements at end of run — ties cost to concrete elements. */
-  surfaces: SurfaceInfo[];
-  /** Running animations grouped by name+target — the keep-dirty suspects. */
-  anims: AnimInfo[];
-  /** Whether the engine's map table grew over the run — the churn detector. */
-  filterCountStart: number;
-  filterCountEnd: number;
-  /** Map-pipeline oracle: posted/hit/worker/sync counts + table sizes. */
-  engine: GlassEngineStats;
-  /** Panel-position drift — the "panels fall behind / slide / bounce"
-   *  payload. Measured in the glass frame loop itself:
-   *    maxStale   — worst |paint_y − prevPaint_y| seen at paint time (px):
-   *                 how far the page advanced between two glass paints while
-   *                 the older paint's pixels were still displayed. Since the
-   *                 compositor scroll-sync landed this is the CONTENT
-   *                 freshness bound (the glass BOX tracks the DOM exactly at
-   *                 display time; the internal backdrop sample is this many
-   *                 px stale until the next paint);
-   *    meanStale  — average of nonzero staleness across the run;
-   *    staleFrames— frames where the painted position was > 0.5px stale;
-   *    ring       — the last 32 frames as [driftPx, stalePx, dtMs]:
-   *                 driftPx = page movement seen BETWEEN paints (the
-   *                 compositor-vs-rAF gap; a slide-back/bounce shows as
-   *                 sign flips on consecutive nonzero rows), dtMs = frame
-   *                 interval. Read the ring during a flick: drift ≈ one
-   *                 frame of motion means the trail is cadence-bound. */
-  drift: {
-    ring: Array<[number, number, number]>;
-    maxStale: number;
-    meanStale: number;
-    staleFrames: number;
-  };
-}
 
 declare global {
   interface Window {
@@ -652,99 +525,3 @@ export function installPerfRecorder(): void {
   console.info('[perf] recorder armed — press Record, or use __perf.start() / __perf.stop()');
 }
 
-/* ───────────────────────── minimal UI ───────────────────────── */
-/* Plain DOM, no JSX: the a11y button gate walks every TSX file under src and
-   this must not be a lint liability — a dev-only overlay has no business in
-   the design system. Styled inline so it cannot affect the token gates. */
-
-interface UiOps {
-  start: () => void;
-  stop: () => PerfReport;
-  copy: () => Promise<void>;
-  download: () => void;
-}
-
-function buildUi(ops: UiOps): void {
-  if (document.getElementById('__perf_ui')) return;
-  const box = document.createElement('div');
-  box.id = '__perf_ui';
-  box.setAttribute(
-    'style',
-    'position:fixed;right:12px;bottom:12px;z-index:2147483647;' +
-      'font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:#e8e8ea;' +
-      'background:rgba(18,18,20,.92);border:1px solid rgba(255,255,255,.16);' +
-      'border-radius:10px;padding:10px 12px;width:236px;backdrop-filter:blur(8px);' +
-      'box-shadow:0 8px 30px rgba(0,0,0,.4)',
-  );
-  const title = document.createElement('div');
-  title.textContent = 'perf recorder';
-  title.setAttribute('style', 'font-weight:600;margin-bottom:8px;opacity:.85');
-  const out = document.createElement('div');
-  out.setAttribute('style', 'min-height:34px;margin-bottom:8px;white-space:pre;opacity:.9');
-  out.textContent = 'idle — press Record';
-  const row = document.createElement('div');
-  row.setAttribute('style', 'display:flex;gap:6px;flex-wrap:wrap');
-  const mk = (label: string, fn: () => void) => {
-    const b = document.createElement('button');
-    b.textContent = label;
-    b.setAttribute(
-      'style',
-      'font:inherit;color:#e8e8ea;background:rgba(255,255,255,.09);border:1px solid ' +
-        'rgba(255,255,255,.18);border-radius:7px;padding:4px 9px;cursor:pointer',
-    );
-    b.onclick = fn;
-    return b;
-  };
-  let interval = 0;
-
-  const show = (r: PerfReport) => {
-    const e = r.engine;
-    const b = e.boot;
-    out.textContent =
-      `fps avg ${r.summary.avgFps}  p1 ${r.summary.p1Fps}\n` +
-      `scroll ${r.summary.fpsScroll}  still ${r.summary.fpsStill}\n` +
-      `p95 ${r.summary.p95Ms}ms  worst ${r.summary.worstMs}ms\n` +
-      `jank ${r.summary.jankFrames}  longtasks ${r.summary.longTasks.count}\n` +
-      `filters ${r.filterCountStart}->${r.filterCountEnd}\n` +
-      `render ${e.mode}/${e.drawn}  probe ${b.probe}\n` +
-      `tier ${b.tier} lens ${b.lens}${b.broken ? ' broken!' : ''}\n` +
-      `plate ${b.plate ?? '-'}${b.plateRetries ? ` r${b.plateRetries}` : ''}${b.plateSrc ? ` ${b.plateSrc}` : ''}${b.plateEsc ? ' esc' : ''}${b.plateTried?.length ? ` [${b.plateTried.join(' ')}]` : ''}\n` +
-      (b.plateProbe?.length ? `plateProbe ${b.plateProbe.join(' | ')}\n` : '') +
-      `maps ${e.maps} infl ${e.inflight} post ${e.posted} hit ${e.hits} wrk ${e.worker} sync ${e.sync}`;
-  };
-
-  const bRec = mk('Record', () => {
-    ops.start();
-    if (interval) clearInterval(interval);
-    interval = window.setInterval(() => {
-      // nodeValue, not textContent: assigning textContent replaces the child
-      // text node (1 addedNode per tick = a permanent 4-nodes/bin floor in our
-      // own mutation census). A characterData write moves no nodes.
-      const t = `● recording\n${(performance.now() / 1000).toFixed(1)}s  filters ${document.querySelectorAll('filter[id^="lg-"]').length}`;
-      if (out.firstChild) out.firstChild.nodeValue = t;
-      else out.textContent = t;
-    }, 250);
-    setUi();
-  });
-  const bStop = mk('Stop', () => {
-    if (interval) clearInterval(interval);
-    interval = 0;
-    show(ops.stop());
-    setUi();
-  });
-  const bCopy = mk('Copy report', () => void ops.copy());
-  const bDown = mk('Download', () => ops.download());
-  row.append(bRec, bStop, bCopy, bDown);
-  box.append(title, out, row);
-  document.body.appendChild(box);
-
-  function setUi(): void {
-    const recording = interval !== 0;
-    const hasReport = window.__perf?.report != null;
-    bRec.disabled = recording;
-    bStop.disabled = !recording;
-    bCopy.disabled = !hasReport;
-    bDown.disabled = !hasReport;
-  }
-  setUi();
-}

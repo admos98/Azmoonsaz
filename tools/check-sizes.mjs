@@ -34,16 +34,21 @@ const OVERRIDES = new Map([
   ['src/pages/teacher/ExamSettings.tsx', 1356],
   // Students.tsx: 1240→889; roster views + NID helpers in features/student-roster/*.
   ['src/pages/teacher/Students.tsx', 889],
-  ['src/test/config/glassMaterial.test.ts', 908],
+  // glassMaterial.test.ts: 950→677 — the material-family it extracted to glassMaterialFamily.test.ts.
+  ['src/test/config/glassMaterial.test.ts', 677],
   ['src/components/Topbar.tsx', 906],
-  ['src/glass/glassController.ts', 697],
+  ['src/glass/glassController.ts', 696],
   ['src/pages/teacher/TeacherProfile.tsx', 690],
   ['src/test/components/LibraryV2.test.tsx', 669],
   // mapMath: DOM-free shared math (main thread + worker). Its size IS the render-contract
   // documentation the audit pins (“DO NOT simplify any of these back”). FRONTEND-FINDINGS.md
   // Finding 5 blesses a documented cap for it.
   ['src/glass/mapMath.ts', 407],
-  ['src/glass/perfRecorder.ts', 664],
+  // perfRecorder: 752→528 — ?perf=1 report types → perfReporterTypes.ts, the DOM overlay → perfRecorderUi.ts.
+  ['src/glass/perfRecorder.ts', 527],
+  // webglRenderer: 1005→723 — GLSL + GL helpers extracted to webglShaders.ts. The rest is one
+  // cohesive state-bound class (plate pipeline + GL draw) that resists further seams.
+  ['src/glass/webglRenderer.ts', 722],
   // SecureExamPortal: 892→73 (wiring shell; logic in features/secure-exam/*) — OVERRIDES removed, generic 400 cap applies.
   ['src/pages/teacher/Dashboard.tsx', 627],
   ['src/pages/teacher/NewExam.tsx', 602],

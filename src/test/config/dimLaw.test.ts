@@ -144,7 +144,8 @@ describe('dim law — highlight-weighted wash toward the tint', () => {
     const lensEngine = readFileSync(join(root, 'src/glass/lensEngine.ts'), 'utf8');
     expect(lensEngine).toMatch(/dimTableValues\(/);
     expect(lensEngine).toMatch(/dimTableValues\(b, p\.dimTint\[[012]\], p\.dimLift\)/);
-    const renderer = readFileSync(join(root, 'src/glass/webglRenderer.ts'), 'utf8');
+    // The GLSL wash lives in webglShaders.ts (extracted from webglRenderer.ts 2026-10-20).
+    const renderer = readFileSync(join(root, 'src/glass/webglShaders.ts'), 'utf8');
     // the shader's wash matches dimChannel exactly (pre-clamped input, the
     // same form mapMath uses before the veil term)
     expect(renderer).toMatch(

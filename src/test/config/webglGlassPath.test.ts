@@ -25,6 +25,13 @@ import { readBundledCss } from '../cssConcat';
 
 const renderer = readFileSync(join(root, 'src/glass/webglRenderer.ts'), 'utf8');
 const controller = readFileSync(join(root, 'src/glass/glassController.ts'), 'utf8');
+// The renderer's shader sources live in webglShaders.ts (extracted 2026-10-20);
+// the three-lab-defects GLSL pins read there.
+const rendererShaders = readFileSync(join(root, 'src/glass/webglShaders.ts'), 'utf8');
+const pipelineSrc = readFileSync(join(root, 'src/glass/glassPipeline.ts'), 'utf8');
+const chainSrc = readFileSync(join(root, 'src/glass/glassChain.ts'), 'utf8');
+
+const syncQueueSrc = readFileSync(join(root, 'src/glass/glassSyncQueue.ts'), 'utf8');
 const boot = readFileSync(join(root, 'public/boot.js'), 'utf8');
 /** Comments stripped: the doc blocks discuss the very strings these gates
  *  assert, so comment text would satisfy an "it exists" check on its own. */
@@ -70,8 +77,8 @@ describe('webgl glass renderer (primary paint path)', () => {
     // 1. Border SDF sign: the corner branch must match the flat branches'
     //    ANTI-symmetric convention (negative inside). (1 - seMetric) paints
     //    four square corner patches on every panel.
-    expect(renderer).toContain('(seMetric(t.x, t.y, n) - 1.0) * r');
-    expect(renderer).not.toContain('(1.0 - seMetric');
+    expect(rendererShaders).toContain('(seMetric(t.x, t.y, n) - 1.0) * r');
+    expect(rendererShaders).not.toContain('(1.0 - seMetric');
     // 2. Texture raster must scale by DPR (and the plate raster is capped).
     expect(renderer).toMatch(/dpr/);
     expect(renderer).toContain('MAX_SIDE');
@@ -138,25 +145,36 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(controller).toContain('new GlassRenderer(');
     // Path arbitration must be per-flush and tier-aware, and a lost context
     // must permanently revert the session to the classic path.
-    expect(controller).toMatch(/renderMode\s*=\s*useWebgl\s*\?\s*'webgl'\s*:\s*'css'/);
+    // The path decision moved into the two-phase flush (glassFlush.ts, 2026-10-20),
+    // stored back through the host's setRenderMode.
+    expect(readFileSync(join(root, 'src/glass/glassFlush.ts'), 'utf8')).toMatch(
+      /setRenderMode\(useWebgl \? 'webgl' : 'css'\)/,
+    );
     expect(controller).toContain('webglcontextlost');
     expect(controller).toContain('webglBroken = true');
     // Fallback: the CSS dress path must still be reachable in the same flush.
-    expect(controller).toContain('function commit(');
-    expect(controller).toContain('requestBucketAsync');
+    // (flushSync lives in glassFlush.ts since the 2026-10-20 extraction.)
+    expect(readFileSync(join(root, 'src/glass/glassFlush.ts'), 'utf8')).toContain('function flushSync');
+        expect(syncQueueSrc).toContain('function commit(');
+    expect(syncQueueSrc).toContain('requestBucketAsync');
   });
 
   it('draws only panels whose true backdrop is the plate (glx served, floating stay CSS)', () => {
     // glx/glx-strong are shader-served (their Skia url() graph was the
     // dominant scroll cost); glx-dark stays CSS (fixed ink field).
-    expect(controller).toMatch(
+    // Kind classification (webglKindOf/GLX_ON_CSS) moved to glassPipeline.ts (2026-10-20).
+    expect(pipelineSrc).toMatch(
       /glx-dark'\)\)\s*return null;[\s\S]{0,600}GLX_ON_CSS\)\s*return null;[\s\S]{0,300}return 'lens';/,
     );
     // Floating/sticky/absolute and clipped backdrops are excluded in code.
-    expect(controller).toMatch(/function webglPlaceable[\s\S]{0,400}'fixed'/);
-    expect(controller).toMatch(/function webglPlaceable[\s\S]{0,800}overflowX/);
+    // Placeability gate moved to glassPipeline.ts (2026-10-20).
+    expect(pipelineSrc).toMatch(/function webglPlaceable[\s\S]{0,400}'fixed'/);
+    expect(pipelineSrc).toMatch(/function webglPlaceable[\s\S]{0,800}overflowX/);
     // Fall-through: a panel the shader cannot serve must reach the CSS path.
-    expect(controller).toMatch(/if \(el\.dataset\.glassPaint\) untrackWebgl\(el\);/);
+    // The fall-through path moved into the flush (glassFlush.ts, 2026-10-20).
+    expect(readFileSync(join(root, 'src/glass/glassFlush.ts'), 'utf8')).toMatch(
+      /if \(el\.dataset\.glassPaint\) untrackWebgl\(el\);/,
+    );
   });
 
   it('the CSS swap is atomic and scoped to drawn panels', () => {
@@ -179,12 +197,16 @@ describe('webgl glass renderer (primary paint path)', () => {
     );
     expect(paintBlock).not.toBeNull();
     expect(paintBlock![1]).toMatch(/backdrop-filter:\s*none\s*!important/);
-    expect(controller).toContain("setProperty('backdrop-filter', 'none', 'important')");
-    expect(controller).toContain("setProperty('-webkit-backdrop-filter', 'none', 'important')");
+// Inline paint-kill (applyPaintKill) moved to glassPipeline.ts (2026-10-20).
+    expect(pipelineSrc).toContain("setProperty('backdrop-filter', 'none', 'important')");
+    expect(pipelineSrc).toContain("setProperty('-webkit-backdrop-filter', 'none', 'important')");
     // applied at the atomic swap and on post-swap tracks; removed on untrack
     expect(controller).toMatch(/for \(const el of webglDrawSet\) applyPaintKill\(el\)/);
-    expect(controller).toMatch(/if \(glReady\) applyPaintKill\(el\)/);
-    expect(controller).toMatch(/function untrackWebgl[\s\S]{0,120}clearPaintKill\(el\)/);
+    // trackWebgl's post-swap kill moved with trackWebgl (glassPipeline.ts);
+    // glReady is read through the PipelineHost getter there.
+    expect(pipelineSrc).toMatch(/if \(glReady\(\)\) applyPaintKill\(el\)/);
+    // untrackWebgl moved with the staging block (glassPipeline.ts, 2026-10-20).
+    expect(pipelineSrc).toMatch(/function untrackWebgl[\s\S]{0,120}clearPaintKill\(el\)/);
     // Backgrounds: transparent for lens/pane/drop (the shader carries their
     // body); glx/glx-strong KEEP theirs — the shader must not invent a fill
     // the cascade may have overridden per element (measured +6/255).
@@ -212,8 +234,13 @@ describe('webgl glass renderer (primary paint path)', () => {
   });
 
   it('the data-glass tier wins: lite/off never boot the shader', () => {
-    expect(controller).toMatch(/function tierAllowsGlass[\s\S]{0,220}'lite'[\s\S]{0,120}'off'/);
-    expect(controller).toMatch(/const wantWebgl = tierAllowsGlass\(\)/);
+// Tier gate moved to glassPipeline.ts (2026-10-20); the boot call site stays.
+    expect(pipelineSrc).toMatch(/function tierAllowsGlass[\s\S]{0,220}'lite'[\s\S]{0,120}'off'/);
+    // The path decision moved into the two-phase flush (glassFlush.ts, 2026-10-20);
+    // tierAllowsGlass is imported from glassPipeline there.
+    expect(readFileSync(join(root, 'src/glass/glassFlush.ts'), 'utf8')).toMatch(
+      /const wantWebgl = tierAllowsGlass\(\)/,
+    );
   });
 
   it('motion fades reach the shader (inline opacity feeds the paint alpha)', () => {
@@ -294,8 +321,9 @@ describe('webgl glass renderer (primary paint path)', () => {
     // fine. The lab page bends on the same iPhone precisely because it
     // never crosses the getComputedStyle boundary. Extraction must decode;
     // clean serializations pass through byte-identical.
-    expect(controller).toContain("from './cssUrl'");
-    expect(controller).toContain('plateURLFromComputed');
+    // The iOS escape round-trip lives in glassPipeline.ts now (plateURLForTheme imports cssUrl).
+    expect(pipelineSrc).toContain("from './cssUrl'");
+    expect(pipelineSrc).toContain('plateURLFromComputed');
     expect(controller).not.toMatch(/return m \? m\[2\]/);
     expect(existsSync(join(root, 'src/glass/cssUrl.ts'))).toBe(true);
   });
@@ -306,8 +334,12 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(controller).toMatch(/plateSrc: renderer \? renderer\.plateSrc : null/);
     expect(controller).toMatch(/plateTried: renderer \? renderer\.plateTried : \[\]/);
     expect(controller).toMatch(/plateProbe: renderer \? renderer\.plateProbe : \[\]/);
-    expect(controller).toMatch(/plateRaw: plateRaw/);
-    expect(controller).toMatch(/plateEsc: plateEsc/);
+    // plateRaw/plateEsc moved to glassPipeline.ts (plateURLForTheme keeps them;
+    // plateSerialization() feeds the glassStats boot report).
+    expect(pipelineSrc).toMatch(/plateRaw = raw/);
+    expect(pipelineSrc).toMatch(/plateEsc = cssUnescape/);
+    expect(pipelineSrc).toContain('plateSerialization');
+    expect(controller).toContain('...(plateSerialization())');
   });
 
   it('a single shared draw list drives the frame, culled by rect', () => {
@@ -328,10 +360,15 @@ describe('webgl glass renderer (primary paint path)', () => {
     // Shader path: glx draws through the same chain as lens (fills + rim).
     // CSS path (no WebGL2 / lite-off / unplaceable): the engine's dress path
     // still attaches the url() filter graph for glx fall-through panels.
-    expect(controller).toMatch(/function chainOf[\s\S]{0,900}glx-strong/);
-    expect(controller).toContain('url(#');
+    // The CSS recipe (chainOf) moved to glassChain.ts (2026-10-20); the
+    // engine stays wired to it through bindSyncQueue's host.
+    expect(chainSrc).toMatch(
+      /function chainOf[\s\S]{0,900}glx-strong/,
+    );
+    // The url() attachment point moved to the extracted dress pipeline.
+    expect(syncQueueSrc).toContain('url(#');
     // …and the shader fills glx's body with the theme's own tint (a
     // hardcoded white would flip its dark appearance).
-    expect(renderer).toContain('u_fillTint');
+    expect(rendererShaders).toContain('u_fillTint');
   });
 });
