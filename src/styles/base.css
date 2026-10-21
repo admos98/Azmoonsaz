@@ -218,54 +218,6 @@ body {
 :root[data-glass-render='webgl'] #glass-canvas {
   display: block;
 }
-
-/* ─── M1 chrome plane — the floating glass (#glass-chrome) ─────────────
-   The floating panels (topbar lenses, menus, notification dropdown,
-   search/name pills, btn-glass circles) could never be served by
-   #glass-canvas: that plane sits UNDER the content (z-1), and a floating
-   panel's backdrop is content-over-plate. WebKit drops url() inside
-   backdrop-filter (bug 245510) so the CSS chain can't bend them either —
-   on Safari the chrome shipped flat. The chrome plane is the SAME shader
-   on a SECOND fixed canvas above the content: bend + specular rim on
-   every engine. Its rect is viewport-stable (fixed/sticky chains only —
-   chromeEligible refuses anything that scrolls), so unlike the main
-   canvas it needs NO sync translate, NO overscan: it paints at the raw
-   rect every frame past the idle gate. Panels self-deny with
-   data-glass-chrome set by glassChrome.ts; the attribute lands with the
-   same atomic-swap semantics as the main plane (canvas hidden until the
-   plate texture is up, data-glass-chrome attr on <html> gates it). */
-#glass-chrome {
-  display: none;
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  width: 100%;
-  /* lvh, not dvh: a DYNAMIC-height buffer re-allocates every frame of the
-     iOS 26 URL-bar collapse (same law as #glass-canvas and the plate). */
-  height: 100%;
-  height: 100lvh;
-  /* Above the content layer (z-10) and both main planes, below the chrome
-     CONTENT itself (header z-30, dropdown containers z-60+, modals z-50 —
-     modals are explicitly out of this pass, their lens sits over the
-     veil). z-29 keeps one rung of headroom under the header for the
-     header's own raised children. */
-  z-index: 29;
-  pointer-events: none;
-}
-:root[data-glass-chrome='webgl'] #glass-chrome {
-  display: block;
-}
-:root[data-glass-chrome='webgl'] [data-glass-chrome='webgl'] {
-  /* The chrome panel's DOM body fades for the shader the same way the
-     main plane's does (same atomic-swap model); text/controls stay. The
-     background is NOT transparented here — lens/pane/drop chrome panels
-     carry their gradient fill in DOM (paint-kill kills only the filter),
-     matching the main plane's :not(.glx) carve-out. */
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
 :root[data-glass-render='webgl'] #app-teacher-shell::before {
   /* The plate STAYS the DOM layer under the canvas (z-0 under z-1): the
      compositor scroll-sync translates the canvas element, and layers under

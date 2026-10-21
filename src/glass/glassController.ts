@@ -49,15 +49,6 @@ import {
   tierAllowsGlass,
   untrackWebgl,
 } from './glassPipeline';
-import {
-  bootChrome,
-  chromeStats,
-  chromePending,
-  refreshChromePlate,
-  shutdownChrome,
-  tickChrome,
-  untrackChrome,
-} from './glassChrome';
 
 /* ───────────────────── Ladder ───────────────────── */
 
@@ -167,7 +158,6 @@ export function glassStats(): GlassEngineStats {
     mode: renderMode,
     drawn: lastDrawCount,
     drawnChildren: drawnChildCount,
-    chrome: chromeStats(),
     boot: {
       probe: document.documentElement.dataset.paint ?? null,
       supported: webglSupported,
@@ -198,7 +188,6 @@ function undressNested(el: HTMLElement): void {
   delete el.dataset.lastQuickKey;
   byEl.delete(el);
   untrackWebgl(el);
-  untrackChrome(el);
 }
 
 /* ── Lever A: viewport-gated bend (zero visual loss) ─────────────────────
@@ -218,8 +207,8 @@ function isInExtendedViewport(el: HTMLElement): boolean {
 /** Park an offscreen panel: clear the inline url() chain, forget the key so
  *  re-entry re-dresses. Guarded: no style write when already parked. */
 function parkOffscreen(el: HTMLElement): void {
-  // Drawn panels stay tracked (the loop culls by rect); CSS-backed ones
-  // (glx*, floating, non-webgl) park as they always have.
+  // Drawn panels stay tracked (the frame loop culls by rect); CSS-backed
+  // panels (glx*, floating, non-webgl) park exactly as they always have.
   if (renderMode === 'webgl' && webglDrawSet.has(el)) return;
   if (el.style.backdropFilter) el.style.backdropFilter = '';
   if (el.dataset.lastQuickKey) delete el.dataset.lastQuickKey;
@@ -244,8 +233,9 @@ function tryInitWebgl(): void {
     canvas.setAttribute('aria-hidden', 'true');
     shell.insertBefore(canvas, shell.firstChild);
     const r = new GlassRenderer(canvas);
-    /* Overscan: the sync translate moves the box up to a frame of motion;
-       the shader lays panels over a taller canvas (0 without the sync). */
+    /* Overscan (--glass-ov): the sync translate moves the box up to a frame
+       of motion each way — the shader lays panels over a taller canvas; 0
+       without scroll-driven animations. */
     r.ov = parseFloat(getComputedStyle(canvas).getPropertyValue('--glass-ov')) || 0;
     canvas.addEventListener('webglcontextlost', () => shutdownWebgl(true), false);
     renderer = r;
@@ -266,12 +256,10 @@ function tryInitWebgl(): void {
     glCanvas = null;
     if (canvas) canvas.remove();
   }
-  // The chrome plane boots behind the main one (its context loss is
-  // non-fatal; see glassChrome.ts).
-  bootChrome();
 }
 
-/** Theme flip: re-load both plates behind the load-id race guards. */
+/** Theme flip: re-load the plate artwork behind the atomic swap guard
+ *  (setPlate has its own load-id race guard). */
 function refreshPlate(): void {
   if (!renderer) return;
   const url = plateURLForTheme();
@@ -282,7 +270,6 @@ function refreshPlate(): void {
     glDirty = true; // the plate under the fixed canvas changed — repaint
     void renderer.setPlate(url).catch(() => renderer?.retryPlate(url));
   }
-  refreshChromePlate();
 }
 
 /** Effective opacity of the panel INCLUDING fading wrappers (computed
@@ -308,7 +295,6 @@ function glFrame(): void {
   const r = renderer;
   const canvas = glCanvas;
   if (!r || !canvas) return;
-  tickChrome();
   if (!canvas.isConnected) {
     // The shell unmounted (route change) — park the whole path; CSS owns
     // whatever is on screen now, and a later shell re-inits from scratch.
@@ -358,9 +344,7 @@ function glFrame(): void {
      on screen, pixel-identical because nothing moved). */
   const aNow = webglDrawSet.size;
   const idleKey = `${yNow}|${aNow}|${drawnSig()}`;
-  const alphaMoving =
-    (webglDrawSet.size > 0 && Array.from(webglDrawSet).some((el) => effectiveAlpha(el) < 0.999)) ||
-    chromePending();
+  const alphaMoving = webglDrawSet.size > 0 && Array.from(webglDrawSet).some((el) => effectiveAlpha(el) < 0.999);
   if (!glDirty && idleKey === lastIdleKey && !alphaMoving) {
     lastDrawCount = lastDrawnCount;
     return;
@@ -469,7 +453,6 @@ function shutdownWebgl(lost: boolean): void {
   // Sync vars die with the canvas; reset module state for a clean re-mount.
   syncPaintY = -1;
   syncRange = -1;
-  shutdownChrome(lost);
   if (renderer) {
     renderer.plateURL = ''; // stop any pending plate retries on a dead renderer
     try {
@@ -549,7 +532,7 @@ export function mountGlassEngine(): void {
   if (mounted) return;
   mounted = true;
 
-  // Hosts: data flows DOWN from engine state (bind* are idempotent).
+  // The dress pipeline (glassSyncQueue) reaches engine state through this host.
   bindSyncQueue({
     stats,
     MAP_TABLE,
@@ -566,7 +549,7 @@ export function mountGlassEngine(): void {
     pruneDead,
   });
 
-  // The WebGL staging host.
+  // The WebGL staging (glassPipeline) reaches engine state through this host.
   bindPipeline({
     markDirty: () => {
       glDirty = true;
@@ -578,6 +561,7 @@ export function mountGlassEngine(): void {
     shellAt,
   });
 
+  // The two-phase flush reaches engine state through this host.
   bindFlush({
     isMounted: () => mounted,
     tracked,
@@ -597,7 +581,9 @@ export function mountGlassEngine(): void {
   resizeObserver = new ResizeObserver((entries) => {
     for (const e of entries) {
       const el = e.target as HTMLElement;
-      // Rebuild once size STOPS changing (tweens settle in one map, not 12).
+      // Rebuild once the size STOPS changing: a tween reports a new size
+      // every frame; syncing only when two consecutive rAF samples agree
+      // costs a 200ms width animation one map, not 12.
       el.dataset.pendingSize = `${el.offsetWidth}x${el.offsetHeight}`;
       if (el.dataset.settleRaf) continue;
       el.dataset.settleRaf = '1';
@@ -626,8 +612,9 @@ export function mountGlassEngine(): void {
   });
 
   // Lever A: viewport gate. Entry re-queues (cache hit); EXIT parks
-  // immediately (guarded clear, no layout). Entries while unmounted or
-  // glass-off are safe no-ops.
+  // immediately — guarded clear, no layout, so an offscreen panel stops
+  // burning its filter the same frame it leaves the 300px band. Entries
+  // arriving while !mounted or glass-off are safe no-ops.
   viewObserver = new IntersectionObserver(
     (entries) => {
       for (const e of entries) {

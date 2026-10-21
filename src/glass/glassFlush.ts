@@ -22,7 +22,6 @@ import {
   webglPlaceable,
 } from './glassPipeline';
 import { commit } from './glassSyncQueue';
-import { trackChrome, untrackChrome, chromeEligible } from './glassChrome';
 import type { GlassKind, GlassPaintParams } from './webglRenderer';
 
 /** Host-bridge into the engine's live state. Bound once at mount. */
@@ -134,7 +133,6 @@ function flushSync(): void {
     params: GlassPaintParams;
     childOf?: HTMLElement;
   }[] = [];
-  const chromeTodo: { el: HTMLElement; kind: GlassKind; params: GlassPaintParams }[] = [];
   for (const el of batch) {
     if (!el.isConnected) {
       tracked.delete(el);
@@ -178,22 +176,9 @@ function flushSync(): void {
       const wk = webglKindOf(el);
       const cs = getComputedStyle(el);
       if (wk && webglPlaceable(el, cs)) {
-        // A panel the chrome plane took yesterday but is placeable today
-        // (dropdown portals etc.) returns to the main station cleanly.
-        untrackChrome(el);
         glTodo.push({ el, kind: wk, params: paramsForWebgl(el, cs) });
         continue;
       }
-      if (wk && chromeEligible(el, cs)) {
-        // M1 chrome pass: a floating panel whose backdrop is provably
-        // unrestricted glass over the plate draws on the SECOND shader
-        // plane (#glass-chrome, above content) — bend + rim on every
-        // engine, WebKit included (bug 245510 kills url() there).
-        untrackWebgl(el);
-        chromeTodo.push({ el, kind: wk, params: paramsForWebgl(el, cs) });
-        continue;
-      }
-      untrackChrome(el);
       // Not shader-served: hand it back to the CSS path BEFORE the offscreen
       // gate below, so a formerly-drawn panel (DOM move, class swap) parks
       // and re-dresses exactly like any other CSS panel. Attribute/style
@@ -234,7 +219,6 @@ function flushSync(): void {
       if (t.childOf) trackWebglChild(t.el, t.kind, t.params, t.childOf);
       else trackWebgl(t.el, t.kind, t.params);
     }
-    for (const t of chromeTodo) trackChrome(t.el, t.kind, t.params);
   }
   // Runs in BOTH modes: the pure-CSS path, and WebGL fall-through panels
   // (glx*/floating) which keep the engine's maps + filter graphs. Cache
