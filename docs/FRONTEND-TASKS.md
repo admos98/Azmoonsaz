@@ -154,6 +154,40 @@ mover; the anchor fix below removes the structural split itself.
 
 ## 2A. Finding M2-A (the root fix): migrate child glass INTO the parent plane — one station per panel tree
 
+> **LANDED 2026-10-20** — the mechanism below is implemented in the engine
+> (`glassFlush.ts` child branch, `glassPipeline.ts`
+> trackWebglChild/canvasParentOf/parentPaintFor, `webglRenderer.drawPanel`
+> parent frost, GLASS_FS `u_p*` uniforms). The original design text is kept
+> under "Design intent" for the material contract; "What shipped" is the
+> authoritative account.
+
+**What shipped.** A glass child whose nearest glass ancestor IS itself a
+canvas-eligible panel (webglKindOf + webglPlaceable — read from the parent's
+own state, never its dataset, so parent + child arriving in one flush batch
+both land on the canvas the same pass) joins the parent's station:
+
+- Same draw set, same paint clock, same `--glass-sync` translate; rect
+  sampled from the same frame as the parent's. One plane, three clocks →
+  one. `data-glass-child='webgl'` marks it (NOT data-glass-paint, whose CSS
+  block transparents backgrounds — the child's de-nest quiet fill must
+  survive; only its filter is killed inline, to be replaced by the shader).
+- Painter order: parents first, then children (`glFrame` two-pass), so a
+  child is never trampled by its own parent drawn later. A child whose host
+  left the draw set is skipped with it.
+- Backdrop semantics: what a CSS backdrop root passes down is the parent's
+  finished composite — the parent's dim wash + fill step are frozen into
+  `ParentPaint` uniforms (`u_pDim`, `u_pDimTint/…`, `u_pFillA`, `u_pFillTint`)
+  and applied to the child's displaced plate sample before its own chain.
+  The parent's fill alpha is evaluated once at the child's centre along the
+  parent's CSS gradient axis (position-dependent term). The parent's rim
+  displacement/specular arc are deliberately skipped: edge-weighted maps read
+  zero in the interior where children sit; documented approximation.
+- Rank bound: 2 (panel → inside-panel). A grandchild (nearest glass ancestor
+  has no canvas paint) keeps the CSS quiet material.
+- Counters: `?perf=1` `engine.drawnChildren` reports anchored children per
+  frame; the source contract is pinned in
+  `src/test/config/glassChildStation.test.ts`.
+
 **Design intent:** glass-in-glass is already refused as *filters*, but
 the *children* of a bending panel are plain DOM that composites over the
 canvas — two planes, three clocks. The master fix makes the panel tree
@@ -168,7 +202,8 @@ split line:
    `parentRect + localOffset`), not a DOM-plane surface. The backdrop
    it samples is the parent's panel backdrop as the shader already
    computes it — one blur pipeline, one clock. Nesting depth is
-   bounded at 2 ranks: panel → inside-panel.
+   bounded at 2 ranks: panel → inside-panel.  ✅ as the child-station
+   draw + frozen parent terms.
 2. **DOM keeps only text/controls.** What remains in the DOM layer of
    a parent panel is content (text, controls, art), which never needs
    its own glass clock — it scrolls WITH the panel rectangle because
@@ -184,13 +219,17 @@ split line:
    (`pref-row`, builder rows) that today correctly reads as non-glass
    remains non-glass by CLASS, not by plane. What this fix changes is
    not "nested glass gets a bend" (that stays wrong) but "child glass
-   positions differently from its parent glass."
+   positions differently from its parent glass."  ✅ the de-nest quiet
+   fill survives verbatim under the child's own shader bend.
 
 Acceptance (phone AND desktop): scroll a big panel containing
 builder/row glass at high velocity in both engines — zero relative
 motion between panel and children across the whole gesture, including
 at scroll conclusion after a fling; `?perf=1` child-panel counts report
 identical rects to their parent's mapped space for all sampled frames.
+→ Device pass pending on the real phone (the desktop side is verified
+by the source contract + counters; the phone case re-tests in the same
+session as M1's device check).
 
 ---
 
@@ -331,13 +370,12 @@ discs; a before/after `?perf=1` plate dump confirms only removal.
 
 ## 6. Priorities & order
 
-1. **M2b overscroll/contain** — small, isolated, kills the rubber-band
-   mover on iPhone immediately.
-2. **M2-A child-glass anchoring** — the root fix for "children separate
-   from their panel" on phone AND desktop; measured before/after with
-   `?perf=1` rect probes.
+1. ~~**M2b overscroll/contain**~~ — ✅ LANDED (`4784a2a`).
+2. ~~**M2-A child-glass anchoring**~~ — ✅ LANDED 2026-10-20 (see 2A "What
+   shipped"; desktop verified, device pass rides M1's phone check).
 3. **M4 plate circles** — asset surgery + raster regen, half a session.
-4. **M2c theme-color + topbar probe** — small, one design decision.
+4. ~~**M2c theme-color + topbar probe**~~ — ✅ LANDED (`5287ff5`; the topbar
+   probe stays open until field reports name a status-bar flash).
 5. **M1 chrome pass (menu/topbar/floating bend on WebGL, all engines)** —
    the master fix for the bending gap. Build last, plan first:
    `?glxf=0` lever, offscreen texture budget, device test at every
@@ -362,6 +400,11 @@ discs; a before/after `?perf=1` plate dump confirms only removal.
     `perfRecorderUi`); `glassMaterial.test.ts` 950→677 +
     `glassMaterialFamily.test.ts` 320. Engine design history lives in
     `docs/glass-engine.md`.
+- The 2026-10-20 audit (this doc): M2b overscroll containment (`4784a2a`),
+  M2c theme-color sync (`5287ff5`), **M2-A child-glass anchoring** — glass
+  children of canvas-drawn parents join the parent's station (one plane,
+  one clock; parent frost frozen into uniform terms; `?perf=1`
+  `drawnChildren`); contract pinned in `src/test/config/glassChildStation.test.ts`.
 - Still open from the 2026-10-15 doc:
   - **Visual-regression tooling** — no screenshots, no CI image diff. A
     single broken glass rule or missing art asset ships silently today;

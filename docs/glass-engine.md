@@ -63,4 +63,29 @@ visible. Resting in-view output is byte-identical: zero visual loss by
 construction. A flush-time rect check is authoritative (IO timing can't be
 trusted at boot); a dress-time guard covers worker maps resolving while
 offscreen.
-/
+
+## Child-glass anchoring (2026-10-20, M2-A)
+
+The station split: panel glass painted on the canvas plane, nested glass
+children on the DOM plane — during scroll the two groups moved on
+different clocks (the reported "children slide inside their own panel").
+
+Fix: a glass child whose nearest glass ancestor is itself canvas-eligible
+joins the parent's station. Eligibility read from the parent's own gate
+(webglKindOf + webglPlaceable), never its dataset — a parent and child
+arriving in one flush batch both land on the canvas the same pass. The
+child marks `data-glass-child='webgl'` (NOT data-glass-paint: that CSS
+block transparents backgrounds, and the child's de-nest quiet fill must
+survive; only its filter is killed inline). `glFrame` draws parents
+first, then children, so painter order cannot be trampled; a child whose
+host left the draw set is skipped with it.
+
+Backdrop semantics: what a CSS backdrop root passes down is the parent's
+finished composite — dim wash + fill step frozen into `ParentPaint`
+uniforms, applied to the child's displaced plate sample before its own
+chain (`u_pHas` gates the GL block). The parent's fill alpha is evaluated
+once at the child's centre along the parent's CSS gradient axis. The
+parent's rim displacement/specular arc are skipped intentionally:
+edge-weighted maps read zero in the interior where children sit. Rank
+bound: 2 (panel → inside-panel); grandchildren keep the CSS quiet
+material. Counter: `?perf=1` `engine.drawnChildren`.

@@ -38,9 +38,7 @@ const boot = readFileSync(join(root, 'public/boot.js'), 'utf8');
 const code = (s: string) =>
   s
     .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .map((l) => l.replace(/^\s*\/\/.*$/, ''))
-    .join('\n');
+    .replace(/^\s*\/\/.*$/gm, '');
 const css = cssNoComments(readBundledCss());
 
 function cssNoComments(s: string): string {

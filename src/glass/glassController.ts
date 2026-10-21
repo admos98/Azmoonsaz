@@ -2,19 +2,12 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  *
- * Liquid-glass controller — BATCHED EDITION.
- *
- * Deduped batched dress pipeline over cached exact-size maps; the primary
- * renderer is the WebGL2 shader (webglRenderer.ts). Modules around it:
- *   glassTokens  — computed-style readers (shape + tint helpers, boot params)
- *   glassDrift   — the ?perf=1 drift waveform (reads window scroll, no state)
- *   glassMaps    — MAP_TABLE/FILTERS caches + the sync data-URI bucket build
- *   glassSyncQueue — dressPanel/commit + the map-worker pipeline (host contract)
- *
- * The full design history — why the engine is batched (27fps profile with
- * 121 long tasks), the WebGL2 rationale (Skia url() raster, per frame),
- * Lever A's viewport gate and the compositor scroll-sync — lives in
- * docs/glass-engine.md.
+ * Liquid-glass controller — BATCHED EDITION. Batched dress pipeline over
+ * cached exact-size maps; the primary renderer is the WebGL2 shader
+ * (webglRenderer.ts). Leaf modules: glassTokens (style readers), glassDrift
+ * (?perf=1 waveform), glassMaps (caches), glassSyncQueue (dress+worker),
+ * glassChain (CSS recipes), glassPipeline (webgl staging), glassFlush
+ * (two-phase batch). Design history: docs/glass-engine.md.
  */
 
 import type { LensParams } from './lensEngine';
@@ -50,6 +43,7 @@ import {
   applyPaintKill,
   drawnSig,
   bindPipeline,
+  parentPaintFor,
   plateSerialization,
   plateURLForTheme,
   tierAllowsGlass,
@@ -80,13 +74,17 @@ type RenderMode = 'webgl' | 'css';
 interface PaintEntry {
   kind: GlassKind;
   params: GlassPaintParams;
+  /** M2-A: non-null when this panel is a canvas CHILD of a drawn parent —
+   *  the frame loop draws children after parents and freezes the parent's
+   *  dim/fill into their backdrop. */
+  childOf?: HTMLElement;
 }
 
 /** Paint capability — settled before first paint by the boot probe
- *  (public/boot.js → html[data-paint]); the inline fallback covers a boot
+ *  (public/boot.js → html[data-paint]) with an inline fallback for a boot
  *  without the script. Pure WebGL2 capability: the lab-validated renderer
- *  beats the url() raster path even on software stacks, and the data-glass
- *  lite/off tiers stay the perf valve. */
+ *  beats the url() raster path even on software stacks; lite/off tiers are
+ *  the perf valve. */
 const webglSupported = (() => {
   const probe = document.documentElement.dataset.paint;
   if (probe === 'gl') return true;
@@ -110,6 +108,8 @@ let lastGlFrameT = 0;
 let glDirty = true;
 let lastIdleKey = '';
 let lastDrawnCount = 0;
+/** M2-A: canvas children drawn in the last frame (the anchored sub-panels). */
+let drawnChildCount = 0;
 
 let renderMode: RenderMode = 'css';
 let renderer: GlassRenderer | null = null;
@@ -126,15 +126,13 @@ const SCROLL_SYNC_SUPPORTED =
   typeof CSS !== 'undefined' &&
   typeof CSS.supports === 'function' &&
   CSS.supports('animation-timeline', 'scroll()');
-/** The scroll offset the last painted frame was drawn for. Published to
- *  --glass-sync at paint time; the compositor reads it on the animation
- *  clock. -1 = nothing painted yet (the var must not exist before the first
- *  real paint, or the canvas would translate before its backdrop is ready). */
+/** The scroll offset the last painted frame was drawn for — published to
+ *  --glass-sync at paint time. -1 = nothing painted yet (the var must not
+ *  exist before the first real paint, or the canvas translates early). */
 let syncPaintY = -1;
 /** The scroller's travel (scrollHeight − clientHeight), published to
- *  --glass-range when it changes. The sync keyframes need it because the
- *  scroll() timeline's progress is normalized 0..1 — `translate(painted −
- *  progress·range)` is the un-normalized form. */
+ *  --glass-range: the timeline progress is normalized 0..1, and
+ *  `translate(painted − progress·range)` needs the un-normalized form. */
 let syncRange = -1;
 let webglBroken = false;
 let shellElCache: HTMLElement | null = null;
@@ -142,10 +140,9 @@ let plateURL = '';
 const paintCache = new WeakMap<HTMLElement, PaintEntry>();
 const webglDrawSet = new Set<HTMLElement>();
 
-/* Engine counters — the ?perf=1 oracle for the map pipeline. posted =
-   builds sent to the worker, hits = panels dressed from cache (sub-frame),
-   worker = panels dressed from worker maps, sync = panels that paid the
-   main-thread data-URI fallback. Read via glassStats(). */
+/* Engine counters — the ?perf=1 oracle: posted = builds sent to the worker,
+   hits = panels dressed from cache, worker = from worker maps, sync = panels
+   that paid the main-thread data-URI fallback. Read via glassStats(). */
 const stats = { posted: 0, hits: 0, worker: 0, sync: 0 };
 
 /** Snapshot of the map pipeline — consumed by the ?perf=1 report. */
@@ -160,6 +157,7 @@ export function glassStats(): GlassEngineStats {
     filters: FILTERS.size,
     mode: renderMode,
     drawn: lastDrawCount,
+    drawnChildren: drawnChildCount,
     boot: {
       probe: document.documentElement.dataset.paint ?? null,
       supported: webglSupported,
@@ -181,8 +179,8 @@ export function glassStats(): GlassEngineStats {
 
 /**
  * Strip a dressed panel back to its CSS material. Runs when a dressed element
- * BECOMES nested (a DOM move can nest an already-dressed panel) so a stale
- * inline url() — which beats the stylesheet de-nest rule — can never survive.
+ * BECOMES nested (a DOM move nests an already-dressed panel) so a stale
+ * inline url() — which beats the stylesheet de-nest rule — never survives.
  * Guarded: no DOM write when there is nothing to clear.
  */
 function undressNested(el: HTMLElement): void {
@@ -197,9 +195,8 @@ function undressNested(el: HTMLElement): void {
  * the MAP_TABLE/FILTERS hit path (string ops, sub-frame). */
 const VIEW_MARGIN = 300;
 
-/** True when any part of the element lies within the viewport expanded by
- *  VIEW_MARGIN. Authoritative at flush time — IO timing can't be trusted at
- *  boot (entries fire after first paint). Read-only: stays in PHASE A. */
+/** True when any part of the element lies in the viewport + VIEW_MARGIN.
+ *  Authoritative at flush time (IO timing can't be trusted at boot). */
 function isInExtendedViewport(el: HTMLElement): boolean {
   const r = el.getBoundingClientRect();
   const vh = window.innerHeight;
@@ -236,10 +233,9 @@ function tryInitWebgl(): void {
     canvas.setAttribute('aria-hidden', 'true');
     shell.insertBefore(canvas, shell.firstChild);
     const r = new GlassRenderer(canvas);
-    /* Overscan (--glass-ov on the canvas): the sync translate moves the box
-       by up to a frame of motion each way, so the shader must lay panels and
-       the plate sample over a taller canvas — 0 when the engine has no
-       scroll-driven animations (the @supports guard zeroes the token). */
+    /* Overscan (--glass-ov): the sync translate moves the box up to a frame
+       of motion each way — the shader lays panels over a taller canvas; 0
+       without scroll-driven animations. */
     r.ov = parseFloat(getComputedStyle(canvas).getPropertyValue('--glass-ov')) || 0;
     canvas.addEventListener('webglcontextlost', () => shutdownWebgl(true), false);
     renderer = r;
@@ -276,10 +272,9 @@ function refreshPlate(): void {
   }
 }
 
-/** Effective opacity of the panel INCLUDING fading wrappers (motion sets
- *  opacity inline on the animated element and/or its parents; computed
- *  opacity is per-element, so the product up to the shell is the paint
- *  alpha). Reads only — runs inside the draw loop. */
+/** Effective opacity of the panel INCLUDING fading wrappers (computed
+ *  opacity is per-element; the product up to the shell is the paint alpha).
+ *  Read-only — runs inside the draw loop. */
 function effectiveAlpha(el: HTMLElement): number {
   let a = 1;
   let n: HTMLElement | null = el;
@@ -306,13 +301,10 @@ function glFrame(): void {
     shutdownWebgl(false);
     return;
   }
-  /* Resize first (cheap; it is a no-op unless the canvas box changed) and
-     treat a real buffer re-allocation as a dirty frame — the buffer is
-     cleared by the browser on resize. The REST of the frame (clear + panels)
-     runs only past the idle gate below. NO backdrop draw: the canvas is
-     GLASS-ONLY since the compositor scroll-sync — the plate stays the DOM
-     layer UNDER the canvas (base.css), the shader samples it as a texture,
-     and the translated canvas must never drag it. */
+  /* Resize first (no-op unless the box changed); a real buffer re-allocation
+     is dirty — the browser clears it. The rest runs only past the idle gate.
+     NO backdrop draw: GLASS-ONLY canvas since the sync — the plate stays the
+     DOM layer UNDER the canvas; a translated canvas must never drag it. */
   const before = `${canvas.width}x${canvas.height}`;
   r.resizeFrame();
   const resized = before !== `${canvas.width}x${canvas.height}`;
@@ -332,34 +324,24 @@ function glFrame(): void {
   const M = 96;
 
   /* Panel placement — LIVE layout rects, no lead term. The stale-vs-display
-     correction now happens ON THE COMPOSITOR (see base.css sync keyframes):
-     this frame paints at scrollY yNow and publishes yNow to --glass-sync;
-     the compositor translates the canvas by (yNow − liveY) so the glass
-     displays EXACTLY where the DOM is. Painting at the raw rect (rather
-     than rect+lead) is required for correctness: the shader samples the
-     plate texture in unmoved viewport coordinates, and rect.top already IS
-     the panel's position at yNow.
-     History: a display-time lead lived here for two generations; both were
-     removed (v1 stuttered, v2's EMA decay read as "sliding ahead and easing
-     back"). The lead is now exact and compositor-owned, not estimated. */
+     correction happens ON THE COMPOSITOR (base.css sync keyframes): this
+     frame paints at yNow and publishes it to --glass-sync, so the glass
+     displays exactly where the DOM is. Raw rects are required: the shader
+     samples the plate in unmoved viewport coordinates, and rect.top already
+     IS the panel's position at yNow. (A display-time lead lived here for two
+     generations; both removed — v1 stuttered, v2 eased back.) */
   const yNow = window.scrollY;
   const nowMs = performance.now();
   driftSample(yNow, nowMs, nowMs - lastGlFrameT);
   lastGlFrameT = nowMs;
   driftMarkPaint(yNow);
 
-  /* IDLE GATE — do not repaint an unchanged frame. The canvas is fixed and
-     full-viewport: repainting it at 60Hz while nothing moves burns GPU on
-     every device and measurably LOWERS fps on the still frames (the panel
-     under test measured fpsStill 36 < fpsScroll 52 — the loop was the
-     cost). A frame is repainted only when one of these changed:
-       · scroll position (panels are placed in viewport coords),
-       · the draw set / geometry (layout, route, keepers),
-       · a panel's alpha mid-fade (motion opacity),
-       · the theme/plate (handled by the explicit dirty flag below),
-       · a resize.
-     Everything else skips the GL work entirely — the previous frame stays
-     on screen, which is pixel-identical because nothing moved. */
+  /* IDLE GATE — do not repaint an unchanged frame. Repainting a fixed
+     full-viewport canvas at 60Hz while nothing moves burns GPU and MEASURABLY
+     LOWERS still fps (panel under test: 36 still < 52 scroll). Repaint only
+     when scroll, draw set/geometry, a mid-fade alpha, the theme/plate, or a
+     resize changed; otherwise skip the GL work (the previous frame stays
+     on screen, pixel-identical because nothing moved). */
   const aNow = webglDrawSet.size;
   const idleKey = `${yNow}|${aNow}|${drawnSig()}`;
   const alphaMoving = webglDrawSet.size > 0 && Array.from(webglDrawSet).some((el) => effectiveAlpha(el) < 0.999);
@@ -371,25 +353,19 @@ function glFrame(): void {
   glDirty = false;
 
   /* Publish the sync state to the compositor — ONLY past the gate, because
-     the var is a claim: "the pixels now being painted correspond to scroll
-     offset yNow". The glass-sync timeline (base.css) reads it and translates
-     the canvas by (painted − live) on the compositor clock, so painted glass
-     is displayed exactly where the DOM is at display time — no trail, at any
-     velocity. --glass-range is the scroller's travel: the timeline progress
-     is normalized 0..1, so translate = yNow − progress·range must know the
-     un-normalized range. Range uses clientHeight (NOT innerHeight): that is
-     the exact denominator of the root scroll range and of the scroll()
-     timeline. Engines without scroll-driven animations never reach this
-     block (SCROLL_SYNC_SUPPORTED is false, and the @supports guard in
-     base.css additionally disables the animation itself). */
+     the var is a claim: "the pixels now painted correspond to scroll offset
+     yNow". The glass-sync timeline translates the canvas by (painted − live)
+     on the compositor clock, so painted glass displays exactly where the DOM
+     is at any velocity. Range uses clientHeight (the exact denominator of the
+     root scroll range and of the scroll() timeline). Engines without
+     scroll-driven animations never reach this block. */
   if (SCROLL_SYNC_SUPPORTED) {
     const range = Math.max(
       0,
       document.documentElement.scrollHeight - document.documentElement.clientHeight,
     );
-    /* Vars go on the CANVAS, not <html>: custom-property changes on the root
-       invalidate style for the whole (inheriting) subtree — a per-frame
-       full-document invalidation. On the canvas the invalidation is scoped
+    /* Vars live on the CANVAS, not <html>: a root custom-property change
+       invalidates style for the whole subtree per frame; here it is scoped
        to the single animated element. */
     if (range !== syncRange) {
       syncRange = range;
@@ -405,23 +381,32 @@ function glFrame(): void {
   // Past the gate: this frame is actually (re)painted.
   r.beginFrame();
 
+  /* Two passes (M2-A): parents first, then their glass children ON TOP —
+     the child must not be trampled by its parent drawn later; a child whose
+     host is culled/unmounted is skipped with it (it samples the parent's
+     terms, so a parent-less child would paint a wrong station). */
   let drawn = 0;
+  let childCount = 0;
+  const kids: { el: HTMLElement; entry: PaintEntry }[] = [];
   for (const el of webglDrawSet) {
     if (!el.isConnected) {
       webglDrawSet.delete(el);
       continue;
     }
+    const entry = paintCache.get(el);
+    if (!entry) continue;
+    if (entry.childOf) {
+      kids.push({ el, entry });
+      continue;
+    }
     const rect = el.getBoundingClientRect();
     if (rect.bottom < -M || rect.top > vh + M || rect.right < -M || rect.left > vw + M) continue;
     if (rect.width < 2 || rect.height < 2) continue;
-    const entry = paintCache.get(el);
-    if (!entry) continue;
     try {
       r.drawPanel(
         entry.kind,
         // Raw live rect: the compositor's sync translate places the canvas so
-        // these pixels land exactly where the DOM is at display time. Any
-        // per-panel lead on top of that would double-correct.
+        // these pixels land exactly where the DOM is at display time.
         { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
         entry.params,
         effectiveAlpha(el),
@@ -431,21 +416,41 @@ function glFrame(): void {
       /* one bad geometry must not kill the loop */
     }
   }
+  for (const { el, entry } of kids) {
+    const parentEntry = entry.childOf ? paintCache.get(entry.childOf) : null;
+    if (!parentEntry) continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom < -M || rect.top > vh + M || rect.right < -M || rect.left > vw + M) continue;
+    if (rect.width < 2 || rect.height < 2) continue;
+    try {
+      r.drawPanel(
+        entry.kind,
+        { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        entry.params,
+        effectiveAlpha(el),
+        // The parent's frozen frost rides as the child's backdrop (M2-A).
+        parentPaintFor(entry.childOf as HTMLElement, parentEntry, el),
+      );
+      drawn++;
+      childCount++;
+    } catch {
+      /* one bad geometry must not kill the loop */
+    }
+  }
   lastDrawCount = drawn;
   lastDrawnCount = drawn;
+  drawnChildCount = childCount;
 }
 
-/** Tear the WebGL path down: canvas out, attr off, panels back on the CSS
- *  material. `lost` marks a context loss — permanent for the session; a
- *  route-driven teardown allows a later re-init. */
+/** Tear the WebGL path down (canvas out, attr off, CSS resumes). `lost` is a
+ *  context loss — permanent; route-driven teardown allows a later re-init. */
 function shutdownWebgl(lost: boolean): void {
   if (glRaf) {
     cancelAnimationFrame(glRaf);
     glRaf = 0;
   }
   resetGlassDrift();
-  // The sync vars live inline on the canvas element and die with it; reset
-  // the module state so a later re-mount starts clean.
+  // Sync vars die with the canvas; reset module state for a clean re-mount.
   syncPaintY = -1;
   syncRange = -1;
   if (renderer) {
@@ -471,13 +476,12 @@ function shutdownWebgl(lost: boolean): void {
 }
 
 function pruneDead(): void {
-  // Unobserve + untrack runs even when no filter was ever built: unmount is
-  // about observer retention, not filter markup.
+  // Unobserve + untrack runs even when no filter was ever built (observer
+  // retention, not filter markup).
   for (const el of Array.from(tracked)) {
     if (!el.isConnected) {
       tracked.delete(el);
-      // Stop observing the dead node: the observers hold strong refs, so
-      // without this a removed panel is retained until the next resync.
+      // unobserve the dead node — the observers hold strong refs.
       resizeObserver?.unobserve(el);
       viewObserver?.unobserve(el);
     }
@@ -508,9 +512,8 @@ function pruneDead(): void {
 /** Full sweep — boot and theme/glass-tier flips only. Still batched. */
 export function resyncGlass(): void {
   if (!mounted) return;
-  // Path housekeeping first — a tier flip (settings) or a route with/without
-  // the teacher shell lands here. WebGL is torn down when the tier drops;
-  // nothing else about the CSS flow changes.
+  // Path housekeeping first — a tier flip or a route without the teacher
+  // shell; WebGL is torn down when the tier drops, the CSS flow is unchanged.
   if (tierAllowsGlass() && webglSupported && !webglBroken) {
     if (glCanvas) refreshPlate();
     else tryInitWebgl();
@@ -578,9 +581,9 @@ export function mountGlassEngine(): void {
   resizeObserver = new ResizeObserver((entries) => {
     for (const e of entries) {
       const el = e.target as HTMLElement;
-      // Rebuild only once the size STOPS changing. A tween reports a new
-      // size every frame; we sync only when two consecutive rAF samples
-      // agree, so a 200ms width animation costs one map, not 12.
+      // Rebuild once the size STOPS changing: a tween reports a new size
+      // every frame; syncing only when two consecutive rAF samples agree
+      // costs a 200ms width animation one map, not 12.
       el.dataset.pendingSize = `${el.offsetWidth}x${el.offsetHeight}`;
       if (el.dataset.settleRaf) continue;
       el.dataset.settleRaf = '1';
@@ -608,13 +611,10 @@ export function mountGlassEngine(): void {
     attributeFilter: ['data-theme', 'data-glass'],
   });
 
-  // Lever A: viewport gate. Entry re-queues (re-dress is a cache hit, no
-  // worker build); EXIT parks immediately — guarded style clear, no layout,
-  // so an offscreen panel stops burning its filter on the same frame it
-  // leaves the 300px band instead of waiting for the next resize/DOM queue.
-  // Entries arriving while !mounted or glass-off are safe: queueSync is
-  // already a no-op there, and parkOffscreen on an undressed panel writes
-  // nothing.
+  // Lever A: viewport gate. Entry re-queues (cache hit); EXIT parks
+  // immediately — guarded clear, no layout, so an offscreen panel stops
+  // burning its filter the same frame it leaves the 300px band. Entries
+  // arriving while !mounted or glass-off are safe no-ops.
   viewObserver = new IntersectionObserver(
     (entries) => {
       for (const e of entries) {
@@ -627,13 +627,13 @@ export function mountGlassEngine(): void {
     { rootMargin: `${VIEW_MARGIN}px 0px` },
   );
 
-  // Only elements that actually APPEARED are enqueued. No querySelectorAll,
-  // no whole-document sweep — this observer used to be the largest single
-  // source of forced layouts in the app.
+  // Only elements that actually APPEARED are enqueued (no whole-document
+  // sweep — this observer used to be the app's largest source of forced
+  // layouts).
   domObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {
-      // Removals: if a tracked panel left the DOM, schedule a prune so the
-      // Set (a strong-ref holder) does not keep dead nodes alive.
+      // Removals: schedule a prune when a tracked panel left the DOM (the
+      // Set holds strong refs — dead nodes must not be retained).
       if (m.removedNodes.length) {
         for (const n of m.removedNodes) {
           const el = n as Element | null;

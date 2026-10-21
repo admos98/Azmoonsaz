@@ -10,15 +10,17 @@
  */
 import { cssUnescape, plateURLFromComputed } from './cssUrl';
 import { mapDPR } from './lensEngine';
+import { dimStrength } from './mapMath';
 import {
   CORNER_SHAPE_SUPPORTED,
+  GLASS_SELECTOR,
   cssNum,
   dimLiftOf,
   dimTintOf,
   fillTintOf,
   radiusOf,
 } from './glassTokens';
-import type { GlassKind, GlassPaintParams } from './webglRenderer';
+import type { GlassKind, GlassPaintParams, ParentPaint } from './webglRenderer';
 
 /** Host-bridge into the engine's live state. Bound once at mount. */
 export interface PipelineHost {
@@ -31,7 +33,7 @@ export interface PipelineHost {
   /** Last CSS chain per element (owned by the controller). */
   byEl: WeakMap<Element, string>;
   /** Last painted recipe per element (owned by the controller). */
-  paintCache: WeakMap<HTMLElement, { kind: GlassKind; params: GlassPaintParams }>;
+  paintCache: WeakMap<HTMLElement, { kind: GlassKind; params: GlassPaintParams; childOf?: HTMLElement }>;
   /** The teacher shell lookup — placeability walks its ancestry. */
   shellAt(): HTMLElement | null;
 }
@@ -242,6 +244,82 @@ function untrackWebgl(el: HTMLElement): void {
   markDirty();
   clearPaintKill(el);
   if (el.dataset.glassPaint) delete el.dataset.glassPaint;
+  if (el.dataset.glassChild) delete el.dataset.glassChild;
+}
+
+/** M2-A child-glass anchoring — a glass child INSIDE a canvas-drawn glass
+ *  parent joins the parent's station: same draw set, same paint clock, same
+ *  compositor translate. Marked with data-glass-child (NOT data-glass-paint,
+ *  whose CSS block transparents backgrounds — the child's de-nest quiet
+ *  fill must survive; only its filter is killed inline, which the shader
+ *  replaces with the child's own bend over the parent's frosted backdrop).
+ *  Backdrop semantics: what a CSS backdrop root passes down is the parent's
+ *  finished composite — the parent's dim + fill frozen into uniforms
+ *  (ParentPaint), the parent's rim displacement deliberately skipped
+ *  (edge-weighted maps are zero where children sit).
+ *  Rank bound: 2 — a child's parent must be a TRUE [data-glass-paint]
+ *  element, so a grandchild (nearest glass ancestor has no glassPaint attr)
+ *  keeps the CSS quiet material. */
+function trackWebglChild(el: HTMLElement, kind: GlassKind, params: GlassPaintParams, parent: HTMLElement): void {
+  if (!host) return;
+  host.paintCache.set(el, { kind, params, childOf: parent });
+  host.drawSet.add(el);
+  markDirty();
+  if (el.dataset.glassChild !== 'webgl') el.dataset.glassChild = 'webgl';
+  clearPaintKill(el);
+  if (glReady()) applyPaintKill(el);
+  if (el.dataset.lastQuickKey) delete el.dataset.lastQuickKey;
+  host.byEl.delete(el);
+}
+
+/** The nearest glass ancestor if it is a genuine canvas-drawn panel (or the
+ *  pipeline's own gate would put it there): classifyChild drives the flush's
+ *  nested branch. Order-independent — reads the host's own eligibility, not
+ *  the parent's dataset, so a parent and child flushed in the SAME batch
+ *  both land on the canvas in one pass (no stranded-undressed first frame). */
+function canvasParentOf(el: HTMLElement): HTMLElement | null {
+  if (!host) return null;
+  const parent = el.parentElement?.closest(GLASS_SELECTOR);
+  if (!(parent instanceof HTMLElement)) return null;
+  const pcs = getComputedStyle(parent);
+  const wk = webglKindOf(parent);
+  if (!wk || !webglPlaceable(parent, pcs)) return null;
+  return parent;
+}
+
+/** The parent's frozen frost for one canvas child (M2-A). What a CSS
+ *  backdrop root passes down is the parent's finished composite: dim wash +
+ *  fill step OVER its blurred viewport. The fill gradient is position-based,
+ *  so its alpha is evaluated ONCE here at the child's centre along the
+ *  parent's gradient axis (CSS gradient semantics: dir = (sin θ, −cos θ), y
+ *  down, magic-corner length). Speculative terms (parent rim displacement,
+ *  specular arc) are boundary-local and edge-weighted maps read zero where
+ *  children sit — skipped, documented in webglShaders. */
+function parentPaintFor(
+  parent: HTMLElement,
+  parentEntry: { kind: GlassKind; params: GlassPaintParams },
+  child: HTMLElement,
+): ParentPaint {
+  const p = parentEntry.params;
+  const prect = parent.getBoundingClientRect();
+  const crect = child.getBoundingClientRect();
+  const ang = (p.fillAngle * Math.PI) / 180;
+  const dirX = Math.sin(ang);
+  const dirY = -Math.cos(ang);
+  // CSS gradient length: the magic-corner size across the parent's box.
+  const glen = Math.max(1, Math.abs(prect.width * dirX) + Math.abs(prect.height * dirY));
+  const cx = (crect.left + crect.width / 2 - prect.left) - prect.width / 2;
+  const cy = (crect.top + crect.height / 2 - prect.top) - prect.height / 2;
+  const t = Math.min(1, Math.max(0, (cx * dirX + cy * dirY) / glen + 0.5));
+  const fillA = p.fillA1 + (p.fillA2 - p.fillA1) * t;
+  return {
+    rect: { left: prect.left, top: prect.top, width: prect.width, height: prect.height },
+    dim: dimStrength(p),
+    dimTint: p.dimTint,
+    dimLift: p.dimLift ?? 0,
+    fillA,
+    fillTint: p.fillTint,
+  };
 }
 
 /** Read the themed plate URL. The computed value is DECODED before use:
@@ -267,6 +345,9 @@ export {
   applyPaintKill,
   clearPaintKill,
   trackWebgl,
+  trackWebglChild,
+  canvasParentOf,
+  parentPaintFor,
   untrackWebgl,
   plateURLForTheme,
 };

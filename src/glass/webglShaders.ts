@@ -84,6 +84,24 @@ uniform float u_specOpacity;
 uniform float u_gsat;       // global saturate from the CSS chain (glx 1.5, lens 1)
 uniform float u_alpha;       // the panel's own inline opacity (motion fades)
 
+/* ── The parent frost (M2-A child-glass anchoring) ─────────────────────────
+   A glass child INSIDE a canvas-drawn glass parent paints on the same
+   station (one rect clock, one --glass-sync translate). What a CSS backdrop
+   root passes down to a nested child is the parent's finished composite —
+   dim wash + fill step over the blurred plate — so the child's backdrop
+   here = plate, blurred, then the parent's FROZEN terms applied. The
+   parent's rim displacement/specular are boundary-local and edge-weighted
+   maps are zero in the interior, where children sit; skipping them keeps
+   one extra map lookup out of the shader (documented approximation). */
+uniform float u_pHas;        // 1 = a canvas-drawn parent owns this backdrop
+uniform float u_pDim;        // the parent's --lens-dim wash strength
+uniform float u_pDimTr;      // parent dim tint, 0..255
+uniform float u_pDimTg;
+uniform float u_pDimTb;
+uniform float u_pDimLift;    // parent's dark white-veil weight
+uniform float u_pFillA;      // the parent's fill alpha AT the child's position
+uniform vec3  u_pFillTint;   // the parent's fill tint
+
 in vec2 v_local;
 in vec2 v_view;
 out vec4 outColor;
@@ -189,6 +207,25 @@ void main() {
     vec2 dm = texture(u_disp, v_local / u_size).rg;
     vec2 disp = (dm - 0.5) * u_dispScale;
     back = blurred(viewCss + disp, u_blur);
+  }
+
+  /* Parent frost (M2-A): a canvas child's backdrop samples the finished
+     composite its parent layer shows — child blur lands on an already-
+     dimmed, already-filled field, so the parent's dim + fill apply HERE,
+     on the displaced plate sample that stands in for it (see uniform
+     docblock). Order matches the CSS composite: dim, then fill. */
+  if (u_pHas > 0.5) {
+    vec3 pf = clamp(back, 0.0, 1.0);
+    if (u_pDim > 0.0) {
+      pf = pf + u_pDim * pf * (vec3(u_pDimTr, u_pDimTg, u_pDimTb) / 255.0 - pf);
+      if (u_pDimLift > 0.0) {
+        pf = pf + u_pDimLift * (vec3(1.0) - pf) * (vec3(1.0) - pf);
+      }
+    }
+    if (u_pFillA > 0.0) {
+      pf = mix(pf, u_pFillTint / 255.0, u_pFillA);
+    }
+    back = pf;
   }
 
   /* Chain saturate — CSS applies blur → saturate → url in order, so the

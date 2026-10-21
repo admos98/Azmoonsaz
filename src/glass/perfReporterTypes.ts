@@ -156,6 +156,8 @@ export interface GlassEngineStats {
   /** Active paint path and panels drawn in the last WebGL frame. */
   mode: 'webgl' | 'css';
   drawn: number;
+  /** M2-A: how many of those were glass children riding a canvas parent. */
+  drawnChildren: number;
   /** Boot triage — WHY the active path is what it is. Travels into the
    *  ?perf=1 report (engine.boot) so a field run on an engine the dev
    *  machine cannot reproduce (iPhone/iPad Safari, Lockdown Mode, Reduce

@@ -12,9 +12,11 @@
 import { chainOf, glassAllowed } from './glassChain';
 import { cssNum, isNestedGlass, kindOf, radiusOf, readParams } from './glassTokens';
 import {
+  canvasParentOf,
   paramsForWebgl,
   tierAllowsGlass,
   trackWebgl,
+  trackWebglChild,
   untrackWebgl,
   webglKindOf,
   webglPlaceable,
@@ -125,7 +127,12 @@ function flushSync(): void {
 
   /* PHASE A — READ ONLY */
   const todo: PendingPanel[] = [];
-  const glTodo: { el: HTMLElement; kind: GlassKind; params: GlassPaintParams }[] = [];
+  const glTodo: {
+    el: HTMLElement;
+    kind: GlassKind;
+    params: GlassPaintParams;
+    childOf?: HTMLElement;
+  }[] = [];
   for (const el of batch) {
     if (!el.isConnected) {
       tracked.delete(el);
@@ -140,6 +147,19 @@ function flushSync(): void {
     // filter forever. Checked BEFORE getComputedStyle: a DOM walk, zero
     // forced layout.
     if (isNestedGlass(el)) {
+      /* M2-A child anchoring: a nested child whose nearest glass ANCESTOR
+         is itself a canvas-eligible panel joins the parent's station (one
+         rect clock, one compositor translate). canvasParentOf reads the
+         parent's own eligibility — order-independent, so a parent and child
+         arriving in the same batch both land on the canvas this flush. A
+         child with no drawable kind (a .field glass inside a card) or under
+         a floating/clipped host keeps the CSS de-nest: undressed, quiet. */
+      const parent = canvasParentOf(el);
+      const wk = parent ? webglKindOf(el) : null;
+      if (parent && wk) {
+        glTodo.push({ el, kind: wk, params: paramsForWebgl(el, getComputedStyle(el)), childOf: parent });
+        continue;
+      }
       host.undressNested(el);
       continue;
     }
@@ -195,7 +215,10 @@ function flushSync(): void {
 
   /* PHASE B — WRITE. */
   if (useWebgl) {
-    for (const t of glTodo) trackWebgl(t.el, t.kind, t.params);
+    for (const t of glTodo) {
+      if (t.childOf) trackWebglChild(t.el, t.kind, t.params, t.childOf);
+      else trackWebgl(t.el, t.kind, t.params);
+    }
   }
   // Runs in BOTH modes: the pure-CSS path, and WebGL fall-through panels
   // (glx*/floating) which keep the engine's maps + filter graphs. Cache

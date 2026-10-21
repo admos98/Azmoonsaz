@@ -21,20 +21,11 @@
  * The canvas sits BETWEEN the page plate (z-0) and the content layer (z-10):
  * the DOM panels it serves drop their own backdrop-filter and stay transparent
  * frames, their text/controls remain DOM above the glass.
- *
- * Ported from the validated lab renderer (public/lab/glass-shader.js) with
- * the three defects found and fixed there carried over:
- *   1. borderDist sign convention (the corner mask);
- *   2. the canvas needs an explicit CSS size (replaced element);
- *   3. every texture is rasterized DPR-aware.
- * The lab's scrolling strip is deliberately absent: panels that float over
- * LIVE DOM (fixed/sticky/absolute — menus, modals, sticky bars) keep the CSS
- * path because the shader cannot sample live DOM above the canvas; everything
- * drawn here sits in-flow over the fixed page plate, which is the whole
- * backdrop. The controller keeps non-shell pages, nested panels and the glx*
- * families on the CSS path as well — the CSS engine keeps serving their
- * url() bend and bloom lines exactly as today.
- */
+ * Ported from the lab renderer (public/lab/glass-shader.js) with its three
+ * fixed defects: borderDist sign convention, explicit canvas CSS size,
+ * DPR-aware texture raster. Floating panels over live DOM keep the CSS path —
+ * the shader samples only the in-flow page plate; nested children of drawn
+ * panels join this path since the M2-A anchoring (see drawPanel). */
 
 import {
   BG_VS,
@@ -89,6 +80,19 @@ export interface GlassRect {
   height: number;
 }
 
+/** A canvas child's parent frost (M2-A anchoring): the frozen parent terms a
+ *  CSS backdrop root passes down — its rect (for the fill gradient's t), the
+ *  dim wash, and the fill alpha already mixed at the child's position. Built
+ *  by the controller from the parent's own PaintEntry each frame. */
+export interface ParentPaint {
+  rect: GlassRect;
+  dim: number;
+  dimTint: [number, number, number];
+  dimLift: number;
+  fillA: number;
+  fillTint: [number, number, number];
+}
+
 
 /** One cached map pair for a geometry. */
 interface MapEntry {
@@ -101,15 +105,12 @@ interface MapEntry {
   bytes: number;
 }
 
-/** Map-texture budget. The lab drew 24 fixed panels; the app has ~76 glass
- *  surfaces across pages and sizes keep appearing as you navigate
- *  (kind|WxH|radius), so the cache must evict or a long session leaks GPU
- *  memory. Oldest-first (Map insertion order), textures deleted on evict. */
+/** Map-texture budget: the app has ~76 glass surfaces and geometry keys keep
+ *  appearing, so the cache must evict or a long session leaks GPU memory. */
 const MAX_MAP_BYTES = 48 * 1024 * 1024;
 
-/** Plate-load deadline. A stalled image (cold/evicted cache on mobile, or an
- *  engine that never fires onload/onerror) must not park the atomic swap
- *  forever — see setPlate(). */
+/** Plate-load deadline — a stalled image must not park the atomic swap
+ *  forever (see setPlate). */
 const PLATE_LOAD_TIMEOUT_MS = 8000;
 const PLATE_MAX_RETRIES = 2;
 const PLATE_RETRY_DELAY_MS = 1200;
@@ -136,19 +137,16 @@ function plateFail(
 }
 
 /** Plate source chain for a plate URL: the SVG first, then its pre-rendered
- *  raster twin (`x.svg` → `x.2x.webp`, tools/render-plate-rasters.mjs).
- *  iPhone Safari refuses to decode this artwork through <img> — field report
- *  plate:'img-err' on every retry, with correct width/height on the root,
- *  while the same SVG paints fine as a CSS background. A raster decode is a
- *  path every engine supports. */
+ *  raster twin (`x.svg` → `x.2x.webp`, tools/render-plate-rasters.mjs). The
+ *  raster twin is a path every engine decodes (theiPhone <img> refusals that
+ *  built this chain were later traced to the escaped URL — see cssUrl.ts). */
 function plateSources(url: string): string[] {
   if (url.endsWith('.svg')) return [url, url.slice(0, -4) + '.2x.webp'];
   return [url];
 }
 
-/** One attempt in setPlate's chain: the vector/raster bytes through <img>,
- *  then the raster through fetch→createImageBitmap (a decode queue the
- *  engine can reach even when its <img> path is refused). */
+/** One setPlate attempt: the bytes through <img>, then the raster through
+ *  fetch→createImageBitmap (a decode queue separate from <img>). */
 interface PlateAttempt {
   kind: 'img' | 'bitmap';
   url: string;
@@ -201,13 +199,11 @@ export class GlassRenderer {
   plateProbe: string[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
+    /* alpha:true — GLASS-ONLY canvas (compositor sync): everything outside
+       the painted panels must be transparent so the DOM plate layer shows
+       through; the shader outputs premultiplied alpha (the pre-sync build
+       painted the plate itself, alpha:false). */
     const gl = canvas.getContext('webgl2', {
-      /* alpha:true — the canvas is GLASS-ONLY since the compositor scroll-
-         sync: everything outside the painted panels must be TRANSPARENT so
-         the DOM plate layer (z-0, under the canvas) shows through. The
-         shader already outputs premultiplied alpha; the pre-sync build used
-         alpha:false because it painted the full-viewport plate itself, and
-         an opaque black backbuffer was never safe to show early. */
       alpha: true,
       antialias: false,
       depth: false,
@@ -235,37 +231,23 @@ export class GlassRenderer {
 
   /** Load the plate artwork and rasterize it at a DPR-aware size.
    *
-   *  Two traps here, both of which make the backdrop look pixelated/soft while
-   *  the CSS mode looks crisp (the CSS path scales the SVG as vectors):
-   *   1. Rasterizing at a fixed size — the app plate's viewBox is 1600x1000,
-   *      and an SVG with no width/height attributes reports a default
-   *      replaced-element size (Chromium: 240x150), NOT the viewBox — and then
-   *      stretching it over a wider viewport MAGNIFIES it. With LINEAR
-   *      filtering and no mipmaps that reads as blurry, blocky texture.
-   *      Rasterize at the size it will actually occupy instead, times DPR.
-   *      (naturalWidth/naturalHeight share the viewBox aspect ratio, so the
-   *      cover scale is safe to derive from them.)
-   *  The raster is capped so a 4K viewport does not allocate a 30MP texture.
+   *  Why DPR-aware: an SVG with no width/height reports a default replaced-
+   *  element size (Chromium 240x150), NOT its viewBox — stretching that over
+   *  a viewport MAGNIFIES it (LINEAR filter, no mipmaps → blocky texture).
+   *  Rasterize at the size the cover actually occupies, times DPR; capped so
+   *  a 4K viewport does not allocate a 30MP texture.
    *
-   *  The whole chain is deadline-guarded because on some engines (reported:
-   *  iPhone Safari) `onload` never fires and `onerror` never fires either —
-   *  without the timeout the atomic swap would wait forever, glReady would
-   *  stay false, and every panel would sit on the CSS material for the whole
-   *  session with nothing in the report to say why. A stall is not fatal:
-   *  the retry below re-enters the same guard.
+   *  Deadline-guarded: some engines (iPhone Safari) fire neither onload nor
+   *  onerror — without the timeout the atomic swap would wait forever and
+   *  every panel would sit on the CSS material with nothing in the report
+   *  saying why. A stall is not fatal: retryPlate re-enters the same guard.
    *
-   *  SOURCE CHAIN: the SVG is tried first, then its committed `.2x.webp`
-   *  raster twin; desktop engines keep the vector plate untouched, and
-   *  plateSrc in the report names the source that won. (This chain was
-   *  built chasing field `img-err` reports that were later traced to the
-   *  computed --page-plate arriving CSS-escaped on iOS 26.6 — a corrupted
-   *  URL before the network, not a decode refusal; see cssUrl.ts. The extra
-   *  rungs stay as defense-in-depth against genuine decode failures.)
-   *
-   *  Last resort: fetch→createImageBitmap — a decode queue separate from
-   *  <img>. If even that fails, probePlate() records fetch status/byte
-   *  count and the decode error name per URL, so the next field report is
-   *  decisive instead of a picture of a swallowed promise. */
+   *  Source chain: the SVG first, then its committed `.2x.webp` raster twin,
+   *  then fetch→createImageBitmap (a decode queue separate from <img>). The
+   *  extra rungs stay as defense-in-depth — the field `img-err` reports that
+   *  built this chain were eventually traced to the iOS-escaped URL (see
+   *  cssUrl.ts), not to a decode refusal. Full failure forensics in
+   *  probePlate(): per-URL fetch status, byte count, decode verdict. */
   setPlate(url: string): Promise<void> {
     const id = ++this.plateLoadId;
     const imgs = plateSources(url);
@@ -295,9 +277,8 @@ export class GlassRenderer {
     return attempt(0, null);
   }
 
-  /** One source attempt inside setPlate's chain. Resolves when the texture
-   *  is up; a stale load (a newer setPlate won) resolves silently — the
-   *  newer call owns every field. Rejects with a stage-tagged error. */
+  /** One source attempt inside setPlate's chain; a stale load (a newer
+   *  setPlate won) resolves silently. Rejects with a stage-tagged error. */
   private loadPlateSource(url: string, id: number, isRaster: boolean): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const img = new Image();
@@ -389,9 +370,7 @@ export class GlassRenderer {
   }
 
   /** fetch→createImageBitmap escape hatch — a decode queue separate from
-   *  <img> (defense-in-depth; see setPlate's docblock: the original field
-   *  failures were a corrupted URL, not a decode refusal). Lands the plate
-   *  texture without ever touching <img>. */
+   *  <img>; same deadline guard as the <img> path. */
   private loadPlateBitmap(url: string, id: number): Promise<void> {
     if (typeof createImageBitmap !== 'function') {
       return Promise.reject(plateFail('bitmap-err', 'createImageBitmap unavailable'));
@@ -440,12 +419,9 @@ export class GlassRenderer {
     });
   }
 
-  /** Final-failure forensics, recorded into the report (engine.boot.plateProbe):
-   *  per candidate URL, the fetch status + byte count + createImageBitmap
-   *  verdict. Separates the three failure classes the field can hit —
-   *  network (fetch-err), server (status), decode (bmp-err:Name, with the
-   *  error name <img>.onerror never exposes) — so the next field report is
-   *  actionable instead of another round-trip guess. */
+  /** Final-failure forensics (engine.boot.plateProbe), recorded only when the
+   *  whole chain failed: per URL `name:status:bytes:decode` — separating
+   *  network / server / decode classes so the next field report is decisive. */
   private async probePlate(urls: string[]): Promise<void> {
     const out: string[] = [];
     for (const u of urls) {
@@ -473,9 +449,8 @@ export class GlassRenderer {
     this.plateProbe = out;
   }
 
-  /** Retry a stalled/failed plate load with a bounded, delayed backoff. Two
-   *  attempts, 1.2s apart — enough to ride out a cold/evicted-cache stall on
-   *  mobile without hammering the network or blocking the swap forever. */
+  /** Retry a stalled/failed plate load: two attempts, 1.2s apart — enough to
+   *  ride out a cold-cache stall on mobile without hammering the network. */
   retryPlate(url: string): void {
     this.plateRetryCount++;
     if (this.plateRetryCount > PLATE_MAX_RETRIES) return;
@@ -544,10 +519,10 @@ export class GlassRenderer {
   }
 
   /** Resize the drawing buffer to the canvas' CSS size × DPR. `u_res` is the
-   *  buffer in device px; every CSS-px uniform is derived from it (u_dpr
-   *  divides back). Reads clientWidth/clientHeight — the canvas' CSS 100%
-   *  size — not window.inner*: they can differ (scrollbars, mobile bars) and
-   *  a mismatch would scale the whole backdrop. */
+   *  buffer in device px; every CSS-px uniform is derived from it. Reads
+   *  clientWidth/clientHeight (the canvas' CSS 100% size), not window.inner*:
+   *  they can differ (scrollbars, mobile bars) — a mismatch would scale the
+   *  whole backdrop. */
   private resize(): { w: number; h: number; dpr: number } {
     const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
     const cssW = this.canvas.clientWidth || window.innerWidth;
@@ -625,8 +600,16 @@ export class GlassRenderer {
 
   /** One panel. `rect` is a viewport-relative DOMRect subset in CSS px.
    *  `alpha` follows the panel's (and its wrappers') inline opacity so motion
-   *  fades animate the glass with the same curve the DOM content fades with. */
-  drawPanel(kind: GlassKind, rect: GlassRect, params: GlassPaintParams, alpha = 1): void {
+   *  fades animate the glass like the DOM content fades. `parent` (M2-A) is
+   *  non-null only for a canvas child: it freezes the parent's dim + fill
+   *  into the child's backdrop. */
+  drawPanel(
+    kind: GlassKind,
+    rect: GlassRect,
+    params: GlassPaintParams,
+    alpha = 1,
+    parent?: ParentPaint | null,
+  ): void {
     const gl = this.gl;
     const dpr = this.frameDpr;
     const entry = this.mapsFor(kind, rect.width, rect.height, params);
@@ -639,9 +622,8 @@ export class GlassRenderer {
     gl.enableVertexAttribArray(this.glCorner);
     gl.vertexAttribPointer(this.glCorner, 2, gl.FLOAT, false, 0, 0);
 
-    /* NaN guard: gl.uniform1f(loc, undefined) stores NaN, the shader paints
-       col * NaN, and the panel comes out opaque black with NO error anywhere.
-       Coerce here so a missing param degrades to a visible default instead. */
+    /* NaN guard: uniform1f(loc, undefined) stores NaN — the shader paints
+       col * NaN and the panel comes out opaque black with NO error. */
     const f1 = (name: string, v: number) => gl.uniform1f(this.uni(p, name), Number.isFinite(v) ? v : 0);
     gl.uniform2f(this.uni(p, 'u_res'), this.frameW, this.frameH);
     gl.uniform1f(this.uni(p, 'u_dpr'), dpr);
@@ -678,6 +660,24 @@ export class GlassRenderer {
     gl.uniform1f(this.uni(p, 'u_dimLift'), params.dimLift ?? 0);
     f1('u_specOpacity', params.specOpacity);
     f1('u_gsat', params.gsat);
+    /* Parent frost (M2-A canvas children): the controller composes the
+       parent's frozen terms; when a parent carried the draw, forward them.
+       u_pHas gates the shader block; zero when no parent is bound. */
+    f1('u_pHas', parent ? 1 : 0);
+    if (parent) {
+      f1('u_pDim', parent.dim);
+      gl.uniform1f(this.uni(p, 'u_pDimTr'), Number.isFinite(parent.dimTint[0]) ? parent.dimTint[0] : 31);
+      gl.uniform1f(this.uni(p, 'u_pDimTg'), Number.isFinite(parent.dimTint[1]) ? parent.dimTint[1] : 29);
+      gl.uniform1f(this.uni(p, 'u_pDimTb'), Number.isFinite(parent.dimTint[2]) ? parent.dimTint[2] : 41);
+      gl.uniform1f(this.uni(p, 'u_pDimLift'), Number.isFinite(parent.dimLift) ? parent.dimLift : 0);
+      f1('u_pFillA', parent.fillA);
+      gl.uniform3f(
+        this.uni(p, 'u_pFillTint'),
+        parent.fillTint[0],
+        parent.fillTint[1],
+        parent.fillTint[2],
+      );
+    }
     f1('u_alpha', alpha);
     gl.uniform1f(this.uni(p, 'u_maskProbe'), this.maskProbe ? 1 : 0);
     gl.uniform2f(this.uni(p, 'u_plateSize'), this.plateSize[0], this.plateSize[1]);
