@@ -37,7 +37,10 @@ const OVERRIDES = new Map([
   // glassMaterial.test.ts: 950→677 — the material-family it extracted to glassMaterialFamily.test.ts.
   ['src/test/config/glassMaterial.test.ts', 677],
   ['src/components/Topbar.tsx', 906],
-  ['src/glass/glassController.ts', 696],
+  // glassController: 696→713 — M1 chrome-pass wiring (imports, bootChrome/
+  // tickChrome/shutdownChrome call sites, chrome stats; all chrome LOGIC
+  // lives in glassChrome.ts). Ratchet steps down in the Stage-4 cleanup.
+  ['src/glass/glassController.ts', 711],
   ['src/pages/teacher/TeacherProfile.tsx', 690],
   ['src/test/components/LibraryV2.test.tsx', 669],
   // mapMath: DOM-free shared math (main thread + worker). Its size IS the render-contract
