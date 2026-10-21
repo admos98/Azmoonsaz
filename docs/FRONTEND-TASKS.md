@@ -104,9 +104,55 @@ the grammar `glx` vs `glx-strong` already defines; `?perf=1` chrome-pass
 counters stay flat while the menu idles, and menu open costs ≤ 1 extra
 texture build; no engine regresses on any panel it bends today.
 
-**Sequencing note.** The largest item in the plan. Lands standalone
-(one PR, one lever, one device test); nothing in Sections 2–5 depends on
-it.
+## 1A. M1 implementation contract (planned 2026-10-20, build next)
+
+DOM-stacking reconnaissance (the fact the original sketch did not name):
+the app's stacking ladder is plate z-0 → shader canvas z-1 → content
+z-10 → topbar z-30/65 → notif/menu z-60/65 → modals z-50 → hamburger
+catchers z-70+ → skip-link z-[300]. A chrome pass painted into
+`#glass-canvas` would sit UNDER the content it must frost — the floating
+panels' bend needs its own fixed plane between content and chrome, i.e.
+a SECOND canvas (`#glass-chrome`, z-31: above every content layer, below
+the topbar's own text/buttons which raise to z-32 within the header;
+dropdown containers stay z-60+ above it). Modals stay out of scope —
+their lens sits over the veil, already a frosted field (M2c range).
+
+Build plan (each stage gates + commits alone):
+
+1. **Stage 1 — chrome canvas + plate-only shade.** Second
+   `GlassRenderer` instance bound to `#glass-chrome` (context budget:
+   2 total, still under Chrome's ~16 cap; reuse the SAME shader source
+   with `u_pHas`-style extensibility already in place). Float-family
+   panels classified by a `chromeEligible()` gate (walk up: floating =
+   fixed/sticky/absolute chain whose ancestry contains no scrolled
+   content component beyond the shell — menus, topbar lenses, pane
+   pills; modal scrim/dialog wrappers excluded by a data-attr opt-out).
+   Only the PLATE is sampled (no DOM texture: the busy-region build
+   below rides a later stage). Panels not eligible keep today's CSS
+   material byte-for-byte. Lever `?glxf=0` kills the pass; counters
+   `?perf=1` get `chromeDrawn`.
+2. **Stage 2 — motion alpha + dim already carried**: the pass reuses
+   `effectiveAlpha` verbatim and ships the same `u_*` recipes, so the
+   grow/shrink fades stay smooth from the first commit.
+3. **Stage 3 — DOM-delta texture (the honest backdrop)**: shared
+   offscreen texture the union of floating rects; built via SVG
+   `foreignObject` raster OR `drawImage(canvas)` of nothing — the only
+   reliable DOM raster today is `html2canvas`-class traversal, which is
+   too heavy for a per-frame budget; decision at build time: ship
+   plate-only and record the visual delta on device, escalate only if
+   the toplbar's frosted content visibly lies (menus open over calm
+   plate 90% of sessions — measured first per the cost wall).
+4. **Stage 4 — deletion of the CSS `url()` fall-through for chrome
+   panels on engines where the shader serves them** (Webkit keeps the
+   plain CSS material until the pass is validated on device).
+
+Test pins (static, same pattern as glassChildStation): `#glass-chrome`
+exists with lvh sizing + z-31; `chromeEligible` excludes modal wrappers;
+`?glxf=0` lever + `chromeDrawn` counter; a webkit context-loss on the
+chrome canvas must not kill the main pass (independent shutdown).
+
+Acceptance unchanged from M1 above; device test REQUIRED per stage 1
+and stage 3 (user's phone in the loop) before stage 4 deletes anything.
 
 ---
 
@@ -319,6 +365,11 @@ containment (M2b) for the only genuinely unplanned mover.
 ---
 
 ## 4. Finding M4: remove the four big circles from the background
+
+> **LANDED** — commit `4784a2a` (verified 2026-10-20: 0 `<circle>` elements
+> remain across all 8 plate SVGs; the `.2x.webp` twins re-rendered; the
+> only surviving `#F5B301` is the bloom gradient, which is the wash, not a
+> disc). The text below is the original contract, kept for the record.
 
 **Where they live:** `public/backgrounds/bg-d-light.svg` and
 `bg-d-dark.svg` — two `<g>` groups of `<circle>`s: a top-right cluster
