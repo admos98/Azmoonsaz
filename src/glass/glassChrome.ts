@@ -57,15 +57,23 @@ let dirty = false;
 let lastDrawn = 0;
 let lastFrameW = 0;
 let lastFrameH = 0;
+/** A plate load (setPlate chain) is in flight — tickChrome uses this to
+ *  distinguish a stalled first load (re-kick) from a settled zero. */
+let loading = false;
+let lastKick = 0;
 
-/** ?perf=1 snapshot — read through glassStats(). */
+/** ?perf=1 snapshot — read through glassStats(). `boot: 'ok'` means the
+ *  renderer EXISTS; `ready` means the plate texture landed and panels are
+ *  actually drawn — the pair isolates a plate-load stall from a draw bug. */
 export function chromeStats(): {
   drawn: number;
   boot: 'pending' | 'ok' | 'broken' | 'off';
+  ready: boolean;
 } {
   return {
     drawn: lastDrawn,
     boot: broken ? 'broken' : renderer ? 'ok' : CHROME_OFF ? 'off' : 'pending',
+    ready,
   };
 }
 
@@ -95,7 +103,7 @@ export function bootChrome(): void {
     canvas.addEventListener('webglcontextlost', () => shutdownChrome(true), false);
     renderer = r;
     const url = plateURLForTheme();
-    if (url) void r.setPlate(url).catch(() => r.retryPlate(url));
+    if (url) loadPlate(url);
   } catch {
     // A chrome context must not take the main pass down: CSS owns the
     // chrome this session, byte-identical with the pre-M1 fallback.
@@ -106,11 +114,27 @@ export function bootChrome(): void {
   }
 }
 
+/** One plate attempt with the idempotent retry chain (setPlate → the
+ *  renderer's own retryPlate loop). Tracks `loading` so tickChrome can
+ *  tell a stalled first load from a settled one. */
+function loadPlate(url: string): void {
+  const r = renderer;
+  if (!r) return;
+  loading = true;
+  void r
+    .setPlate(url)
+    .catch(() => r.retryPlate(url))
+    .finally(() => {
+      loading = false;
+    });
+}
+
 /** Theme flip: reload the chrome plate behind the load-id race guard. */
 export function refreshChromePlate(): void {
   if (!renderer) return;
   const url = plateURLForTheme();
-  void renderer.setPlate(url).catch(() => renderer?.retryPlate(url));
+  if (!url) return;
+  loadPlate(url);
 }
 
 /** Per-frame draw. Piggybacks the controller's rAF; early-outs cheaply
@@ -127,7 +151,18 @@ export function tickChrome(): void {
     // from here, their DOM backdrop-filter dies inline.
     for (const el of drawSet) applyPaintKill(el);
   }
-  if (!ready) return;
+  if (!ready) {
+    // Recovery for a stalled first load (an iOS img-decode race left the
+    // plate texture dead-settled with nothing in flight): re-kick every
+    // 2s while the main plate is proven good and panels are waiting. The
+    // `loading` guard keeps this from stacking concurrent loads.
+    if (!loading && r.hasPlate === false && performance.now() - lastKick > 2000) {
+      lastKick = performance.now();
+      const url = plateURLForTheme();
+      if (url) loadPlate(url);
+    }
+    return;
+  }
 
   const before = `${canvas.width}x${canvas.height}`;
   r.resizeFrame();
@@ -189,6 +224,8 @@ export function shutdownChrome(lost: boolean): void {
   }
   ready = false;
   dirty = false;
+  loading = false;
+  lastKick = 0;
   lastDrawn = 0;
   document.documentElement.removeAttribute('data-glass-chrome');
   for (const el of Array.from(drawSet)) untrackChrome(el);
@@ -235,16 +272,26 @@ function effectiveAlpha(el: HTMLElement): number {
   return a;
 }
 
-/** The floating gate: the panel the MAIN pass refused (fixed/sticky/
- *  absolute chain) becomes a chrome panel when its backdrop is provably
- *  unrestricted glass over the plate — no occluding ancestor paint, no
- *  clipped ancestor (smaller-downgrade-than-wrong-pixels, per the contract;
- *  a refused panel keeps today's CSS material). Dialogs are excluded by
- *  construction: a modal lens sits over the veil-blur field — its backdrop
- *  is not the plate and it already carries its own frost (M2c range). */
+/** The floating gate: the panel the MAIN pass refused becomes a chrome
+ *  panel when its backdrop is provably unrestricted glass over the plate —
+ *  the ANCESTRY decides, not the panel's own position: the four menu
+ *  panels are static children of the `fixed contain-menu` anchor (their
+ *  rect is viewport-stable BECAUSE the anchor is), and the topbar pills
+ *  ride `absolute` inside the sticky header. A static panel under a
+ *  floating chain is exactly as viewport-stable as the anchor. No
+ *  occluding ancestor paint, no clipped ancestor, no scrolled content in
+ *  the chain. Dialogs are excluded by construction: a modal lens sits
+ *  over the veil-blur field — its backdrop is not the plate and it
+ *  already carries its own frost (M2c range). */
 export function chromeEligible(el: HTMLElement, cs: CSSStyleDeclaration): boolean {
   const ownPos = cs.position;
-  if (ownPos !== 'fixed' && ownPos !== 'sticky' && ownPos !== 'absolute') return false;
+  if (
+    ownPos !== 'fixed' &&
+    ownPos !== 'sticky' &&
+    ownPos !== 'absolute' &&
+    ownPos !== 'static'
+  )
+    return false;
   if (el.closest('[role="dialog"], [role="alertdialog"]')) return false;
   const shell = document.getElementById('app-teacher-shell');
   let n = el.parentElement;

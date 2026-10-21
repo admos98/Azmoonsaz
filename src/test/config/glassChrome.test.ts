@@ -56,17 +56,25 @@ describe('M1 chrome pass (stage 1 — floating glass on the same shader)', () =>
   });
 
   it('the floating gate refuses scrolling, occluded, and dialog panels', () => {
-    // Fixed/sticky/absolute ONLY — an in-flow ancestor below a floating
-    // panel means the rect is not viewport-stable (the main pass owns it).
+    // The ANCESTRY decides, not the panel's own position: the four menu
+    // panels are STATIC children of the fixed contain-menu anchor, and a
+    // static panel under a floating chain is as viewport-stable as the
+    // anchor (only ownPos static/fixed/sticky/absolute enter the gate).
     expect(chrome).toMatch(
-      /function chromeEligible[\s\S]{0,200}ownPos !== 'fixed' && ownPos !== 'sticky' && ownPos !== 'absolute'/,
+      /function chromeEligible[\s\S]{0,300}ownPos !== 'static'[\s\S]{0,100}return false/,
     );
+    const gate = chrome.slice(chrome.indexOf('function chromeEligible'));
+    // Static OWN position is fine but a scrolled in-flow ANCESTOR is not:
+    // the ancestor walk still refuses plain static parents.
+    expect(
+      /p !== 'fixed' && p !== 'sticky' && p !== 'absolute' && p !== 'relative'/.test(gate),
+    ).toBe(true);
     // Modals are out by construction: their lens sits over the veil, not
     // the plate.
-    expect(chrome).toMatch(/chromeEligible[\s\S]{0,300}\[role="dialog"\]/);
+    expect(chrome).toMatch(/chromeEligible[\s\S]{0,400}\[role="dialog"\]/);
     // The same no-occlusion/no-clip rules the main webglPlaceable applies.
-    expect(chrome).toMatch(/chromeEligible[\s\S]{0,900}overflowX/);
-    expect(chrome).toMatch(/chromeEligible[\s\S]{0,1200}backgroundImage/);
+    expect(gate.slice(0, 1400)).toMatch(/overflowX/);
+    expect(gate.slice(0, 1600)).toMatch(/backgroundImage/);
   });
 
   it('flush routes: main plane first, chrome for missing placeability, css fall-through)', () => {
@@ -86,7 +94,7 @@ describe('M1 chrome pass (stage 1 — floating glass on the same shader)', () =>
     expect(chrome).toMatch(/glxf'\) === '0'/);
     expect(chrome).toMatch(/function chromeStats/);
     expect(reportTypes).toMatch(
-      /chrome:\s*\{\s*drawn:\s*number;\s*boot:\s*'pending'\s*\|\s*'ok'\s*\|\s*'broken'\s*\|\s*'off'\s*;\s*\}/,
+      /chrome:\s*\{\s*drawn:\s*number;\s*boot:\s*'pending'\s*\|\s*'ok'\s*\|\s*'broken'\s*\|\s*'off'\s*;\s*ready:\s*boolean;\s*\}/,
     );
     expect(controller).toMatch(/chrome:\s*chromeStats\(\)/);
   });

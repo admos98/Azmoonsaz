@@ -158,10 +158,14 @@ export interface GlassEngineStats {
   drawn: number;
   /** M2-A: how many of those were glass children riding a canvas parent. */
   drawnChildren: number;
-  /** M1 chrome pass — the second plane (#glass-chrome). */
+  /** M1 chrome pass — the second plane (#glass-chrome). `boot: 'ok'` only
+   *  means the renderer exists; `ready` means the plate texture landed and
+   *  panels actually draw (the pair isolates a plate stall from a draw
+   *  bug in a ?perf=1 report). */
   chrome: {
     drawn: number;
     boot: 'pending' | 'ok' | 'broken' | 'off';
+    ready: boolean;
   };
   /** Boot triage — WHY the active path is what it is. Travels into the
    *  ?perf=1 report (engine.boot) so a field run on an engine the dev
