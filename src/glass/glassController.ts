@@ -52,7 +52,6 @@ import {
 import {
   bootChrome,
   chromeStats,
-  chromePending,
   refreshChromePlate,
   shutdownChrome,
   tickChrome,
@@ -358,9 +357,7 @@ function glFrame(): void {
      on screen, pixel-identical because nothing moved). */
   const aNow = webglDrawSet.size;
   const idleKey = `${yNow}|${aNow}|${drawnSig()}`;
-  const alphaMoving =
-    (webglDrawSet.size > 0 && Array.from(webglDrawSet).some((el) => effectiveAlpha(el) < 0.999)) ||
-    chromePending();
+  const alphaMoving = webglDrawSet.size > 0 && Array.from(webglDrawSet).some((el) => effectiveAlpha(el) < 0.999);
   if (!glDirty && idleKey === lastIdleKey && !alphaMoving) {
     lastDrawCount = lastDrawnCount;
     return;

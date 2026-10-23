@@ -83,17 +83,6 @@ export function chromeStats(): {
   };
 }
 
-/** True when the chrome planes need a paint (feeds the shared idle gate so
- *  an animating menu repaints even over a static main canvas). */
-export function chromePending(): boolean {
-  if (!renderer || !ready) return false;
-  if (dirty) return true;
-  if (drawSet.size === 0) return false;
-  // Fading chrome panels repaint like main-path fades do.
-  for (const el of drawSet) if (effectiveAlpha(el) < 0.999) return true;
-  return false;
-}
-
 /** Boot the second plane. Called after the main renderer initializes —
  *  the boot probe + tier already gate WebGL2 capability for both. */
 export function bootChrome(): void {
@@ -143,7 +132,12 @@ export function refreshChromePlate(): void {
 }
 
 /** Per-frame draw. Piggybacks the controller's rAF; early-outs cheaply
- *  when the chrome planes are at rest. */
+ *  when the chrome planes are at rest. The strip lands on the panel's
+ *  FIRST SUCCESSFUL DRAW (attempt-2 lesson: stripping at track time left
+ *  a naked frame while the plate loaded, and a stalled plate left panels
+ *  flat + stripped forever — textless menus on desktop, fallback rims on
+ *  the phone). A draw that stops succeeding rolls the panel back to its
+ *  CSS material the same frame. */
 export function tickChrome(): void {
   const r = renderer;
   if (!r || !canvas || !canvas.isConnected) return;
@@ -151,10 +145,6 @@ export function tickChrome(): void {
     ready = true;
     document.documentElement.dataset.glassChrome = 'webgl';
     dirty = true;
-    // Atomic swap: the canvas paints these panels from here — the FULL
-    // strip lands inline (attempt 2: the same divorce the main plane does,
-    // not filter-only). See applyChromeStrip.
-    for (const el of drawSet) applyPaintKill(el);
   }
   if (!ready) {
     // Stalled-first-load recovery: re-kick every 2s while the main plate
@@ -171,7 +161,7 @@ export function tickChrome(): void {
   r.resizeFrame();
   const resized = before !== `${canvas.width}x${canvas.height}`;
   if (resized) dirty = true;
-  if (!dirty) return;
+  if (!dirty && !chromeAlphaMoving()) return;
   dirty = false;
 
   const vw = window.innerWidth;
@@ -187,8 +177,18 @@ export function tickChrome(): void {
     const entry = paintCache.get(el);
     if (!entry) continue;
     const rect = el.getBoundingClientRect();
-    if (rect.bottom < -M || rect.top > vh + M || rect.right < -M || rect.left > vw + M) continue;
-    if (rect.width < 2 || rect.height < 2) continue;
+    const offscreen =
+      rect.bottom < -M || rect.top > vh + M || rect.right < -M || rect.left > vw + M;
+    if (offscreen || rect.width < 2 || rect.height < 2) {
+      // Off-screen or collapsed mid-animation: park to CSS so a panel that
+      // exits through a scale tween never freezes stripped.
+      if (el.dataset.glassChrome === 'webgl') {
+        el.dataset.glassChrome = 'pending';
+        clearPaintKill(el);
+      }
+      continue;
+    }
+    let ok = false;
     try {
       r.drawPanel(
         entry.kind,
@@ -197,14 +197,38 @@ export function tickChrome(): void {
         entry.params,
         effectiveAlpha(el),
       );
-      drawn++;
+      ok = true;
     } catch {
       /* one bad geometry must not kill the loop */
+    }
+    if (ok) {
+      drawn++;
+      if (el.dataset.glassChrome !== 'webgl') {
+        // FIRST successful draw of THIS panel: now the swap is safe — the
+        // shader already owns the pixels under it this same frame.
+        el.dataset.glassChrome = 'webgl';
+        applyPaintKill(el);
+      }
+    } else if (el.dataset.glassChrome === 'webgl') {
+      // The draw stopped succeeding (context dying, transient GL error):
+      // roll the panel back to its CSS material immediately.
+      el.dataset.glassChrome = 'pending';
+      clearPaintKill(el);
     }
   }
   lastFrameW = canvas.width;
   lastFrameH = canvas.height;
   lastDrawn = drawn;
+}
+
+/** Chrome-panel alpha motion ONLY — deliberately NOT folded into the main
+ *  canvas's idle gate: an open menu (grow/shrink tweens, fading pills)
+ *  would keep the full-viewport main canvas repainting at 60Hz besides the
+ *  chrome plane's own small draw (the attempt-2 desktop freeze-by-thrash). */
+function chromeAlphaMoving(): boolean {
+  if (drawSet.size === 0) return false;
+  for (const el of drawSet) if (effectiveAlpha(el) < 0.999) return true;
+  return false;
 }
 
 /** Tear the chrome plane down (main teardown or a chrome context loss).
@@ -234,17 +258,16 @@ export function shutdownChrome(lost: boolean): void {
   for (const el of Array.from(drawSet)) untrackChrome(el);
 }
 
-/** Track a floating panel into the chrome draw set. data-glass-chrome (NOT
- *  data-glass-paint — the main plane's CSS block must not touch chrome
- *  stations) + the full material divorce inline: filter kill AND the box
- *  strip — bows to the SAME contract as the main plane (see base.css). */
+/** Track a floating panel into the chrome draw set. The panel lands as
+ *  'pending' — the material divorce lands ONLY on its first successful
+ *  draw (see tickChrome): track-time stripping left a naked frame while
+ *  the plate loaded and stranded flat panels when the plate stalled. */
 export function trackChrome(el: HTMLElement, kind: GlassKind, params: GlassPaintParams): void {
   paintCache.set(el, { kind, params });
   drawSet.add(el);
   dirty = true;
-  if (el.dataset.glassChrome !== 'webgl') el.dataset.glassChrome = 'webgl';
-  clearPaintKill(el);
-  if (ready) applyPaintKill(el);
+  if (el.dataset.glassChrome !== 'webgl') el.dataset.glassChrome = 'pending';
+  clearPaintKill(el); // a stale kill must not survive re-track
 }
 
 /** Untrack: back to the CSS material byte-for-byte (attr off, kill off). */
