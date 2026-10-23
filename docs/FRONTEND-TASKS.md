@@ -151,8 +151,37 @@ exists with lvh sizing + z-31; `chromeEligible` excludes modal wrappers;
 `?glxf=0` lever + `chromeDrawn` counter; a webkit context-loss on the
 chrome canvas must not kill the main pass (independent shutdown).
 
-Acceptance unchanged from M1 above; device test REQUIRED per stage 1
-and stage 3 (user's phone in the loop) before stage 4 deletes anything.
+### Attempt 1 (b5413fa + 8efd759) — WHAT BROKE, kept for attempt 2
+
+Built and reverted the same day: the menus came out with **broken rims
+on desktop**, the phone unchanged (`chrome.drawn: 0` — eligibility never
+tracked anything there; the phone kept its pre-existing flat CSS path).
+
+Root cause, verified against the shipped bytes: the shader's "material
+divorce" was HALF-applied. The main plane strips a drawn panel completely
+in CSS (`[data-glass-paint='webgl']`: `backdrop-filter: none`,
+`box-shadow: none !important`, `background: transparent !important` for
+lens/pane/drop, `::after: display:none`) — one source of truth for the
+rim: the shader paints body + fill + specular arc + rim all by itself.
+The chrome pass's strip rule killed ONLY the backdrop-filter and
+deliberately kept the DOM gradient fill AND the inset box-shadow rims
+("matching the :not(.glx) carve-out"). Result: two rims in the same
+place (shader's u_spec arc + DOM rim bloom) and two fills stacked —
+the exact double-paint the production CSS documents as a measured bug
+("the strip shipped -webkit-only and every drawn panel double-painted").
+Not a plumbing bug: boot/track/kill/ledger all worked; it was a material
+contract violation.
+
+Attempt-2 constraints, derived from that failure:
+1. Chrome panels adopt the MAIN recipe verbatim: `[data-glass-chrome]`
+   strip = filter kill + box-shadow none + background transparent
+   (lens/pane/drop) + ::after none. The shader paints the whole body.
+2. The recipe for the shader side is `paramsForWebgl` unmodified — dim
+   for `.lens--menu` comes from `--lens-dim` AS OVERRIDDEN by
+   `.lens--menu { --lens-dim: var(--lens-menu-dim) }` (the readability
+   contract rides the same uniform as the big panels).
+3. Same atomic swap (`data-glass-chrome` html attr flips only when the
+   chrome plate texture has landed — attempt 1 was right on this).
 
 ---
 

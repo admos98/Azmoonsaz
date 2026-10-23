@@ -218,6 +218,56 @@ body {
 :root[data-glass-render='webgl'] #glass-canvas {
   display: block;
 }
+
+/* ─── M1 chrome plane — the floating glass (#glass-chrome, attempt 2) ────
+   Floating panels can't be served by #glass-canvas (z-1, UNDER the content
+   their backdrop includes) and WebKit drops url() inside backdrop-filter,
+   so the chrome shipped flat on Safari. This plane is the SAME shader on
+   a second fixed canvas above the content, at raw viewport-stable rects
+   (no sync translate, no overscan). Attempt 1 kept the DOM fill + rim
+   over a shader that paints both — double rim ("menu rims broken", see
+   FRONTEND-TASKS): this strip is the MAIN plane's recipe, verbatim. */
+#glass-chrome {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  height: 100lvh; /* no dvh: iOS URL-bar collapse re-allocates per frame */
+  /* Above content (z-10), below the chrome's own text/controls (header
+     z-30, dropdowns z-60+). Modals stay out (over the veil). */
+  z-index: 29;
+  pointer-events: none;
+}
+:root[data-glass-chrome='webgl'] #glass-chrome {
+  display: block;
+}
+/* The material divorce, main-plane recipe: shader paints body+fill+rim. */
+:root[data-glass-chrome='webgl'] [data-glass-chrome='webgl'] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+:root[data-glass-chrome='webgl']
+  [data-glass-chrome='webgl']:not(.glx):not(.glx-strong) {
+  background: transparent !important;
+}
+:root[data-glass-chrome='webgl'] [data-glass-chrome='webgl']::after {
+  display: none; /* static rim pseudo = no-engine fallback */
+}
+/* glx carve-outs mirror the main plane (bloom is painted light). Kept for
+   any glx that ever lands chrome — state-identical with the main recipe. */
+:root[data-glass-chrome='webgl'] .glx[data-glass-chrome='webgl'] {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 14px 34px -22px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 0 14px -6px rgb(255 255 255 / var(--glass-rim-fade)) !important;
+}
+:root[data-glass-chrome='webgl'] .glx-strong[data-glass-chrome='webgl'] {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / var(--glass-bloom-line-a)),
+    inset 0 16px 38px -24px rgb(255 255 255 / var(--glass-bloom-a)),
+    inset 0 0 16px -6px rgb(255 255 255 / var(--glass-rim-fade)) !important;
+}
+
 :root[data-glass-render='webgl'] #app-teacher-shell::before {
   /* The plate STAYS the DOM layer under the canvas (z-0 under z-1): the
      compositor scroll-sync translates the canvas element, and layers under
