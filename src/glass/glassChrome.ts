@@ -83,6 +83,43 @@ export function chromeStats(): {
   };
 }
 
+/** Chrome surface dump for the ?perf=1 report (attempt-4 dig): every
+ *  tracked panel's live rect, content height (rect vs children — a 0-child
+ *  height means the DOM text failed, not the shader), attr state, paint
+ *  params, and the chrome plate/renderer state. Read-only. */
+export function chromeDebug(): unknown {
+  const panels: unknown[] = [];
+  for (const el of drawSet) {
+    const r = el.getBoundingClientRect();
+    let childSum = 0;
+    for (const c of el.children) {
+      const cr = c.getBoundingClientRect();
+      childSum += cr.height;
+    }
+    const cs = getComputedStyle(el);
+    panels.push({
+      rect: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)],
+      ownPos: cs.position,
+      childH: Math.round(childSum),
+      attr: el.dataset.glassChrome ?? null,
+      kill: el.style.backdropFilter || null,
+      kind: paintCache.get(el)?.kind ?? null,
+      bg: cs.backgroundColor,
+      radius: cs.borderRadius,
+      opacity: cs.opacity,
+      anim: getComputedStyle(el).animationName,
+    });
+  }
+  return {
+    boot: broken ? 'broken' : renderer ? 'ok' : 'off',
+    ready,
+    hasPlate: renderer ? renderer.hasPlate : false,
+    frame: [lastFrameW, lastFrameH],
+    drawn: lastDrawn,
+    panels,
+  };
+}
+
 /** Boot the second plane. Called after the main renderer initializes —
  *  the boot probe + tier already gate WebGL2 capability for both. */
 export function bootChrome(): void {

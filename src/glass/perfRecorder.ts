@@ -85,6 +85,7 @@
  */
 
 import { glassStats } from './glassController';
+import { chromeDebug } from './glassChrome';
 import { glassDriftStats, resetGlassDrift } from './glassDrift';
 import {
   type PerfReport,
@@ -423,6 +424,7 @@ export function installPerfRecorder(): void {
       filterCountStart,
       filterCountEnd: countFilters(),
       engine: glassStats(),
+      chromePanels: chromeDebug(),
       drift: glassDriftStats(),
     };
     window.__perf!.report = report;

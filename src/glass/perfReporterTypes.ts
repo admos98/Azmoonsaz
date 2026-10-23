@@ -119,6 +119,10 @@ export interface PerfReport {
   filterCountEnd: number;
   /** Map-pipeline oracle: posted/hit/worker/sync counts + table sizes. */
   engine: GlassEngineStats;
+  /** M1 chrome surface dump — every tracked floating panel's live rect,
+   *  content height, attr state, opacity, animation; plus the chrome
+   *  plate/renderer state. The attempt-4 dig payload. */
+  chromePanels: unknown;
   /** Panel-position drift — the "panels fall behind / slide / bounce"
    *  payload. Measured in the glass frame loop itself:
    *    maxStale   — worst |paint_y − prevPaint_y| seen at paint time (px):

@@ -48,7 +48,8 @@ const OVERRIDES = new Map([
   // Finding 5 blesses a documented cap for it.
   ['src/glass/mapMath.ts', 407],
   // perfRecorder: 752→528 — ?perf=1 report types → perfReporterTypes.ts, the DOM overlay → perfRecorderUi.ts.
-  ['src/glass/perfRecorder.ts', 527],
+  // 527→530: attempt-4 dig — chromePanels surface dump rides the report.
+  ['src/glass/perfRecorder.ts', 530],
   // webglRenderer: 1005→723 — GLSL + GL helpers extracted to webglShaders.ts. The rest is one
   // cohesive state-bound class (plate pipeline + GL draw) that resists further seams.
   ['src/glass/webglRenderer.ts', 722],
