@@ -5,10 +5,12 @@ import {
   formatPersianDate,
   formatPersianDateTime,
   formatPersianRelativeTime,
-  validateIranianNationalId,
   toEnglishDigits,
   normalizePersianText,
 } from '../../utils/persian';
+// CQ-3 fix: the canonical checksum lives in features/student-import/nationalId
+// (the utils/persian duplicate was deleted).
+import { isValidIranianNationalId } from '../../features/student-import/nationalId';
 
 describe('toPersianDigits', () => {
   it('converts ASCII digits to Persian', () => {
@@ -103,12 +105,14 @@ describe('formatPersianDateTime', () => {
   });
 });
 
-describe('validateIranianNationalId', () => {
-  it('validates correct national ID format', () => {
-    // 10-digit ID
-    expect(validateIranianNationalId('0012345678')).toBe(false); // fails checksum
-    expect(validateIranianNationalId('1111111111')).toBe(false);
-    expect(validateIranianNationalId('abc')).toBe(false);
-    expect(validateIranianNationalId('')).toBe(false);
+describe('isValidIranianNationalId (canonical checksum)', () => {
+  it('validates national IDs (checksum + shape + normalization)', () => {
+    expect(isValidIranianNationalId('0012345678')).toBe(false); // fails checksum
+    expect(isValidIranianNationalId('1111111111')).toBe(false);
+    expect(isValidIranianNationalId('abc')).toBe(false);
+    expect(isValidIranianNationalId('')).toBe(false);
+    // CQ-3: Persian-digit input normalizes before the checksum (one rule for
+    // every caller — this used to pass in one copy and fail in another).
+    expect(isValidIranianNationalId('۱۱۱۱۱۱۱۱۱۱')).toBe(false); // repeated digits
   });
 });

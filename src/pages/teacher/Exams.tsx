@@ -98,8 +98,12 @@ export default function Exams({
       showToast('تنظیمات آزمون ذخیره شد.', 'success');
       setLocalSubView('list');
       if (onSubViewChange) onSubViewChange('list');
+      // FE-7 fix: report the outcome so ExamSettings only commits its
+      // unsaved-changes snapshot when the save really succeeded.
+      return true;
     } catch (_err) {
       showToast('خطا در بروزرسانی آزمون', 'error');
+      return false;
     }
   };
 

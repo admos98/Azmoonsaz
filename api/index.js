@@ -1,5 +1,5 @@
 import { json } from './_lib/http.js';
-import { handleHealth, handleSecurityCheck } from './routes/public.js';
+import { handleHealth, handleSecurityCheck, handleCspReport } from './routes/public.js';
 import {
   handleStudentStartSession,
   handleStudentExamPayload,
@@ -43,6 +43,7 @@ function routePath(req) {
 const routes = {
   health: handleHealth,
   'security-check': handleSecurityCheck,
+  'public/csp-report': handleCspReport,
   'auth/onboarding-status': handleOnboardingStatus,
   'auth/onboarding': handleOnboarding,
   'student/start-session': handleStudentStartSession,

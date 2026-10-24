@@ -3,29 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import {
-  PlusCircle,
-  Image as ImageIcon,
-  Grid,
-  List,
-  Edit,
-  Trash2,
-  Eye,
-  AlertCircle,
-  Bookmark,
-  Sparkles,
-  Info,
-  Sliders,
-  CloudLightning,
-} from 'lucide-react';
-import { Question, type QuestionType } from '../../types';
+import { useState, useEffect, useMemo, useRef, lazy } from 'react';
+import { CloudLightning } from 'lucide-react';
 import type { RichQuestion } from '../../features/question-bank/types';
 import { useQuestionForm } from '../../features/question-bank/useQuestionForm';
-import { QuestionTypeBuilders } from '../../features/question-bank/builders/QuestionTypeBuilders';
 import { useQuestionFilters } from '../../features/question-bank/useQuestionFilters';
 import { useQuestionDelete } from '../../features/question-bank/useQuestionDelete';
+import { useQuestionEditor } from '../../features/question-bank/useQuestionEditor';
+import { useImageMaintenance } from '../../features/question-bank/useImageMaintenance';
+import { QuestionHeaderBoard } from '../../features/question-bank/QuestionHeaderBoard';
+import {
+  QuestionFilterPanel,
+  QuestionSortPaginationBar,
+} from '../../features/question-bank/QuestionFilterPanel';
+import { QuestionListViews } from '../../features/question-bank/QuestionListViews';
+import { QuestionPreviewModal } from '../../features/question-bank/QuestionPreviewModal';
+import { QuestionDrawerPreview } from '../../features/question-bank/QuestionDrawerPreview';
+import { QuestionEditorForm } from '../../features/question-bank/QuestionEditorForm';
 /* The drawer preview renderer is code-split: it is the heaviest tree in the
    add/edit modal (full question render + nested panels), and mounting it in
    the same commit as the modal open animation janked the open. The chunk
@@ -34,33 +28,16 @@ import { useQuestionDelete } from '../../features/question-bank/useQuestionDelet
    skeleton meanwhile. End state identical — only the open choreography. */
 const QuestionRenderer = lazy(() => import('../../components/QuestionRenderer'));
 const preloadQuestionRenderer = () => import('../../components/QuestionRenderer');
-import { questionService } from '../../services/api';
-import { teacherPost } from '../../services/teacherApi';
 import {
   Button,
   ConfirmDialog,
-  DifficultyBadge,
-  Dropdown,
-  EmptyState,
-  FieldLabel,
-  IconButton,
-  Input,
   Modal,
-  PageHeader,
-  PillButton,
-  SearchInput,
-  Textarea,
-  TextLink,
   UnsavedChangesGuard,
 } from '../../ui';
-import { AbsenceArt } from '../../components/AbsenceArt';
 import { PanelCrest } from '../../components/PanelCrest';
-import { ResolvedImage } from '../../components/QuestionImage';
+import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
 import { useToast } from '../../hooks/useToast';
 import { usePersistentPreference } from '../../hooks/usePersistentPreference';
-import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
-import { formatPersianDate, toPersianDigits } from '../../utils/persian';
-import { getTypeNameInPersian } from '../../utils/question-type-labels';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 
 export default function Questions() {
@@ -71,7 +48,6 @@ export default function Questions() {
     questions: rawQuestions,
     status,
     upsertQuestion,
-    removeQuestion: _removeQuestion,
   } = useTeacherCollections();
   const loading = status.questions === 'loading';
 
@@ -82,67 +58,15 @@ export default function Questions() {
 
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [cleaningImages, setCleaningImages] = useState(false);
-  const [migratingImages, setMigratingImages] = useState(false);
 
-  // Orphan image sweep: reaps mint-then-abandon strays (drawer canceled,
-  // upload succeeded but no question was ever saved). Bounded server-side
-  // (200/call, own folder only); re-run until nothing is reported.
-  const handleCleanupImages = async () => {
-    if (cleaningImages) return;
-    setCleaningImages(true);
-    try {
-      const result = await teacherPost<{
-        ok: boolean;
-        deleted: string[];
-        failed: string[];
-        scanned: number;
-      }>('/api/teacher/images/cleanup', {});
-      const deleted = result?.deleted?.length || 0;
-      const failed = result?.failed?.length || 0;
-      if (failed > 0) {
-        showToast(`پاک‌سازی تصاویر: ${toPersianDigits(deleted)} مورد حذف شد، ${toPersianDigits(failed)} مورد ناموفق بود.`, 'warning');
-      } else if (deleted > 0) {
-        showToast(`${toPersianDigits(deleted)} تصویر بلااستفاده پاک شد.`, 'success');
-      } else {
-        showToast('تصویر بلااستفاده‌ای پیدا نشد.', 'info');
-      }
-    } catch {
-      showToast('پاک‌سازی تصاویر ممکن نشد. دوباره تلاش کنید.', 'error');
-    } finally {
-      setCleaningImages(false);
-    }
-  };
-
-  // Legacy image migration: moves grandfathered data:/external rows into the
-  // private store (server fetches/decodes, SSRF-guarded, 10/call). Re-run
-  // until nothing migrates — then remote pixels stop loading entirely.
-  const handleMigrateImages = async () => {
-    if (migratingImages) return;
-    setMigratingImages(true);
-    try {
-      const result = await teacherPost<{
-        ok: boolean;
-        migrated: { questionId: string; path: string; key: string }[];
-        skipped: { questionId: string; path: string; reason: string }[];
-      }>('/api/teacher/images/migrate', {});
-      const done = result?.migrated?.length || 0;
-      const skipped = result?.skipped?.length || 0;
-      if (done > 0 && skipped > 0) {
-        showToast(`انتقال تصاویر: ${toPersianDigits(done)} مورد منتقل شد، ${toPersianDigits(skipped)} مورد نیازمند بررسی است.`, 'warning');
-      } else if (done > 0) {
-        showToast(`${toPersianDigits(done)} تصویر قدیمی به فضای امن منتقل شد.`, 'success');
-      } else if (skipped > 0) {
-        showToast('تصویری منتقل نشد؛ موارد باقی‌مانده نیازمند بررسی است.', 'warning');
-      } else {
-        showToast('تصویر قدیمی برای انتقال پیدا نشد.', 'info');
-      }
-    } catch {
-      showToast('انتقال تصاویر ممکن نشد. دوباره تلاش کنید.', 'error');
-    } finally {
-      setMigratingImages(false);
-    }
-  };
+  // Orphan image sweep + legacy migration handlers (extracted verbatim from
+  // this page).
+  const {
+    cleaningImages,
+    handleCleanupImages,
+    migratingImages,
+    handleMigrateImages,
+  } = useImageMaintenance(showToast);
 
   // View & UI State
   const [viewMode, setViewMode] = usePersistentPreference<'card' | 'table'>(
@@ -152,46 +76,12 @@ export default function Questions() {
   );
   const [previewQuestion, setPreviewQuestion] = useState<RichQuestion | null>(null);
   const [showAddEditDrawer, setShowAddEditDrawer] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<'add' | 'edit'>('add');
-  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
 
   // Add/edit drawer form state lives in the question-bank feature (extracted
   // verbatim from this page). Setters below feed openEditDrawer and
   // handleSaveQuestion further down.
-  const {
-    formGrade, setFormGrade,
-    formSubject, setFormSubject,
-    formSection, setFormSection,
-    formType, setFormType,
-    formDifficulty, setFormDifficulty,
-    formPoints, setFormPoints,
-    formText, setFormText,
-    formTitle, setFormTitle,
-    formTagsString, setFormTagsString,
-    formExplanation, setFormExplanation,
-    formSampleAnswer, setFormSampleAnswer,
-    formImageUrl, setFormImageUrl,
-    formOptions, setFormOptions,
-    formCorrectTrueFalse, setFormCorrectTrueFalse,
-    formFillBlanks, setFormFillBlanks,
-    formMatchingPairs, setFormMatchingPairs,
-    formOrderingItems, setFormOrderingItems,
-    formRubrics, setFormRubrics,
-    formParts, setFormParts,
-    questionFormSnapshot: _questionFormSnapshot,
-    guardQuestionDraft: _guardQuestionDraft,
-    closeQuestionEditor,
-    handleImageUpload,
-    addOptionRow,
-    removeOptionRow,
-    handleOptionCorrectChange,
-    addRubricRow,
-    removeRubricRow,
-    addPartRow,
-    removePartRow,
-    resetFormValues,
-    questionDraftDialog,
-  } = useQuestionForm(showAddEditDrawer, setShowAddEditDrawer, showToast);
+  const questionForm = useQuestionForm(showAddEditDrawer, setShowAddEditDrawer, showToast);
+  const { closeQuestionEditor, questionDraftDialog } = questionForm;
   /* Preview mounts one frame past drawer open (see drawer-live-visual): the
      open animation's first frame commits the light form tree only, then the
      heavy renderer tree builds while the panel grows (transform-only,
@@ -245,159 +135,27 @@ export default function Questions() {
     filteredQuestions, visibleQuestions, totalPages, safePage,
   } = useQuestionFilters(questions);
 
-
-
   // Unique list generators for filter indicators
   const uniqueSubjects = Array.from(new Set(questions.map((q) => q.category).filter(Boolean)));
-  const uniqueSections = Array.from(new Set(questions.map((q) => q.section).filter(Boolean)));
-  const uniqueTags = Array.from(new Set(questions.flatMap((q) => q.tags || []).filter(Boolean)));
+  // CQ-1 (strict): type predicates — plain filter(Boolean) left string | undefined.
+  const uniqueSections = Array.from(new Set(questions.map((q) => q.section).filter((s): s is string => Boolean(s))));
+  const uniqueTags = Array.from(new Set(questions.flatMap((q) => q.tags || []).filter((t): t is string => Boolean(t))));
 
   // Persiarized helper converters
 
   // Image upload handler: FileReader → dataURL, stored on the question
   // (main imageUrl / option imageUrl) and persisted through questionToBody.
 
-  // Create Question Trigger
-  const openCreateDrawer = () => {
-    setDrawerMode('add');
-    resetFormValues();
-    setPreviewReady(false);
-    setShowAddEditDrawer(true);
-  };
-
-  // Edit Question Drawer loader
-  const openEditDrawer = (q: RichQuestion) => {
-    setDrawerMode('edit');
-    setActiveQuestionId(q.id);
-    setFormGrade(q.grade);
-    setFormSubject(q.category);
-    setFormSection(q.section || 'فصل اول');
-    setFormType(q.type);
-    setFormDifficulty(q.difficulty || 'medium');
-    setFormPoints(q.points);
-    setFormText(q.text);
-    setFormTitle(q.title);
-    setFormTagsString(q.tags?.join(', ') || '');
-    setFormExplanation(q.explanation || '');
-    setFormSampleAnswer(q.sampleAnswer || '');
-    setFormImageUrl(q.imageUrl || '');
-
-    // Type specifics
-    if (q.options) {
-      setFormOptions(
-        q.options.map((o) => ({
-          id: o.id,
-          text: o.text,
-          isCorrect: !!o.isCorrect,
-          imageUrl: o.imageUrl || '',
-        })),
-      );
-    }
-    if (q.type === 'true_false') {
-      setFormCorrectTrueFalse(q.correctAnswer === true);
-    }
-    if (q.correctFillBlanks) {
-      setFormFillBlanks(q.correctFillBlanks);
-    }
-    if (q.matchingPairs) {
-      setFormMatchingPairs(q.matchingPairs);
-    }
-    if (q.orderingItems) {
-      setFormOrderingItems(q.orderingItems);
-    }
-    if (q.rubrics) {
-      setFormRubrics(q.rubrics);
-    }
-    if (q.parts) {
-      setFormParts(q.parts);
-    }
-
-    setPreviewReady(false);
-    setShowAddEditDrawer(true);
-  };
-
-  // Handle Submit Form (Add or Edit)
-  const handleSaveQuestion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formTitle || !formText) {
-      showToast('عنوان و متن اصلی سوال الزامی است.', 'warning');
-      return;
-    }
-
-    // Standardize tags in string separation
-    const parsedTags = formTagsString
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
-    // Build the dynamic correctAnswer key based on type chosen
-    let resolvedCorrectAnswer: Question['correctAnswer'] | undefined = undefined;
-    if (formType === 'true_false') {
-      resolvedCorrectAnswer = formCorrectTrueFalse;
-    } else if (formType === 'single_choice' || formType === 'image_based') {
-      const correctOpt = formOptions.find((o) => o.isCorrect);
-      resolvedCorrectAnswer = correctOpt ? correctOpt.id : formOptions[0]?.id || 'o1';
-    } else if (formType === 'multiple_choice') {
-      resolvedCorrectAnswer = formOptions.filter((o) => o.isCorrect).map((o) => o.id);
-    }
-
-    const modifiedQuestionPayload: Omit<Question, 'id' | 'createdAt'> &
-      Pick<RichQuestion, 'explanation' | 'sampleAnswer'> = {
-      title: formTitle,
-      text: formText,
-      type: formType,
-      points: Number(formPoints),
-      category: formSubject,
-      grade: formGrade,
-      // metadata that must survive reload — server persists these in body
-      // (questionToBody) / answer_key (deriveAnswerKey)
-      difficulty: formDifficulty,
-      section: formSection || undefined,
-      tags: parsedTags,
-      completenessStatus: 'complete',
-      explanation: formExplanation || undefined,
-      sampleAnswer: formType === 'long_answer' ? formSampleAnswer || undefined : undefined,
-      imageUrl: formImageUrl || undefined,
-      options:
-        formType === 'single_choice' || formType === 'multiple_choice' || formType === 'image_based'
-          ? formOptions
-          : undefined,
-      correctAnswer: resolvedCorrectAnswer,
-      correctFillBlanks: formType === 'fill_blank' ? formFillBlanks : undefined,
-      matchingPairs: formType === 'matching' ? formMatchingPairs : undefined,
-      orderingItems: formType === 'ordering' ? formOrderingItems : undefined,
-      rubrics: formType === 'long_answer' ? formRubrics : undefined,
-      parts: formType === 'cloze' || formType === 'reading_comprehension' ? formParts : undefined,
-    };
-
-    setSaveState('saving');
-    try {
-      if (drawerMode === 'add') {
-        // server response now carries difficulty/section/tags/explanation —
-        // no client-side enrichment overlay anymore
-        const created = await questionService.createQuestion(modifiedQuestionPayload);
-        upsertQuestion(created);
-      } else {
-        if (!activeQuestionId) return;
-        const updated = await questionService.updateQuestion(
-          activeQuestionId,
-          modifiedQuestionPayload,
-        );
-        upsertQuestion(updated);
-      }
-      const savedAt = new Date();
-      setLastSavedAt(savedAt);
-      setSaveState('saved');
-      showToast(
-        drawerMode === 'add' ? 'سؤال جدید به بانک اضافه شد.' : 'تغییرات سؤال ذخیره شد.',
-        'success',
-      );
-      setShowAddEditDrawer(false);
-    } catch (_err) {
-      setSaveState('failed');
-      showToast('سؤال ذخیره نشد؛ اطلاعات واردشده حفظ شده است.', 'error');
-    }
-  };
+  // Drawer open/save orchestration (extracted verbatim from this page).
+  const { drawerMode, openCreateDrawer, openEditDrawer, handleSaveQuestion } = useQuestionEditor({
+    form: questionForm,
+    showToast,
+    upsertQuestion,
+    setSaveState,
+    setLastSavedAt,
+    setPreviewReady,
+    setShowAddEditDrawer,
+  });
 
   // Question deletion lives in the question-bank feature (extracted verbatim
   // from this page).
@@ -427,652 +185,75 @@ export default function Questions() {
       <SaveStatusIndicator state={saveState} savedAt={lastSavedAt} />
 
       {/* Page Title Board */}
-      <div
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 lens p-6 rounded-3xl"
-        id="questions-title-plate"
-      >
-        <PageHeader
-          title="مدیریت بانک سوالات نهایی و تستی"
-          subtitle="بانک تخصصی با پشتیبانی از ۱۱ نوع قالب تستی، تشریحی، وصل‌کردنی، مرتب‌سازی، درک‌مطلب و کلوز تست با بارگذاری متنی و تصویری"
-        />
-
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          {/* Card / Table Toggle */}
-          <div className="glx field border rounded-xl p-1 flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={() => setViewMode('card')}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'card' ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'
-              }`}
-              title="نمایش کارتی بخر"
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'table' ? 'btn-glass btn-glass--accent' : 'btn-glass btn-glass--bare'
-              }`}
-              title="نمایش جدولی منظم"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Add Question Button */}
-          <Button
-            id="btn-add-question-trigger"
-            onClick={(e) => {
-              drawerTriggerRef.current = e.currentTarget;
-              openCreateDrawer();
-            }}
-            icon={<PlusCircle className="w-4 h-4" />}
-            className="flex-1 md:flex-none"
-          >
-            افزودن سوال جدید
-          </Button>
-
-          {/* Orphan image sweep — reaps mint-then-abandon strays */}
-          <button
-            type="button"
-            onClick={() => void handleCleanupImages()}
-            disabled={cleaningImages}
-            title="حذف تصاویر بلااستفاده"
-            className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro cursor-pointer disabled:opacity-50 shrink-0"
-          >
-            {cleaningImages ? 'در حال پاک‌سازی…' : 'پاک‌سازی تصاویر بلااستفاده'}
-          </button>
-
-          {/* Legacy image migration — moves grandfathered rows into the store */}
-          <button
-            type="button"
-            onClick={() => void handleMigrateImages()}
-            disabled={migratingImages}
-            title="انتقال تصاویر قدیمی به فضای امن"
-            className="px-3 py-2 btn-glass btn-glass--quiet rounded-xl text-micro cursor-pointer disabled:opacity-50 shrink-0"
-          >
-            {migratingImages ? 'در حال انتقال…' : 'انتقال تصاویر قدیمی'}
-          </button>
-        </div>
-      </div>
+      <QuestionHeaderBoard
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        drawerTriggerRef={drawerTriggerRef}
+        openCreateDrawer={openCreateDrawer}
+        cleaningImages={cleaningImages}
+        handleCleanupImages={handleCleanupImages}
+        migratingImages={migratingImages}
+        handleMigrateImages={handleMigrateImages}
+      />
 
       {/* COMPREHENSIVE MULTI-FILTER PANEL */}
-      <div className="lens p-6 rounded-3xl space-y-4" id="filters-container">
-        <div className="flex items-center gap-2 border-b border-[var(--color-glass-light-stroke)] pb-2.5 mb-2">
-          <Sliders className="w-4 h-4 text-[var(--color-accent)]" />
-          <h2 className="text-caption font-bold text-[var(--color-text-secondary)]">
-            جستجوی موضوعی و پالایش هوشمند سوالات
-          </h2>
-        </div>
+      <QuestionFilterPanel
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedType={selectedType}
+        setSelectedType={setSelectedType}
+        selectedGrade={selectedGrade}
+        setSelectedGrade={setSelectedGrade}
+        selectedSubject={selectedSubject}
+        setSelectedSubject={setSelectedSubject}
+        uniqueSubjects={uniqueSubjects}
+        selectedSection={selectedSection}
+        setSelectedSection={setSelectedSection}
+        uniqueSections={uniqueSections}
+        selectedDifficulty={selectedDifficulty}
+        setSelectedDifficulty={setSelectedDifficulty}
+        selectedTag={selectedTag}
+        setSelectedTag={setSelectedTag}
+        uniqueTags={uniqueTags}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        hasActiveFilters={hasActiveFilters}
+        clearAllFilters={clearAllFilters}
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {/* Search text */}
-          <div className="space-y-1">
-            <FieldLabel>
-              جستجو در متن سوال یا برچسب‌ها:
-            </FieldLabel>
-            <SearchInput
-              placeholder="کلمه کلیدی، عنوان، هشتگ یا درس..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* Type Filter */}
-          <div className="space-y-1">
-            <FieldLabel>
-              نوع قالب‌بندی سوال:
-            </FieldLabel>
-            <Dropdown
-              compact
-              value={selectedType}
-              onChange={(v) => setSelectedType(v)}
-              options={[
-                { value: 'all', label: 'همه قالب‌ها (۱۱ نوع)' },
-                { value: 'single_choice', label: 'چهارگزینه‌ای تک‌پاسخ' },
-                { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
-                { value: 'true_false', label: 'درست / نادرست' },
-                { value: 'matching', label: 'وصل‌کردنی / تطبیقی' },
-                { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
-                { value: 'fill_blank', label: 'جای خالی (تک کلمه‌ای)' },
-                { value: 'short_answer', label: 'پاسخ کوتاه تشریحی' },
-                { value: 'long_answer', label: 'تشریحی بلند' },
-                { value: 'cloze', label: 'کلوز تست (Cloze)' },
-                { value: 'reading_comprehension', label: 'درک مطلب متنی' },
-                { value: 'image_based', label: 'سوال تصویری' },
-              ]}
-            />
-          </div>
-
-          {/* Grade Filter */}
-          <div className="space-y-1">
-            <FieldLabel>
-              پایه تحصیلی:
-            </FieldLabel>
-            <Dropdown
-              compact
-              value={selectedGrade}
-              onChange={(v) => setSelectedGrade(v)}
-              options={[
-                { value: 'all', label: 'همه پایه‌ها' },
-                { value: 'اول', label: 'اول', group: 'دبستان' },
-                { value: 'دوم', label: 'دوم', group: 'دبستان' },
-                { value: 'سوم', label: 'سوم', group: 'دبستان' },
-                { value: 'چهارم', label: 'چهارم', group: 'دبستان' },
-                { value: 'پنجم', label: 'پنجم', group: 'دبستان' },
-                { value: 'ششم', label: 'ششم', group: 'دبستان' },
-                { value: 'هفتم', label: 'هفتم', group: 'دوره اول متوسطه' },
-                { value: 'هشتم', label: 'هشتم', group: 'دوره اول متوسطه' },
-                { value: 'نهم', label: 'نهم', group: 'دوره اول متوسطه' },
-                { value: 'دهم', label: 'دهم', group: 'دوره دوم متوسطه' },
-                { value: 'یازدهم', label: 'یازدهم', group: 'دوره دوم متوسطه' },
-                { value: 'دوازدهم', label: 'دوازدهم', group: 'دوره دوم متوسطه' },
-              ]}
-            />
-          </div>
-
-          {/* Subject Filter */}
-          <div className="space-y-1">
-            <FieldLabel>
-              درس یا موضوع:
-            </FieldLabel>
-            <Dropdown
-              compact
-              value={selectedSubject}
-              onChange={(v) => setSelectedSubject(v)}
-              options={[
-                { value: 'all', label: 'همه درس‌ها' },
-                ...uniqueSubjects.map((sub) => ({ value: sub, label: sub })),
-              ]}
-            />
-          </div>
-
-          {/* Section/Chapter Filter */}
-          <div className="space-y-1">
-            <FieldLabel>
-              بخش یا فصل کتاب:
-            </FieldLabel>
-            <Dropdown
-              compact
-              value={selectedSection}
-              onChange={(v) => setSelectedSection(v)}
-              options={[
-                { value: 'all', label: 'همه فصل‌ها' },
-                ...uniqueSections.map((s) => ({ value: s, label: s })),
-              ]}
-            />
-          </div>
-
-          {/* Difficulty Filter */}
-          <div className="space-y-1">
-            <FieldLabel>
-              سطح سختی سوال:
-            </FieldLabel>
-            <Dropdown
-              compact
-              value={selectedDifficulty}
-              onChange={(v) => setSelectedDifficulty(v)}
-              options={[
-                { value: 'all', label: 'همه سطوح' },
-                { value: 'easy', label: 'آسان' },
-                { value: 'medium', label: 'متوسط' },
-                { value: 'hard', label: 'سخت' },
-              ]}
-            />
-          </div>
-
-          {/* Selective Tag Filter */}
-          <div className="space-y-1">
-            <FieldLabel>
-              برچسب‌ها (هشتگ):
-            </FieldLabel>
-            <Dropdown
-              compact
-              value={selectedTag}
-              onChange={(v) => setSelectedTag(v)}
-              options={[
-                { value: 'all', label: 'همه برچسب‌ها' },
-                ...uniqueTags.map((t) => ({ value: t, label: `#${t}` })),
-              ]}
-            />
-          </div>
-
-          {/* Completeness Status Filter */}
-          <div className="space-y-1">
-            <FieldLabel>
-              وضعیت کاملی سوال:
-            </FieldLabel>
-            <Dropdown
-              compact
-              value={selectedStatus}
-              onChange={(v) => setSelectedStatus(v)}
-              options={[
-                { value: 'all', label: 'همه وضعیت‌ها' },
-                { value: 'complete', label: 'کامل (دارای جواب معتبر)' },
-                { value: 'incomplete', label: 'ناقص (پیشنویس)' },
-              ]}
-            />
-          </div>
-        </div>
-
-        {/* Clear Filter tags */}
-        {hasActiveFilters && (
-          <div className="flex justify-start pt-2 border-t border-[var(--color-glass-light-stroke)]">
-            <PillButton
-              fill="danger-soft"
-              size="lg"
-              radius="lg"
-              onClick={clearAllFilters}
-              className="hover:bg-[var(--color-danger-soft)]/40 transition-all"
-            >
-              حذف فیلترها و نمایش همگانی
-            </PillButton>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-caption">
-          <label htmlFor="question-sort" className="font-bold">
-            مرتب‌سازی
-          </label>
-          <Dropdown
-            id="question-sort"
-            compact
-            value={sortOrder}
-            onChange={(v) => {
-              setSortOrder(v as 'newest' | 'oldest' | 'title');
-              setCurrentPage(1);
-            }}
-            options={[
-              { value: 'newest', label: 'جدیدترین' },
-              { value: 'oldest', label: 'قدیمی‌ترین' },
-              { value: 'title', label: 'عنوان' },
-            ]}
-            className="w-28"
-          />
-          <label htmlFor="question-page-size" className="font-bold">
-            در هر صفحه
-          </label>
-          <Dropdown
-            id="question-page-size"
-            compact
-            value={String(pageSize)}
-            onChange={(v) => {
-              setPageSize(Number(v));
-              setCurrentPage(1);
-            }}
-            options={[
-              { value: '10', label: '۱۰' },
-              { value: '20', label: '۲۰' },
-              { value: '50', label: '۵۰' },
-            ]}
-            className="w-20"
-          />
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2 text-caption">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={safePage === 1}
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-            >
-              قبلی
-            </Button>
-            <span aria-live="polite">
-              صفحه {toPersianDigits(safePage)} از {toPersianDigits(totalPages)}
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={safePage === totalPages}
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-            >
-              بعدی
-            </Button>
-          </div>
-        )}
-      </div>
+      <QuestionSortPaginationBar
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        setCurrentPage={setCurrentPage}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        totalPages={totalPages}
+        safePage={safePage}
+      />
 
       {/* QUESTION REPRESENTATION (CARD GRAPHICS OR ROW GRAPHICS) */}
       <div id="questions-pool-canvas">
         <PanelCrest kind="questions" state={filteredQuestions.length > 0 ? 'filled' : 'empty'}>
-        <AnimatePresence mode="popLayout" initial={false}>
-          {filteredQuestions.length > 0 ? (
-            viewMode === 'card' ? (
-              /* CARD GRID VIEW MODE */
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5" id="questions-grid">
-                {visibleQuestions.map((q) => {
-                  const hasImage = !!q.imageUrl || q.options?.some((o) => o.imageUrl);
-                  const subquestionsCount = q.parts?.length || 0;
-
-                  return (
-                    <motion.div
-                      key={q.id}
-                      layout
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -15 }}
-                      className="lens rounded-3xl p-6 border hover:border-[var(--color-accent)]/20 transition-all flex flex-col justify-between gap-4 relative overflow-hidden"
-                      id={`card-q-${q.id}`}
-                    >
-                      <div className="space-y-3.5">
-                        {/* Upper line metadata */}
-                        <div className="flex items-center justify-between gap-1 text-micro text-[var(--color-text-tertiary)]">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="glx-inset text-[var(--color-text-secondary)] font-bold px-2 py-0.5 rounded-md">
-                              پایه {q.grade}
-                            </span>
-                            <span className="bg-[var(--color-accent-soft)] text-[var(--color-accent)] font-bold px-2 py-0.5 rounded-md">
-                              {q.category}
-                            </span>
-                            {q.section && (
-                              <span className="text-[var(--color-text-tertiary)] italic">
-                                فصل: {q.section}
-                              </span>
-                            )}
-                          </div>
-
-                          {q.difficulty && <DifficultyBadge difficulty={q.difficulty} />}
-                        </div>
-
-                        {/* Title block */}
-                        <div>
-                          <p className="font-bold text-[var(--color-text-primary)] text-caption lines-1 flex items-center gap-1.5">
-                            <Bookmark className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-                            <span>{q.title}</span>
-                          </p>
-                          <p className="text-micro text-[var(--color-text-tertiary)] leading-relaxed mt-1.5 line-clamp-2">
-                            {q.text}
-                          </p>
-                        </div>
-
-                        {/* Middle specific indicators badges */}
-                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--color-glass-light-stroke)]">
-                          <span className="glx field text-[var(--color-text-secondary)] rounded-md px-2 py-0.5 text-micro font-semibold border border-[var(--color-glass-light-stroke)]/60">
-                            {getTypeNameInPersian(q.type)}
-                          </span>
-
-                          <span className="bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/10 px-2.5 py-0.5 rounded-md text-micro">
-                            نمره: {toPersianDigits(q.points)}
-                          </span>
-
-                          {subquestionsCount > 0 && (
-                            <span className="bg-[var(--color-info-soft)]/30 text-[var(--color-info)] border border-[var(--color-info)]/20 px-2 py-0.5 rounded-md text-micro font-semibold">
-                              {toPersianDigits(subquestionsCount)} مینی‌سوال تابعه
-                            </span>
-                          )}
-
-                          {hasImage && (
-                            <span className="bg-[var(--color-accent-soft)]/40 text-[var(--color-accent)] border border-[var(--color-accent)]/20 px-2 py-0.5 rounded-md text-micro flex items-center gap-1 font-semibold">
-                              <ImageIcon className="w-3 h-3 text-[var(--color-accent)]" />
-                              <span>تصویردار</span>
-                            </span>
-                          )}
-
-                          {q.completenessStatus === 'incomplete' && (
-                            <span className="bg-[var(--color-danger-soft)]/40 text-[var(--color-danger)] border border-[var(--color-danger)]/10 px-2 py-0.5 rounded-md text-micro flex items-center gap-0.5">
-                              <AlertCircle className="w-3" />
-                              پیش‌نویس
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Card Action footer operations */}
-                      <div className="border-t pt-3.5 flex justify-between items-center pane -m-5 mt-2 px-5 py-3">
-                        <div className="flex gap-1.5">
-                          {q.tags?.slice(0, 2).map((tag, i) => (
-                            <span
-                              key={i}
-                              className="text-micro text-[var(--color-accent)] glx field border px-1.5 py-0.5 rounded-md"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="flex gap-1.5">
-                          <IconButton
-                            label="پیش‌نمایش زنده"
-                            title="پیش‌نمایش زنده"
-                            size="sm"
-                            radius="lg"
-                            tone="accent"
-                            surface="bright"
-                            onClick={(e) => {
-                              previewTriggerRef.current = e.currentTarget;
-                              setPreviewQuestion(q);
-                            }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </IconButton>
-                          <IconButton
-                            label="ویرایش سوال"
-                            title="ویرایش سوال"
-                            size="sm"
-                            radius="lg"
-                            tone="secondary"
-                            surface="bright"
-                            onClick={(e) => {
-                              drawerTriggerRef.current = e.currentTarget;
-                              openEditDrawer(q);
-                            }}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </IconButton>
-                          <IconButton
-                            label="حذف سوال"
-                            title="حذف سوال"
-                            size="sm"
-                            radius="lg"
-                            tone="danger"
-                            surface="wash"
-                            onClick={() => handleDeleteQuestion(q.id, q.title)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </IconButton>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            ) : (
-              /* TABLE ROW VIEW MODE */
-              <div
-                className="lens rounded-3xl overflow-hidden"
-                id="questions-table-view-box"
-              >
-                <div className="overflow-x-auto text-right">
-                  <table
-                    className="w-full text-caption text-[var(--color-text-secondary)]"
-                    id="questions-table"
-                  >
-                    <thead className="border-b text-[var(--color-text-tertiary)]">
-                      <tr>
-                        <th className="p-4 font-bold text-right">خلاصه متن سوال</th>
-                        <th className="p-4 font-bold text-right">پایه</th>
-                        <th className="p-4 font-bold text-right">درس / فصل</th>
-                        <th className="p-4 font-bold text-right">نوع قالب سوال</th>
-                        <th className="p-4 font-bold text-center">سختی</th>
-                        <th className="p-4 font-bold text-center">نمره (بارم)</th>
-                        <th className="p-4 font-bold text-center">زیرسوال‌ها</th>
-                        <th className="p-4 font-bold text-center">پیوست عکس</th>
-                        <th className="p-4 font-bold text-center font-sans">عملیات</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--color-glass-light-stroke)]">
-                      {visibleQuestions.map((q) => {
-                        const hasImage = !!q.imageUrl || q.options?.some((o) => o.imageUrl);
-                        const subquestionsCount = q.parts?.length || 0;
-
-                        return (
-                          <motion.tr
-                            key={q.id}
-                            layout
-                            className="hover:brightness-105 transition-colors"
-                          >
-                            {/* Short question text */}
-                            <td className="p-4 max-w-xs md:max-w-sm">
-                              <div>
-                                <h5 className="font-bold text-[var(--color-text-primary)] line-clamp-1">
-                                  {q.title}
-                                </h5>
-                                <p className="text-micro text-[var(--color-text-tertiary)] line-clamp-1 mt-0.5">
-                                  {q.text}
-                                </p>
-                              </div>
-                            </td>
-
-                            {/* Grade */}
-                            <td className="p-4 text-[var(--color-text-secondary)] font-medium">
-                              پایه {q.grade}
-                            </td>
-
-                            {/* Subject & Section */}
-                            <td className="p-4 text-[var(--color-text-secondary)]">
-                              <span className="font-semibold block">{q.category}</span>
-                              <span className="text-micro text-[var(--color-text-tertiary)] block mt-0.5">
-                                {q.section || 'فصل کلی'}
-                              </span>
-                            </td>
-
-                            {/* Grade Type */}
-                            <td className="p-4">
-                              <span className="text-[var(--color-accent)] font-semibold bg-[var(--color-accent-soft)] text-micro px-2 py-0.5 rounded-full border border-[var(--color-accent-soft)]">
-                                {getTypeNameInPersian(q.type)}
-                              </span>
-                            </td>
-
-                            {/* Difficulty */}
-                            <td className="p-4 text-center">
-                              {q.difficulty ? (
-                                <DifficultyBadge difficulty={q.difficulty} />
-                              ) : (
-                                <span className="text-[var(--color-text-tertiary)]">—</span>
-                              )}
-                            </td>
-
-                            {/* Score Gained */}
-                            <td className="p-4 text-center text-[var(--color-warning)] font-mono text-micro">
-                              {toPersianDigits(q.points)}
-                            </td>
-
-                            {/* Subquestions count */}
-                            <td className="p-4 text-center">
-                              <span
-                                className={`font-semibold ${subquestionsCount > 0 ? 'text-[var(--color-info)]' : 'text-[var(--color-text-tertiary)]'}`}
-                              >
-                                {subquestionsCount > 0 ? toPersianDigits(subquestionsCount) : '—'}
-                              </span>
-                            </td>
-
-                            {/* Has image? */}
-                            <td className="p-4 text-center">
-                              <span
-                                className={`inline-block w-2.5 h-2.5 rounded-full ${hasImage ? 'bg-[var(--color-accent-soft)]/40 border border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/40 shadow-xs' : 'glx-inset'}`}
-                                title={hasImage ? 'دارای تصویر ضمیمه' : 'فاقد تصویر'}
-                              ></span>
-                            </td>
-
-                            {/* Row Actions */}
-                            <td className="p-4 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <IconButton
-                                  label="پیش‌نمایش"
-                                  title="پیش‌نمایش"
-                                  size="xs"
-                                  radius="lg"
-                                  tone="accent"
-                                  surface="bright"
-                                  motion={false}
-                                  onClick={(e) => {
-                                    previewTriggerRef.current = e.currentTarget;
-                                    setPreviewQuestion(q);
-                                  }}
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                </IconButton>
-                                <IconButton
-                                  label="ویرایش"
-                                  title="ویرایش"
-                                  size="xs"
-                                  tone="tertiary"
-                                  surface="bright"
-                                  motion={false}
-                                  onClick={(e) => {
-                                    drawerTriggerRef.current = e.currentTarget;
-                                    openEditDrawer(q);
-                                  }}
-                                >
-                                  <Edit className="w-3.5 h-3.5" />
-                                </IconButton>
-                                <IconButton
-                                  label="حذف"
-                                  title="حذف"
-                                  size="xs"
-                                  radius="lg"
-                                  tone="danger"
-                                  surface="wash"
-                                  motion={false}
-                                  onClick={() => handleDeleteQuestion(q.id, q.title)}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </IconButton>
-                              </div>
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )
-          ) : (
-            /* EMPTY FILTERED QUESTIONS STATE */
-            <div id="empty-questions">
-              {/* C.2 abs-4 — no filter match: the absence piece, not the
-                  neutral parent motif (which means "bank is empty"). */}
-              <EmptyState
-                art={<AbsenceArt kind="no-results" size={160} />}
-                title="هیچ سوالی با فیلترهای بالا همخوانی ندارد"
-                description="می‌توانید فیلترهای جستجو، سطح سختی یا نوع سوالات را تغییر دهید یا نسبت به افزودن سوال جدید به مخزن اقدام کنید."
-              />
-            </div>
-          )}
-        </AnimatePresence>
+        <QuestionListViews
+          viewMode={viewMode}
+          filteredQuestions={filteredQuestions}
+          visibleQuestions={visibleQuestions}
+          previewTriggerRef={previewTriggerRef}
+          setPreviewQuestion={setPreviewQuestion}
+          drawerTriggerRef={drawerTriggerRef}
+          openEditDrawer={openEditDrawer}
+          handleDeleteQuestion={handleDeleteQuestion}
+        />
         </PanelCrest>
       </div>
 
       {/* REUSABLE live preview question modal — library chrome */}
-      <Modal
-        isOpen={previewQuestion !== null}
-        onClose={() => setPreviewQuestion(null)}
-        title="شبیه‌ساز پیش‌نمایش سوال در برگه پاسخ‌نامه"
-        icon={<Sparkles className="w-4 h-4" />}
-        maxWidth="lg"
-        triggerRef={previewTriggerRef}
-        footerClassName="justify-between"
-        footer={
-          previewQuestion && (
-            <>
-              <span>شناسه تخصصی سوال: {previewQuestion.id}</span>
-              <span>
-                بروزرسانی شده در: {toPersianDigits(formatPersianDate(previewQuestion.createdAt))}
-              </span>
-            </>
-          )
-        }
-      >
-        {previewQuestion && (
-          <QuestionRenderer question={previewQuestion} showCorrectAnswers={true} />
-        )}
-      </Modal>
+      <QuestionPreviewModal
+        previewQuestion={previewQuestion}
+        setPreviewQuestion={setPreviewQuestion}
+        previewTriggerRef={previewTriggerRef}
+        QuestionRenderer={QuestionRenderer}
+      />
 
       {/* MEGA ADD / EDIT — same centered, rounded glass panel as every other
           overlay (was a full-height side slab with a border-l and a halo sized
@@ -1101,302 +282,14 @@ export default function Questions() {
         }
       >
         {/* Left Column (Realtime live visual preview of QuestionRenderer as the teacher types!) */}
-        <div
-          className="hidden lg:block lg:col-span-5 glx-inset p-5 overflow-y-auto border-l border-[var(--color-glass-light-stroke)]"
-          id="drawer-live-visual"
-        >
-          <div className="sticky top-0 space-y-3.5">
-            <div className="flex items-center gap-1 text-[var(--color-text-tertiary)] font-bold mb-1">
-              <Eye className="w-4 h-4 text-[var(--color-accent)]" />
-              <span className="text-micro">محیط پیش‌نمایش لحظه‌ای دبیر:</span>
-            </div>
-
-            {/* Live preview — mounts one frame past drawer open (previewReady):
-                the open commit carries the light form tree only; this heavy
-                tree builds while the panel grows. Skeleton meanwhile (and
-                Suspense until the idle-preloaded chunk resolves). */}
-            {previewReady ? (
-              <Suspense
-                fallback={
-                  <div className="space-y-3" role="status" aria-label="در حال بارگذاری پیش‌نمایش">
-                    <div className="h-8 rounded-xl bg-[var(--color-surface-secondary)] skeleton" />
-                    <div className="h-40 rounded-2xl bg-[var(--color-surface-secondary)] skeleton" />
-                  </div>
-                }
-              >
-                <QuestionRenderer
-                  question={{
-                    id: 'dummy-drawer',
-                    type: formType,
-                    title: formTitle || 'بدون عنوان',
-                    text: formText || 'لطفاً متن صورت سوال را بنویسید...',
-                    points: formPoints,
-                    category: formSubject,
-                    grade: formGrade,
-                    section: formSection,
-                    difficulty: formDifficulty,
-                    options:
-                      formType === 'single_choice' ||
-                      formType === 'multiple_choice' ||
-                      formType === 'image_based'
-                        ? formOptions
-                        : undefined,
-                    correctAnswer: formType === 'true_false' ? formCorrectTrueFalse : undefined, // choices mapping takes formOptions isCorrect in renderer
-                    correctFillBlanks: formType === 'fill_blank' ? formFillBlanks : undefined,
-                    matchingPairs: formType === 'matching' ? formMatchingPairs : undefined,
-                    orderingItems: formType === 'ordering' ? formOrderingItems : undefined,
-                    imageUrl: formImageUrl || undefined,
-                    explanation: formExplanation || undefined,
-                    sampleAnswer: formSampleAnswer || undefined,
-                    rubrics: formType === 'long_answer' ? formRubrics : undefined,
-                    parts:
-                      formType === 'cloze' || formType === 'reading_comprehension'
-                        ? formParts
-                        : undefined,
-                    tags: formTagsString
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  }}
-                  showCorrectAnswers={true}
-                />
-              </Suspense>
-            ) : (
-              <div className="space-y-3" role="status" aria-label="در حال بارگذاری پیش‌نمایش">
-                <div className="h-8 rounded-xl bg-[var(--color-surface-secondary)] skeleton" />
-                <div className="h-40 rounded-2xl bg-[var(--color-surface-secondary)] skeleton" />
-              </div>
-            )}
-
-            <div className="glx0 border border-[var(--color-glass-light-stroke)] p-3.5 rounded-2xl text-micro leading-relaxed text-[var(--color-text-tertiary)] flex items-start gap-1.5 shadow-xs">
-              <Info className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-tertiary)] mt-0.5" />
-              <span>
-                تغیرات بالا بلافاصله با تایپ کردن فرم زیر، به‌روزرسانی می‌شوند تا ساختار نهایی را
-                بررسی نمایید.
-              </span>
-            </div>
-          </div>
-        </div>
+        <QuestionDrawerPreview
+          form={questionForm}
+          previewReady={previewReady}
+          QuestionRenderer={QuestionRenderer}
+        />
 
         {/* Right Column (Intense Form controls) */}
-        <div className="lg:col-span-7 overflow-y-auto p-6 lens space-y-5" id="drawer-form-contents">
-          <form id="question-editor-form" onSubmit={handleSaveQuestion} className="space-y-4">
-            {/* 1. Grade, Subject, Section, Difficulty */}
-            <div className="pane p-4 rounded-2xl space-y-3">
-              <span className="text-[var(--color-text-primary)] text-micro block border-r-2 border-[var(--color-accent)]/100 pr-2 mb-2">
-                شناسنامه علمی سوال
-              </span>
-
-              <div className="grid grid-cols-2 gap-3.5">
-                {/* Grade Selector */}
-                <div className="space-y-1">
-                  <FieldLabel>
-                    پایه تحصیلی:
-                  </FieldLabel>
-                  <Dropdown
-                    value={formGrade}
-                    onChange={(v) => setFormGrade(v)}
-                    options={[
-                      { value: '', label: 'انتخاب پایه...' },
-                      { value: 'اول', label: 'اول', group: 'دبستان' },
-                      { value: 'دوم', label: 'دوم', group: 'دبستان' },
-                      { value: 'سوم', label: 'سوم', group: 'دبستان' },
-                      { value: 'چهارم', label: 'چهارم', group: 'دبستان' },
-                      { value: 'پنجم', label: 'پنجم', group: 'دبستان' },
-                      { value: 'ششم', label: 'ششم', group: 'دبستان' },
-                      { value: 'هفتم', label: 'هفتم', group: 'دوره اول متوسطه' },
-                      { value: 'هشتم', label: 'هشتم', group: 'دوره اول متوسطه' },
-                      { value: 'نهم', label: 'نهم', group: 'دوره اول متوسطه' },
-                      { value: 'دهم', label: 'دهم', group: 'دوره دوم متوسطه' },
-                      { value: 'یازدهم', label: 'یازدهم', group: 'دوره دوم متوسطه' },
-                      { value: 'دوازدهم', label: 'دوازدهم', group: 'دوره دوم متوسطه' },
-                    ]}
-                  />
-                </div>
-
-                {/* Subject */}
-                <Input
-                  label="موضوع درس:"
-                  size="sm"
-                  type="text"
-                  required
-                  value={formSubject}
-                  onChange={(e) => setFormSubject(e.target.value)}
-                  placeholder="مثال: علوم تجربی، ریاضی"
-                />
-
-                {/* Section */}
-                <Input
-                  label="بخش / فصل کتاب:"
-                  size="sm"
-                  type="text"
-                  required
-                  value={formSection}
-                  onChange={(e) => setFormSection(e.target.value)}
-                  placeholder="مثال: فصل اول یا مبحث فیزیک"
-                />
-
-                {/* Difficulty */}
-                <div className="space-y-1">
-                  <FieldLabel>
-                    سطح سختی علمی:
-                  </FieldLabel>
-                  <Dropdown
-                    value={formDifficulty}
-                    onChange={(v) => setFormDifficulty(v as 'easy' | 'medium' | 'hard')}
-                    options={[
-                      { value: 'easy', label: 'آسان' },
-                      { value: 'medium', label: 'متوسط' },
-                      { value: 'hard', label: 'سخت / استعداد درخشان' },
-                    ]}
-                  />
-                </div>
-
-                {/* Points / Barom */}
-                <Input
-                  label="امتیاز / بارم نمره:"
-                  size="sm"
-                  type="number"
-                  min={0.25}
-                  max={20}
-                  step={0.25}
-                  value={formPoints}
-                  onChange={(e) => setFormPoints(Number(e.target.value))}
-                  className="font-bold"
-                />
-
-                {/* Tags separated */}
-                <Input
-                  label="کلمات کلیدی / تگ‌ها (کاما جدا کننده):"
-                  size="sm"
-                  type="text"
-                  value={formTagsString}
-                  onChange={(e) => setFormTagsString(e.target.value)}
-                  placeholder="کنکوری، تستی، مهم"
-                  className="text-[var(--color-accent)] font-bold"
-                />
-              </div>
-            </div>
-
-            {/* 2. Type selection picker */}
-            <div className="space-y-1.5">
-              <FieldLabel>
-                انتخاب قالب بندی ساختاری سوال (۱۱ نوع):
-              </FieldLabel>
-              <Dropdown
-                value={formType}
-                onChange={(v) => setFormType(v as QuestionType)}
-                options={[
-                  { value: 'single_choice', label: 'چهارگزینه‌ای تک‌پاسخ' },
-                  { value: 'multiple_choice', label: 'چندگزینه‌ای چندپاسخ' },
-                  { value: 'true_false', label: 'درست / نادرست' },
-                  { value: 'fill_blank', label: 'جای خالی' },
-                  { value: 'short_answer', label: 'پاسخ کوتاه تشریحی' },
-                  { value: 'long_answer', label: 'پاسخ تشریحی بلند' },
-                  { value: 'matching', label: 'وصل‌کردنی' },
-                  { value: 'ordering', label: 'مرتب‌سازی ترتیبی' },
-                  { value: 'cloze', label: 'کلوز تست (Cloze)' },
-                  { value: 'reading_comprehension', label: 'درک مطلب passage' },
-                  { value: 'image_based', label: 'سوال تصویری اختصاصی' },
-                ]}
-              />
-            </div>
-
-            {/* 3. Title & Text prompts */}
-            <div className="space-y-3.5">
-              <Input
-                label="عنوان خلاصه سوال (برای معلم):"
-                size="sm"
-                type="text"
-                required
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                placeholder="ماشاالله: محاسبه سرعت زاویه‌ای"
-                className="font-bold"
-              />
-
-              <Textarea
-                label="متن اصلی صورت سوال / مسئله (فرمول گذاری):"
-                size="sm"
-                required
-                rows={4}
-                value={formText}
-                onChange={(e) => setFormText(e.target.value)}
-                placeholder="متن کامل سوال خود را به زبان فارسی روان تالیف کنید..."
-                className="font-medium"
-              />
-            </div>
-
-            {/* 4. IMAGE SUPPORT: UPLOAD & PREVIEW */}
-            <div className="relative pane p-4 rounded-xl space-y-2">
-              <span className="text-micro text-[var(--color-text-primary)] block">
-                الصاق پرونده تصویر برای کل سوال (اختیاری):
-              </span>
-
-              <div className="flex items-center gap-3">
-                {/* Hidden manual selector */}
-                <label className="px-4 py-2 btn-glass btn-glass--quiet text-[var(--color-text-secondary)] text-micro rounded-xl cursor-pointer transition-all flex items-center gap-1">
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  <span>انتخاب فایل تصویر</span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e, 'main')}
-                  />
-                </label>
-
-                {formImageUrl ? (
-                  <div className="flex items-center gap-2">
-                    <ResolvedImage
-                      value={formImageUrl}
-                      alt="تصویر بارگذاری شده در فرم"
-                      imgClassName="w-12 h-12 rounded-lg object-cover border border-[var(--color-glass-light-stroke)] bg-[var(--color-surface)]"
-                    />
-                    <TextLink tone="danger" bold onClick={() => setFormImageUrl('')}>
-                      حذف پیوست ×
-                    </TextLink>
-                  </div>
-                ) : (
-                  <span className="text-micro text-[var(--color-text-tertiary)]">
-                    تصویری ضمیمه نشده است (فرمت .png, .jpg و .gif پشتیبانی می‌شود)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* 5. TYPE SPECIFIC OPTIONS BUILDERS */}
-
-            {/* 5. TYPE SPECIFIC BUILDERS — the per-type answer-key editors */}
-            <QuestionTypeBuilders
-              formType={formType}
-              formOptions={formOptions} setFormOptions={setFormOptions}
-              addOptionRow={addOptionRow} removeOptionRow={removeOptionRow}
-              handleOptionCorrectChange={handleOptionCorrectChange}
-              formCorrectTrueFalse={formCorrectTrueFalse}
-              setFormCorrectTrueFalse={setFormCorrectTrueFalse}
-              formFillBlanks={formFillBlanks} setFormFillBlanks={setFormFillBlanks}
-              formMatchingPairs={formMatchingPairs} setFormMatchingPairs={setFormMatchingPairs}
-              formOrderingItems={formOrderingItems} setFormOrderingItems={setFormOrderingItems}
-              formRubrics={formRubrics} setFormRubrics={setFormRubrics}
-              addRubricRow={addRubricRow} removeRubricRow={removeRubricRow}
-              formSampleAnswer={formSampleAnswer} setFormSampleAnswer={setFormSampleAnswer}
-              formParts={formParts} setFormParts={setFormParts}
-              addPartRow={addPartRow} removePartRow={removePartRow}
-              handleImageUpload={handleImageUpload}
-            />
-
-            {/* 6. General explanation (teacher comments / solutions) */}
-            <Textarea
-              label="توضیح پاسخ تشریحی / راهنمای نمره‌دهی متفرقه (اختیاری):"
-              size="sm"
-              rows={2}
-              value={formExplanation}
-              onChange={(e) => setFormExplanation(e.target.value)}
-              placeholder="این یادداشت به دانش‌آموزان در قالب پاسخ‌برگ تشریحی سیستم نشان داده خواهد گردید..."
-            />
-          </form>
-        </div>
+        <QuestionEditorForm form={questionForm} handleSaveQuestion={handleSaveQuestion} />
       </Modal>
 
       {/* Delete Question Confirmation */}

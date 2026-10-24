@@ -6,54 +6,6 @@
 import { logger } from '../lib/logger';
 
 /**
- * Validates an Iranian National ID (کد ملی).
- * @param code 10-digit National ID string
- * @returns boolean
- */
-export function validateIranianNationalId(code: string): boolean {
-  if (!code) return false;
-
-  // Clean english/persian numerals to english digits
-  const cleanCode = String(code)
-    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-    .trim();
-
-  if (!/^\d{10}$/.test(cleanCode)) {
-    return false;
-  }
-
-  // Check if all digits are the same
-  if (/^(\d)\1{9}$/.test(cleanCode)) {
-    return false;
-  }
-
-  const digits = cleanCode.split('').map(Number);
-  const checkDigit = digits[9];
-
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    sum += digits[i] * (10 - i);
-  }
-
-  const remainder = sum % 11;
-  if (remainder < 2) {
-    return checkDigit === remainder;
-  } else {
-    return checkDigit === 11 - remainder;
-  }
-}
-
-/**
- * Masks the Iranian National ID for privacy and security.
- * Format: "002***7654"
- */
-export function maskNationalId(code: string): string {
-  if (!code || code.length < 6) return '***';
-  const cleanCode = String(code).trim();
-  return `${cleanCode.substring(0, 3)}***${cleanCode.substring(Math.max(3, cleanCode.length - 4))}`;
-}
-
-/**
  * Converts numbers/digits from English to Persian representation.
  */
 export function formatPersianNumber(str: string | number | null | undefined): string {
@@ -125,7 +77,7 @@ export function normalizePersianText(value: string | number | null | undefined):
   if (value === null || value === undefined) return '';
   return toEnglishDigits(String(value))
     .replace(/[یى]/g, 'ی')
-    .replace(/ک/g, 'ک')
+    .replace(/\u0643/g, 'ک')
     .replace(/ة/g, 'ه')
     .replace(/[أإٱ]/g, 'ا')
     .replace(/[\u064B-\u065F\u0670]/g, '')
@@ -166,12 +118,4 @@ export function formatPersianRelativeTime(
  */
 export function formatPersianDateTime(dateInput: string | Date | null | undefined): string {
   return formatPersianDate(dateInput, true);
-}
-
-/**
- * Formats exam duration in minutes into a Persian description.
- */
-export function formatExamDuration(minutes: number): string {
-  if (!minutes) return '—';
-  return `${toPersianDigits(minutes)} دقیقه`;
 }

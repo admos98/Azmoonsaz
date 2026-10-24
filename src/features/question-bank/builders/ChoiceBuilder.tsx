@@ -94,7 +94,8 @@ export function ChoiceBuilder({
                         value={opt.text}
                         onChange={(e) => {
                           const updated = [...formOptions];
-                          updated[oIdx].text = e.target.value;
+                          // FE-9 fix: immutable element replacement.
+                          updated[oIdx] = { ...updated[oIdx], text: e.target.value };
                           setFormOptions(updated);
                         }}
                         placeholder={`عبارت گزینه ${oIdx + 1}`}
@@ -130,7 +131,8 @@ export function ChoiceBuilder({
                               hover="none"
                               onClick={() => {
                                 const updated = [...formOptions];
-                                updated[oIdx].imageUrl = '';
+                                // FE-9 fix: immutable element replacement.
+                                updated[oIdx] = { ...updated[oIdx], imageUrl: '' };
                                 setFormOptions(updated);
                               }}
                             >

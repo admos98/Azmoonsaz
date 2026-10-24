@@ -215,8 +215,7 @@ describe('exam-payload rate limit (Wave B)', () => {
 });
 
 describe('proctor counter ingestion (Wave B)', () => {
-  it('whitelists keys, bounds values and max-merges with existing flags', async () => {
-    const sessionUpdates: Array<Record<string, unknown>> = [];
+  it('whitelists keys, bounds values and hands the merge to the atomic RPC (BE-10)', async () => {
     const admin = createAdmin({
       student_exam_sessions: {
         onResult: (ctx) => {
@@ -225,10 +224,6 @@ describe('proctor counter ingestion (Wave B)', () => {
               data: { ...sessionRow, proctor_flags: { tabHidden: 3 } },
               error: null,
             };
-          if (ctx.op === 'update') {
-            sessionUpdates.push(ctx.payload);
-            return { data: ctx.payload, error: null };
-          }
           return undefined;
         },
       },
@@ -254,12 +249,47 @@ describe('proctor counter ingestion (Wave B)', () => {
     );
 
     expect(res.statusCode).toBe(200);
-    expect(sessionUpdates).toHaveLength(1);
-    expect(sessionUpdates[0].proctor_flags).toEqual({
-      tabHidden: 5, // max(3 existing, 5 incoming)
-      copyAttempt: 2,
-      contextMenu: 1,
+    // BE-10 fix: the max-merge now runs inside bump_proctor_flags (one atomic
+    // SQL statement). The route still owns whitelisting/bounding/flooring —
+    // assert the exact sanitized payload handed to the RPC.
+    expect(admin.rpcCalls).toHaveLength(1);
+    expect(admin.rpcCalls[0].fn).toBe('bump_proctor_flags');
+    expect(admin.rpcCalls[0].params).toEqual({
+      p_session_id: sessionRow.id,
+      p_flags: {
+        tabHidden: 5,
+        copyAttempt: 2,
+        contextMenu: 1,
+      },
     });
+  });
+
+  it('submit piggybacks its final proctor reading through the same atomic RPC', async () => {
+    const admin = createAdmin({
+      student_exam_sessions: {
+        single: { ...sessionRow, status: 'ongoing' },
+        onResult: (ctx) => {
+          if (ctx.op === 'select') return { data: { ...sessionRow, status: 'ongoing' }, error: null };
+          if (ctx.op === 'update') return { data: { ...sessionRow, status: 'submitted' }, error: null };
+          return undefined;
+        },
+      },
+      exam_questions: { rows: [] },
+      questions: { rows: [] },
+      student_answers: { rows: [] },
+    });
+    vi.mocked(getSupabaseAdmin).mockReturnValue(admin as never);
+
+    const res = createRes();
+    await handleStudentSubmit(
+      bearerReq('/api/student/submit', { proctor: { tabHidden: 2, printAttempt: 1 } }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(admin.rpcCalls).toHaveLength(1);
+    expect(admin.rpcCalls[0].fn).toBe('bump_proctor_flags');
+    expect(admin.rpcCalls[0].params.p_flags).toEqual({ tabHidden: 2, printAttempt: 1 });
   });
 });
 

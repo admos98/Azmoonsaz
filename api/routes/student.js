@@ -19,7 +19,7 @@ import {
   gradeAnswerValue,
   gradeTypedAnswer,
 } from '../_lib/examSecurity.js';
-import { tokenTtlForSession, isUuid } from '../_lib/utils.js';
+import { tokenTtlForSession } from '../_lib/utils.js';
 import {
   selectImageStore,
   substituteImageUrls,
@@ -49,16 +49,9 @@ function normalizeProctorFlags(input) {
   return Object.keys(out).length > 0 ? out : null;
 }
 
-// Client sends CUMULATIVE totals per page-session; max() keeps the merge
-// idempotent across repeated reports and reloads (counters restart at 0).
-function mergeProctorFlags(current, incoming) {
-  const merged = { ...(current && typeof current === 'object' ? current : {}) };
-  for (const [key, value] of Object.entries(incoming)) {
-    if (!PROCTOR_KEYS.includes(key)) continue;
-    merged[key] = Math.max(Number(merged[key]) || 0, value);
-  }
-  return merged;
-}
+// Client sends CUMULATIVE totals per page-session; the max() merge itself
+// moved into the atomic SQL function `bump_proctor_flags` (BE-10 fix) so
+// concurrent saves can no longer lose counters to a stale read-modify-write.
 
 /**
  * Wave B: server-side auto-grade pass at submit. Compares stored `{ value }`
@@ -164,6 +157,9 @@ async function evaluateRejoin(supabase, session, exam) {
     // (cascade-equivalent explicit wipe) and the student gets a fresh
     // personal window. Update-in-place — never delete+insert — so the
     // (exam_id, student_id) unique index can't 500 a concurrent rejoin.
+    // BE-3 fix: the epoch bump invalidates every bearer minted BEFORE the
+    // reset — a squatter's outstanding JWT stops validating on payload /
+    // save / submit even though the same row is now 'ongoing' again.
     const { error: wipeError } = await supabase
       .from('student_answers')
       .delete()
@@ -176,9 +172,10 @@ async function evaluateRejoin(supabase, session, exam) {
         started_at: new Date().toISOString(),
         submitted_at: null,
         invalidated_reason: null,
+        token_epoch: Date.now(),
       })
       .eq('id', session.id)
-      .select('id, status, started_at, submitted_at')
+      .select('id, status, started_at, submitted_at, token_epoch')
       .single();
     if (readmitError) throw readmitError;
     session = readmitted;
@@ -339,7 +336,7 @@ async function handleStudentStartSession(req, res) {
     }
     const { data: existing, error: existingError } = await supabase
       .from('student_exam_sessions')
-      .select('id, status, started_at, submitted_at, invalidated_reason')
+      .select('id, status, started_at, submitted_at, invalidated_reason, token_epoch')
       .eq('exam_id', exam.id)
       .eq('student_id', student.id)
       .maybeSingle();
@@ -373,7 +370,7 @@ async function handleStudentStartSession(req, res) {
         if (insertError.code === '23505') {
           const { data: raced, error: racedError } = await supabase
             .from('student_exam_sessions')
-            .select('id, status, started_at, submitted_at, invalidated_reason')
+            .select('id, status, started_at, submitted_at, invalidated_reason, token_epoch')
             .eq('exam_id', exam.id)
             .eq('student_id', student.id)
             .single();
@@ -390,8 +387,18 @@ async function handleStudentStartSession(req, res) {
       }
     }
     // TTL is anchored to the session clock — re-joining never resets the window.
+    // BE-3 fix: the token carries the session's token_epoch. A pin_reset
+    // re-admit bumps the epoch, so a squatter's pre-reset bearer (bound only
+    // to sid/eid/stid) fails the epoch check on every subsequent call instead
+    // of resurrecting alongside the legitimate student's fresh token.
     const token = createStudentSessionToken(
-      { type: 'student_exam', sid: session.id, eid: exam.id, stid: student.id },
+      {
+        type: 'student_exam',
+        sid: session.id,
+        eid: exam.id,
+        stid: student.id,
+        tep: Number(session.token_epoch || 0),
+      },
       tokenTtlForSession(exam, session),
     );
     json(res, 200, {
@@ -401,7 +408,7 @@ async function handleStudentStartSession(req, res) {
       exam: safeExamForStudent(exam),
       student: { id: student.id, name: student.full_name, grade: student.grade },
     });
-  } catch (err) {
+  } catch {
     json(res, 500, { error: 'start_session_failed' });
   }
 }
@@ -423,7 +430,7 @@ async function handleStudentExamPayload(req, res) {
     const supabase = getSupabaseAdmin();
     const { data: session, error: sessionError } = await supabase
       .from('student_exam_sessions')
-      .select('id, exam_id, student_id, status, started_at')
+      .select('id, exam_id, student_id, status, started_at, token_epoch')
       .eq('id', payload.sid)
       .eq('exam_id', payload.eid)
       .eq('student_id', payload.stid)
@@ -431,6 +438,10 @@ async function handleStudentExamPayload(req, res) {
     if (sessionError) throw sessionError;
     if (!session || session.status !== 'ongoing')
       return json(res, 403, { error: 'session_not_active' });
+    // BE-3 fix: epoch mismatch = pre-reset bearer. Same answer as an invalid
+    // token so a squatter learns nothing about the session's new lease.
+    if (Number(session.token_epoch || 0) !== Number(payload.tep || 0))
+      return json(res, 401, { error: 'invalid_session' });
     const { data: exam, error: examError } = await supabase
       .from('exams')
       .select(
@@ -460,17 +471,30 @@ async function handleStudentExamPayload(req, res) {
       questions = data || [];
     }
     const questionById = new Map(questions.map((q) => [q.id, q]));
-    const safeQuestions = examQuestions
+    // SEC-2 fix — shuffle BEFORE sanitize. applyExamShuffles reads the
+    // canonical `matchingPairs` / `orderingItems` keys to mint the per-session
+    // `displayPairs` / `displayItems`; the old order sanitized first, so the
+    // shuffler never found them and matching/ordering questions reached
+    // students with no pair/item content at all. Shuffling runs on the raw
+    // rows (fresh per request from the DB, so the in-place option scramble is
+    // safe), then safeQuestionForStudent whitelists — the whitelist keeps the
+    // minted display copies and strips the canonical keys as designed (F-05).
+    const present = examQuestions
       .map((eq) =>
         questionById.has(eq.question_id)
-          ? safeQuestionForStudent(questionById.get(eq.question_id), eq)
+          ? { eq, question: questionById.get(eq.question_id) }
           : null,
       )
       .filter(Boolean);
-    // F-05: enforce the teacher's shuffle flags server-side, seeded per session
-    // so a reload keeps the same order. Answers are keyed by id — grading is
-    // order-independent.
-    const orderedQuestions = applyExamShuffles(safeQuestions, exam, session.id);
+    const orderedRaw = applyExamShuffles(
+      present.map((entry) => entry.question),
+      exam,
+      session.id,
+    );
+    const eqByQuestionId = new Map(present.map((entry) => [entry.question.id, entry.eq]));
+    const orderedQuestions = orderedRaw
+      .map((question) => safeQuestionForStudent(question, eqByQuestionId.get(question.id)))
+      .filter(Boolean);
     // Image keys → short-lived signed URLs: the student client never sees
     // storage keys. TTL covers the personal window + submit grace. A mint
     // failure must not break the paper — strip key-shaped values (legacy
@@ -562,7 +586,7 @@ async function handleStudentSaveAnswer(req, res) {
     const { data: session, error: sessionError } = await supabase
       .from('student_exam_sessions')
       .select(
-        'id, exam_id, student_id, status, started_at, proctor_flags, exam:exams(id, status, mode, starts_at, ends_at, duration_minutes)',
+        'id, exam_id, student_id, status, started_at, proctor_flags, token_epoch, exam:exams(id, status, mode, starts_at, ends_at, duration_minutes)',
       )
       .eq('id', payload.sid)
       .eq('exam_id', payload.eid)
@@ -571,6 +595,9 @@ async function handleStudentSaveAnswer(req, res) {
     if (sessionError) throw sessionError;
     if (!session || session.status !== 'ongoing')
       return json(res, 403, { error: 'session_not_active' });
+    // BE-3 fix: pre-reset bearers die here too.
+    if (Number(session.token_epoch || 0) !== Number(payload.tep || 0))
+      return json(res, 401, { error: 'invalid_session' });
     // Answer writes end EXACTLY at the deadline: strict on both the exam
     // window and the personal window. The 5-minute grace is submit-only
     // (the final submit must still land after the clock stops).
@@ -598,13 +625,17 @@ async function handleStudentSaveAnswer(req, res) {
     if (upsertError) throw upsertError;
     // Wave B: piggyback proctor counters on the save cadence (max-merge,
     // best-effort — a flag-save hiccup must never lose the student's answer).
+    // BE-10 fix: the merge moved into a single SQL statement
+    // (bump_proctor_flags — per-key greatest(existing, incoming)). The old
+    // read-merge-write raced concurrent savers and the lower counter won,
+    // permanently undercounting flags.
     const proctor = normalizeProctorFlags(body.proctor);
     if (proctor) {
       try {
-        await supabase
-          .from('student_exam_sessions')
-          .update({ proctor_flags: mergeProctorFlags(session.proctor_flags, proctor) })
-          .eq('id', session.id);
+        await supabase.rpc('bump_proctor_flags', {
+          p_session_id: session.id,
+          p_flags: proctor,
+        });
       } catch (flagError) {
         console.error('proctor_flags_save_failed', flagError?.message || flagError);
       }
@@ -628,7 +659,7 @@ async function handleStudentSubmit(req, res) {
     const { data: current, error: readError } = await supabase
       .from('student_exam_sessions')
       .select(
-        'id, exam_id, student_id, status, started_at, proctor_flags, exam:exams(id, status, mode, starts_at, ends_at, duration_minutes)',
+        'id, exam_id, student_id, status, started_at, token_epoch, exam:exams(id, status, mode, starts_at, ends_at, duration_minutes)',
       )
       .eq('id', payload.sid)
       .eq('exam_id', payload.eid)
@@ -637,6 +668,9 @@ async function handleStudentSubmit(req, res) {
     if (readError) throw readError;
     if (!current || current.status !== 'ongoing')
       return json(res, 409, { error: 'session_not_active_or_already_submitted' });
+    // BE-3 fix: pre-reset bearers cannot submit either.
+    if (Number(current.token_epoch || 0) !== Number(payload.tep || 0))
+      return json(res, 401, { error: 'invalid_session' });
     const availability = getExamAvailabilityWithGrace(current.exam);
     if (!availability.ok) return json(res, availability.status, { error: availability.error });
     const windowCheck = getSessionTimeWindow(current, current.exam);
@@ -655,13 +689,14 @@ async function handleStudentSubmit(req, res) {
     // Wave B: grade the paper server-side the moment it is in (best-effort),
     // then take one last proctor reading from the submit payload.
     await autoGradeSession(supabase, payload.sid, payload.eid);
+    // BE-10 fix: same atomic SQL merge as the save path.
     const proctor = normalizeProctorFlags((req.body || {}).proctor);
     if (proctor) {
       try {
-        await supabase
-          .from('student_exam_sessions')
-          .update({ proctor_flags: mergeProctorFlags(current.proctor_flags, proctor) })
-          .eq('id', payload.sid);
+        await supabase.rpc('bump_proctor_flags', {
+          p_session_id: payload.sid,
+          p_flags: proctor,
+        });
       } catch (flagError) {
         console.error('proctor_flags_save_failed', flagError?.message || flagError);
       }

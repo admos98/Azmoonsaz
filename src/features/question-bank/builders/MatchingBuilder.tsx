@@ -61,7 +61,8 @@ export function MatchingBuilder({
                       value={pair.left}
                       onChange={(e) => {
                         const updated = [...formMatchingPairs];
-                        updated[idx].left = e.target.value;
+                        // FE-9 fix: immutable element replacement.
+                        updated[idx] = { ...updated[idx], left: e.target.value };
                         setFormMatchingPairs(updated);
                       }}
                       className="w-full glx field px-2 py-1.5 rounded-md"
@@ -77,7 +78,8 @@ export function MatchingBuilder({
                       value={pair.right}
                       onChange={(e) => {
                         const updated = [...formMatchingPairs];
-                        updated[idx].right = e.target.value;
+                        // FE-9 fix: immutable element replacement.
+                        updated[idx] = { ...updated[idx], right: e.target.value };
                         setFormMatchingPairs(updated);
                       }}
                       className="w-full glx field px-2 py-1.5 rounded-md"

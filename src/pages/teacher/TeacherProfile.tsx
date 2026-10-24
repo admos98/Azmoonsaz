@@ -62,6 +62,13 @@ export default function TeacherProfile({
 }) {
   const { teacher, updateTeacher } = useTeacher();
   const [tab, setTab] = useState<ProfileTab>(initialTab);
+  // FE-4 fix: App reuses this mounted component on profile→students/classes
+  // navigation; sync the changed tab prop (React adjust-state-on-prop-change).
+  const [prevInitialTab, setPrevInitialTab] = useState<ProfileTab>(initialTab);
+  if (initialTab !== prevInitialTab) {
+    setPrevInitialTab(initialTab);
+    setTab(initialTab);
+  }
   const [name, setName] = useState(teacher?.name || '');
   const [subject, setSubject] = useState(teacher?.subject || '');
   const [bio, setBio] = useState(teacher?.bio || '');

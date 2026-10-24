@@ -7,7 +7,7 @@
  *
  * Returns a tuple `[panelOrigin, companionOrigin]`; both are undefined until
  * measured, so callers can fall back to their own default origin
- * (e.g. 'center bottom'). Kept out of UIComponents on purpose: a non-component
+ * (e.g. 'center bottom'). Kept out of the src/ui library on purpose: a non-component
  * export there would break React Fast Refresh.
  *
  * Three subtleties this implementation exists to get right:

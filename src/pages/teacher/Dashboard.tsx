@@ -29,7 +29,7 @@ import {
 } from '../../ui';
 import { TheMark } from '../../components/TheMark';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
-import { formatPersianNumber, formatPersianDate } from '../../services/persianHelpers';
+import { formatPersianNumber, formatPersianDate } from '../../utils/persian';
 import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext';
 import { useToast } from '../../hooks/useToast';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';

@@ -41,8 +41,10 @@ export type QuestionTypeBuildersProps = {
   removeRubricRow: (id: string) => void;
   formSampleAnswer: string;
   setFormSampleAnswer: React.Dispatch<React.SetStateAction<string>>;
-  formParts: Question['parts'];
-  setFormParts: React.Dispatch<React.SetStateAction<Question['parts']>>;
+  // CQ-1 (strict): NonNullable — the hook always supplies an array; the loose
+  // form leaked `| undefined` into the PartsBuilder contract.
+  formParts: NonNullable<Question['parts']>;
+  setFormParts: React.Dispatch<React.SetStateAction<NonNullable<Question['parts']>>>;
   addPartRow: () => void;
   removePartRow: (index: number) => void;
   handleImageUpload: (e: ImageUploadEvent, target: 'main' | { optIndex: number } | { partIndex: number }) => void;

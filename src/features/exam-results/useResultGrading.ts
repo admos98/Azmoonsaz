@@ -89,6 +89,9 @@ export function useResultGrading(opts: GradingOptions) {
   
       setSelectedSubmissionId(row.id);
       const sub = row.rawSubmission;
+      // CQ-1 (strict) fix: non-absent rows always carry their submission;
+      // guard defensively instead of dereferencing null.
+      if (!sub) return;
   
       // Auto populate existing scores, comments, & rubrics
       const scores: Record<string, number> = {};
@@ -220,14 +223,21 @@ export function useResultGrading(opts: GradingOptions) {
   
     const runFinalizeGrading = async () => {
       if (!activeSubmission) return;
+      // CQ-1 (strict) fix: narrow the nullable submission once.
+      const raw = activeSubmission.rawSubmission;
+      if (!raw) return;
   
       // Assemble final student answers array
-      const finalizedAnswers = activeSubmission.rawSubmission.answers.map((ans: StudentAnswer) => {
+      const finalizedAnswers = raw.answers.map((ans: StudentAnswer) => {
         const q = exam.questions.find((item) => item.id === ans.questionId);
         const isDescriptive = q?.type === 'long_answer' || q?.type === 'short_answer';
   
         const scoreGained = assignedScores[ans.questionId] ?? ans.scoreGained ?? 0;
-        const comment = teacherComments[ans.questionId] || ans.teacherComment;
+        // FE-11 fix: '' used to fall back to the old comment (`'' || old`),
+        // so a teacher could never clear one. nullish coalescing keeps the
+        // fallback for undefined while letting an intentional empty string
+        // overwrite.
+        const comment = teacherComments[ans.questionId] ?? ans.teacherComment;
   
         return {
           ...ans,
@@ -237,9 +247,13 @@ export function useResultGrading(opts: GradingOptions) {
         };
       });
   
-      // Sum overall score gained
-      const finalTotalScore = (Object.values(assignedScores) as number[]).reduce(
-        (sum, s) => sum + s,
+      // FE-11 fix: sum ONLY the answers that will actually be persisted.
+      // assignedScores is seeded for every exam question, so awarding points
+      // on a question with no answer row used to inflate the cached `score`
+      // until the next reload snapped it back (nothing was ever saved for a
+      // question the student never answered).
+      const finalTotalScore = finalizedAnswers.reduce(
+        (sum, ans) => sum + Number(ans.scoreGained || 0),
         0,
       );
   
@@ -260,7 +274,7 @@ export function useResultGrading(opts: GradingOptions) {
         // Patch the shared cache with the finalized sheet — spreading the raw
         // submission, not the derived row (the row carries ledger-only fields).
         upsertSubmission({
-          ...activeSubmission.rawSubmission,
+          ...raw,
           answers: finalizedAnswers,
           score: Number(finalTotalScore.toFixed(2)),
           status: 'graded' as const,

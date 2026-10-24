@@ -17,7 +17,7 @@ import {
 } from '../../ui';
 import { classService } from '../../services/api';
 import { ClassGroup } from '../../types';
-import { formatPersianNumber } from '../../services/persianHelpers';
+import { formatPersianNumber } from '../../utils/persian';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 import { BubbleLoader } from '../../components/BubbleLoader';

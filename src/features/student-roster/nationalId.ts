@@ -8,6 +8,9 @@
  */
 
 import { toPersianDigits } from '../../utils/persian';
+// CQ-3 fix: single checksum source — delegate to the canonical validator
+// instead of maintaining a second copy of the mod-11 rule here.
+import { isValidIranianNationalId } from '../student-import/nationalId';
 
 export type NationalIdValidation = { isValid: boolean; message: string };
 
@@ -20,20 +23,13 @@ export function validateIranianNationalId(id: string): NationalIdValidation {
   if (/^(\d)\1{9}$/.test(cleanId))
     return { isValid: false, message: 'شماره ملی نامعتبر است (ارقام تکراری هستند).' };
 
-  const digits = cleanId.split('').map(Number);
-  const checkDigit = digits[9];
-  const sum = digits.slice(0, 9).reduce((acc, digit, idx) => acc + digit * (10 - idx), 0);
-  const remainder = sum % 11;
-  const computedCheck = remainder < 2 ? remainder : 11 - remainder;
-
-  if (checkDigit === computedCheck) {
-    return { isValid: true, message: 'کد ملی وارد شده معتبر و تایید شده است.' };
-  } else {
+  if (!isValidIranianNationalId(cleanId)) {
     return {
       isValid: false,
       message: 'الگوریتم رقم کنترلی کد ملی با استانداردهای ثبت احوال همخوانی ندارد.',
     };
   }
+  return { isValid: true, message: 'کد ملی وارد شده معتبر و تایید شده است.' };
 }
 
 /** Live mask: ۱۲۳****۸۹۰ — short inputs show as-is in Persian digits. */

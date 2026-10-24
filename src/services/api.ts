@@ -11,10 +11,7 @@ import {
   Question,
   Exam,
   Submission,
-  StudentAnswer,
-  ExamSettings,
 } from '../types';
-import { logger } from '../lib/logger';
 import { getSupabasePublicClient } from '../lib/supabasePublic';
 import { publicEnv } from '../config/env';
 import { teacherGet, teacherPost, getTeacherAccessToken } from './teacherApi';
@@ -63,16 +60,11 @@ export const authService = {
   },
 
   async completeOnboarding(schoolName: string, subject: string): Promise<void> {
-    const response = await fetch('/api/auth/onboarding', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${await getTeacherAccessToken()}`,
-      },
-      body: JSON.stringify({ schoolName, subject }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'خطا در تکمیل اطلاعات');
+    // CQ-9 fix: this was the one raw-fetch call in the service layer,
+    // bypassing both wrappers — it lacked the JSON content-type guard and
+    // `response.json()` threw unhandled on non-JSON error responses. Route
+    // through the shared teacherPost (typed ApiError, same-origin, auth).
+    await teacherPost('/api/auth/onboarding', { schoolName, subject });
   },
 
   async logoutTeacher(): Promise<void> {
@@ -108,15 +100,13 @@ export const teacherProfileService = {
 };
 
 export const classService = {
-  async getClassGroups(options?: { throwOnError?: boolean }): Promise<ClassGroup[]> {
-    try {
-      const response = await teacherGet<{ classes: ClassGroup[] }>('/api/teacher/classes');
-      return response.classes;
-    } catch (err) {
-      logger.error('Class group fetch failed:', err);
-      if (options?.throwOnError) throw err;
-      return [];
-    }
+  // CQ-9 fix: these getters used to swallow every error and answer [] ,
+  // rendering outages as indistinguishable-from-real empty states. They now
+  // throw by default — the single production caller (TeacherContext) owns
+  // the error UI via its CollectionsStatus state machine.
+  async getClassGroups(): Promise<ClassGroup[]> {
+    const response = await teacherGet<{ classes: ClassGroup[] }>('/api/teacher/classes');
+    return response.classes;
   },
   async createClassGroup(name: string, grade: string): Promise<ClassGroup> {
     const response = await teacherPost<{ classGroup: ClassGroup }>('/api/teacher/classes', {
@@ -142,15 +132,10 @@ export const classService = {
 };
 
 export const studentService = {
-  async getStudents(options?: { throwOnError?: boolean }): Promise<Student[]> {
-    try {
-      const response = await teacherGet<{ students: Student[] }>('/api/teacher/students');
-      return response.students;
-    } catch (err) {
-      logger.error('Student fetch failed:', err);
-      if (options?.throwOnError) throw err;
-      return [];
-    }
+  /** CQ-9 fix: throws by default — TeacherContext renders the error state. */
+  async getStudents(): Promise<Student[]> {
+    const response = await teacherGet<{ students: Student[] }>('/api/teacher/students');
+    return response.students;
   },
 
   /**
@@ -218,15 +203,10 @@ export const studentService = {
 };
 
 export const questionService = {
-  async getQuestions(options?: { throwOnError?: boolean }): Promise<Question[]> {
-    try {
-      const response = await teacherGet<{ questions: Question[] }>('/api/teacher/questions');
-      return response.questions;
-    } catch (err) {
-      logger.error('Question fetch failed:', err);
-      if (options?.throwOnError) throw err;
-      return [];
-    }
+  /** CQ-9 fix: throws by default — TeacherContext renders the error state. */
+  async getQuestions(): Promise<Question[]> {
+    const response = await teacherGet<{ questions: Question[] }>('/api/teacher/questions');
+    return response.questions;
   },
 
   async createQuestion(question: Omit<Question, 'id' | 'createdAt'>): Promise<Question> {
@@ -252,15 +232,10 @@ export const questionService = {
 };
 
 export const examService = {
-  async getExams(options?: { throwOnError?: boolean }): Promise<Exam[]> {
-    try {
-      const response = await teacherGet<{ exams: Exam[] }>('/api/teacher/exams');
-      return response.exams;
-    } catch (err) {
-      logger.error('Exam fetch failed:', err);
-      if (options?.throwOnError) throw err;
-      return [];
-    }
+  /** CQ-9 fix: throws by default — TeacherContext renders the error state. */
+  async getExams(): Promise<Exam[]> {
+    const response = await teacherGet<{ exams: Exam[] }>('/api/teacher/exams');
+    return response.exams;
   },
 
   async createExam(exam: Omit<Exam, 'id' | 'createdAt' | 'examCode'>): Promise<Exam> {
@@ -285,100 +260,25 @@ export const examService = {
     return true;
   },
 
-  async generateExamDraft(subject: string, grade: string, settings: ExamSettings): Promise<Exam> {
-    const allQuestions = await questionService.getQuestions();
-    const matchQuestions = allQuestions.filter((q) => q.grade === grade).slice(0, 4);
-    const draft: Omit<Exam, 'id' | 'createdAt' | 'examCode'> = {
-      title: `پیش‌نویس آزمون خودکار ${subject} پایه ${grade}`,
-      description: 'آزمون تولید شده بر اساس سوالات موجود در بانک سوالات.',
-      grade,
-      subject,
-      duration: settings.durationMinutes || 45,
-      status: 'draft',
-      classGroupIds: settings.allowedClasses || [],
-      teacherId: '',
-      settings: {
-        mode: 'official',
-        durationMinutes: settings.durationMinutes || 45,
-        shuffleQuestions: true,
-        shuffleOptions: true,
-        allowBacktrack: true,
-        showImmediateResults: false,
-        maxAttempts: 1,
-      },
-      sections: [
-        {
-          id: 'draft-sec-1',
-          title: 'سوالات طراحی شده',
-          questionIds: matchQuestions.map((q) => q.id),
-        },
-      ],
-      questions: matchQuestions,
-    };
-    return examService.createExam(draft);
-  },
-
   async publishExam(id: string): Promise<Exam> {
     return examService.updateExam(id, { status: 'active' });
   },
-
-  async getExamByCode(code: string): Promise<Exam | null> {
-    const response = await teacherGet<{ exams: Exam[] }>('/api/teacher/exams');
-    return (
-      response.exams.find((e) => e.examCode.toUpperCase() === code.toUpperCase().trim()) || null
-    );
-  },
-
-  async getExamForStudent(examId: string): Promise<Exam> {
-    const response = await teacherGet<{ exams: Exam[] }>('/api/teacher/exams');
-    const match = response.exams.find((e) => e.id === examId);
-    if (!match) throw new Error('Exam not found');
-    return match;
-  },
-
-  async startStudentExam(
-    _examCode: string,
-    _studentName: string,
-    _nationalId: string,
-  ): Promise<Submission> {
-    // This is a student-facing endpoint — should use the student API, not teacher API.
-    // For now, throw an error directing to the secure exam portal.
-    throw new Error('Student exam start should use the secure exam portal.');
-  },
-
-  async saveStudentAnswer(
-    _submissionId: string,
-    _questionId: string,
-    _answer: StudentAnswer['answer'],
-  ): Promise<Submission> {
-    throw new Error('Student answer save should use the secure exam portal.');
-  },
-
-  async submitExam(_submissionId: string): Promise<Submission> {
-    throw new Error('Student exam submit should use the secure exam portal.');
-  },
+  // CQ-2 fix: seven dead methods removed (generateExamDraft, getExamByCode,
+  // getExamForStudent, startStudentExam, saveStudentAnswer, submitExam — and
+  // gradingService.autoGradeSubmission below). Repo-wide grep proved zero
+  // production callers; the throwing stubs implied a student data path that
+  // AGENTS.md explicitly says does not exist (students join via the secure
+  // exam portal only), misleading contributors.
 };
 
 export const gradingService = {
-  async getSubmissions(
-    examId?: string,
-    options?: { throwOnError?: boolean },
-  ): Promise<Submission[]> {
-    try {
-      const suffix = examId ? '?examId=' + encodeURIComponent(examId) : '';
-      const response = await teacherGet<{ submissions: Submission[] }>(
-        '/api/teacher/submissions' + suffix,
-      );
-      return response.submissions;
-    } catch (err) {
-      logger.error('Submissions fetch failed:', err);
-      if (options?.throwOnError) throw err;
-      return [];
-    }
-  },
-
-  async autoGradeSubmission(_submissionId: string): Promise<Submission> {
-    throw new Error('Auto-grade should use the secure exam portal.');
+  /** CQ-9 fix: throws by default — TeacherContext renders the error state. */
+  async getSubmissions(examId?: string): Promise<Submission[]> {
+    const suffix = examId ? '?examId=' + encodeURIComponent(examId) : '';
+    const response = await teacherGet<{ submissions: Submission[] }>(
+      '/api/teacher/submissions' + suffix,
+    );
+    return response.submissions;
   },
 
   /** Wave C: disciplinary action — first call warns + restarts the session,

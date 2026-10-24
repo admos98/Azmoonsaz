@@ -177,7 +177,7 @@ export interface Exam {
   sections: ExamSection[];
   questions: Question[];
   classGroupIds: string[];
-  status: 'draft' | 'scheduled' | 'active' | 'completed';
+  status: 'draft' | 'scheduled' | 'active' | 'completed' | 'archived';
   teacherId: string;
   createdAt: string;
 }

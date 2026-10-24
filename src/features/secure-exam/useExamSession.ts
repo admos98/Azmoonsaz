@@ -12,6 +12,7 @@ import {
 } from '../../services/studentSessionStore';
 import { useExamGuard } from '../exam-guard/useExamGuard';
 import { useAnswerFlow } from './useAnswerFlow';
+import { toEnglishDigits } from '../../utils/persian';
 import {
   TURNSTILE_SITE_KEY,
   friendlyApiError,
@@ -120,10 +121,10 @@ export function useExamSession(presetExamCode: string) {
   }, [token, examCode]);
 
   // Persian/Arabic digits → ASCII; strip the rest.
+  // CQ-4 fix: delegate to the shared toEnglishDigits instead of re-implementing
+  // the same two range replaces a third time in the codebase.
   const normalizePinInput = (value: string) =>
-    value
-      .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-      .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))) // persian-ok — Arabic-Indic digit map table, not copy
+    toEnglishDigits(value)
       .replace(/\D/g, '')
       .slice(0, 6);
 

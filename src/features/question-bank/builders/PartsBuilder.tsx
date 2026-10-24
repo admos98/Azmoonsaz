@@ -8,10 +8,13 @@ import {ResolvedImage} from '../../../components/QuestionImage';
 import type {Question, QuestionType} from '../../../types';
 import type {ImageUploadEvent} from './types';
 
+// CQ-1 (strict) fix: the hook always provides an array (useState initializer),
+// so the builder takes the NonNullable form — the old `Question['parts']`
+// (array | undefined) leaked nullability into every row callback.
 export type PartsProps = {
   formType: QuestionType;
-  formParts: Question['parts'];
-  setFormParts: React.Dispatch<React.SetStateAction<Question['parts']>>;
+  formParts: NonNullable<Question['parts']>;
+  setFormParts: React.Dispatch<React.SetStateAction<NonNullable<Question['parts']>>>;
   addPartRow: () => void;
   removePartRow: (index: number) => void;
   handleImageUpload: (e: ImageUploadEvent, target: 'main' | { optIndex: number } | { partIndex: number }) => void;
@@ -64,7 +67,8 @@ export function PartsBuilder({
                       value={part.text}
                       onChange={(e) => {
                         const updated = [...formParts];
-                        updated[idx].text = e.target.value;
+                        // FE-9 fix: immutable element replacement.
+                        updated[idx] = { ...updated[idx], text: e.target.value };
                         setFormParts(updated);
                       }}
                       className="w-full glx field px-2 py-1 rounded text-micro"
@@ -81,7 +85,8 @@ export function PartsBuilder({
                       value={String(part.correctAnswer || '')}
                       onChange={(e) => {
                         const updated = [...formParts];
-                        updated[idx].correctAnswer = e.target.value;
+                        // FE-9 fix: immutable element replacement.
+                        updated[idx] = { ...updated[idx], correctAnswer: e.target.value };
                         setFormParts(updated);
                       }}
                       placeholder="گزینه یا عبارت کلید مینی‌سوال"

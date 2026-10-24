@@ -91,7 +91,7 @@ Teacher routes use `requireTeacher()` for Supabase Auth verification. Student ro
 ## Testing
 
 - **Unit**: Vitest, colocated under `src/test/` (jsdom, `globals: true`, setup `src/test/setup.ts`, config block in `vite.config.ts`). Run: `npm run test`
-- **E2E**: Playwright, `tests/e2e/exam-flow.spec.ts`. Playwright config auto-starts `npm run dev`. Run: `npm run test:e2e`
+- **E2E**: Playwright, `tests/e2e/` (`exam-flow-hermetic.spec.ts`, `renderer-depth.spec.ts`, `webgl-glass.spec.ts`). Playwright config auto-starts `npm run dev`. Run: `npm run test:e2e`
 - `tsconfig.json` excludes `tests/`, `playwright.config.ts`, and `src/test/` — `npm run typecheck` does NOT type-check tests
 
 ## UI Conventions
@@ -136,7 +136,7 @@ Real class names in `src/index.css` — there is no `glass-1/2/3`:
 
 ### Components
 
-- Cards/modals/buttons/badges + primitives (`TextLink`, `IconButton`, `PillButton`, `Dropdown`, `Tabs`, `Toggle`, `Table`, `Modal`, `ConfirmDialog`, `EmptyState`, `EmptyStateArt`, `DifficultyBadge`, `StatusBadge`): `src/components/UIComponents.tsx` — extend, don't recreate. Raw `<button>`s are ratchet-gated (`check:library`).
+- Cards/modals/buttons/badges + primitives (`TextLink`, `IconButton`, `PillButton`, `Dropdown`, `Tabs`, `Toggle`, `Table`, `Modal`, `ConfirmDialog`, `EmptyState`, `EmptyStateArt`, `DifficultyBadge`, `StatusBadge`): the `src/ui/` library (25 modules behind the `src/ui/index.ts` barrel — `Button`, `Card`, `Input`, `Modal`, `Toast`, `Badge`, `Table`, `Tabs`, `Dropdown`, `EmptyState`, …) — extend, don't recreate. Raw `<button>`s are ratchet-gated (`check:library`).
 - **Toasts**: `useToast()` hook → `showToast(msg, 'success'|'error'|'warning'|'info')` + render `{toastElement}`. Never use `alert()`.
 - **Confirmations**: `<ConfirmDialog isOpen title message confirmText onConfirm onCancel />`. Never use `window.confirm()`.
 - **Teacher data**: `useTeacher()` / `useTeacherCollections()` from `src/contexts/TeacherContext.tsx` — single fetch cache, don't call `authService.getCurrentTeacher()` directly in components.

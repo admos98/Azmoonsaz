@@ -10,6 +10,7 @@
  *  - orphan cleanup deletes unreferenced objects, keeps referenced ones, and
  *    answers 429 when its strict budget is exhausted
  */
+import { EventEmitter } from 'node:events';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   handleTeacherImageUploadUrl,
@@ -32,14 +33,58 @@ vi.mock('../../api/_lib/supabaseAdmin.js', () => ({ getSupabaseAdmin: vi.fn() })
 // default (per-test overrides cover the rebinding guard). Real network and
 // real DNS are never touched. vi.hoisted: the mock factory is hoisted above
 // imports, so the shared spy must be created here to be visible inside it.
-const { mockDnsLookup } = vi.hoisted(() => ({
+const { mockDnsLookup, httpsRequestMock } = vi.hoisted(() => ({
   mockDnsLookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
+  // SEC-6: pinnedFetch dials node:https directly (DNS resolved ONCE, then the
+  // pinned IP) — tests stub this transport instead of global fetch.
+  httpsRequestMock: vi.fn(),
 }));
 vi.mock('node:dns/promises', () => ({
   lookup: mockDnsLookup,
 }));
+vi.mock('node:https', () => ({
+  default: { request: (...args: unknown[]) => httpsRequestMock(...args) },
+}));
 
 type Teacher = Awaited<ReturnType<typeof requireTeacher>>;
+
+// --- pinned-transport (node:https) fixtures — canned hops, zero network ---
+interface FakeHop {
+  status: number;
+  headers?: Record<string, string>;
+  body?: Buffer;
+}
+
+function installHttpsHops(handler: (url: URL) => FakeHop) {
+  httpsRequestMock.mockImplementation(
+    (url: URL | string, _options: unknown, callback: (res: unknown) => void) => {
+      const parsed = typeof url === 'string' ? new URL(url) : url;
+      const hop = handler(parsed);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const stream = new EventEmitter() as any;
+      stream.statusCode = hop.status;
+      stream.headers = hop.headers || {};
+      stream.resume = () => {};
+      queueMicrotask(() => {
+        callback(stream);
+        if (hop.body && hop.body.length > 0) stream.emit('data', hop.body);
+        stream.emit('end');
+      });
+      return { on: () => {}, end: () => {}, destroy: () => {} };
+    },
+  );
+}
+
+const IMG_BODY = Buffer.from([137, 80, 78, 71]);
+const imageHop = (): FakeHop => ({
+  status: 200,
+  headers: { 'content-type': 'image/png' },
+  body: IMG_BODY,
+});
+const redirectHop = (location: string): FakeHop => ({
+  status: 302,
+  headers: { location },
+});
 
 const TEACHER_ID = '11111111-1111-4111-8111-111111111111';
 const TEACHER_B = '22222222-2222-4222-8222-222222222222';
@@ -102,6 +147,7 @@ const storageApi = {
 beforeEach(() => {
   vi.unstubAllGlobals();
   mockDnsLookup.mockReset();
+  httpsRequestMock.mockReset();
   mockDnsLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
   process.env.STUDENT_ID_PEPPER = 'test-pepper-'.padEnd(64, '0');
   delete process.env.IMAGE_STORE_PROVIDER;
@@ -489,11 +535,12 @@ describe('POST /api/teacher/images/migrate', () => {
     expect(body.skipped[0].reason).toBe('unfetchable_or_too_large');
   });
 
-  it('follows a public redirect hop with redirect:manual and migrates the bytes', async () => {
-    const fetchMock = vi.fn(async (url: string, _init?: unknown) =>
-      String(url).endsWith('/start.png') ? redirectTo('https://cdn.test/final.png') : imgBytes(),
+  it('follows a redirect hop through the pinned transport and migrates the bytes (SEC-6)', async () => {
+    installHttpsHops((url) =>
+      String(url.pathname).endsWith('/start.png')
+        ? redirectHop('https://cdn.test/final.png')
+        : imageHop(),
     );
-    vi.stubGlobal('fetch', fetchMock);
     const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
     teacherWith(api as never);
     vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
@@ -504,17 +551,23 @@ describe('POST /api/teacher/images/migrate', () => {
     expect(body.skipped).toEqual([]);
     expect(body.migrated).toHaveLength(1);
     expect(body.migrated[0].key.startsWith(`${TEACHER_ID}/`)).toBe(true);
-    // Every hop goes out with manual redirect — the client never auto-chases.
-    for (const [, init] of fetchMock.mock.calls) {
-      expect(init).toMatchObject({ redirect: 'manual' });
+    // Both hops dialed once each through the pinned transport: DNS resolved
+    // exactly once per hop (lookup pinned) and servername keeps the hostname
+    // so TLS/SNI + certificate validation still match the URL.
+    expect(httpsRequestMock).toHaveBeenCalledTimes(2);
+    for (const [, options] of httpsRequestMock.mock.calls) {
+      const opts = options as { servername?: string; lookup?: unknown };
+      expect(opts.lookup).toBeTypeOf('function');
+      expect(opts.servername).toBe('cdn.test');
     }
   });
 
-  it('rejects a redirect hop to an internal address without fetching it', async () => {
-    const fetchMock = vi.fn(async (url: string) =>
-      String(url).endsWith('/start.png') ? redirectTo('https://169.254.169.254/x.png') : imgBytes(),
+  it('rejects a redirect hop to an internal address without dialing it (SEC-6)', async () => {
+    installHttpsHops((url) =>
+      String(url.hostname) === 'cdn.test'
+        ? redirectHop('https://169.254.169.254/x.png')
+        : imageHop(),
     );
-    vi.stubGlobal('fetch', fetchMock);
     const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
     teacherWith(api as never);
     vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
@@ -525,15 +578,16 @@ describe('POST /api/teacher/images/migrate', () => {
     expect(body.migrated).toEqual([]);
     expect(body.skipped).toHaveLength(1);
     expect(body.skipped[0].reason).toBe('unfetchable_or_too_large');
-    for (const [url] of fetchMock.mock.calls) {
-      expect(String(url)).not.toContain('169.254.169.254');
-    }
+    // Only the public hop is ever dialed; the metadata host is rejected by
+    // the literal-IP guard before any transport involvement.
+    expect(httpsRequestMock).toHaveBeenCalledTimes(1);
+    const [dialedUrl] = httpsRequestMock.mock.calls[0];
+    expect(String(dialedUrl)).not.toContain('169.254.169.254');
   });
 
   it('stops after the redirect hop cap instead of looping forever', async () => {
     let n = 0;
-    const fetchMock = vi.fn(async () => redirectTo(`https://cdn.test/hop-${n++}.png`));
-    vi.stubGlobal('fetch', fetchMock);
+    installHttpsHops(() => redirectHop(`https://cdn.test/hop-${n++}.png`));
     const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
     teacherWith(api as never);
     vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
@@ -542,13 +596,12 @@ describe('POST /api/teacher/images/migrate', () => {
     const body = res.body as { migrated: unknown[]; skipped: { reason: string }[] };
     expect(body.migrated).toEqual([]);
     expect(body.skipped).toHaveLength(1);
-    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(6);
+    expect(httpsRequestMock.mock.calls.length).toBeLessThanOrEqual(6);
   });
 
   it('rejects a host that resolves to a private IP (DNS-rebinding guard)', async () => {
     mockDnsLookup.mockResolvedValueOnce([{ address: '10.9.9.9', family: 4 }]);
-    const fetchMock = vi.fn(async () => imgBytes());
-    vi.stubGlobal('fetch', fetchMock);
+    installHttpsHops(() => imageHop());
     const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
     teacherWith(api as never);
     vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
@@ -557,7 +610,7 @@ describe('POST /api/teacher/images/migrate', () => {
     const body = res.body as { migrated: unknown[]; skipped: { reason: string }[] };
     expect(body.migrated).toEqual([]);
     expect(body.skipped).toHaveLength(1);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(httpsRequestMock).not.toHaveBeenCalled();
   });
 
   // Broadened denylist (SSRF defense in depth): the whole 169.254.0.0/16
@@ -594,8 +647,7 @@ describe('POST /api/teacher/images/migrate', () => {
 
   for (const [label, url] of BLOCKED_URLS) {
     it(`rejects ${label} (${url})`, async () => {
-      const fetchMock = vi.fn(async () => imgBytes());
-      vi.stubGlobal('fetch', fetchMock);
+      installHttpsHops(() => imageHop());
       const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: url } }]);
       teacherWith(api as never);
       vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
@@ -606,15 +658,14 @@ describe('POST /api/teacher/images/migrate', () => {
       expect(body.migrated).toEqual([]);
       expect(body.skipped).toHaveLength(1);
       expect(body.skipped[0].reason).toBe('unfetchable_or_too_large');
-      expect(fetchMock).not.toHaveBeenCalled();
+      expect(httpsRequestMock).not.toHaveBeenCalled();
     });
   }
 
   it('rejects a host resolving to link-local / CGNAT / mapped-private space', async () => {
     for (const address of ['169.254.1.1', '100.64.0.1', '::ffff:10.0.0.1', '::ffff:a9fe:a9fe', 'fe80::1']) {
       mockDnsLookup.mockResolvedValueOnce([{ address, family: address.includes(':') ? 6 : 4 }]);
-      const fetchMock = vi.fn(async () => imgBytes());
-      vi.stubGlobal('fetch', fetchMock);
+      installHttpsHops(() => imageHop());
       const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/start.png' } }]);
       teacherWith(api as never);
       vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);
@@ -622,14 +673,13 @@ describe('POST /api/teacher/images/migrate', () => {
       await handleTeacherImageMigrate(post('/api/teacher/images/migrate', {}), res);
       const body = res.body as { migrated: unknown[] };
       expect(body.migrated, `resolved ${address} must be rejected`).toEqual([]);
-      expect(fetchMock).not.toHaveBeenCalled();
+      expect(httpsRequestMock).not.toHaveBeenCalled();
     }
   });
 
   it('still migrates a genuinely public host (denylist does not over-block)', async () => {
     mockDnsLookup.mockResolvedValueOnce([{ address: '93.184.216.34', family: 4 }]);
-    const fetchMock = vi.fn(async () => imgBytes());
-    vi.stubGlobal('fetch', fetchMock);
+    installHttpsHops(() => imageHop());
     const api = migrateApi([{ id: 'q1', body: { text: 't', imageUrl: 'https://cdn.test/ok.png' } }]);
     teacherWith(api as never);
     vi.mocked(getSupabaseAdmin).mockReturnValue(api as never);

@@ -13,6 +13,7 @@ export interface StatusBadgeProps {
     | 'scheduled'
     | 'active'
     | 'completed'
+    | 'archived'
     | 'ongoing'
     | 'submitted'
     | 'graded'
@@ -35,6 +36,7 @@ export const StatusBadge = ({ status, className = '' }: StatusBadgeProps) => {
     scheduled: { variant: 'info', label: 'برنامه\u200cریزی شده' },
     active: { variant: 'warning', label: 'در حال برگزاری', live: true },
     completed: { variant: 'success', label: 'برگزار شده' },
+    archived: { variant: 'slate', label: 'آرشیو شده' },
     ongoing: { variant: 'warning', label: 'در حال آزمون', live: true },
     submitted: { variant: 'info', label: 'تحویل داده شده' },
     graded: { variant: 'success', label: 'تصحیح شده' },

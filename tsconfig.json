@@ -10,6 +10,13 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
+    // CQ-1 fix: strict mode is ON for the whole codebase. Before the audit fix
+    // pass this was off, so noImplicitAny/strictNullChecks/strictFunctionTypes
+    // never ran — the near-zero `any` count was hiding loose nullability. All
+    // fallout (58 errors across 10 files) was fixed in the same pass.
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",

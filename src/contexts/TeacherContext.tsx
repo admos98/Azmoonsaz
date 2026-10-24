@@ -188,19 +188,19 @@ export function TeacherProvider({
     try {
       switch (key) {
         case 'exams':
-          setExams(await examService.getExams({ throwOnError: true }));
+          setExams(await examService.getExams());
           break;
         case 'students':
-          setStudents(await studentService.getStudents({ throwOnError: true }));
+          setStudents(await studentService.getStudents());
           break;
         case 'questions':
-          setQuestions(await questionService.getQuestions({ throwOnError: true }));
+          setQuestions(await questionService.getQuestions());
           break;
         case 'classGroups':
-          setClassGroups(await classService.getClassGroups({ throwOnError: true }));
+          setClassGroups(await classService.getClassGroups());
           break;
         case 'submissions':
-          setSubmissions(await gradingService.getSubmissions(undefined, { throwOnError: true }));
+          setSubmissions(await gradingService.getSubmissions());
           break;
       }
       setStatus((current) => ({ ...current, [key]: 'ready' }));

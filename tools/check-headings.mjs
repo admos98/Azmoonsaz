@@ -42,6 +42,21 @@ for (const entry of ROUTE_DIRS) {
   else files.push(full);
 }
 
+// CQ-11 split (2026-10-25): ExamPreview/ExamResults were decomposed and now
+// render their page h1 from an extracted partial directory next to the route
+// shell (same pattern as the SecureExamPortal shell). Partials are
+// sub-structure (h2/h3 lists, filter panels) — not routes — so they are
+// skipped below; the one-h1-per-route invariant moves WITH them and is still
+// enforced statically at the partial level (SHELL_ROUTES check).
+const PARTIAL_DIRS = [
+  'src/pages/teacher/exam-preview/',
+  'src/pages/teacher/exam-results/',
+];
+const SHELL_ROUTES = new Map([
+  ['src/pages/teacher/ExamPreview.tsx', 'src/pages/teacher/exam-preview/'],
+  ['src/pages/teacher/ExamResults.tsx', 'src/pages/teacher/exam-results/'],
+]);
+
 const stripComments = (s) =>
   s
     .replace(/\r/g, '') // CRLF checkouts break the branch-split regex below
@@ -75,6 +90,8 @@ const failures = [];
 for (const full of files) {
   const rel = relative(root, full).replace(/\\/g, '/');
   if (/\.test\.tsx$/.test(rel)) continue;
+  if (PARTIAL_DIRS.some((d) => rel.startsWith(d))) continue; // sub-structure, see SHELL_ROUTES
+  if (SHELL_ROUTES.has(rel)) continue; // h1 enforced at its partial dir instead
   const src = stripDialogs(stripComments(readFileSync(full, 'utf8')));
   // Top-level returns only (2-space indent) — nested returns are callbacks.
   // Skeleton/empty branches (no headings at all) are loading states — exempt.
@@ -101,6 +118,24 @@ for (const full of files) {
         break;
       }
     }
+  }
+}
+
+// Composition check for shell routes: the extracted partial directory must
+// contribute EXACTLY ONE h1 (the page title), so the split can neither lose
+// the page name nor introduce a second one.
+for (const [shell, dir] of SHELL_ROUTES) {
+  const partials = files.filter((f) => relative(root, f).replace(/\\/g, '/').startsWith(dir));
+  let h1Count = 0;
+  for (const partial of partials) {
+    const src = stripDialogs(stripComments(readFileSync(partial, 'utf8')));
+    const levels = headingLevels(src);
+    h1Count += levels.filter((l) => l === 1).length;
+  }
+  if (h1Count !== 1) {
+    failures.push(
+      `${shell}: its extracted partials in ${dir} carry ${h1Count} h1s — a route needs exactly one page title`,
+    );
   }
 }
 

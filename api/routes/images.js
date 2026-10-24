@@ -2,6 +2,7 @@ import { json, requireMethod } from '../_lib/http.js';
 import { requireTeacher } from '../_lib/teacherAuth.js';
 import { checkRateLimit } from '../_lib/rateLimit.js';
 import { safeError } from '../_lib/utils.js';
+import nodeHttps from 'node:https';
 import {
   selectImageStore,
   mintImageKey,
@@ -208,6 +209,88 @@ function isBlockedHost(rawHost) {
   return false;
 }
 
+/**
+ * SEC-6 fix: fetch with DNS pinning. The previous flow resolved the hostname
+ * once for the allowlist check and then let fetch() resolve it a SECOND time
+ * for the actual connection — a rebinding DNS name could answer with a public
+ * IP for the check and a private/metadata IP for the dial (TOCTOU). Here the
+ * host is resolved exactly ONCE, every returned address is classified with
+ * the same blocklist, and node:https dials the pinned address directly.
+ * `servername` keeps the real hostname so TLS SNI and certificate validation
+ * still match the URL — pinning the IP does not weaken transport security.
+ * Returns a fetch-shaped minimal response ({ ok, status, headers, arrayBuffer })
+ * or null on any failure. Redirect bodies are drained, never returned.
+ */
+async function pinnedFetch(parsedUrl, signal) {
+  try {
+    const { lookup } = await import('node:dns/promises');
+    const records = await lookup(parsedUrl.hostname.replace(/^\[|\]$/g, ''), { all: true });
+    if (!records || records.length === 0) return null;
+    for (const record of records) {
+      if (isBlockedHost(String(record.address || ''))) return null;
+    }
+    return await new Promise((resolve) => {
+      let settled = false;
+      const done = (value) => {
+        if (!settled) {
+          settled = true;
+          resolve(value);
+        }
+      };
+      const request = nodeHttps.request(
+        parsedUrl,
+        {
+          method: 'GET',
+          servername: parsedUrl.hostname.replace(/^\[|\]$/g, ''),
+          headers: { accept: 'image/png, image/jpeg, image/webp, image/gif' },
+          signal,
+          lookup: (host, options, callback) => {
+            // Pin: the resolver is never consulted again after this point.
+            if (options && options.all) callback(null, records);
+            else callback(null, records[0].address, records[0].family);
+          },
+        },
+        (response) => {
+          const status = response.statusCode || 0;
+          const headers = {
+            get: (name) => response.headers[String(name).toLowerCase()] ?? null,
+          };
+          if (status >= 300 && status < 400) {
+            response.resume(); // drain and discard the redirect body
+            done({ ok: false, status, headers, arrayBuffer: async () => null });
+            return;
+          }
+          const chunks = [];
+          let size = 0;
+          response.on('data', (chunk) => {
+            size += chunk.length;
+            if (size > MIGRATE_MAX_BYTES) {
+              request.destroy();
+              done(null);
+              return;
+            }
+            chunks.push(chunk);
+          });
+          response.on('end', () => {
+            const buffer = Buffer.concat(chunks);
+            done({
+              ok: status >= 200 && status < 300,
+              status,
+              headers,
+              arrayBuffer: async () => buffer,
+            });
+          });
+          response.on('error', () => done(null));
+        },
+      );
+      request.on('error', () => done(null));
+      request.end();
+    });
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch an external https image to bytes (SSRF-guarded, bounded). */
 async function fetchExternalImage(url) {
   // SSRF guard: public https only — no localhost, LAN, metadata endpoints.
@@ -260,10 +343,10 @@ async function fetchExternalImage(url) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), MIGRATE_FETCH_TIMEOUT_MS);
     try {
-      const response = await fetch(current.toString(), {
-        signal: controller.signal,
-        redirect: 'manual',
-      });
+      // SEC-6 fix: pinnedFetch resolves once, classifies every address and
+      // dials the pinned IP — fetch()'s second, unpinned resolution is gone.
+      const response = await pinnedFetch(current, controller.signal);
+      if (!response) return null;
       if (response.status >= 300 && response.status < 400) {
         if (hop === 5) return null;
         const location = response.headers.get('location');
@@ -279,7 +362,9 @@ async function fetchExternalImage(url) {
       const contentType = String(response.headers.get('content-type') || '').split(';')[0].trim();
       if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(contentType))
         return null;
-      const buffer = Buffer.from(await response.arrayBuffer());
+      const rawBuffer = await response.arrayBuffer();
+      if (!rawBuffer) return null;
+      const buffer = Buffer.from(rawBuffer);
       if (buffer.length === 0 || buffer.length > MIGRATE_MAX_BYTES) return null;
       return { bytes: buffer, contentType };
     } catch {

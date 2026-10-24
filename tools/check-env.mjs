@@ -47,4 +47,26 @@ if (provider === 's3') {
   console.log('OK   image store provider = supabase (default)');
 }
 
+// SEC-3 fix: Turnstile is a two-sided opt-in — the browser widget needs
+// VITE_TURNSTILE_SITE_KEY and the server needs TURNSTILE_SECRET_KEY. If only
+// ONE side is set, the app either renders a CAPTCHA the server completely
+// ignores (site key only — an operator believes bot protection is active
+// while student/start-session is protected by rate limits alone) or sends a
+// token nothing asked for. Warn loudly; never fail: the feature stays opt-in.
+const turnstileSecret = String(process.env.TURNSTILE_SECRET_KEY || '').trim();
+const turnstileSite = String(process.env.VITE_TURNSTILE_SITE_KEY || '').trim();
+if (turnstileSecret && turnstileSite) {
+  console.log('OK   Turnstile bot protection = enabled (site + secret configured)');
+} else if (turnstileSecret && !turnstileSite) {
+  console.log(
+    'WARN TURNSTILE_SECRET_KEY is set without VITE_TURNSTILE_SITE_KEY — the server enforces CAPTCHA but no widget is rendered; students cannot join.',
+  );
+} else if (turnstileSite && !turnstileSecret) {
+  console.log(
+    'WARN VITE_TURNSTILE_SITE_KEY is set without TURNSTILE_SECRET_KEY — the CAPTCHA widget renders but the server ignores it. Bot protection is NOT active.',
+  );
+} else {
+  console.log('OK   Turnstile bot protection = off (both vars unset)');
+}
+
 console.log('Environment looks ready.');

@@ -53,7 +53,8 @@ export interface QueryContext {
   table: string;
   op: 'select' | 'insert' | 'update' | 'upsert' | 'delete';
   filters: Record<string, unknown>;
-  payload?: AnyRecord;
+  /** Always set for insert/update/upsert ops (CQ-1 strict: no undefined). */
+  payload: AnyRecord;
 }
 
 export interface TableConfig {
@@ -70,6 +71,10 @@ export interface TableConfig {
 
 export interface FakeAdmin {
   from(table: string): unknown;
+  /** PostgREST RPC — records (fn, params) pairs; answers { data: null }. */
+  rpc(fn: string, params?: unknown): Promise<{ data: unknown; error: null }>;
+  /** Every rpc(fn) name invoked, in order. */
+  readonly rpcCalls: Array<{ fn: string; params: Record<string, unknown> }>;
   /** Everything `.from()` was called with, in order. */
   readonly calls: string[];
 }
@@ -84,9 +89,17 @@ export interface FakeAdmin {
  */
 export function createAdmin(tables: Record<string, TableConfig> = {}): FakeAdmin {
   const calls: string[] = [];
+  // BE-10: the proctor-flag merge moved to an atomic RPC — record its calls
+  // so tests can assert fn name + params instead of a table update payload.
+  const rpcCalls: Array<{ fn: string; params: Record<string, unknown> }> = [];
 
   const admin: FakeAdmin = {
     calls,
+    rpcCalls,
+    rpc(fn: string, params?: unknown) {
+      rpcCalls.push({ fn, params: (params || {}) as Record<string, unknown> });
+      return Promise.resolve({ data: null, error: null });
+    },
     from(table: string) {
       calls.push(table);
       const config = tables[table] || {};
@@ -94,12 +107,13 @@ export function createAdmin(tables: Record<string, TableConfig> = {}): FakeAdmin
         table,
         op: 'select',
         filters: {},
+        payload: {},
       };
 
       const resolve = (kind: 'single' | 'maybeSingle' | 'await') => {
         const custom = config.onResult?.(state);
         if (custom) return Promise.resolve(custom);
-        if (state.op !== 'select' && state.payload) {
+        if (state.op !== 'select') {
           return Promise.resolve({ data: state.payload, error: null });
         }
         if (kind === 'await') return Promise.resolve({ data: config.rows ?? null, error: null });

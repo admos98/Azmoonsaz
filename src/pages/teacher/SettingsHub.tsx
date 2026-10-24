@@ -19,6 +19,16 @@ export default function SettingsHub({
   onNavigate?: (tab: string) => void;
 }) {
   const [tab, setTab] = useState<SettingsTab>(initialTab);
+  // FE-4 fix: App reconciles this hub instead of remounting it, so the
+  // useState initializer never re-ran — navigating from /teacher/settings to
+  // /teacher/settings/questions (CommandPalette G→Q, Topbar) updated the URL
+  // but left the hub stuck on the old tab. React's documented "adjust state
+  // when a prop changes" pattern keeps URL and UI in sync without effects.
+  const [prevInitialTab, setPrevInitialTab] = useState<SettingsTab>(initialTab);
+  if (initialTab !== prevInitialTab) {
+    setPrevInitialTab(initialTab);
+    setTab(initialTab);
+  }
   const activate = (next: SettingsTab) => {
     setTab(next);
     onNavigate?.(next === 'system' ? 'settings' : 'questions');

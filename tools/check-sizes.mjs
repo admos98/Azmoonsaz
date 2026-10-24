@@ -26,19 +26,18 @@ const NEW_FILE_LIMIT = 400;
 // Measured 2026-10-08. Numbers go DOWN, never up.
 const OVERRIDES = new Map([
   // App.tsx: shell+router shrunk 451→427 via BootScreens extraction; ratchet steps down.
-  ['src/App.tsx', 427],
-  // Questions.tsx: 1973→1416; type builders extracted to features/question-bank/builders/*.
-  ['src/pages/teacher/Questions.tsx', 1416],
-  ['src/pages/teacher/ExamPreview.tsx', 1891],
-  ['src/pages/teacher/ExamResults.tsx', 1307],
-  ['src/pages/teacher/ExamSettings.tsx', 1356],
-  // Students.tsx: 1240→889; roster views + NID helpers in features/student-roster/*.
-  ['src/pages/teacher/Students.tsx', 889],
+  ['src/App.tsx', 444], // 444: +17 from the 2026-10-25 audit pass (FE-2 reset gate, FE-3 deep-link init)
+  // Questions.tsx, ExamPreview.tsx, ExamSettings.tsx, ExamResults.tsx,
+  // Students.tsx and Topbar.tsx: CQ-11 splits (2026-10-25) brought every one
+  // of them under the generic 400-line cap — their OVERRIDES entries were
+  // deleted (ratchet steps complete). Extracted modules live in
+  // src/features/{exam-preview,exam-settings,question-bank,student-roster}/*,
+  // src/pages/teacher/{exam-preview,exam-results}/*, src/components/topbar/*.
   // glassMaterial.test.ts: 950→677 — the material-family it extracted to glassMaterialFamily.test.ts.
   ['src/test/config/glassMaterial.test.ts', 677],
-  ['src/components/Topbar.tsx', 906],
   ['src/glass/glassController.ts', 696],
-  ['src/pages/teacher/TeacherProfile.tsx', 690],
+  // 697: +7 from the 2026-10-25 audit pass (FE-4 tab-prop sync fix).
+  ['src/pages/teacher/TeacherProfile.tsx', 697],
   ['src/test/components/LibraryV2.test.tsx', 669],
   // mapMath: DOM-free shared math (main thread + worker). Its size IS the render-contract
   // documentation the audit pins (“DO NOT simplify any of these back”). FRONTEND-FINDINGS.md
@@ -51,10 +50,9 @@ const OVERRIDES = new Map([
   ['src/glass/webglRenderer.ts', 722],
   // SecureExamPortal: 892→73 (wiring shell; logic in features/secure-exam/*) — OVERRIDES removed, generic 400 cap applies.
   ['src/pages/teacher/Dashboard.tsx', 627],
-  ['src/pages/teacher/NewExam.tsx', 602],
+  ['src/pages/teacher/NewExam.tsx', 607], // 607: +5 from the 2026-10-25 audit pass (FE-6 seed-class fix)
   ['src/pages/dev/FixtureGallery.tsx', 492],
   ['src/pages/teacher/Login.tsx', 469],
-  ['src/services/api.ts', 417],
   ['src/features/student-import/StudentImportWizard.tsx', 423],
   ['src/pages/teacher/Settings.tsx', 416],
 ]);

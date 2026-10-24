@@ -283,7 +283,7 @@ describe('glass material contract (pixel-audit gates)', () => {
       /const QuestionRenderer = lazy\(\(\) => import\('\.\.\/\.\.\/components\/QuestionRenderer'\)\)/,
     );
     expect(questions).toMatch(/requestAnimationFrame\(\(\) => setPreviewReady\(true\)\)/);
-    expect(questions).toMatch(/previewReady \? \(/);
+    expect(component('src/features/question-bank/QuestionDrawerPreview.tsx')).toMatch(/previewReady \? \(/); // CQ-11 split
     expect(questions).not.toMatch(/import QuestionRenderer from/);
     // avatar name panel is desktop-only (no hover on touch — mobile gets a
     // bigger avatar instead); bell push scoped to md+ for the same reason

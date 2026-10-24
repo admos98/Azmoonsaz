@@ -1,0 +1,12 @@
+-- SEC-1 fix: 20261006000001 revoked EXECUTE on bump_rate_limit from
+-- public/anon/authenticated, but no migration ever granted it back to
+-- service_role. Since every role is implicitly a member of PUBLIC, that
+-- revoke removed EXECUTE from service_role too — on a database built purely
+-- from repo migrations, every bump_rate_limit call fails with a permission
+-- error and the rate limiter silently degrades to per-instance in-memory
+-- counters (PIN brute-force budgets reset on every cold start).
+--
+-- The later migration comment (20261006000003) claims service_role holds
+-- EXECUTE; this migration makes that claim true. Idempotent: if a manual
+-- out-of-repo grant already exists, this is a no-op.
+grant execute on function public.bump_rate_limit(text, integer) to service_role;

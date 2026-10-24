@@ -41,7 +41,11 @@ const commands: Command[] = [
     icon: <Cut kind="exams" size={20} />,
   },
   {
-    id: 'new-exam',
+    // FE-1 fix: this id must match the router vocabulary. 'new-exam' exists in
+    // NO route table — teacherPathFromTab fell back to the dashboard and the
+    // App switch had no case for it, so both this entry and the G→N shortcut
+    // dead-ended on the Dashboard instead of opening the exam builder.
+    id: 'exams/new',
     label: 'ساخت آزمون',
     description: 'ایجاد آزمون تازه',
     keywords: 'جدید افزودن امتحان',
@@ -182,7 +186,7 @@ export default function CommandPalette({
         const destinations: Record<string, string> = {
           d: 'dashboard',
           e: 'exams',
-          n: 'new-exam',
+          n: 'exams/new', // FE-1 fix: was 'new-exam' — a route that does not exist
           s: 'students',
           c: 'classes',
         };

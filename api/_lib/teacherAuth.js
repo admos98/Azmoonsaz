@@ -17,7 +17,11 @@ function displayNameFromUser(user) {
 async function ensureTeacherProfile(admin, user) {
   // Several tables have a FK to teacher_profiles(id). Supabase Auth users do not
   // automatically create that row, so teacher-owned inserts can fail with FK errors.
-  // This upsert is idempotent and keeps teacher onboarding friction-free.
+  // BE-1 fix: ignoreDuplicates:true makes this INSERT-once (ON CONFLICT DO
+  // NOTHING). The previous DO-UPDATE upsert rewrote full_name/school_name from
+  // auth metadata on EVERY request, silently reverting any profile edit the
+  // teacher made via POST /api/teacher/profile. Seed values still land on
+  // first login; afterwards the profile row is teacher-owned only.
   const fullName = displayNameFromUser(user);
   const schoolName = user?.user_metadata?.school_name || '';
 
@@ -27,7 +31,7 @@ async function ensureTeacherProfile(admin, user) {
       full_name: fullName,
       school_name: schoolName,
     },
-    { onConflict: 'id', ignoreDuplicates: false },
+    { onConflict: 'id', ignoreDuplicates: true },
   );
 
   if (error) {

@@ -1,5 +1,9 @@
 import { getSupabaseAdmin } from './supabaseAdmin.js';
 
+// SEC-1 fix: one-shot flag — the first fallback activation logs loudly,
+// subsequent ones stay silent to keep serverless logs readable.
+let fallbackWarned = false;
+
 // Per-instance fallback store — only consulted when Supabase is unreachable.
 // Bounded: keys rotate (attacker-chosen IPs), so an unbounded Map would be a
 // memory-exhaustion vector. Oldest entries are evicted at LOCAL_MAX_KEYS.
@@ -47,8 +51,19 @@ export async function checkRateLimit(key, options = {}) {
       remaining: Math.max(0, limit - row.bumped_count),
       resetAt,
     };
-  } catch {
+  } catch (rpcError) {
     // Supabase unavailable — bounded per-instance fallback.
+    // SEC-1 fix: the fallback used to be completely silent, so a broken RPC
+    // (e.g. a missing service_role EXECUTE grant) masqueraded as healthy
+    // limiting while every serverless instance counted separately. Log once
+    // per instance so the degradation is observable in production logs.
+    if (!fallbackWarned) {
+      fallbackWarned = true;
+      console.error(
+        'rate_limit_rpc_fallback_activated',
+        rpcError?.message || String(rpcError || 'unknown'),
+      );
+    }
     return checkRateLimitLocal(bucketKey, limit, windowMs, now);
   }
 }

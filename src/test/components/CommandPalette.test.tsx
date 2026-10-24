@@ -48,7 +48,7 @@ describe('CommandPalette', () => {
     render(<Harness onNavigate={navigate} />);
     fireEvent.keyDown(window, { key: 'g' });
     fireEvent.keyDown(window, { key: 'n' });
-    expect(navigate).toHaveBeenCalledWith('new-exam');
+    expect(navigate).toHaveBeenCalledWith('exams/new'); // FE-1 fix: route that actually exists
   });
 
   it('opens by shortcut, normalizes Persian search, and navigates by keyboard', () => {

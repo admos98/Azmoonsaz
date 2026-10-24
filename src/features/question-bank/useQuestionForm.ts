@@ -135,7 +135,9 @@ export function useQuestionForm(
         } else if ('optIndex' in target) {
           const updated = [...formOptions];
           if (!updated[target.optIndex]) return;
-          updated[target.optIndex].imageUrl = key;
+          // FE-9 fix: replace the element instead of mutating the prior-state
+          // object through the shallow array copy.
+          updated[target.optIndex] = { ...updated[target.optIndex], imageUrl: key };
           setFormOptions(updated);
         } else if ('partIndex' in target) {
           const updated = [...formParts];
@@ -184,7 +186,9 @@ export function useQuestionForm(
       } else {
         // Multiple correct allows toggling independently
         const updated = [...formOptions];
-        updated[index].isCorrect = !updated[index].isCorrect;
+        // FE-9 fix: immutable element replacement (was in-place mutation of
+        // the previous render's option object).
+        updated[index] = { ...updated[index], isCorrect: !updated[index].isCorrect };
         setFormOptions(updated);
       }
     };

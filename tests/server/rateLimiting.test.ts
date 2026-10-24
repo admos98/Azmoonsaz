@@ -54,7 +54,13 @@ beforeEach(() => {
 });
 
 describe('F-03 getClientIp (trusted hop)', () => {
-  it('prefers x-real-ip over any forwarded chain', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('prefers x-real-ip over any forwarded chain (proxy trust opted in)', () => {
+    // SEC-4 fix: header trust is now gated — tests opt in explicitly.
+    vi.stubEnv('TRUST_PROXY_HEADERS', '1');
     const req = createReq({
       headers: { 'x-real-ip': '9.9.9.9', 'x-forwarded-for': '6.6.6.6, 8.8.8.8' },
     });
@@ -62,12 +68,25 @@ describe('F-03 getClientIp (trusted hop)', () => {
   });
 
   it('ignores the client-spoofable first XFF entry, uses the edge-appended last', () => {
+    vi.stubEnv('TRUST_PROXY_HEADERS', '1');
     const req = createReq({ headers: { 'x-forwarded-for': '6.6.6.6, 8.8.8.8' } });
     expect(getClientIp(req as never)).toBe('8.8.8.8');
   });
 
   it('falls back to the socket address', () => {
+    vi.stubEnv('TRUST_PROXY_HEADERS', '1');
     expect(getClientIp(createReq() as never)).toBe('127.0.0.1');
+  });
+
+  it('ignores proxy headers entirely when trust is not enabled (SEC-4)', () => {
+    // Without Vercel or an explicit TRUST_PROXY_HEADERS=1, both headers are
+    // client-supplied and must never become a rate-limit key.
+    delete process.env.TRUST_PROXY_HEADERS;
+    delete process.env.VERCEL;
+    const req = createReq({
+      headers: { 'x-real-ip': '9.9.9.9', 'x-forwarded-for': '6.6.6.6, 8.8.8.8' },
+    });
+    expect(getClientIp(req as never)).toBe('127.0.0.1');
   });
 });
 

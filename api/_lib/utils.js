@@ -25,6 +25,17 @@ export function normalizeStudentStatus(status) {
   return status === 'suspended' ? 'suspended' : 'active';
 }
 
+/**
+ * BE-5 fix: bound an optional client-supplied text field at the edge (N-07
+ * policy). Returns trimmed text capped to `maxChars`, or null when the value
+ * is empty/absent — the shape the `students.email` / `students.phone_number`
+ * columns expect.
+ */
+export function boundedOptionalText(value, maxChars) {
+  const clean = String(value ?? '').trim().slice(0, maxChars);
+  return clean.length > 0 ? clean : null;
+}
+
 export function randomExamCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -107,7 +118,7 @@ function cleanOptionImages(options, prevOptions, teacherId) {
       .filter((o) => o && typeof o === 'object')
       .map((o) => [o.id, o.imageUrl]),
   );
-  return options.map(({ isCorrect, ...option }) => ({
+  return options.map(({ isCorrect: _isCorrect, ...option }) => ({
     ...option,
     imageUrl: cleanImageField(option.imageUrl, prevById.get(option.id), teacherId),
   }));
@@ -121,7 +132,7 @@ function cleanPartImages(parts, prevParts, teacherId) {
       .map((p) => [p.id, p]),
   );
   return parts.map((part) => {
-    const { correctAnswer, ...rest } = part;
+    const { correctAnswer: _correctAnswer, ...rest } = part;
     const prev = prevById.get(part.id) || {};
     return {
       ...rest,
@@ -131,6 +142,12 @@ function cleanPartImages(parts, prevParts, teacherId) {
   });
 }
 
+/**
+ * @param {object} question
+ * @param {object|null} [existingBody]
+ * @param {string|null} [teacherId]
+ * @returns {Record<string, any>}
+ */
 export function questionToBody(question, existingBody = null, teacherId = null) {
   const prev = existingBody && typeof existingBody === 'object' ? existingBody : {};
   // blankCount is NON-SECRET display metadata: the student needs the field
@@ -321,38 +338,75 @@ export function mapExam(row, questions = [], sections = []) {
 }
 
 export async function hydrateExam(teacher, exam) {
-  const { data: allowed } = await teacher.admin
-    .from('exam_allowed_classes')
-    .select('class_group_id')
-    .eq('exam_id', exam.id);
-  exam.classGroupIds = (allowed || []).map((row) => row.class_group_id);
+  return (await hydrateExams(teacher, [exam]))[0];
+}
 
-  const { data: examQuestions } = await teacher.admin
-    .from('exam_questions')
-    .select('question_id, section_title, position, points')
-    .eq('exam_id', exam.id)
-    .order('position', { ascending: true });
-  const questionIds = (examQuestions || []).map((row) => row.question_id);
-  let questions = [];
+/**
+ * BE-7 fix: batch hydration for exam lists. The per-exam loop used to fire
+ * 2-3 serial queries per exam (N+1); this issues three queries total for the
+ * whole list and stitches the results in memory. `hydrateExam` delegates here
+ * for a single exam, so both paths share one implementation.
+ */
+export async function hydrateExams(teacher, exams) {
+  const list = Array.isArray(exams) ? exams : [];
+  if (list.length === 0) return [];
+  const examIds = list.map((exam) => exam.id);
+
+  const [{ data: allowedRows }, { data: examQuestionRows }] = await Promise.all([
+    teacher.admin
+      .from('exam_allowed_classes')
+      .select('exam_id, class_group_id')
+      .in('exam_id', examIds),
+    teacher.admin
+      .from('exam_questions')
+      .select('exam_id, question_id, section_title, position, points')
+      .in('exam_id', examIds)
+      .order('position', { ascending: true }),
+  ]);
+
+  const classesByExam = new Map();
+  for (const row of allowedRows || []) {
+    if (!classesByExam.has(row.exam_id)) classesByExam.set(row.exam_id, []);
+    classesByExam.get(row.exam_id).push(row.class_group_id);
+  }
+
+  const eqByExam = new Map();
+  const questionIdSet = new Set();
+  for (const row of examQuestionRows || []) {
+    questionIdSet.add(row.question_id);
+    if (!eqByExam.has(row.exam_id)) eqByExam.set(row.exam_id, []);
+    eqByExam.get(row.exam_id).push(row);
+  }
+
+  // F-26: belt to the create-side ownership gate — never read keys for a
+  // question that is not this teacher's, even if a row slipped through.
+  const questionIds = [...questionIdSet];
+  let questionRows = [];
   if (questionIds.length > 0) {
-    // F-26: belt to the create-side ownership gate — never read keys for a
-    // question that is not this teacher's, even if a row slipped through.
     const { data } = await teacher.admin
       .from('questions')
       .select('id, type, grade, subject, title, body, answer_key, points, created_at')
       .eq('teacher_id', teacher.id)
       .in('id', questionIds);
-    const byId = new Map((data || []).map((q) => [q.id, mapQuestion(q)]));
-    questions = questionIds.map((id) => byId.get(id)).filter(Boolean);
+    questionRows = data || [];
   }
-  const sectionsByTitle = new Map();
-  for (const row of examQuestions || []) {
-    const title = row.section_title || 'سوالات آزمون';
-    if (!sectionsByTitle.has(title))
-      sectionsByTitle.set(title, { id: title, title, questionIds: [] });
-    sectionsByTitle.get(title).questionIds.push(row.question_id);
-  }
-  return mapExam(exam, questions, [...sectionsByTitle.values()]);
+  const questionById = new Map(questionRows.map((q) => [q.id, mapQuestion(q)]));
+
+  return list.map((exam) => {
+    const classGroupIds = classesByExam.get(exam.id) || [];
+    const eqRows = eqByExam.get(exam.id) || [];
+    const questions = eqRows
+      .map((row) => questionById.get(row.question_id))
+      .filter(Boolean);
+    const sectionsByTitle = new Map();
+    for (const row of eqRows) {
+      const title = row.section_title || 'سوالات آزمون';
+      if (!sectionsByTitle.has(title))
+        sectionsByTitle.set(title, { id: title, title, questionIds: [] });
+      sectionsByTitle.get(title).questionIds.push(row.question_id);
+    }
+    return mapExam({ ...exam, classGroupIds }, questions, [...sectionsByTitle.values()]);
+  });
 }
 
 export function tokenTtlForExam(exam) {

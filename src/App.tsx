@@ -79,9 +79,19 @@ export default function App() {
     teacherTabFromPath(window.location.pathname),
   );
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
-  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(undefined);
+  // FE-3 fix: the results deep link was parsed ONLY in the popstate handler,
+  // which never runs on first mount — a fresh load / F5 at
+  // /teacher/exams/<id>/results initialized examSubView to 'list' and showed
+  // the exam list at a results URL. Parse the URL once in the initializers,
+  // exactly as handlePopState does.
+  const initialResultsMatch = window.location.pathname.match(
+    /^\/teacher\/exams\/([^/]+)\/results$/,
+  );
+  const [selectedExamId, setSelectedExamId] = useState<string | undefined>(
+    initialResultsMatch?.[1],
+  );
   const [examSubView, setExamSubView] = useState<'list' | 'settings' | 'preview' | 'results'>(
-    'list',
+    initialResultsMatch ? 'results' : 'list',
   );
 
   useEffect(() => {
@@ -316,11 +326,28 @@ export default function App() {
     return <BootScreen label="در حال آماده‌سازی حساب…" />;
   }
 
+  // FE-2 fix: an active recovery link is an explicit intent and must outrank
+  // BOTH the workspace and Login. ResetPassword calls
+  // supabase.auth.setSession(...) (and the client runs with
+  // detectSessionInUrl), which fires SIGNED_IN and flips isTeacherLoggedIn —
+  // when this check lived inside the !isTeacherLoggedIn branch, the workspace
+  // replaced the password form the moment the session landed and the user
+  // could never submit a new password.
+  if (isPasswordReset) {
+    return (
+      <ResetPassword
+        onDone={() => {
+          setIsPasswordReset(false);
+          window.history.replaceState(null, '', window.location.pathname);
+        }}
+      />
+    );
+  }
+
   if (!isTeacherLoggedIn) {
     // Session expired mid-use (C.2): the interstitial explains WHY before
-    // Login shows. A recovery link in the URL keeps priority — it is an
-    // explicit intent, not an expiry.
-    if (sessionExpired && !isPasswordReset) {
+    // Login shows.
+    if (sessionExpired) {
       return (
         <AbsencePage
           kind="session-expired"
@@ -328,16 +355,6 @@ export default function App() {
           description="برای ادامهٔ کار دوباره وارد حساب خود شوید."
           actionLabel="ورود دوباره"
           onAction={() => setSessionExpired(false)}
-        />
-      );
-    }
-    if (isPasswordReset) {
-      return (
-        <ResetPassword
-          onDone={() => {
-            setIsPasswordReset(false);
-            window.history.replaceState(null, '', window.location.pathname);
-          }}
         />
       );
     }

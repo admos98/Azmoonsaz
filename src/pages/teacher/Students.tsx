@@ -3,43 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   PlusCircle,
-  Filter,
-  GraduationCap,
   FileSpreadsheet,
   AlertTriangle,
-  CheckCircle,
-  Info,
-  FileText,
-  Activity,
-  UserPlus,
 } from 'lucide-react';
 
 import { Student, Submission } from '../../types';
-import { validateIranianNationalId } from '../../features/student-roster/nationalId';
 import { RosterViews } from '../../features/student-roster/RosterViews';
-import { studentService } from '../../services/api';
+import { useStudentFilters } from '../../features/student-roster/useStudentFilters';
+import { useStudentForm } from '../../features/student-roster/useStudentForm';
+import { useStudentConfirmActions } from '../../features/student-roster/useStudentConfirmActions';
+import { StudentFiltersPanel, StudentSortBar } from '../../features/student-roster/StudentFiltersPanel';
+import { StudentEditorModal } from '../../features/student-roster/StudentEditorModal';
+import { ExamLogsModal } from '../../features/student-roster/ExamLogsModal';
 import {
   Button,
   ConfirmDialog,
-  Dropdown,
-  EmptyState,
-  Input,
-  Modal,
   PageHeader,
-  PillButton,
-  SearchInput,
   UnsavedChangesGuard,} from '../../ui';
 import { PanelCrest } from '../../components/PanelCrest';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
 import { useToast } from '../../hooks/useToast';
-import { usePersistentPreference } from '../../hooks/usePersistentPreference';
-import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useTeacherCollections } from '../../contexts/TeacherContext';
 import SaveStatusIndicator, { type SaveState } from '../../components/SaveStatusIndicator';
-import { normalizePersianText, toPersianDigits } from '../../utils/persian';
+import { normalizePersianText } from '../../utils/persian';
 
 export default function Students() {
   const { showToast, toastElement } = useToast();
@@ -61,77 +50,27 @@ export default function Students() {
   const loading = status.students === 'loading';
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = usePersistentPreference<'name' | 'grade'>(
-    'students:sort',
-    'name',
-    (value): value is 'name' | 'grade' => value === 'name' || value === 'grade',
-  );
-  const [pageSize, setPageSize] = usePersistentPreference<number>(
-    'students:page-size',
-    20,
-    (value): value is number => value === 10 || value === 20 || value === 50,
-  );
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedGrade, setSelectedGrade, resetSelectedGrade] = usePersistentPreference(
-    'students:grade',
-    'all',
-  );
-  const [selectedClassGroup, setSelectedClassGroup, resetSelectedClassGroup] =
-    usePersistentPreference('students:class', 'all');
-  const [selectedStatus, setSelectedStatus, resetSelectedStatus] = usePersistentPreference(
-    'students:status',
-    'all',
-  );
-  const urlFiltersReady = useRef(false);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const setIfPresent = (key: string, setter: (value: string) => void) => {
-      const value = params.get(key);
-      if (value) setter(value);
-    };
-    setIfPresent('q', setSearchQuery);
-    setIfPresent('grade', setSelectedGrade);
-    setIfPresent('class', setSelectedClassGroup);
-    setIfPresent('status', setSelectedStatus);
-    const urlSort = params.get('sort');
-    if (urlSort === 'name' || urlSort === 'grade') setSortOrder(urlSort);
-    const urlPageSize = Number(params.get('pageSize'));
-    if (urlPageSize === 10 || urlPageSize === 20 || urlPageSize === 50) setPageSize(urlPageSize);
-    urlFiltersReady.current = true;
-  }, [setPageSize, setSelectedClassGroup, setSelectedGrade, setSelectedStatus, setSortOrder]);
-
-  useEffect(() => {
-    if (!urlFiltersReady.current) return;
-    const params = new URLSearchParams(window.location.search);
-    const values: Record<string, string> = {
-      q: searchQuery,
-      grade: selectedGrade,
-      class: selectedClassGroup,
-      status: selectedStatus,
-      sort: sortOrder,
-      pageSize: String(pageSize),
-    };
-    Object.entries(values).forEach(([key, value]) => {
-      if (
-        !value ||
-        value === 'all' ||
-        (key === 'sort' && value === 'name') ||
-        (key === 'pageSize' && value === '20')
-      )
-        params.delete(key);
-      else params.set(key, value);
-    });
-    const query = params.toString();
-    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
-  }, [pageSize, searchQuery, selectedClassGroup, selectedGrade, selectedStatus, sortOrder]);
+  const {
+    searchQuery,
+    setSearchQuery,
+    sortOrder,
+    setSortOrder,
+    pageSize,
+    setPageSize,
+    currentPage,
+    setCurrentPage,
+    selectedGrade,
+    setSelectedGrade,
+    resetSelectedGrade,
+    selectedClassGroup,
+    setSelectedClassGroup,
+    resetSelectedClassGroup,
+    selectedStatus,
+    setSelectedStatus,
+    resetSelectedStatus,
+  } = useStudentFilters();
 
   // Modals state
-  const [showAddEditModal, setShowAddEditModal] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [showExamLogsModal, setShowExamLogsModal] = useState(false);
   const [activeLogSubmissions, setActiveLogSubmissions] = useState<Submission[]>([]);
@@ -152,185 +91,49 @@ export default function Students() {
     return el instanceof HTMLElement && el !== document.body ? el : null;
   };
 
-  // Manual Add/Edit form state
-  const [formName, setFormName] = useState('');
-  const [formNationalId, setFormNationalId] = useState('');
-  const [formGrade, setFormGrade] = useState('هفتم');
-  const [formClassGroupId, setFormClassGroupId] = useState('c-1');
-  const [formPhone, setFormPhone] = useState('');
-  const [formEmail, setFormEmail] = useState('');
-  const [formStatus, setFormStatus] = useState<'active' | 'suspended' | 'examining'>('active');
-  const formSnapshot = JSON.stringify([
+  const {
+    showAddEditModal,
+    modalMode,
     formName,
+    setFormName,
     formNationalId,
+    setFormNationalId,
     formGrade,
+    setFormGrade,
     formClassGroupId,
+    setFormClassGroupId,
     formPhone,
+    setFormPhone,
     formEmail,
+    setFormEmail,
     formStatus,
-  ]);
-  const [savedFormSnapshot, setSavedFormSnapshot] = useState(formSnapshot);
-  const { guarded: guardStudentDraft, dialogProps: studentDraftDialog } = useUnsavedChanges(
-    showAddEditModal && formSnapshot !== savedFormSnapshot,
-  );
-  const closeStudentEditor = () => guardStudentDraft(() => setShowAddEditModal(false));
+    setFormStatus,
+    closeStudentEditor,
+    openAddModal,
+    openEditModal,
+    handleSaveStudentSubmit,
+    studentDraftDialog,
+  } = useStudentForm({
+    classGroups,
+    students,
+    upsertStudent,
+    showToast,
+    setSaveState,
+    setLastSavedAt,
+    addEditTriggerRef,
+    captureActiveTrigger,
+  });
 
-  // Open Add Student Modal
-  const openAddModal = () => {
-    addEditTriggerRef.current = captureActiveTrigger();
-    setModalMode('add');
-    setSelectedStudentId(null);
-    setFormName('');
-    setFormNationalId('');
-    setFormGrade('هفتم');
-    setFormClassGroupId(classGroups[0]?.id || 'c-1');
-    setFormPhone('');
-    setFormEmail('');
-    setFormStatus('active');
-    setSavedFormSnapshot(
-      JSON.stringify(['', '', 'هفتم', classGroups[0]?.id || 'c-1', '', '', 'active']),
-    );
-    setShowAddEditModal(true);
-  };
-
-  // Open Edit Student Modal
-  const openEditModal = (student: Student) => {
-    addEditTriggerRef.current = captureActiveTrigger();
-    setModalMode('edit');
-    setSelectedStudentId(student.id);
-    setFormName(student.name);
-    setFormNationalId(student.nationalId);
-    setFormGrade(student.grade);
-    setFormClassGroupId(student.classGroupId);
-    setFormPhone(student.phoneNumber || '');
-    setFormEmail(student.email || '');
-    setFormStatus(student.status || 'active');
-    setSavedFormSnapshot(
-      JSON.stringify([
-        student.name,
-        student.nationalId,
-        student.grade,
-        student.classGroupId,
-        student.phoneNumber || '',
-        student.email || '',
-        student.status || 'active',
-      ]),
-    );
-    setShowAddEditModal(true);
-  };
-
-  // Handle Save (Add or Edit)
-  const handleSaveStudentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName) return;
-
-    const validationResult = validateIranianNationalId(formNationalId);
-    if (!validationResult.isValid) {
-      showToast(`خطای کدملی: ${validationResult.message}`, 'error');
-      return;
-    }
-
-    setSaveState('saving');
-    try {
-      if (modalMode === 'add') {
-        // Check for duplicated National ID
-        const isDuplicate = students.some((s) => s.nationalId === formNationalId);
-        if (isDuplicate) {
-          showToast('دانش‌آموزی با این کد ملی قبلاً ثبت شده است.', 'error');
-          return;
-        }
-
-        const created = await studentService.createStudent({
-          name: formName,
-          nationalId: formNationalId,
-          grade: formGrade,
-          classGroupId: formClassGroupId,
-          phoneNumber: formPhone || undefined,
-          email: formEmail || undefined,
-        });
-
-        const newStudent: Student = {
-          ...created,
-          status: formStatus,
-        };
-        upsertStudent(newStudent);
-      } else {
-        // Edit mode
-        if (!selectedStudentId) return;
-        const updated = await studentService.updateStudent(selectedStudentId, {
-          name: formName,
-          nationalId: formNationalId,
-          grade: formGrade,
-          classGroupId: formClassGroupId,
-          phoneNumber: formPhone || undefined,
-          email: formEmail || undefined,
-        });
-
-        const existing = students.find((s) => s.id === selectedStudentId);
-        if (!existing) return;
-        upsertStudent({
-          ...existing,
-          ...updated,
-          status: formStatus,
-        });
-      }
-      const savedAt = new Date();
-      setLastSavedAt(savedAt);
-      setSaveState('saved');
-      showToast(
-        modalMode === 'add' ? 'دانش‌آموز جدید ثبت شد.' : 'اطلاعات دانش‌آموز ذخیره شد.',
-        'success',
-      );
-      setShowAddEditModal(false);
-    } catch (err: unknown) {
-      setSaveState('failed');
-      showToast(`خطا در ذخیره‌سازی: ${err instanceof Error ? err.message : String(err)}`, 'error');
-    }
-  };
-
-  // ConfirmDialog state for PIN reset (T7) — the teacher never sees the PIN;
-  // reset clears it so the student's next login shows the set-PIN screen.
-  const [studentToResetPin, setStudentToResetPin] = useState<{ id: string; name: string } | null>(
-    null,
-  );
-
-  const handleResetPin = (id: string, name: string) => {
-    setStudentToResetPin({ id, name });
-  };
-
-  const confirmResetPin = async () => {
-    if (!studentToResetPin) return;
-    try {
-      const updated = await studentService.resetStudentPin(studentToResetPin.id);
-      const existing = students.find((s) => s.id === studentToResetPin.id);
-      if (existing) upsertStudent({ ...existing, ...updated });
-      showToast('رمز دانش‌آموز بازنشانی شد. در ورود بعدی رمز جدید تعیین می‌کند.', 'success');
-    } catch (err: unknown) {
-      showToast(`خطا در بازنشانی رمز: ${err instanceof Error ? err.message : String(err)}`, 'error');
-    } finally {
-      setStudentToResetPin(null);
-    }
-  };
-
-  // ConfirmDialog state for student deletion
-  const [studentToDelete, setStudentToDelete] = useState<{ id: string; name: string } | null>(null);
-
-  const handleDeleteStudent = (id: string, name: string) => {
-    setStudentToDelete({ id, name });
-  };
-
-  const confirmDeleteStudent = async () => {
-    if (!studentToDelete) return;
-    try {
-      await studentService.deleteStudent(studentToDelete.id);
-      removeStudent(studentToDelete.id);
-      showToast('دانش‌آموز حذف شد.', 'success');
-    } catch (err: unknown) {
-      showToast(`خطا در حذف: ${err instanceof Error ? err.message : String(err)}`, 'error');
-    } finally {
-      setStudentToDelete(null);
-    }
-  };
+  const {
+    studentToResetPin,
+    setStudentToResetPin,
+    handleResetPin,
+    confirmResetPin,
+    studentToDelete,
+    setStudentToDelete,
+    handleDeleteStudent,
+    confirmDeleteStudent,
+  } = useStudentConfirmActions({ students, upsertStudent, removeStudent, showToast });
 
   const openStudentExamHistory = (student: Student) => {
     logsTriggerRef.current = captureActiveTrigger();
@@ -438,165 +241,30 @@ export default function Students() {
         />
       </div>
 
-      {/* Multi-Filter Panel: Search, Grade, Class Group, and Status! */}
-      <div
-        className="relative lens p-5 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-stretch xl:items-center"
-        id="multi-filter-wrapper"
-      >
-        {/* Real-time search by name/nationalId */}
-        <div className="flex-1 max-w-md">
-          <SearchInput
-            placeholder="جستجوی دانش‌آموز با نام و کد ملی..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+      <StudentFiltersPanel
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedGrade={selectedGrade}
+        setSelectedGrade={setSelectedGrade}
+        selectedClassGroup={selectedClassGroup}
+        setSelectedClassGroup={setSelectedClassGroup}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        resetSelectedGrade={resetSelectedGrade}
+        resetSelectedClassGroup={resetSelectedClassGroup}
+        resetSelectedStatus={resetSelectedStatus}
+        classGroups={classGroups}
+      />
 
-        {/* Selective Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Grade filter */}
-          <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
-            <Filter className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-label-muted">
-              پایه تحصیلی:
-            </span>
-            <Dropdown
-              id="filter-grade"
-              compact
-              value={selectedGrade}
-              onChange={(v) => setSelectedGrade(v)}
-              options={[
-                { value: 'all', label: 'همه پایه‌ها' },
-                { value: 'هفتم', label: 'پایه هفتم' },
-                { value: 'هشتم', label: 'پایه هشتم' },
-                { value: 'نهم', label: 'پایه نهم' },
-              ]}
-            />
-          </div>
-
-          {/* Class Group filter */}
-          <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
-            <GraduationCap className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-label-muted">
-              گروه کلاسی:
-            </span>
-            <Dropdown
-              id="filter-class"
-              compact
-              value={selectedClassGroup}
-              onChange={(v) => setSelectedClassGroup(v)}
-              options={[
-                { value: 'all', label: 'همه کلاس‌ها' },
-                ...classGroups.map((cg) => ({ value: cg.id, label: cg.name })),
-              ]}
-            />
-          </div>
-
-          {/* Status filter */}
-          <div className="flex items-center gap-1.5 glx field border px-3 py-1.5 rounded-xl">
-            <Activity className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            <span className="text-label-muted">
-              وضعیت دانش‌آموز:
-            </span>
-            <Dropdown
-              id="filter-status"
-              compact
-              value={selectedStatus}
-              onChange={(v) => setSelectedStatus(v)}
-              options={[
-                { value: 'all', label: 'همه وضعیت‌ها' },
-                { value: 'active', label: 'فعال' },
-                { value: 'examining', label: 'در حال آزمون' },
-                { value: 'suspended', label: 'کاربر غیرفعال' },
-              ]}
-            />
-          </div>
-
-          {/* Clear Filter button if active */}
-          {(searchQuery ||
-            selectedGrade !== 'all' ||
-            selectedClassGroup !== 'all' ||
-            selectedStatus !== 'all') && (
-            <PillButton
-              fill="danger-soft"
-              size="sm"
-              radius="lg"
-              onClick={() => {
-                setSearchQuery('');
-                resetSelectedGrade();
-                resetSelectedClassGroup();
-                resetSelectedStatus();
-              }}
-              className="hover:bg-[var(--color-danger-soft)]/40 transition-all"
-            >
-              حذف فیلترها
-            </PillButton>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-caption">
-          <label htmlFor="student-sort" className="font-bold">
-            مرتب‌سازی
-          </label>
-          <Dropdown
-            id="student-sort"
-            compact
-            value={sortOrder}
-            onChange={(v) => {
-              setSortOrder(v as 'name' | 'grade');
-              setCurrentPage(1);
-            }}
-            options={[
-              { value: 'name', label: 'نام' },
-              { value: 'grade', label: 'پایه' },
-            ]}
-            className="w-24"
-          />
-          <label htmlFor="student-page-size" className="font-bold">
-            در هر صفحه
-          </label>
-          <Dropdown
-            id="student-page-size"
-            compact
-            value={String(pageSize)}
-            onChange={(v) => {
-              setPageSize(Number(v));
-              setCurrentPage(1);
-            }}
-            options={[
-              { value: '10', label: '۱۰' },
-              { value: '20', label: '۲۰' },
-              { value: '50', label: '۵۰' },
-            ]}
-            className="w-20"
-          />
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2 text-caption">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={safePage === 1}
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-            >
-              قبلی
-            </Button>
-            <span aria-live="polite">
-              صفحه {toPersianDigits(safePage)} از {toPersianDigits(totalPages)}
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={safePage === totalPages}
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-            >
-              بعدی
-            </Button>
-          </div>
-        )}
-      </div>
+      <StudentSortBar
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+        setCurrentPage={setCurrentPage}
+        totalPages={totalPages}
+        safePage={safePage}
+      />
 
       {/* Main Student Representation Area (Responsive Table vs Mobile Cards) */}
       <div className="lens rounded-3xl overflow-hidden" id="students-grid-box">
@@ -613,157 +281,28 @@ export default function Students() {
         </PanelCrest>
       </div>
 
-      {/* Manual Add / Edit Modal — library chrome: scrim, veil, halo, focus trap */}
-      <Modal
-        isOpen={showAddEditModal}
-        onClose={closeStudentEditor}
-        title={
-          modalMode === 'add'
-            ? 'ایجاد پرونده تحصیلی دانش‌آموز نو'
-            : 'ویرایش شناسنامه تحصیلی دانش‌آموز'
-        }
-        icon={<UserPlus className="w-5 h-5" />}
-        maxWidth="sm"
-        triggerRef={addEditTriggerRef}
-        footer={
-          <>
-            <Button variant="ghost" size="sm" onClick={closeStudentEditor}>
-              انصراف
-            </Button>
-            <Button type="submit" form="student-editor-form" size="sm" disabled={!formName}>
-              {modalMode === 'add' ? 'ثبت دانش‌آموز' : 'ذخیره تغییرات'}
-            </Button>
-          </>
-        }
-      >
-        <form
-          id="student-editor-form"
-          onSubmit={handleSaveStudentSubmit}
-          className="space-y-4 text-label"
-        >
-          {/* Family name */}
-          <Input
-            label="نام و نام خانوادگی:"
-            type="text"
-            required
-            placeholder="مثال: بردیا مهدوی"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-          />
-
-          {/* National ID + Interactive Live Validation logic */}
-          <Input
-            label="کد ملی ۱۰ رقمی (رمز عبور دانش‌آموز):"
-            type="text"
-            required
-            maxLength={10}
-            placeholder="مثال: 0012487654"
-            value={formNationalId}
-            onChange={(e) => setFormNationalId(e.target.value.replace(/\D/g, ''))}
-            className="font-mono tracking-widest"
-          />
-
-          {/* Live validation feedback display! */}
-          {formNationalId && (
-            <div
-              className={`p-2.5 rounded-lg border flex items-start gap-1.5 transition-all text-micro leading-relaxed ${
-                validateIranianNationalId(formNationalId).isValid
-                  ? 'bg-[var(--color-success-soft)] border-[var(--color-success)]/10/60 text-[var(--color-success)]'
-                  : 'bg-[var(--color-danger-soft)]/40 border-[var(--color-danger)]/10/60 text-[var(--color-danger)]/80'
-              }`}
-            >
-              {validateIranianNationalId(formNationalId).isValid ? (
-                <CheckCircle className="w-3.5 h-3.5 text-[var(--color-success)] shrink-0 mt-0.5" />
-              ) : (
-                <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-danger)] shrink-0 mt-0.5" />
-              )}
-              <span>{validateIranianNationalId(formNationalId).message}</span>
-            </div>
-          )}
-
-          {/* Grade and Class Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <Dropdown
-              label="پایه تحصیلی:"
-              value={formGrade}
-              onChange={setFormGrade}
-              options={[
-                { value: 'هفتم', label: 'پایه هفتم' },
-                { value: 'هشتم', label: 'پایه هشتم' },
-                { value: 'نهم', label: 'پایه نهم' },
-              ]}
-            />
-
-            <Dropdown
-              label="کلاس اختصاصی:"
-              value={formClassGroupId}
-              onChange={setFormClassGroupId}
-              options={[
-                { value: '', label: 'بدون کلاس', disabled: true },
-                ...classGroups.map((c) => ({ value: c.id, label: c.name })),
-              ]}
-              placeholder="انتخاب کلاس"
-            />
-          </div>
-
-          {/* Status Selector */}
-          <div className="space-y-1.5">
-            <span className="font-semibold text-[var(--color-text-secondary)] block">
-              وضعیت دانش‌آموز:
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { val: 'active', label: 'فعال' },
-                { val: 'suspended', label: 'غیرفعال / مسدود' },
-                { val: 'examining', label: 'در حال آزمون' },
-              ].map((s) => (
-                <PillButton
-                  key={s.val}
-                  fill={formStatus === s.val ? 'accent-soft' : 'surface'}
-                  size="md"
-                  radius="xl"
-                  text="micro"
-                  weight="bold"
-                  textColor={formStatus === s.val ? 'accent' : 'secondary'}
-                  aria-pressed={formStatus === s.val}
-                  onClick={() => setFormStatus(s.val as 'active' | 'suspended' | 'examining')}
-                  className={`py-2 border ${formStatus === s.val ? 'btn-glass btn-glass--accent' : ''}`}
-                >
-                  {s.label}
-                </PillButton>
-              ))}
-            </div>
-          </div>
-
-          {/* Phone and Email Optional */}
-          <div className="grid grid-cols-2 gap-4 border-t border-[var(--color-glass-light-stroke)] pt-4.5">
-            <Input
-              label="همراه ولی (اختیاری):"
-              type="text"
-              placeholder="مثال: 09123456789"
-              value={formPhone}
-              onChange={(e) => setFormPhone(e.target.value)}
-              className="font-mono"
-            />
-
-            <Input
-              label="پست الکترونیک (ایمیل):"
-              type="email"
-              placeholder="stud@school.ir"
-              value={formEmail}
-              onChange={(e) => setFormEmail(e.target.value)}
-              className="font-mono text-left"
-            />
-          </div>
-
-          {/* Error messages if form is incomplete */}
-          {!formName && (
-            <p className="text-micro text-[var(--color-danger)] text-center">
-              برای ذخیره، فیلد نام و فامیل دانش‌آموز الزامی است.
-            </p>
-          )}
-        </form>
-      </Modal>
+      <StudentEditorModal
+        showAddEditModal={showAddEditModal}
+        closeStudentEditor={closeStudentEditor}
+        modalMode={modalMode}
+        addEditTriggerRef={addEditTriggerRef}
+        handleSaveStudentSubmit={handleSaveStudentSubmit}
+        formName={formName}
+        setFormName={setFormName}
+        formNationalId={formNationalId}
+        setFormNationalId={setFormNationalId}
+        formGrade={formGrade}
+        setFormGrade={setFormGrade}
+        formClassGroupId={formClassGroupId}
+        setFormClassGroupId={setFormClassGroupId}
+        formPhone={formPhone}
+        setFormPhone={setFormPhone}
+        formEmail={formEmail}
+        setFormEmail={setFormEmail}
+        formStatus={formStatus}
+        setFormStatus={setFormStatus}
+        classGroups={classGroups}
+      />
 
       <StudentImportWizard
         open={showImportWizard}
@@ -775,90 +314,14 @@ export default function Students() {
       />
 
       {activeLogStudent && (
-        <Modal
-          isOpen={showExamLogsModal}
-          onClose={() => setShowExamLogsModal(false)}
-          title={`پرونده سنجش‌ها تحصیلی و مشارکت «${activeLogStudent.name}»`}
-          icon={<FileText className="w-5 h-5" />}
-          maxWidth="md"
-          triggerRef={logsTriggerRef}
-        >
-          <div className="space-y-5">
-            <div className="flex justify-between items-center pane p-4.5 rounded-2xl">
-              <div>
-                <p className="font-bold text-[var(--color-text-primary)] text-caption">
-                  {activeLogStudent.name}
-                </p>
-                <p className="text-micro text-[var(--color-text-tertiary)] mt-0.5">
-                  پایه {activeLogStudent.grade} - شناسنامه {activeLogStudent.id}
-                </p>
-              </div>
-              <div className="text-left font-mono text-micro">
-                <p className="text-[var(--color-text-tertiary)]">کد ملی ورود:</p>
-                <p className="font-bold text-[var(--color-text-secondary)]">
-                  {toPersianDigits(activeLogStudent.nationalId)}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <span className="text-micro text-[var(--color-text-primary)] block">
-                امتحانات ثبت شده در دیتابیس کلاس‌ها:
-              </span>
-
-              {activeLogSubmissions.length > 0 ? (
-                <div className="space-y-2.5 max-h-64 overflow-y-auto">
-                  {activeLogSubmissions.map((sub, index) => {
-                    const examItem = allExams.find((e) => e.id === sub.examId);
-                    return (
-                      <div
-                        key={sub.id || index}
-                        className="p-3.5 pane rounded-2xl flex justify-between items-center hover:bg-[var(--color-accent-soft)]/10 transition-colors"
-                      >
-                        <div>
-                          <h5 className="text-[var(--color-text-secondary)] text-micro">
-                            {examItem?.title || sub.examCode}
-                          </h5>
-                          <span className="text-micro text-[var(--color-text-tertiary)] mt-1 block">
-                            کد یکتای برگ پاسخ: {sub.id}
-                          </span>
-                        </div>
-
-                        <div className="text-left">
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-micro font-bold block mb-1 text-center ${
-                              sub.status === 'graded'
-                                ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/10'
-                                : 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]/80 border border-[var(--color-warning)]/10 animate-pulse'
-                            }`}
-                          >
-                            {sub.status === 'graded'
-                              ? 'تصحیح نهایی شده'
-                              : 'در حال سنجش یا نیازمند تصحیح'}
-                          </span>
-                          <span className="text-micro text-[var(--color-text-primary)]">
-                            نمره:{' '}
-                            <strong className="text-caption font-bold text-[var(--color-accent)]">
-                              {toPersianDigits(sub.score)}
-                            </strong>{' '}
-                            از {toPersianDigits(sub.maxScore)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <EmptyState
-                  compact
-                  icon={<Info className="w-6 h-6" />}
-                  title="سابقه‌ای ثبت نشده"
-                  description="هیچ سابقه مشارکتی یا برگ پاسخی برای این دانش‌آموز در امتحانات فعال مندرج ثبت نگردیده است."
-                />
-              )}
-            </div>
-          </div>
-        </Modal>
+        <ExamLogsModal
+          showExamLogsModal={showExamLogsModal}
+          setShowExamLogsModal={setShowExamLogsModal}
+          activeLogStudent={activeLogStudent}
+          activeLogSubmissions={activeLogSubmissions}
+          allExams={allExams}
+          logsTriggerRef={logsTriggerRef}
+        />
       )}
 
       {/* Reset PIN Confirmation (T7) */}

@@ -25,7 +25,12 @@ export default function NewExam({ onBack, onAddExam }: NewExamProps) {
   const [description, setDescription] = useState('');
   const [grade, setGrade] = useState('هفتم');
   const [subject, setSubject] = useState('علوم تجربی');
-  const [selectedClasses, setSelectedClasses] = useState<string[]>(['c-1']);
+  // FE-6 fix: the seed id 'c-1' matches nothing — real class ids are API
+  // UUIDs, so the phantom selection never rendered a chip, publishing without
+  // touching the chips created the exam with classGroupIds: ['c-1'] (granting
+  // nobody), and the review step printed it verbatim. Start empty and let
+  // the step-1 validation require a real class.
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
 
   // Step 2 states (Question IDs from bank) — the bank rides the shared cache
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);

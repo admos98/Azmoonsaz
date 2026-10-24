@@ -88,7 +88,7 @@ export const buildStudentRows = ({
         className: classGroup ? classGroup.name : 'کلاس عمومی',
         status: sub.status as ResultRowStatus,
         startedAt: sub.startedAt,
-        submittedAt: sub.submittedAt,
+        submittedAt: sub.submittedAt ?? null, // CQ-1 (strict): undefined -> null
         score: sub.score,
         autoScore: autoScore,
         maxScore: sub.maxScore || examMaxScore(exam),
@@ -135,7 +135,7 @@ export const buildStudentRows = ({
       className: 'ثبت‌شده در بک‌اند',
       status: sub.status as ResultRowStatus,
       startedAt: sub.startedAt,
-      submittedAt: sub.submittedAt,
+      submittedAt: sub.submittedAt ?? null, // CQ-1 (strict): undefined -> null
       score: sub.score,
       autoScore: sub.score,
       maxScore: sub.maxScore || examMaxScore(exam),

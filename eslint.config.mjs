@@ -5,10 +5,37 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import prettierConfig from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist/', 'api/', 'node_modules/', '*.config.*'] },
+  // CQ-5 fix: api/ is no longer ignored — the 3k-line serverless API is now
+  // linted with a dedicated plain-JS block below (npm run lint covers both).
+  { ignores: ['dist/', 'node_modules/', '*.config.*'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettierConfig,
+  {
+    // CQ-5 fix: serverless API block. Plain Node ESM JavaScript — no React
+    // rules, no type-aware rules. no-undef is OFF here because the file has
+    // no automatic Node globals set without the `globals` package; the
+    // runtime surface (console/process/URL/fetch/…) is guaranteed by the
+    // Vercel Node runtime and smoke-tested by tests/server.
+    files: ['api/**/*.js'],
+    rules: {
+      'no-undef': 'off',
+      'no-console': 'off', // serverless handlers log on purpose
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          // `const { isCorrect, ...option }` — the omit idiom strips
+          // teacher-only fields before persistence; the named discard is
+          // documentation, not a bug.
+          ignoreRestSiblings: true,
+        },
+      ],
+      eqeqeq: ['warn', 'smart'],
+    },
+  },
   {
     files: ['src/**/*.{ts,tsx}'],
     plugins: {

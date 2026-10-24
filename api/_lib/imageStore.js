@@ -31,10 +31,6 @@ export function isLegacyImageValue(value) {
   return value.startsWith('data:') || value.startsWith('http://') || value.startsWith('https://');
 }
 
-function missing(what) {
-  return new Error(`image_store_not_configured: ${what}`);
-}
-
 /**
  * Select the active provider.
  *

@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { toEnglishDigits } from '../../utils/persian';
 
 export type StudentImportRow = {
   row: number;
@@ -28,28 +29,31 @@ const normalizeHeader = (value: unknown) =>
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ');
-const normalizeDigits = (value: unknown) =>
-  String(value ?? '').replace(/[۰-۹٠-٩]/g, (digit) => {
-    const persian = '۰۱۲۳۴۵۶۷۸۹'.indexOf(digit);
-    if (persian >= 0) return String(persian);
-    return String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)); // persian-ok — normalization charmap, not copy
-  });
+// CQ-4 fix: delegate to the shared toEnglishDigits — the inline copy here
+// duplicated utils/persian and would drift on the next normalization fix.
+const normalizeDigits = (value: unknown) => toEnglishDigits(String(value ?? ''));
 const read = (row: UnknownRow, names: readonly string[]) => {
   const key = Object.keys(row).find((candidate) => names.includes(normalizeHeader(candidate)));
   return key ? String(row[key] ?? '').trim() : '';
 };
 
 function mapRows(rows: UnknownRow[]): StudentImportRow[] {
+  // FE-8 fix: number rows from their REAL spreadsheet position (header = row
+  // 1). The old code numbered AFTER filtering out empty rows, so any blank
+  // line shifted every subsequent "ردیف N" and the teacher corrected the
+  // wrong line. The row number is captured from the raw index BEFORE the
+  // emptiness filter — filter semantics themselves are unchanged.
   return rows
-    .filter((row) => Object.values(row).some((value) => String(value ?? '').trim()))
-    .map((row, index) => ({
-      row: index + 2,
-      name: read(row, aliases.name),
-      nationalId: normalizeDigits(read(row, aliases.nationalId)).replace(/\D/g, ''),
-      className: read(row, aliases.className),
-      grade: read(row, aliases.grade),
-      phone: normalizeDigits(read(row, aliases.phone)).replace(/[^\d+]/g, '') || undefined,
-      email: read(row, aliases.email) || undefined,
+    .map((raw, index) => ({ raw, rowNumber: index + 2 }))
+    .filter(({ raw }) => Object.values(raw).some((value) => String(value ?? '').trim()))
+    .map(({ raw, rowNumber }) => ({
+      row: rowNumber,
+      name: read(raw, aliases.name),
+      nationalId: normalizeDigits(read(raw, aliases.nationalId)).replace(/\D/g, ''),
+      className: read(raw, aliases.className),
+      grade: read(raw, aliases.grade),
+      phone: normalizeDigits(read(raw, aliases.phone)).replace(/[^\d+]/g, '') || undefined,
+      email: read(raw, aliases.email) || undefined,
     }));
 }
 

@@ -18,17 +18,34 @@ export function requireMethod(req, res, methods) {
   return true;
 }
 
+// SEC-4 fix: header trust is now opt-in per environment. On Vercel the edge
+// overwrites x-real-ip / x-forwarded-for, so trusting them there is safe
+// (VERCEL=1 is set by the platform). Under `scripts/api-shim.mjs` or any
+// self-hosted/proxied deployment those headers are CLIENT-SUPPLIED — an
+// attacker could rotate the rate-limit key per request and bypass the
+// start-session / PIN-attempt budgets entirely. Outside Vercel, header trust
+// requires an explicit TRUST_PROXY_HEADERS=1 (set it ONLY behind a proxy you
+// control that strips inbound X-Real-IP / X-Forwarded-For).
+function proxyHeadersTrusted() {
+  if (process.env.TRUST_PROXY_HEADERS !== undefined) {
+    return process.env.TRUST_PROXY_HEADERS === '1';
+  }
+  return process.env.VERCEL === '1';
+}
+
 export function getClientIp(req) {
-  // Vercel sets x-real-ip from the trusted hop. x-forwarded-for is
-  // client-controllable: the FIRST entry is attacker-supplied, so only the
-  // LAST entry (appended by the edge) may be trusted. Never key limits on it first.
-  const real = req.headers['x-real-ip'];
-  if (typeof real === 'string' && real.trim().length > 0) return real.trim();
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
-    const parts = forwarded.split(',');
-    const last = parts[parts.length - 1].trim();
-    if (last.length > 0) return last;
+  if (proxyHeadersTrusted()) {
+    // Vercel sets x-real-ip from the trusted hop. x-forwarded-for is
+    // client-controllable: the FIRST entry is attacker-supplied, so only the
+    // LAST entry (appended by the edge) may be trusted. Never key limits on it first.
+    const real = req.headers['x-real-ip'];
+    if (typeof real === 'string' && real.trim().length > 0) return real.trim();
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.length > 0) {
+      const parts = forwarded.split(',');
+      const last = parts[parts.length - 1].trim();
+      if (last.length > 0) return last;
+    }
   }
   return req.socket?.remoteAddress || 'unknown';
 }

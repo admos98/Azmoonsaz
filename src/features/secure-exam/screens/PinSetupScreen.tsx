@@ -11,6 +11,10 @@ export function PinSetupScreen({ session }: { session: ExamSession }) {
   const { student, handleSetPin, loading, pin, pinConfirm, setPin, setPinConfirm, normalizePinInput } =
     session;
 
+  // CQ-1 (strict) fix: the portal routes here only with an identified student;
+  // an absent one renders nothing instead of crashing on .name.
+  if (!student) return null;
+
   return (
     <form
       onSubmit={handleSetPin}
