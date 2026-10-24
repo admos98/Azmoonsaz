@@ -119,10 +119,6 @@ export interface PerfReport {
   filterCountEnd: number;
   /** Map-pipeline oracle: posted/hit/worker/sync counts + table sizes. */
   engine: GlassEngineStats;
-  /** M1 chrome surface dump — every tracked floating panel's live rect,
-   *  content height, attr state, opacity, animation; plus the chrome
-   *  plate/renderer state. The attempt-4 dig payload. */
-  chromePanels: unknown;
   /** Panel-position drift — the "panels fall behind / slide / bounce"
    *  payload. Measured in the glass frame loop itself:
    *    maxStale   — worst |paint_y − prevPaint_y| seen at paint time (px):
@@ -162,15 +158,6 @@ export interface GlassEngineStats {
   drawn: number;
   /** M2-A: how many of those were glass children riding a canvas parent. */
   drawnChildren: number;
-  /** M1 chrome pass — the second plane (#glass-chrome). `boot: 'ok'` only
-   *  means the renderer exists; `ready` means the plate texture landed and
-   *  panels actually draw (the pair isolates a plate stall from a draw
-   *  bug in a ?perf=1 report). */
-  chrome: {
-    drawn: number;
-    boot: 'pending' | 'ok' | 'broken' | 'off';
-    ready: boolean;
-  };
   /** Boot triage — WHY the active path is what it is. Travels into the
    *  ?perf=1 report (engine.boot) so a field run on an engine the dev
    *  machine cannot reproduce (iPhone/iPad Safari, Lockdown Mode, Reduce

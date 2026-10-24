@@ -37,10 +37,7 @@ const OVERRIDES = new Map([
   // glassMaterial.test.ts: 950→677 — the material-family it extracted to glassMaterialFamily.test.ts.
   ['src/test/config/glassMaterial.test.ts', 677],
   ['src/components/Topbar.tsx', 906],
-  // glassController: 696→713 — M1 chrome-pass wiring (imports, bootChrome/
-  // tickChrome/shutdownChrome call sites, chrome stats; all chrome LOGIC
-  // lives in glassChrome.ts). Ratchet steps down in the Stage-4 cleanup.
-  ['src/glass/glassController.ts', 709],
+  ['src/glass/glassController.ts', 696],
   ['src/pages/teacher/TeacherProfile.tsx', 690],
   ['src/test/components/LibraryV2.test.tsx', 669],
   // mapMath: DOM-free shared math (main thread + worker). Its size IS the render-contract
@@ -48,8 +45,7 @@ const OVERRIDES = new Map([
   // Finding 5 blesses a documented cap for it.
   ['src/glass/mapMath.ts', 407],
   // perfRecorder: 752→528 — ?perf=1 report types → perfReporterTypes.ts, the DOM overlay → perfRecorderUi.ts.
-  // 527→530: attempt-4 dig — chromePanels surface dump rides the report.
-  ['src/glass/perfRecorder.ts', 530],
+  ['src/glass/perfRecorder.ts', 527],
   // webglRenderer: 1005→723 — GLSL + GL helpers extracted to webglShaders.ts. The rest is one
   // cohesive state-bound class (plate pipeline + GL draw) that resists further seams.
   ['src/glass/webglRenderer.ts', 722],
