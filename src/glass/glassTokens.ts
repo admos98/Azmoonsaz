@@ -101,6 +101,11 @@ export function readParams(): LensParams {
     dim: cssNum(cs, '--lens-dim', 0.15),
     dimTint: dimTintOf(cs),
     dimLift: dimLiftOf(cs),
+    // Girih optics (Meraj P0): the token is the ONLY switch — 0 disables the
+    // wave entirely (byte-identical pre-Meraj maps). Fallback 0 keeps SSR,
+    // tests and any scope that never defined the token on the old math.
+    girihAmp: cssNum(cs, '--lens-girih', 0),
+    girihFold: cssNum(cs, '--lens-girih-fold', 10),
   };
 }
 

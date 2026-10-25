@@ -60,7 +60,17 @@ export function buildBucketSync(kind: 'lens' | 'pane' | 'drop', w: number, h: nu
   let dispURL: string | null = null;
   let maxAbs = 1;
   if (kind !== 'pane') {
-    const dm = buildDisplacementMap(w, h, r, p.bezel, prof, scale, cornerExp);
+    const dm = buildDisplacementMap(
+      w,
+      h,
+      r,
+      p.bezel,
+      prof,
+      scale,
+      cornerExp,
+      p.girihAmp ?? 0,
+      p.girihFold ?? 10,
+    );
     maxAbs = dm.maxAbs;
     dispURL = imageDataToURL(dm.img);
   }

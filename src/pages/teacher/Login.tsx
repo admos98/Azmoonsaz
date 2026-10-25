@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, CheckCircle2, ArrowRight, KeyRound, Send } from 'lucide-react';
 import { TheMark } from '../../components/TheMark';
 import { IconButton, Input, PillButton, TextLink } from '../../ui';
+import { ResetSentNotice } from '../../components/ResetSentNotice';
 import { authService } from '../../services/api';
 import type { Teacher } from '../../types';
 
@@ -258,6 +259,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     ایجاد حساب جدید
                   </TextLink>
                 </div>
+
+                {/* The story door (Meraj P3): the landing narrative lives at
+                    /welcome — an ordinary anchor, so it never fights the form. */}
+                <p className="text-center text-micro pt-1">
+                  <a
+                    href="/welcome/"
+                    className="text-[var(--color-text-tertiary)] hover:text-[var(--color-gold-ink)] transition-colors underline-offset-4 hover:underline"
+                  >
+                    چرا «هر آزمون، یک سند است»؟
+                  </a>
+                </p>
               </form>
             )}
 
@@ -438,28 +450,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
             {/* View: Forgot Password Email Sent */}
             {view === 'forgot-password-sent' && (
-              <div className="text-center space-y-4 py-4">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--color-warning-soft)] rounded-full mb-2">
-                  <CheckCircle2 className="w-8 h-8 text-[var(--color-warning)]" />
-                </div>
-                <h2 className="text-heading-3 text-[var(--color-text-primary)]">
-                  لینک بازیابی ارسال شد
-                </h2>
-                <p className="text-label text-[var(--color-text-secondary)] leading-relaxed">
-                  ایمیلی حاوی لینک بازیابی رمز عبور برای شما ارسال شد.
-                  <br />
-                  لینک را باز کنید و رمز جدید انتخاب کنید.
-                </p>
-                <div className="glx-inset field rounded-xl px-4 py-3">
-                  <p className="text-caption text-[var(--color-text-tertiary)]">ارسال شده به:</p>
-                  <p className="text-label text-[var(--color-text-primary)]" dir="ltr">
-                    {email}
-                  </p>
-                </div>
-                <TextLink size="md" bold onClick={resetAll}>
-                  بازگشت به ورود
-                </TextLink>
-              </div>
+              <ResetSentNotice email={email} onBack={resetAll} />
             )}
           </div>
         </div>

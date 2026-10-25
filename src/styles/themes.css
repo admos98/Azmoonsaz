@@ -188,6 +188,7 @@
   --drop-radius: 22px; /* perfect circle */
   --drop-max-displacement: 5px;
 
+  /* Girih optics tokens live in tokens.css — theme-independent physics. */
   /* ── kube-style glass button ── */
   --btn-blur: 6px;
   --btn-tint-mix: 16%; /* faint semantic tint — colored GLASS, not paint */

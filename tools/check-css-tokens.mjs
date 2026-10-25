@@ -37,6 +37,11 @@ const ALLOWLIST = new Set([
   // the dark white-veil lift is a shader/CSS-filter parameter, not a style
   // property; no CSS rule can reference it.
   '--glass-dim-lift',
+  // Read from TypeScript (glassTokens.readParams) via getComputedStyle —
+  // girih optics (Meraj P0) are shader/map-math parameters consumed by
+  // buildDisplacementMap, not style properties; no CSS rule can var() them.
+  '--lens-girih',
+  '--lens-girih-fold',
   // Tailwind v4 injects its internals at runtime; we may reference them.
   '--tw-blur',
   '--tw-brightness',

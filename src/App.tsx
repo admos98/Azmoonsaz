@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy, useCallback } from 
 import { TeacherProvider } from './contexts/TeacherContext';
 import type { Teacher } from './types';
 import Topbar from './components/Topbar';
-import { BootScreen, PageSkeleton } from './shell/BootScreens';
+import { BootScreen } from './shell/BootScreens';
 import { AbsencePage } from './components/AbsencePage';
 import Login from './pages/teacher/Login';
 import Onboarding from './pages/teacher/Onboarding';
@@ -18,14 +18,11 @@ import { publicEnv } from './config/env';
 import { isKnownTeacherPath, teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
 import { requestAppNavigation } from './hooks/useUnsavedChanges';
+import { useMotionPreference } from './contexts/MotionContext';
+import { runInViewTransition } from './utils/viewTransition';
 import { mountGlassEngine } from './glass/glassController';
-import {
-  loadDashboard,
-  loadExams,
-  loadNewExam,
-  loadSettingsHub,
-  loadTeacherProfile,
-} from './utils/teacherPageLoaders';
+import { applySeasonalGirih } from './glass/seasonalGirih';
+import { TeacherRouterBoundary } from './components/TeacherRouter';
 
 function WorkspacePreferenceApplier() {
   const [density] = usePersistentPreference<'comfortable' | 'compact'>(
@@ -38,13 +35,6 @@ function WorkspacePreferenceApplier() {
   }, [density]);
   return null;
 }
-
-// Lazy-loaded teacher pages (code-split)
-const Dashboard = lazy(loadDashboard);
-const Exams = lazy(loadExams);
-const NewExam = lazy(loadNewExam);
-const SettingsHub = lazy(loadSettingsHub);
-const TeacherProfile = lazy(loadTeacherProfile);
 
 // Student portal — the highest-stakes surface is code-split: teachers never
 // download it and it stays out of the entry chunk.
@@ -94,8 +84,20 @@ export default function App() {
     initialResultsMatch ? 'results' : 'list',
   );
 
+  /* View Transitions (Meraj): navigations are page morphs, boot repairs are
+     not. resolvedMotion arrives from MotionProvider (mounted above App in
+     main.tsx); the ref keeps the navigation closures dep-stable. */
+  const { resolvedMotion } = useMotionPreference();
+  const reducedMotionRef = useRef(resolvedMotion === 'reduce');
   useEffect(() => {
-    // mount the per-panel liquid-glass engine once, after first paint
+    reducedMotionRef.current = resolvedMotion === 'reduce';
+  }, [resolvedMotion]);
+
+  useEffect(() => {
+    // mount the per-panel liquid-glass engine once, after first paint.
+    // Seasonal girih (Meraj P3) sets its fold on :root FIRST — the engines
+    // read the token from computed style when the first maps are built.
+    applySeasonalGirih();
     const id = requestAnimationFrame(() => mountGlassEngine());
     return () => cancelAnimationFrame(id);
   }, []);
@@ -156,13 +158,16 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
-      setCurrentPath(path);
-      if (path.startsWith('/teacher')) {
-        setCurrentTab(teacherTabFromPath(path));
-        const resultMatch = path.match(/^\/teacher\/exams\/([^/]+)\/results$/);
-        setSelectedExamId(resultMatch?.[1]);
-        setExamSubView(resultMatch ? 'results' : 'list');
-      }
+      // Back/forward is a navigation moment too — same morph as push.
+      runInViewTransition(() => {
+        setCurrentPath(path);
+        if (path.startsWith('/teacher')) {
+          setCurrentTab(teacherTabFromPath(path));
+          const resultMatch = path.match(/^\/teacher\/exams\/([^/]+)\/results$/);
+          setSelectedExamId(resultMatch?.[1]);
+          setExamSubView(resultMatch ? 'results' : 'list');
+        }
+      }, reducedMotionRef.current);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -175,10 +180,12 @@ export default function App() {
 
   const navigateTeacher = (tab: string) => {
     if (!requestAppNavigation()) return;
-    setCurrentTab(tab);
-    setExamSubView('list');
-    setSelectedExamId(undefined);
-    navigateToLocalPath(teacherPathFromTab(tab));
+    runInViewTransition(() => {
+      setCurrentTab(tab);
+      setExamSubView('list');
+      setSelectedExamId(undefined);
+      navigateToLocalPath(teacherPathFromTab(tab));
+    }, reducedMotionRef.current);
   };
 
   // Check onboarding status after login — handled by Login's onLoginSuccess
@@ -188,31 +195,42 @@ export default function App() {
   // Handle addition of designed exam — the exam itself is persisted by the
   // service; the shared cache patches itself, so no local copy is needed.
   const handleAddNewExam = () => {
-    setCurrentTab('exams');
-    setExamSubView('list');
-    navigateToLocalPath('/teacher/exams');
+    runInViewTransition(() => {
+      setCurrentTab('exams');
+      setExamSubView('list');
+      navigateToLocalPath('/teacher/exams');
+    }, reducedMotionRef.current);
   };
 
   /** Single source of exam sub-view navigation — App.tsx had three verbatim
    *  copies of this closure (two <Exams> mounts + results selection). */
   const handleExamSubViewChange = useCallback(
     (view: 'list' | 'settings' | 'preview' | 'results', id?: string) => {
-      setExamSubView(view);
-      setSelectedExamId(id);
-      if (view === 'results' && id) {
-        navigateToLocalPath(`/teacher/exams/${id}/results`);
-      } else if (view === 'list') {
-        navigateToLocalPath('/teacher/exams');
-      }
+      runInViewTransition(() => {
+        setExamSubView(view);
+        setSelectedExamId(id);
+        if (view === 'results' && id) {
+          navigateToLocalPath(`/teacher/exams/${id}/results`);
+        } else if (view === 'list') {
+          navigateToLocalPath('/teacher/exams');
+        }
+      }, reducedMotionRef.current);
     },
     // navigateToLocalPath closes over currentTab-free setters only; the empty
-    // dep list keeps this handler stable for the whole session.
+    // dep list keeps this handler stable for the whole session (reducedMotion
+    // rides the ref, runInViewTransition is a module import).
     [],
   );
 
   const handleSelectExamForResults = (examId: string) => {
-    setCurrentTab('exams');
-    handleExamSubViewChange('results', examId);
+    // One morph, one paint: the tab flip and the results swap must land in
+    // the same snapshot, so this bypasses the two-call composition.
+    runInViewTransition(() => {
+      setCurrentTab('exams');
+      setExamSubView('results');
+      setSelectedExamId(examId);
+      navigateToLocalPath(`/teacher/exams/${examId}/results`);
+    }, reducedMotionRef.current);
   };
 
   /** Login hands over the profile it already fetched during sign-in —
@@ -227,60 +245,25 @@ export default function App() {
 
   /** Return point for the student portal (its "بازگشت" affordance). */
   const returnToTeacherHome = () => {
-    navigateToLocalPath('/teacher/dashboard');
-    setCurrentTab('dashboard');
+    runInViewTransition(() => {
+      navigateToLocalPath('/teacher/dashboard');
+      setCurrentTab('dashboard');
+    }, reducedMotionRef.current);
   };
 
-  // Main layout router
-  const renderTeacherContent = () => {
-    switch (currentTab) {
-      case 'dashboard':
-        return (
-          <Dashboard
-            onNavigate={navigateTeacher}
-            onSelectExamForResults={handleSelectExamForResults}
-          />
-        );
-      case 'students':
-      case 'classes':
-      case 'profile':
-        return (
-          <TeacherProfile
-            initialTab={
-              currentTab === 'profile' ? undefined : (currentTab as 'students' | 'classes')
-            }
-            onNavigate={navigateTeacher}
-          />
-        );
-      case 'questions':
-        return <SettingsHub initialTab="questions" onNavigate={navigateTeacher} />;
-      case 'exams/new':
-        return <NewExam onBack={() => navigateTeacher('exams')} onAddExam={handleAddNewExam} />;
-      case 'exams':
-      case 'results':
-        // 'results' is the Dashboard quick-links tab: the results sub-view is
-        // forced; otherwise App's examSubView state decides.
-        return (
-          <Exams
-            onNavigate={navigateTeacher}
-            selectedExamId={selectedExamId}
-            subView={currentTab === 'results' ? 'results' : examSubView}
-            onSubViewChange={handleExamSubViewChange}
-          />
-        );
-      case 'settings':
-        return <SettingsHub onNavigate={navigateTeacher} />;
-      default:
-        // Unknown tabs fall back to the dashboard WITH the full prop set —
-        // the previous default silently dropped onSelectExamForResults.
-        return (
-          <Dashboard
-            onNavigate={navigateTeacher}
-            onSelectExamForResults={handleSelectExamForResults}
-          />
-        );
-    }
-  };
+  // Main layout router — the tab->page switch lives in TeacherRouter
+  // (extracted for the size ratchet); motion policy stays here in App.
+  const renderTeacherContent = () => (
+    <TeacherRouterBoundary
+      currentTab={currentTab}
+      selectedExamId={selectedExamId}
+      examSubView={examSubView}
+      navigateTeacher={navigateTeacher}
+      onSelectExamForResults={handleSelectExamForResults}
+      onExamSubViewChange={handleExamSubViewChange}
+      onAddNewExam={handleAddNewExam}
+    />
+  );
 
   // Student entry routes — two URL shapes, one portal. The portal is lazy:
   // teachers never download it, and the boundary keeps the route swap smooth.
@@ -432,9 +415,7 @@ export default function App() {
           {/* Dynamic Page Router — floats above bg stage */}
           <main className="p-4 lg:p-8 flex-1 bg-transparent" id="router-view-box" aria-label="محتوای اصلی">
             <div id="main-content" tabIndex={-1} className="outline-none">
-            <Suspense fallback={<PageSkeleton />}>
-              {renderTeacherContent()}
-            </Suspense>
+            {renderTeacherContent()}
             </div>
           </main>
         </div>

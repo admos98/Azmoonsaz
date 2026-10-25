@@ -407,7 +407,7 @@ export class GlassRenderer {
   /** Build (and cache) the displacement+specular maps for one geometry, using
    *  the mapMath port. `params` is the pinned token recipe. */
   mapsFor(kind, w, h, radius, params) {
-    const key = `${kind}|${Math.round(w)}x${Math.round(h)}|${Math.round(radius)}`;
+    const key = `${kind}|${Math.round(w)}x${Math.round(h)}|${Math.round(radius)}|${params.girihAmp || 0}x${params.girihFold || 10}`;
     const hit = this.maps.get(key);
     if (hit) return hit;
     const cornerExp = mapCornerExp(params.cornerExp, params.cornerShapeSupported);
@@ -417,7 +417,7 @@ export class GlassRenderer {
     let disp = null;
     let maxAbs = 1;
     if (kind !== 'pane') {
-      const dm = buildDisplacementMap(w, h, r, params.bezel, prof, scale, cornerExp);
+      const dm = buildDisplacementMap(w, h, r, params.bezel, prof, scale, cornerExp, params.girihAmp || 0, params.girihFold || 10);
       maxAbs = dm.maxAbs;
       disp = texFromImageData(this.gl, dm.img);
     }

@@ -6,20 +6,26 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ConfirmDialog } from '../../../ui';
 import { toPersianDigits } from '../../../utils/persian';
 import type { ExamSession } from '../useExamSession';
+import { SealCeremony } from '../SealCeremony';
 
-/** Terminal state after the server accepts the final submission. */
+/** Terminal state after the server accepts the final submission. The
+ *  Sealing Ceremony (Meraj P1-a) plays above it — one-shot, self-removing,
+ *  and entirely absent under reduced motion. */
 export function SubmittedScreen() {
   return (
-    <div className="lens rounded-3xl p-6 md:p-8 max-w-xl mx-auto text-center space-y-4">
-      <CheckCircle2 className="w-16 h-16 text-[var(--color-success)] mx-auto" />
-      <h2 className="text-[var(--color-text-primary)] text-heading-3">
-        پاسخ شما با موفقیت در سامانه ثبت نهایی شد.
-      </h2>
-      <p className="text-caption text-[var(--color-text-tertiary)] leading-relaxed">
-        پس از ارسال نهایی، نشست آزمون قفل شده و امکان تغییر پاسخ‌ها وجود ندارد. برای مشاهده
-        کارنامه یا نتایج به دستورالعمل دبیر خود مراجعه نمایید.
-      </p>
-    </div>
+    <>
+      <SealCeremony />
+      <div className="lens rounded-3xl p-6 md:p-8 max-w-xl mx-auto text-center space-y-4">
+        <CheckCircle2 className="w-16 h-16 text-[var(--color-success)] mx-auto" />
+        <h2 className="text-[var(--color-text-primary)] text-heading-3">
+          پاسخ شما با موفقیت در سامانه ثبت نهایی شد.
+        </h2>
+        <p className="text-caption text-[var(--color-text-tertiary)] leading-relaxed">
+          پس از ارسال نهایی، نشست آزمون قفل شده و امکان تغییر پاسخ‌ها وجود ندارد. برای مشاهده
+          کارنامه یا نتایج به دستورالعمل دبیر خود مراجعه نمایید.
+        </p>
+      </div>
+    </>
   );
 }
 

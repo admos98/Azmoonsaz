@@ -480,7 +480,7 @@ export class GlassRenderer {
     let maxAbs = 1;
     let bytes = 0;
     if (kind !== 'pane') {
-      const dm = buildDisplacementMap(w, h, r, params.bezel, prof, scale, cornerExp);
+      const dm = buildDisplacementMap(w, h, r, params.bezel, prof, scale, cornerExp, params.girihAmp, params.girihFold);
       maxAbs = dm.maxAbs;
       disp = texFromImageData(this.gl, dm.img);
       bytes += dm.img.width * dm.img.height * 4;

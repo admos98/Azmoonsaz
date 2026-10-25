@@ -1,3 +1,65 @@
+# Azmoonsaz — Operation Meraj, P1 remainder + P3 drop (2026-10-25, v4)
+
+The codified brand becomes the built brand: the grade-reveal odometer, the page morph, the lantern night, the seasonal decagram, the teacher's year legend, and the scroll narrative. Six moments, all preference/reduced-motion guarded, zero new endpoints.
+
+Verification at packaging (all green): typecheck ×3 (strict), lint clean, frontend **380/380** (+19 new), server **242/242**, **e2e 16/16**, `npm run check` all gates + build + bundle budget.
+
+## P1 remainder
+
+- **Grade reveal** — `src/components/ScoreOdometer.tsx`: the score as Persian-digit odometer (each digit a ۰..۹ strip rolling with `--ease-seal` under the new moment-class duration `--dur-reveal: 700ms`). Zero-padded so the reveal ROLLS, never remounts; `sr-only` reading carries the value for assistive tech. A sealed کارنامه draws the gold **تذهیب** rule once (`.tazhib-rule`, draw-once like the Seal). Wired into the grading summary panel (`finalized={status === 'graded'}`); reduced motion = static value, zero timers.
+- **View Transitions** — `src/utils/viewTransition.ts`: push-navigations + popstate morph `#main-content` via `document.startViewTransition` + `flushSync`. Guards: platform support, MotionContext 'reduce' (ref-stable), and `replaceState` is never a moment. CSS twin in `base.css` (`::view-transition-*`: exit `--ease-exit`, enter `--ease-glass`, `--dur-flow`); Topbar stays rock-still.
+- **Lantern ambience (حالت شب امتحان)** — `src/lib/lantern.ts` + `src/styles/lantern.css`: the student portal goes candle-warm during lamp hours (19:00–06:00, re-checked every 5 min), preference `azmoonsaz:preference:lantern` (default ON). Two moves only: warm glass tokens + a ~5% wash (`prefers-reduced-transparency` owns the wash); text tokens untouched. Teacher surfaces never mount it.
+
+## P3
+
+- **Seasonal girih** — `src/glass/seasonalGirih.ts`: the fold follows the Persian calendar (spring/autumn 10, summer 8, winter 12), set on `:root` before the glass engines boot; amplitude never moves; fold-10 seasons remove the inline override so tokens.css stays sovereign. Silent Intl failure falls back to 10.
+- **Azmoonsaz Wrapped** — `src/pages/teacher/Wrapped.tsx` (+ pure engine `src/utils/wrappedStats.ts`): the teacher's year at `/teacher/wrapped` (Dashboard quick-link «روایت سال»). Stats from the teacher's own existing APIs; staggered one-shot reveals; the gradings headline rides the ScoreOdometer; share card drawn by hand on canvas (girih decagram + the Mark) via `navigator.share` → PNG download.
+- **Scroll-narrative landing** — `public/welcome/` (standalone, CSP-safe): five chapters — کاغذ، مرکب، نور (crystal-paper glass demo), مُهر (stamp-on-arrival), CTA. One-shot IntersectionObserver reveals, scroll-progress thread, prefers-color-scheme + reduced-motion static path. Linked from the Login form («چرا هر آزمون، یک سند است؟»).
+
+## Ratchet housekeeping (all debts paid in-commit)
+
+- `App.tsx` 481→425: the tab→page switch extracted verbatim to `src/components/TeacherRouter.tsx` (+ its Suspense boundary).
+- `Dashboard.tsx` 644→537 (cap 627→537): the Quick Actions row extracted verbatim to `src/components/QuickActions.tsx` (ids preserved for e2e).
+- `Login.tsx` 480→460 (cap 469→460): the reset-sent view extracted to `src/components/ResetSentNotice.tsx`.
+- `themes.css` 427→400: the lantern block is its own `src/styles/lantern.css`.
+- Library ratchet: the two grading-panel action buttons converted to the library `Button` (raw button ratchet held at 72; onSystem 66→65).
+- Contract test `glassMaterial.test.ts` extended: the تذهیب rule joins the reduce-parking groups the spec pins.
+
+## Docs
+
+- `docs/brand-meraj.md` moments ledger updated: grade reveal / View Transitions / lantern / seasonal girih / Wrapped / landing are now **Shipped** with owner files; the girih chapter documents the seasonal fold law.
+
+---
+
+# Azmoonsaz — Operation Meraj, P0+P1 drop (2026-10-25, v3)
+
+The brand phase: the blur now bends through Persian geometry, and the exam-submit moment became a ceremony. No behavior, API, or security change — purely additive physics + one new submit-moment layer.
+
+Verification at packaging (all green): typecheck ×3 (strict), lint clean, frontend **361/361** (+4 new), server **242/242**, **e2e 16/16** (WebGL glass path exercised with girih maps), `npm run check` all gates + build + bundle budget.
+
+## P0 — Girih optics (the blur is Persian geometry)
+
+- `src/glass/mapMath.ts` — `buildDisplacementMap` gains a trough-only, fold-fold rotationally-symmetric wave (default 10 = the Isfahan decagram) anchored to each panel's center. **The PEAK pull is preserved exactly** — `--lens-max-displacement` (43.67px) and every map-scale derivation stay bit-true; the rim merely relaxes between wave crests. `amp: 0` reproduces the pre-Meraj field byte-for-byte.
+- Tokens: `--lens-girih: 0.22` / `--lens-girih-fold: 10` (in `tokens.css` — theme-independent physics), read via `glassTokens.readParams` and threaded through **all three map paths**: SVG filter chain (`glassMaps.ts`), WebGL (`webglRenderer.ts`), and the worker (`mapWorker.ts` + `glassSyncQueue.ts` request).
+- `tools/gen-glass-maps.py` — fixed a real defect: it still read `src/index.css`, but the lens tokens moved to `themes.css` (the tool was broken). It now resolves the `@import` chain, carries the same girih wave (source-of-truth parity with mapMath), and verifies the max-displacement tokens instead of the removed static `index.html` filter markup. Rasters regenerated (`public/lens-map.png`, `drop-map.png`, specs).
+- `tools/check-css-tokens.mjs` — `--lens-girih`/`--lens-girih-fold` join the JS-consumed allowlist (same precedent as `--glass-dim-lift`).
+- Sizes: `mapMath.ts` 407→391 (dim-law extracted verbatim to `src/glass/dimLaw.ts`, re-exported from mapMath — zero import churn); `check-sizes` ratchet stepped (mapMath OVERRIDES entry deleted).
+
+## P0 — Motion grammar
+
+- `tokens.css` gains the brand's physics of time: `--dur-instant` (120ms) / `--dur-flow` (240ms) and the named curves `--ease-seal` (stamp-and-settle — nothing in the app bounces), `--ease-glass`, `--ease-exit`. Consumed by the ceremony CSS; more phases adopt them as they land.
+
+## P1 — The Sealing Ceremony
+
+- `src/features/secure-exam/SealCeremony.tsx` — the exam-submit moment as a rite: paper folds → wax rises → the crest stamps, ~1.9s, self-removing. **It never blocks or delays the actual submission** (plays after the server accepts, from `SubmittedScreen`).
+- **Reduced motion: the overlay never mounts** (MotionContext-gated, zero timers) — the terminal card alone carries the moment.
+- `src/lib/sealSound.ts` — the Seal sting: a synthesized WebAudio sub-bass thump + paper tick (~0.42s, zero assets shipped), fired once at the wax-contact frame, plus a 60ms haptic twin. Preference key `azmoonsaz:preference:seal-sound` (default ON, JSON `false` to disable); every failure path is silent by design.
+- Beats live in `src/features/secure-exam/sealBeats.ts` — the one table shared by the JS timeline and the exam.css keyframes.
+- A11y: `role="status"` + `aria-live="polite"`; no new raster art (CSS + the existing Seal component only).
+- Tests: `src/test/features/SealCeremony.test.tsx` (4) — beat-map choreography, reduced-motion absence, saved-preference absence, sound-preference guard.
+
+---
+
 # Azmoonsaz — Audit Fix Batch (2026-10-25, v2 — complete)
 
 Fixes for all findings in `findings.md` (audit of commit `8042690`). **All 39 findings are now fixed** — this v2 bundle completes the 4 items the first batch consciously deferred (CQ-8 test coverage, CQ-11 god-file splits, the rest of CQ-9, the rest of SEC-5).

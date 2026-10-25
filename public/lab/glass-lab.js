@@ -64,6 +64,8 @@ function readParams() {
       return raw.length >= 3 && raw.slice(0, 3).every(Number.isFinite) ? raw.slice(0, 3) : [255, 255, 255];
     })(),
     radius: num('--lens-radius', 21),
+    girihAmp: num('--lens-girih', 0.22),
+    girihFold: num('--lens-girih-fold', 10),
     dpr: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
     cornerShapeSupported: CSS.supports?.('corner-shape', 'superellipse(2)') === true,
     blur: 1,
@@ -512,6 +514,16 @@ async function init() {
   $('count').addEventListener('change', async (e) => {
     buildFeed(parseInt(e.target.value, 10));
     buildComparePair();
+    await setMode(root.dataset.render);
+  });
+  // Girih optics A/B: set the live token, then re-dress every panel through
+  // its engine. Map caches key on the girih knobs, so nothing stale survives.
+  $('girih').addEventListener('change', async (e) => {
+    root.style.setProperty('--lens-girih', e.target.value);
+    await setMode(root.dataset.render);
+  });
+  $('girihfold').addEventListener('change', async (e) => {
+    root.style.setProperty('--lens-girih-fold', e.target.value);
     await setMode(root.dataset.render);
   });
 

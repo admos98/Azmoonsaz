@@ -13,6 +13,8 @@ import { Award, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { toPersianDigits } from '../../../../utils/persian';
 import { Exam } from '../../../../types';
 import type { ResultRow } from '../student-rows';
+import { ScoreOdometer } from '../../../../components/ScoreOdometer';
+import { Button } from '../../../../ui';
 
 interface GradingSummaryPanelProps {
  exam: Exam;
@@ -44,18 +46,19 @@ export function GradingSummaryPanel({
  </h2>
  </div>
 
- {/* Live Grade preview indicator */}
+ {/* Live Grade preview indicator — the grade-reveal moment (Meraj):
+      the total rolls odometer-style as descriptive scores land, and a
+      gold تذهیب rule seals it once the کارنامه is registered. */}
  <div className="bg-gradient-to-br from-[var(--color-accent-soft)]/50 to-[var(--color-glass-light-fill)] border border-[var(--color-accent)]/20 rounded-2xl p-5 text-center space-y-1 mt-2">
  <span className="text-micro text-[var(--color-accent)] block">
  مجموع نمرات اکتسابی و نهایی
  </span>
  <div className="text-heading-1 text-[var(--color-accent)] font-mono">
- {toPersianDigits(
- (Object.values(assignedScores) as number[]).reduce((sum, s) => sum + s, 0),
- )}{' '}
- <span className="text-label-muted">
- از {toPersianDigits(activeSubmission.maxScore)}
- </span>
+ <ScoreOdometer
+ value={(Object.values(assignedScores) as number[]).reduce((sum, s) => sum + s, 0)}
+ max={activeSubmission.maxScore}
+ finalized={activeSubmission.status === 'graded'}
+ />
  </div>
  <div className="text-label-muted pt-1">
  <span>
@@ -133,22 +136,24 @@ export function GradingSummaryPanel({
 
  {/* Bottom Master action keys */}
  <div className="space-y-3 pt-2">
- <button
+ <Button
  type="button"
  id="btn-grading-finalize-worksheet"
  onClick={handleFinalizeGrading}
- className="w-full py-3 btn-glass btn-glass--success rounded-xl text-caption font-bold flex items-center justify-center gap-2 cursor-pointer"
+ variant="success"
+ className="w-full"
  >
  <CheckCircle2 className="w-4 h-4" />
  <span>تکمیل تصحیح و ثبت نهایی کارنامه</span>
- </button>
- <button
+ </Button>
+ <Button
  type="button"
  onClick={() => setSelectedSubmissionId(null)}
- className="w-full py-2.5 btn-glass btn-glass--quiet rounded-xl text-caption font-bold transition-all flex items-center justify-center gap-1 cursor-pointer border-[var(--color-glass-light-stroke)]"
+ variant="secondary"
+ className="w-full border-[var(--color-glass-light-stroke)]"
  >
  <span>انصراف و بازگشت</span>
- </button>
+ </Button>
  </div>
  </div>
  );

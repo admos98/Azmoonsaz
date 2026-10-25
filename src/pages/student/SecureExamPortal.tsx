@@ -8,8 +8,10 @@
  */
 
 import { ShieldCheck } from 'lucide-react';
+import { useEffect } from 'react';
 import { TextLink } from '../../ui';
 import { useExamSession } from '../../features/secure-exam/useExamSession';
+import { mountLanternAmbience } from '../../lib/lantern';
 import {
   ExamConfirmDialogs,
   ExamErrorBanner,
@@ -30,6 +32,11 @@ export default function SecureExamPortal({
   onBackToTeacher,
 }: SecureExamPortalProps) {
   const session = useExamSession(presetExamCode);
+
+  /* Lantern ambience (Meraj) — the portal owns the room: during the lamp
+     hours the exam goes candle-warm (preference-gated, ~5% wash, token-tinted
+     glass). Teacher surfaces never mount it — grading needs neutral light. */
+  useEffect(() => mountLanternAmbience(), []);
 
   return (
     <div

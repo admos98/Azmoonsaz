@@ -28,3 +28,172 @@
 .exam-watermark {
   animation: exam-watermark-drift 14s ease-in-out infinite alternate;
 }
+
+/* ── The Sealing Ceremony (Meraj P1-a) ─────────────────────────────────
+   Fixed overlay, one-shot on final submit. Stage classes advance
+   fold → wax → stamp → done (driven by SEAL_BEATS in SealCeremony.tsx —
+   the JS timeline and these keyframes share one beat map). Every element's
+   DEFAULT state is its post-animation state; each stage's class merely
+   plays the entrance, so a stage change never snaps anything back. */
+.seal-ceremony {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background: color-mix(in srgb, var(--color-page-bg, #0b0a12) 62%, transparent);
+  backdrop-filter: blur(3px);
+  animation: ceremony-overlay-in var(--dur-flow) var(--ease-glass) both;
+}
+.seal-ceremony--done {
+  animation: ceremony-overlay-out var(--dur-flow) var(--ease-exit) both;
+  pointer-events: none;
+}
+.seal-ceremony__caption {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.05rem;
+  font-weight: 700;
+  opacity: 0;
+}
+.seal-ceremony--stamp .seal-ceremony__caption {
+  animation: ceremony-caption-in 360ms var(--ease-seal) var(--dur-instant) both;
+}
+.seal-ceremony__paper {
+  position: relative;
+  width: min(300px, 76vw);
+  aspect-ratio: 5 / 3.4;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(168deg, #f6f1e6 0%, #e9e2d2 100%);
+  box-shadow:
+    0 22px 60px -18px rgba(10, 8, 18, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transform-style: preserve-3d;
+  perspective: 700px;
+  animation: ceremony-paper-in 420ms var(--ease-glass) both; /* beat-pinned: SEAL_BEATS fold window */
+}
+/* Fold flaps — closed (rotateX ±180°) is the resting state; the --fold
+   stage is the only time they move. */
+.seal-ceremony__flap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, #efe8d8 0%, #e4dccb 100%);
+  backface-visibility: hidden;
+}
+.seal-ceremony__flap--top {
+  top: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  transform: rotateX(180deg);
+  transform-origin: top;
+}
+.seal-ceremony__flap--bottom {
+  bottom: 0;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  transform: rotateX(-180deg);
+  transform-origin: bottom;
+}
+.seal-ceremony--fold .seal-ceremony__flap--top {
+  animation: ceremony-fold-top 560ms var(--ease-seal) both;
+}
+.seal-ceremony--fold .seal-ceremony__flap--bottom {
+  animation: ceremony-fold-bottom 560ms var(--ease-seal) both;
+}
+/* Wax — deep crimson disc; hidden (scale 0) until the wax beat. */
+.seal-ceremony__wax {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #a63d47 0%, #8e2f38 46%, #6d1f26 100%);
+  box-shadow:
+    0 6px 22px -6px rgba(109, 31, 38, 0.7),
+    inset 0 2px 6px rgba(255, 255, 255, 0.28),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.35);
+  transform: scale(1);
+}
+.seal-ceremony--fold .seal-ceremony__wax,
+.seal-ceremony:not(.seal-ceremony--wax):not(.seal-ceremony--stamp):not(.seal-ceremony--done)
+  .seal-ceremony__wax {
+  transform: scale(0);
+}
+.seal-ceremony--wax .seal-ceremony__wax {
+  animation: ceremony-wax-in 380ms var(--ease-seal) both;
+}
+/* Crest + impact ring — the stamp beat. */
+.seal-ceremony__crest {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 34%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+.seal-ceremony__crest .seal {
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+}
+.seal-ceremony:not(.seal-ceremony--stamp):not(.seal-ceremony--done) .seal-ceremony__crest {
+  opacity: 0;
+}
+.seal-ceremony--stamp .seal-ceremony__crest {
+  animation: ceremony-stamp-in 300ms var(--ease-seal) both;
+}
+.seal-ceremony__ring {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgba(244, 196, 66, 0.65);
+  opacity: 0;
+}
+.seal-ceremony--stamp .seal-ceremony__ring {
+  animation: ceremony-ring-out 560ms var(--ease-exit) 80ms both;
+}
+
+@keyframes ceremony-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ceremony-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes ceremony-paper-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ceremony-fold-top {
+  from { transform: rotateX(0deg); }
+  to { transform: rotateX(180deg); }
+}
+@keyframes ceremony-fold-bottom {
+  from { transform: rotateX(0deg); }
+  to { transform: rotateX(-180deg); }
+}
+@keyframes ceremony-wax-in {
+  from { transform: scale(0.2); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes ceremony-stamp-in {
+  from { transform: scale(1.9); opacity: 0; }
+  55% { transform: scale(0.94); opacity: 1; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes ceremony-ring-out {
+  from { opacity: 0.7; transform: scale(0.9); }
+  to { opacity: 0; transform: scale(1.7); }
+}
+@keyframes ceremony-caption-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

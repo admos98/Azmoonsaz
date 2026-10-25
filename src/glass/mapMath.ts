@@ -77,6 +77,21 @@ export interface LensParams {
    *  own faint presence to read as a layer — "a very very subtle white
    *  tint", without greying anything. */
   dimLift?: number;
+  /** Girih optics (Operation Meraj P0): angular modulation of the border
+   *  ring's displacement amplitude. `girihAmp` ∈ [0, 0.5] scales how far
+   *  the rim's pull breathes around the panel perimeter following a
+   *  `girihFold`-fold rotationally-symmetric wave (default 10 — the
+   *  decagram of Persian girih tilework; Isfahan's five-and-ten star
+   *  system). 0 = exact pre-Meraj field. The modulation is trough-only
+   *  (multiplier ∈ [1−amp, 1]) so the PEAK pull — the playground-approved
+   *  max displacement the map scale is derived from — is preserved
+   *  exactly; the rim merely relaxes between the wave's crests. The wave
+   *  phase is centered per-panel (angle from the panel center), so the
+   *  pattern is anchored to the surface, not the viewport. */
+  girihAmp?: number;
+  /** Fold count of the girih wave. 10 = decagram (default), 8 = eight-fold
+   *  (Beyt os-Sujayn star), 12 = twelve-fold (the Darb-e Imam lattice). */
+  girihFold?: number;
 }
 
 function refract2D(nx: number, ny: number, eta: number): [number, number] | null {
@@ -248,6 +263,8 @@ export function buildDisplacementMap(
   profile: Float64Array,
   scale: number = 1,
   cornerExp: number = 3,
+  girihAmp: number = 0,
+  girihFold: number = 10,
 ): { img: ImageData; maxAbs: number; W: number; H: number } {
   const W = Math.max(2, Math.round(wCss * scale));
   const H = Math.max(2, Math.round(hCss * scale));
@@ -262,8 +279,15 @@ export function buildDisplacementMap(
   let maxAbs = 0;
   for (let i = 0; i < n; i++) maxAbs = Math.max(maxAbs, Math.abs(profile[i] || 0));
   if (maxAbs < 1e-6) maxAbs = 1;
+  // Girih optics: clamp + hoist the wave knobs out of the pixel loop. amp 0
+  // leaves the loop branch-free and the field byte-identical to pre-Meraj.
+  const amp = Math.max(0, Math.min(0.5, girihAmp));
+  const fold = Math.max(3, Math.round(girihFold));
+  const cy = (H - 1) / 2;
+  const cx = (W - 1) / 2;
   const d8 = img.data;
   for (let y = 0; y < H; y++) {
+    const dy = y - cy;
     for (let x = 0; x < W; x++) {
       // signed axis distances from the straight-edge lines
       const l = x < p ? x - p : x >= W - p ? x - (W - p) : 0;
@@ -284,7 +308,16 @@ export function buildDisplacementMap(
       let fade = 1;
       if (rD < 0) fade = 1 + rD; // 1px AA ring outside the border
       const c = profile[Math.min(n - 1, Math.max(0, ((rD / bez) * n) | 0))] || 0;
-      const val = c / maxAbs; // normalized [-1,1]
+      let val = c / maxAbs; // normalized [-1,1]
+      if (amp > 0) {
+        // Trough-only girih wave: the rim's pull relaxes toward the wave's
+        // nodes and keeps its full approved peak at the crests (peak pull is
+        // the number the feDisplacementMap scale was tuned against). The
+        // angle is measured from the PANEL center so the decagram is nailed
+        // to the surface — resize the panel and the star rescales with it.
+        const theta = Math.atan2(dy, x - cx);
+        val *= 1 - amp * (1 - Math.cos(fold * theta)) * 0.5;
+      }
       const i = (y * W + x) * 4;
       d8[i] = 128 + sdf[1] * val * 127 * fade;
       d8[i + 1] = 128 + sdf[2] * val * 127 * fade;
@@ -352,56 +385,7 @@ export function buildSpecularMap(
   return img;
 }
 
-/** Dim law — Apple's highlight-weighted wash toward the tint.
- *
- *      out_ch = in_ch + b · (in_ch/255) · (tint_ch − in_ch)
- *
- *  The weight is the pixel's OWN value, so:
- *    · whites move the full distance toward the tint — "whites washed";
- *    · blacks never move (weight 0) — no grey floor, no plastic;
- *    · mid/dark tones are barely touched, and every channel moves toward
- *      the SAME tint, so relative channel structure (hue/saturation) is
- *      preserved — "colored glass dark tint", not a flat multiply (which
- *      crushed mids uniformly — the "plastic dark" reading).
- *
- *  b is clamped to [0, 0.5]: the curve is monotone non-decreasing exactly
- *  on that interval (at b=0.5, t=0 the top flattens; beyond it, highlights
- *  would invert). b=0 is exact identity.
- *
- *  The old affine law (toward mid-grey [103,100,112] with G/B boost ratios)
- *  LIFTED black (+10/+11/+16) — the putty floor this law removes. */
-export function dimStrength(p: LensParams): number {
-  return Math.max(0, Math.min(0.5, p.dim));
-}
-
-/** One channel of the wash, in 0..255 space. Pure, side-effect free. */
-export function dimChannel(inp: number, b: number, tintCh: number, lift = 0): number {
-  const x = Math.max(0, Math.min(255, inp));
-  const t = Math.max(0, Math.min(255, tintCh));
-  const k = Math.max(0, Math.min(0.5, b));
-  const w = x + k * (x / 255) * (t - x);
-  /* White-veil lift (dark theme): weight (1 − x/255)² on the INPUT value →
-     lifts ONLY the deep darks (+L·255 ≈ 7.6/255 at black — the "very very
-     subtle white tint" read), contributes EXACTLY zero at pure white (the
-     wash's own domain), ~1.9/255 at mid. Composes with the wash
-     monotonically: wash' ≥ 1 − x/255 and |veil'| ≤ 2L/255, so the sum stays
-     non-decreasing across the clamped range (pinned). */
-  const L = Math.max(0, Math.min(0.25, lift));
-  if (L === 0) return w;
-  const u = 1 - x / 255;
-  return w + L * 255 * u * u;
-}
-
-/** feFunc tableValues for one channel: 33 samples (step 255/32), linear
- *  interpolation between them. Max interpolation error vs the exact curve
- *  is < 0.09/255 across the whole range (curvature bound b/4096 in
- *  normalized units) — two orders under the accepted 2/255 LSB tolerance —
- *  while costing ~600B of markup instead of 4KB for 256 exact samples. */
-export function dimTableValues(b: number, tintCh: number, lift = 0): string {
-  const n = 33;
-  const out: string[] = [];
-  for (let i = 0; i < n; i++) {
-    out.push((dimChannel((255 * i) / (n - 1), b, tintCh, lift) / 255).toFixed(4));
-  }
-  return out.join(' ');
-}
+/** Dim law lives in dimLaw.ts (extracted at the Meraj P0 split); re-exported
+ *  here so every existing mapMath consumer — and dimLaw.test.ts — keeps its
+ *  import path. */
+export { dimChannel, dimStrength, dimTableValues } from './dimLaw';

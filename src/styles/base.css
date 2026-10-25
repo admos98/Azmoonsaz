@@ -334,3 +334,43 @@ select::-webkit-calendar-picker-indicator {
    scoped `corner-shape: squircle` block lived here — it covered only the
    glass families with a DIFFERENT exponent than the rim maps assumed, which
    is exactly the "panel curve ≠ rim curve" drift the user reported. */
+
+/* ─── View Transitions (Meraj P1 remainder) — the page morph ───
+   runInViewTransition (utils/viewTransition.ts) wraps push-navigations and
+   popstate; only #main-content is named, so the Topbar and page chrome stay
+   rock-still while content hands over. Exit accelerates away (--ease-exit),
+   the new page settles in glass (--ease-glass) — a rising handover, RTL-honest
+   (the new page arrives from below, where the reading eye rests).
+   The JS guard skips transitions entirely under reduced motion; this media
+   block is the CSS-level twin safety net. */
+@media (prefers-reduced-motion: no-preference) {
+  #main-content {
+    view-transition-name: page-content;
+  }
+  ::view-transition-old(page-content) {
+    animation: vt-exit var(--dur-flow) var(--ease-exit) both;
+  }
+  ::view-transition-new(page-content) {
+    animation: vt-enter var(--dur-flow) var(--ease-glass) both;
+  }
+}
+@keyframes vt-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes vt-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

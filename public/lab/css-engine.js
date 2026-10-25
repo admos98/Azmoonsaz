@@ -49,7 +49,7 @@ export class CssEngine {
   /** Map entry for one geometry. Async: blob encoding (the CSP-safe path) is
    *  async, and data: URLs are refused by the production img-src. */
   async mapsFor(kind, w, h, radius, params) {
-    const key = `${kind}|${Math.round(w)}x${Math.round(h)}|${Math.round(radius)}`;
+    const key = `${kind}|${Math.round(w)}x${Math.round(h)}|${Math.round(radius)}|${params.girihAmp || 0}x${params.girihFold || 10}`;
     const hit = this.maps.get(key);
     if (hit) return hit;
     const cornerExp = mapCornerExp(params.cornerExp, params.cornerShapeSupported);
@@ -59,7 +59,7 @@ export class CssEngine {
     let dispURL = null;
     let maxAbs = 1;
     if (kind !== 'pane') {
-      const dm = buildDisplacementMap(w, h, r, params.bezel, prof, scale, cornerExp);
+      const dm = buildDisplacementMap(w, h, r, params.bezel, prof, scale, cornerExp, params.girihAmp || 0, params.girihFold || 10);
       maxAbs = dm.maxAbs;
       dispURL = await imageDataToBlobURL(dm.img);
     }

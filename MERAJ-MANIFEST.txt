@@ -1,0 +1,16 @@
+Azmoonsaz — Operation Meraj complete bundle (P0 + P1 + P1-remainder + P2 + P3)
+==============================================================================
+This single zip REPLACES the two earlier bundles:
+   azmoonsaz-meraj-p0p1.zip      (girih optics, motion tokens, Sealing Ceremony, lab, docs)
+   azmoonsaz-meraj-p1r-p3.zip    (grade reveal, View Transitions, lantern, seasonal girih,
+                                  Wrapped, /welcome landing)
+
+61 files, latest version of each. Drag-and-drop onto the repo root.
+
+IMPORTANT:
+- Requires the audit-fixes-v2 tree underneath it (deploy azmoonsaz-audit-fixes-v2.zip
+  first if that baseline is not already applied).
+- 4 SQL migrations (20261025000001 .. 20261025000004) must be applied with the deploy.
+- New preference keys: azmoonsaz:preference:seal-sound (default ON),
+  azmoonsaz:preference:lantern (default ON, active 19:00-06:00).
+- New routes/surfaces: /teacher/wrapped, /welcome/, /lab/ (A/B girih mock).

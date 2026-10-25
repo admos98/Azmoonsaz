@@ -148,3 +148,37 @@
      material). Dark theme gives it a deeper ink pane, the page's anchor. */
   --color-hero-pane: transparent;
 }
+
+/* ── Motion grammar (Meraj P0) ─────────────────────────────────────────
+   The brand's physics of TIME, single-sourced like the color tokens.
+   Two families:
+   · durations — how long a class of moment may take. Boundaries, not
+     suggestions: interactive feedback stays under --dur-instant so the
+     UI never feels laggy. (The Sealing Ceremony's longer beats live in
+     sealBeats.ts — its timeline is JS-driven; --dur-* returns for the
+     View-Transitions morphs and Wrapped when those phases land.)
+   · easings — named curves. --ease-seal is the brand curve: a fast,
+     confident approach that SETTLES (cubic-bezier with a barely-there
+     overshoot) — "a stamp, not a bounce". Nothing in the app bounces. */
+:root {
+  --dur-instant: 120ms; /* hover/focus/press feedback */
+  --dur-flow: 240ms;    /* reveals, collapses, panel transitions */
+  --dur-reveal: 700ms;  /* the grade-reveal moment: odometer rolls + تذهیب draw.
+                           A moment-class duration — used only where the user
+                           just earned an outcome (score changes, seals), never
+                           for chrome feedback. */
+
+  --ease-seal: cubic-bezier(0.2, 0.9, 0.25, 1.04);  /* stamp-and-settle */
+  --ease-glass: cubic-bezier(0.33, 0, 0.2, 1);      /* engine-native, no overshoot */
+  --ease-exit: cubic-bezier(0.55, 0, 0.85, 0.6);    /* things leaving: accelerate away */
+
+  /* Girih optics (Meraj P0) — the rim's refraction pull is modulated by a
+     fold-fold rotationally-symmetric wave anchored to each panel's center:
+     the blur breathes through Persian girih geometry. Trough-only wave, so
+     --lens-max-displacement (the tuned PEAK pull) stays exact. amp is the
+     trough depth (0 = off, the pre-Meraj field); fold 10 = the Isfahan
+     decagram. Theme-independent physics — consumed by the map math via
+     glassTokens.readParams, which is why they sit with the design tokens. */
+  --lens-girih: 0.22;
+  --lens-girih-fold: 10;
+}

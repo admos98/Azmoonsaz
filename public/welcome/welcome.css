@@ -1,0 +1,251 @@
+/* Welcome — the scroll narrative (Meraj P3). Static, self-contained, CSP-safe
+   (external files only, no inline script). Brand: ink #1a1a2e on cream plate,
+   gold #f5b301 as commitment color only, Vazirmatn, no negative tracking.
+   Reduced motion: everything is visible statically, the stamp never animates. */
+
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('/fonts/vazirmatn-arabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url('/fonts/vazirmatn-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2122;
+}
+
+:root {
+  --paper: #f2efe8;
+  --ink: #1a1a2e;
+  --muted: #6f6a7d;
+  --gold: #f5b301;
+  --gold-ink: #765500;
+  --ease-seal: cubic-bezier(0.2, 0.9, 0.25, 1.04);
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  font-family: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
+  background: var(--paper) url('/backgrounds/bg-d-light.svg') fixed center / cover no-repeat;
+  color: var(--ink);
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the thread of the story */
+#progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 10;
+  background: transparent;
+}
+#progress-bar {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--gold);
+  transition: width 120ms linear;
+}
+
+.chapter {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 96px 24px;
+}
+.chapter__inner {
+  max-width: 640px;
+  text-align: center;
+}
+.kicker {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--gold-ink);
+}
+h1 {
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0 0 16px;
+}
+h2 {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 16px;
+}
+.lede {
+  font-size: 1.0625rem;
+  color: var(--muted);
+  margin: 0 auto;
+}
+.mark {
+  display: block;
+  margin: 24px auto;
+  color: var(--ink);
+}
+
+/* scroll hint — a single quiet pulse, then rest is the reveal's job */
+.scroll-hint {
+  margin: 40px auto 0;
+  width: 1px;
+  height: 48px;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+.scroll-hint span {
+  position: absolute;
+  inset-inline: 0;
+  top: -50%;
+  height: 50%;
+  background: var(--gold);
+  animation: hint-drop 2.2s var(--ease-seal) infinite;
+}
+@keyframes hint-drop {
+  0% { top: -50%; }
+  55%, 100% { top: 100%; }
+}
+
+/* reveal choreography: one-shot per section (JS adds .is-in) */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 600ms var(--ease-seal),
+    transform 600ms var(--ease-seal);
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* the crystal-paper demo cards */
+.glass-demo {
+  margin-top: 32px;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.glass-demo__card {
+  min-width: 220px;
+  padding: 28px 24px;
+  border-radius: 24px;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  background: rgba(255, 253, 250, 0.6);
+  border: 1px solid rgba(26, 26, 46, 0.14);
+  box-shadow: 0 18px 40px rgba(26, 28, 34, 0.16);
+  backdrop-filter: blur(14px) saturate(1.5);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  transform: rotate(-1.5deg);
+}
+.glass-demo__card--shift {
+  transform: rotate(1.5deg) translateY(10px);
+}
+
+/* the seal: draws once when the chapter arrives (JS stamps .is-stamped) */
+.stamp {
+  margin: 40px auto 0;
+  opacity: 0.25;
+  transform: scale(1.6);
+  transition:
+    opacity 450ms var(--ease-seal),
+    transform 450ms var(--ease-seal);
+}
+.stamp.is-stamped {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cta {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 14px 36px;
+  border-radius: 16px;
+  background: var(--ink);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 120ms var(--ease-seal);
+}
+.cta:hover {
+  transform: translateY(-2px);
+}
+.footnote {
+  margin-top: 48px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.footnote__link {
+  color: var(--gold-ink);
+  margin-inline-start: 12px;
+}
+
+/* Night reading: the plate darkens, ink goes cream — the story reads the same */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #131220;
+    background-image: url('/backgrounds/bg-d-dark.svg');
+    color: #f5f6fa;
+  }
+  .lede,
+  .footnote {
+    color: #a9a4bd;
+  }
+  .mark {
+    color: #f5f6fa;
+  }
+  .glass-demo__card {
+    background: rgba(58, 54, 74, 0.66);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
+  }
+  .scroll-hint {
+    background: color-mix(in srgb, #f5f6fa 25%, transparent);
+  }
+  .cta {
+    background: #f5f6fa;
+    color: #131220;
+  }
+}
+
+/* Reduced motion: the story stands fully lit — no reveals to wait for */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .stamp {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .scroll-hint span {
+    animation: none;
+    top: 25%;
+  }
+  #progress-bar {
+    transition: none;
+  }
+}

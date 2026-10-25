@@ -32,6 +32,10 @@ export interface MapBuildRequest {
   specPeak: number;
   cornerExp: number;
   scale: number;
+  /** Girih optics (Meraj P0): trough-only rim wave, see mapMath. The
+   *  request carries them explicitly so the worker never reads DOM state. */
+  girihAmp: number;
+  girihFold: number;
 }
 
 export interface MapBuildResponse {
@@ -71,6 +75,8 @@ scope.onmessage = async (e: MessageEvent) => {
         prof,
         req.scale,
         req.cornerExp,
+        req.girihAmp ?? 0,
+        req.girihFold ?? 10,
       );
       maxAbs = dm.maxAbs;
       dispBlob = await encodePNG(dm.img);

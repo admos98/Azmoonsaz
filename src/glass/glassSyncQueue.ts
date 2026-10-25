@@ -187,6 +187,8 @@ export function requestBucketAsync(t: PendingPanel, mapKey: string): boolean {
     specPeak: p.specPeak,
     cornerExp: mapCornerExp(p.cornerExp, CORNER_SHAPE_SUPPORTED),
     scale: mapDPR() * mapScaleFor(t.w, t.h),
+    girihAmp: p.girihAmp ?? 0,
+    girihFold: p.girihFold ?? 10,
   };
   try {
     inflight.set(mapKey, [t]);

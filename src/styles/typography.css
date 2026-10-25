@@ -175,14 +175,86 @@
   }
 }
 
+/* ─── ScoreOdometer (Meraj P1 remainder) — the grade-reveal moment ───
+   Persian-digit odometer: each digit is a 0..9 strip rolling under a 1em
+   window with the brand's stamp-and-settle curve. One-shot per value change;
+   reduced motion parks the transition via the shared reduce rules below. */
+.odometer {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.odometer__visual {
+  display: inline-flex;
+  direction: ltr; /* digit columns align left→right regardless of locale */
+  font-variant-numeric: tabular-nums;
+}
+.odometer__digit {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  line-height: 1;
+}
+.odometer__strip {
+  display: inline-flex;
+  flex-direction: column;
+  transition: transform var(--dur-reveal) var(--ease-seal);
+  will-change: transform;
+}
+.odometer__cell {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+/* تذهیب rule — the Illumination flourish for a sealed کارنامه: one sweep
+   right→left (the RTL reading direction), then static forever. Same
+   draw-once law as .seal; the reduce rules park it identically. */
+.tazhib-rule {
+  display: block;
+  animation: tazhib-draw var(--dur-reveal) ease-out both;
+}
+@keyframes tazhib-draw {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+.tazhib-rule__line {
+  stroke: var(--color-gold);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.tazhib-rule__gem {
+  fill: var(--color-gold);
+}
+.odometer__sealed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.odometer__sealed-caption {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-gold-ink);
+}
+
 /* ─── Reduced motion ───
    data-motion is resolved before first paint. The media query remains as a
    CSS-level safety net if JavaScript is unavailable. */
 :root[data-motion='reduce'] .seal,
 :root[data-motion='reduce'] .goldpop,
 :root[data-motion='reduce'] .skeleton,
-:root[data-motion='reduce'] .skeleton::after {
+:root[data-motion='reduce'] .skeleton::after,
+:root[data-motion='reduce'] .tazhib-rule {
   animation: none;
+}
+:root[data-motion='reduce'] .odometer__strip {
+  transition: none;
 }
 :root[data-motion='reduce'] *,
 :root[data-motion='reduce'] *::before,
@@ -196,8 +268,12 @@
   .goldpop,
   .skeleton,
   .skeleton::after,
-  .seal {
+  .seal,
+  .tazhib-rule {
     animation: none;
+  }
+  .odometer__strip {
+    transition: none;
   }
   *,
   *::before,

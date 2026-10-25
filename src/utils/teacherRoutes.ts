@@ -8,6 +8,7 @@ const PATH_TO_TAB: Record<string, string> = {
   '/teacher/exams': 'exams',
   '/teacher/exams/new': 'exams/new',
   '/teacher/results': 'results',
+  '/teacher/wrapped': 'wrapped',
 };
 
 export const teacherTabFromPath = (path: string): string => {
@@ -34,6 +35,7 @@ export const teacherPathFromTab = (tab: string): string => {
     exams: '/teacher/exams',
     'exams/new': '/teacher/exams/new',
     results: '/teacher/results',
+    wrapped: '/teacher/wrapped',
   };
   return routes[tab] || '/teacher/dashboard';
 };

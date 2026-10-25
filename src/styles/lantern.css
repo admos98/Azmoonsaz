@@ -1,0 +1,30 @@
+/* Lantern ambience (Meraj P1 remainder) — حالت شب امتحان.
+   Split from themes.css for the size ratchet: it is its own concern —
+   applied by src/lib/lantern.ts on the student portal only. */
+
+/* ─── Lantern ambience (Meraj P1 remainder) — حالت شب امتحان ───
+   Applied by src/lib/lantern.ts on the student portal during the lamp hours
+   (19:00–06:00, preference-gated). Two moves only:
+   1. The glass tokens go candle-warm — the SAME panels, lit by a different
+      source. Text tokens are untouched, so contrast is the theme's own.
+   2. One ~5% warm wash over the room (body::after), the way lantern light
+      falls on everything equally. pointer-events: none; reduced-motion is
+      irrelevant (no animation); prefers-reduced-transparency still owns the
+      wash (it is a transparency, after all). */
+:root[data-ambience='lantern'] {
+  --glass-p-tint: 255 238 205;
+  --glass-scrim-color: 70 58 42;
+}
+:root[data-ambience='lantern'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  background: rgba(255, 166, 66, 0.055);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-ambience='lantern'] body::after {
+    display: none;
+  }
+}

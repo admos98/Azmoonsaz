@@ -144,7 +144,7 @@ export function mapCornerExp(cssExp, cornerShapeSupported) {
   return cornerShapeSupported ? Math.min(6, Math.max(1, cssExp)) : 1;
 }
 
-export function buildDisplacementMap(wCss, hCss, radiusCss, bezelCss, profile, scale = 1, cornerExp = 3) {
+export function buildDisplacementMap(wCss, hCss, radiusCss, bezelCss, profile, scale = 1, cornerExp = 3, girihAmp = 0, girihFold = 10) {
   const W = Math.max(2, Math.round(wCss * scale));
   const H = Math.max(2, Math.round(hCss * scale));
   const img = new ImageData(W, H);
@@ -158,8 +158,16 @@ export function buildDisplacementMap(wCss, hCss, radiusCss, bezelCss, profile, s
   let maxAbs = 0;
   for (let i = 0; i < n; i++) maxAbs = Math.max(maxAbs, Math.abs(profile[i] || 0));
   if (maxAbs < 1e-6) maxAbs = 1;
+  // Girih optics (Operation Meraj) — identical math to src/glass/mapMath.ts:
+  // trough-only fold-fold wave, angle measured from the PANEL center so the
+  // decagram stays nailed to the surface. amp 0 = byte-identical pre-Meraj.
+  const amp = Math.max(0, Math.min(0.5, girihAmp));
+  const fold = Math.max(3, Math.round(girihFold));
+  const cy = (H - 1) / 2;
+  const cx = (W - 1) / 2;
   const d8 = img.data;
   for (let y = 0; y < H; y++) {
+    const dy = y - cy;
     for (let x = 0; x < W; x++) {
       const l = x < p ? x - p : x >= W - p ? x - (W - p) : 0;
       const m = y < p ? y - p : y >= H - p ? y - (H - p) : 0;
@@ -175,7 +183,11 @@ export function buildDisplacementMap(wCss, hCss, radiusCss, bezelCss, profile, s
       let fade = 1;
       if (rD < 0) fade = 1 + rD;
       const c = profile[Math.min(n - 1, Math.max(0, ((rD / bez) * n) | 0))] || 0;
-      const val = c / maxAbs;
+      let val = c / maxAbs;
+      if (amp > 0) {
+        const theta = Math.atan2(dy, x - cx);
+        val *= 1 - amp * (1 - Math.cos(fold * theta)) * 0.5;
+      }
       const i = (y * W + x) * 4;
       d8[i] = 128 + sdf[1] * val * 127 * fade;
       d8[i + 1] = 128 + sdf[2] * val * 127 * fade;

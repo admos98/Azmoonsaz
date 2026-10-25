@@ -26,7 +26,7 @@ const NEW_FILE_LIMIT = 400;
 // Measured 2026-10-08. Numbers go DOWN, never up.
 const OVERRIDES = new Map([
   // App.tsx: shell+router shrunk 451→427 via BootScreens extraction; ratchet steps down.
-  ['src/App.tsx', 444], // 444: +17 from the 2026-10-25 audit pass (FE-2 reset gate, FE-3 deep-link init)
+  ['src/App.tsx', 430], // 444: +17 from the 2026-10-25 audit pass (FE-2 reset gate, FE-3 deep-link init)
   // Questions.tsx, ExamPreview.tsx, ExamSettings.tsx, ExamResults.tsx,
   // Students.tsx and Topbar.tsx: CQ-11 splits (2026-10-25) brought every one
   // of them under the generic 400-line cap — their OVERRIDES entries were
@@ -39,20 +39,20 @@ const OVERRIDES = new Map([
   // 697: +7 from the 2026-10-25 audit pass (FE-4 tab-prop sync fix).
   ['src/pages/teacher/TeacherProfile.tsx', 697],
   ['src/test/components/LibraryV2.test.tsx', 669],
-  // mapMath: DOM-free shared math (main thread + worker). Its size IS the render-contract
-  // documentation the audit pins (“DO NOT simplify any of these back”). FRONTEND-FINDINGS.md
-  // Finding 5 blesses a documented cap for it.
-  ['src/glass/mapMath.ts', 407],
+  // mapMath: 407→391 — the dim-law block extracted to dimLaw.ts at the Meraj P0
+  // split (2026-10-25); mapMath is back under the generic 400 cap and its
+  // OVERRIDES entry was deleted (ratchet step complete). The girih wave added
+  // ~30 documented lines the same day; the render-contract comments stay intact.
   // perfRecorder: 752→528 — ?perf=1 report types → perfReporterTypes.ts, the DOM overlay → perfRecorderUi.ts.
   ['src/glass/perfRecorder.ts', 527],
   // webglRenderer: 1005→723 — GLSL + GL helpers extracted to webglShaders.ts. The rest is one
   // cohesive state-bound class (plate pipeline + GL draw) that resists further seams.
   ['src/glass/webglRenderer.ts', 722],
   // SecureExamPortal: 892→73 (wiring shell; logic in features/secure-exam/*) — OVERRIDES removed, generic 400 cap applies.
-  ['src/pages/teacher/Dashboard.tsx', 627],
+  ['src/pages/teacher/Dashboard.tsx', 537],
   ['src/pages/teacher/NewExam.tsx', 607], // 607: +5 from the 2026-10-25 audit pass (FE-6 seed-class fix)
   ['src/pages/dev/FixtureGallery.tsx', 492],
-  ['src/pages/teacher/Login.tsx', 469],
+  ['src/pages/teacher/Login.tsx', 460],
   ['src/features/student-import/StudentImportWizard.tsx', 423],
   ['src/pages/teacher/Settings.tsx', 416],
 ]);

@@ -22,7 +22,9 @@ Feeding lens-map.png to <feDisplacementMap scale="43.67"> gives +/-21.8px
 peak pull at the border (approved playground number; the head-smoothed
 profile normalizes to maxAbs 40.35 — normalization only, not the pull).
 drop-map.png rides scale="5" (+/-2.5px on a 44px disc — a stronger lens
-RELATIVE to its diameter). The script verifies both scales in index.html.
+RELATIVE to its diameter). Post-Meraj the script verifies the max-displacement
+TOKENS against the tune (the runtime maps are built in mapMath.ts) and applies
+the same girih wave (--lens-girih / --lens-girih-fold) to the rasters.
 
 Also emits lens-spec.png and drop-spec.png — the playground's
 buildSpecularMap port (cos^2 x bump, light from --lens-spec-angle), which
@@ -54,6 +56,25 @@ IOR = 1.5
 SAMPLES = 256
 
 
+def css_chain(path: Path, seen: set | None = None) -> str:
+    """Read a CSS file and inline its local @import chain (the repo's index.css
+    is an @import shim; the lens tokens live in src/styles/themes.css). Only
+    relative './...' imports are followed — exactly what the bundler does for
+    this project. Missing files fail loudly: the tune must be complete."""
+    seen = seen if seen is not None else set()
+    rp = path.resolve()
+    if rp in seen:
+        return ""
+    seen.add(rp)
+    text = path.read_text(encoding="utf-8")
+
+    def repl(m: re.Match) -> str:
+        target = (path.parent / m.group(1)).resolve()
+        return css_chain(target, seen)
+
+    return re.sub(r"@import\s+'(\.[^']+)';", repl, text)
+
+
 def css_token(css: str, name: str) -> str:
     m = re.search(re.escape(name) + r":\s*([^;]+);", css)
     if not m:
@@ -61,9 +82,16 @@ def css_token(css: str, name: str) -> str:
     return m.group(1).strip()
 
 
+def css_token_or(css: str, name: str, default: str) -> str:
+    """Tolerant read for post-Meraj tokens (an older tree may not carry them
+    yet — the tool must still reproduce that tree's maps exactly)."""
+    m = re.search(re.escape(name) + r":\s*([^;]+);", css)
+    return m.group(1).strip() if m else default
+
+
 def load_tune() -> dict:
     """Read the approved geometry from the CSS tokens (single source)."""
-    css = CSS_PATH.read_text(encoding="utf-8")
+    css = css_chain(CSS_PATH)
     px = lambda v: float(v.removesuffix("px"))  # noqa: E731
     lw_s, lh_s = css_token(css, "--lens-size").split()
     dw_s, dh_s = css_token(css, "--drop-size").split()
@@ -71,6 +99,11 @@ def load_tune() -> dict:
         "bezel": px(css_token(css, "--lens-bezel")),
         "thickness": px(css_token(css, "--lens-thickness")),
         "angle": float(css_token(css, "--lens-spec-angle").removesuffix("deg")),
+        # Girih optics (Meraj P0) — same trough-only wave as mapMath.ts, read
+        # from the same tokens the runtime reads. Absent token = 0 = the
+        # pre-Meraj field, byte for byte.
+        "girih_amp": float(css_token_or(css, "--lens-girih", "0")),
+        "girih_fold": int(float(css_token_or(css, "--lens-girih-fold", "10"))),
     }
     lens = {
         "w": px(lw_s),
@@ -206,6 +239,13 @@ def build(tune: dict) -> tuple[bytes, int, int, float]:
             r_d = p - t  # distance from border
             idx = min(n - 1, max(0, int(r_d / bez * n)))
             v = profile[idx] / max_abs  # normalized [-1,1]
+            amp = min(0.5, max(0.0, tune.get("girih_amp", 0.0)))
+            if amp > 0:
+                # Trough-only girih wave — exact parity with mapMath.ts
+                # buildDisplacementMap: angle from the panel center, fold-fold
+                # symmetric, peak pull preserved at the crests.
+                theta = math.atan2(y - (h - 1) / 2, x - (w - 1) / 2)
+                v *= 1 - amp * (1 - math.cos(int(tune.get("girih_fold", 10)) * theta)) * 0.5
             ux = -l / t  # inward unit vector
             uy = -m / t
             i = (y * w + x) * 4
@@ -266,7 +306,8 @@ def emit(name: str, out: Path, tune: dict) -> None:
     write_png(out, w, h, rgba)
     print(
         f"wrote {out}  {w}x{h} (2x of {tune['w']}x{tune['h']})  "
-        f"radius={tune['radius']}  profile maxAbs={max_abs:.2f}px"
+        f"radius={tune['radius']}  profile maxAbs={max_abs:.2f}px  "
+        f"girih={tune.get('girih_amp', 0.0)}x{tune.get('girih_fold', 10)}"
     )
     spec_out = Path(str(out).replace("-map.png", "-spec.png"))
     write_png(spec_out, w, h, build_specular(tune))
@@ -277,16 +318,18 @@ def main() -> None:
     tunes = load_tune()
     emit("lens", LENS_OUT, tunes["lens"])
     emit("drop", DROP_OUT, tunes["drop"])
-    # both filters must carry the same max displacement as their tokens
-    html = HTML_PATH.read_text(encoding="utf-8")
+    # Post-Meraj the runtime maps are built in mapMath.ts and attached as
+    # data URIs — index.html carries no static feDisplacementMap markup
+    # anymore (it did pre-engine; that check rotted). The contract that
+    # still holds is token-side: the rasters must be built from the same
+    # max-displacement tune the engine's scale formula consumes.
+    css = css_chain(CSS_PATH)
     for name in ("lens", "drop"):
-        want = f'scale="{tunes[name]["max_disp"]}"'
-        if want not in html:
-            sys.exit(
-                f"gen-glass-maps: index.html is missing {want} "
-                f"(--{name}-max-displacement = {tunes[name]['max_disp']}px)"
-            )
-        print(f"filter scale verified: {want}")
+        tok = f"--{name}-max-displacement"
+        val = css_token(css, tok).removesuffix("px")
+        if val != tunes[name]["max_disp"]:
+            sys.exit(f"gen-glass-maps: {tok} ({val}) != tune max_disp")
+        print(f"token verified: {tok} = {val}px")
 
 
 if __name__ == "__main__":

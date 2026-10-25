@@ -3,6 +3,7 @@ export const loadExams = () => import('../pages/teacher/Exams');
 export const loadNewExam = () => import('../pages/teacher/NewExam');
 export const loadSettingsHub = () => import('../pages/teacher/SettingsHub');
 export const loadTeacherProfile = () => import('../pages/teacher/TeacherProfile');
+export const loadWrapped = () => import('../pages/teacher/Wrapped');
 
 const loaders: Record<string, () => Promise<unknown>> = {
   dashboard: loadDashboard,
@@ -12,6 +13,7 @@ const loaders: Record<string, () => Promise<unknown>> = {
   profile: loadTeacherProfile,
   students: loadTeacherProfile,
   classes: loadTeacherProfile,
+  wrapped: loadWrapped,
 };
 
 const started = new Set<string>();

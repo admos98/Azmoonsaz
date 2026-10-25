@@ -5,16 +5,7 @@
 
 import React, { useState, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
-import {
-  FileText,
-  Users,
-  CheckSquare,
-  Plus,
-  Clock,
-  ChevronLeft,
-  Upload,
-  Eye,
-} from 'lucide-react';
+import { FileText, Users, Plus, Clock, ChevronLeft } from 'lucide-react';
 import { Cut } from '../../components/Cut';
 
 import {
@@ -30,6 +21,7 @@ import {
 import { TheMark } from '../../components/TheMark';
 import { EmptyStateArt } from '../../components/EmptyStateArt';
 import { formatPersianNumber, formatPersianDate } from '../../utils/persian';
+import { QuickActions } from '../../components/QuickActions';
 import { useTeacher, useTeacherCollections } from '../../contexts/TeacherContext';
 import { useToast } from '../../hooks/useToast';
 import StudentImportWizard from '../../features/student-import/StudentImportWizard';
@@ -234,104 +226,14 @@ export default function Dashboard({ onNavigate, onSelectExamForResults }: Dashbo
           />
         </div>
 
-        {/* 3. Quick Actions Row */}
-        <div className="relative lens p-6 rounded-2xl text-right" id="quick-actions-section">
-          <h2 className="text-label text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
-            <span>اقدامات سریع</span>
-          </h2>
-
-          <div className="grid grid-cols-2 gap-3.5" id="quick-action-btns">
-            <button
-              type="button"
-              id="qa-btn-import-excel"
-              onClick={(e) => {
-                excelTriggerRef.current = e.currentTarget;
-                setIsExcelModalOpen(true);
-              }}
-              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
-            >
-              <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
-                <Upload className="w-5 h-5" />
-              </div>
-              <span className="text-caption font-bold text-[var(--color-text-primary)]">
-                ورود از اکسل
-              </span>
-            </button>
-
-            <button
-              type="button"
-              id="qa-btn-add-question"
-              onClick={() => onNavigate('questions')}
-              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
-            >
-              <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-success)] rounded-xl group-hover:scale-105 transition-transform">
-                <Plus className="w-5 h-5" />
-              </div>
-              <span className="text-caption font-bold text-[var(--color-text-primary)]">
-                سوال جدید
-              </span>
-            </button>
-
-            <button
-              type="button"
-              id="qa-btn-new-exam"
-              onClick={() => onNavigate('exams/new')}
-              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
-            >
-              <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-warning)] rounded-xl group-hover:scale-105 transition-transform">
-                <FileText className="w-5 h-5" />
-              </div>
-              <span className="text-caption font-bold text-[var(--color-text-primary)]">
-                آزمون جدید
-              </span>
-            </button>
-
-            <button
-              type="button"
-              id="qa-btn-view-results"
-              onClick={() => onNavigate('results')}
-              className="p-4 btn-glass rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center group cursor-pointer"
-            >
-              <div className="p-2.5 glx-inset glx-inset-clear text-[var(--color-accent)] rounded-xl group-hover:scale-105 transition-transform">
-                <Eye className="w-5 h-5" />
-              </div>
-              <span className="text-caption font-bold text-[var(--color-text-primary)]">
-                مشاهده نتایج
-              </span>
-            </button>
-
-            {/* Grading tile = traffic light (1F): red only when there is
-                work, calm green when the queue is empty — state-driven
-                colour is information; always-on alarm colour is noise */}
-            <button
-              type="button"
-              id="qa-btn-correct-essays"
-              onClick={() => onNavigate('results')}
-              className={`p-4 btn-glass ${
-                pendingGradings > 0 ? 'btn-glass--danger' : 'btn-glass--success'
-              } rounded-2xl flex flex-col items-center justify-center gap-2.5 transition-all text-center col-span-2 group cursor-pointer`}
-            >
-              <div
-                className={`p-2.5 glx-inset glx-inset-clear rounded-xl group-hover:scale-105 transition-transform ${
-                  pendingGradings > 0
-                    ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
-                    : 'bg-[var(--color-success-soft)] text-[var(--color-success)]'
-                }`}
-              >
-                <CheckSquare className="w-5 h-5" />
-              </div>
-              <span
-                className={`text-caption font-bold ${
-                  pendingGradings > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'
-                }`}
-              >
-                {pendingGradings > 0
-                  ? `${formatPersianNumber(pendingGradings)} پاسخ‌برگ در انتظار تصحیح`
-                  : 'تصحیح تشریحی — موردی در انتظار نیست'}
-              </span>
-            </button>
-          </div>
-        </div>
+        <QuickActions
+          onNavigate={onNavigate}
+          pendingGradings={pendingGradings}
+          onOpenExcelImport={(trigger) => {
+            excelTriggerRef.current = trigger;
+            setIsExcelModalOpen(true);
+          }}
+        />
       </div>
 
       {/* Main Core Columns */}

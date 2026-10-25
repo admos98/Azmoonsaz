@@ -553,8 +553,8 @@ describe('glass material contract (pixel-audit gates)', () => {
     expect(css).toMatch(/animation:\s*skeleton-sweep 1\.2s ease-out 1 both/);
     expect(css).toMatch(/:root\[data-theme='dark'\] \.skeleton\s*{\s*--skeleton-mix:\s*50%/);
     expect(cssRaw).toMatch(/one sweep, then rest/);
-    // reduced motion parks the sweep entirely (media + attribute paths)
-    expect(css).toMatch(/:root\[data-motion='reduce'\] \.skeleton::after\s*{\s*animation:\s*none/);
+    // reduced motion parks the sweep; the Meraj تذهیب rule joins the group
+    expect(css).toMatch(/:root\[data-motion='reduce'\] \.skeleton::after,\s*:root\[data-motion='reduce'\] \.tazhib-rule\s*{\s*animation:\s*none/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) {\s*.goldpop,\s*.skeleton,\s*.skeleton::after/);
   });
 
@@ -565,7 +565,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     );
     // parked by BOTH reduced-motion paths (attribute first in its group, media last)
     expect(css).toMatch(/:root\[data-motion='reduce'\] \.seal,\s*:root\[data-motion='reduce'\] \.goldpop/);
-    expect(css).toMatch(/\.skeleton::after,\s*\.seal\s*{\s*animation:\s*none/);
+    expect(css).toMatch(/\.skeleton::after,\s*\.seal,\s*\.tazhib-rule\s*{\s*animation:\s*none/);
     // no loop anywhere on the seal
     expect(cssRaw).not.toMatch(/seal-draw [\d.]+s ease-out infinite/);
   });
