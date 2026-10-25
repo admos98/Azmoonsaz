@@ -266,4 +266,53 @@ describe('F-05 answer-key strip + shuffle enforcement', () => {
     }[];
     expect(again[0].body.options.map((o) => o.id)).toEqual(out[0].body.options.map((o) => o.id));
   });
+
+  // SEC-2 regression: the student pipeline is shuffle-THEN-sanitize
+  // (student.js get-exam handler). The old order sanitized first, so the
+  // shuffler never saw the canonical matchingPairs/orderingItems and the
+  // whitelist then stripped them — matching/ordering questions reached
+  // students with no pair/item content at all. Pin the correct order here.
+  it('SEC-2: shuffle→sanitize pipeline keeps displayPairs/displayItems, strips canonical keys', () => {
+    const matching = {
+      id: 'm-1',
+      type: 'matching',
+      body: {
+        text: 'وصل کن',
+        matchingPairs: [
+          { id: 'p1', left: 'ایران', right: 'تهران' },
+          { id: 'p2', left: 'ژاپن', right: 'توکیو' },
+        ],
+      },
+      points: 2,
+    };
+    const ordering = {
+      id: 'o-1',
+      type: 'ordering',
+      body: { text: 'مرتب کن', orderingItems: ['الف', 'ب', 'پ'] },
+      points: 2,
+    };
+    const exam = { settings: { shuffleOptions: true } };
+    const shuffled = applyExamShuffles([matching, ordering] as never, exam as never, 'sess-sec2');
+    const safe = shuffled
+      .map((q: unknown) => safeQuestionForStudent(q as never, { points: 2 } as never))
+      .filter(Boolean) as { id: string; body: Record<string, unknown> }[];
+
+    const safeMatching = safe.find((q) => q.id === 'm-1');
+    const safeOrdering = safe.find((q) => q.id === 'o-1');
+    expect(safeMatching).toBeTruthy();
+    expect(safeOrdering).toBeTruthy();
+
+    // Minted display copies survive the whitelist — this is the whole point.
+    const pairs = safeMatching!.body.displayPairs as { id: string }[];
+    expect(Array.isArray(pairs)).toBe(true);
+    expect(pairs).toHaveLength(2);
+    expect([...pairs].map((p) => p.id).sort()).toEqual(['p1', 'p2']); // same set
+    const items = safeOrdering!.body.displayItems as string[];
+    expect(Array.isArray(items)).toBe(true);
+    expect([...items].sort()).toEqual(['الف', 'ب', 'پ']); // same set
+
+    // Canonical answer keys never leak through either stage.
+    expect(safeMatching!.body).not.toHaveProperty('matchingPairs');
+    expect(safeOrdering!.body).not.toHaveProperty('orderingItems');
+  });
 });
