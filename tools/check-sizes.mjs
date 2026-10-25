@@ -34,7 +34,8 @@ const OVERRIDES = new Map([
   // src/features/{exam-preview,exam-settings,question-bank,student-roster}/*,
   // src/pages/teacher/{exam-preview,exam-results}/*, src/components/topbar/*.
   // glassMaterial.test.ts: 950→677 — the material-family it extracted to glassMaterialFamily.test.ts.
-  ['src/test/config/glassMaterial.test.ts', 677],
+  // 677→678: the Meraj Rising plate swap renamed two plate pins (bg-d → bg-h).
+  ['src/test/config/glassMaterial.test.ts', 678],
   ['src/glass/glassController.ts', 696],
   // 697: +7 from the 2026-10-25 audit pass (FE-4 tab-prop sync fix).
   ['src/pages/teacher/TeacherProfile.tsx', 697],

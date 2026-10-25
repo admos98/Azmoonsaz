@@ -248,12 +248,13 @@ describe('glass material contract (pixel-audit gates)', () => {
     );
   });
 
-  it('ONE background: the topo page plate — the depth-field stage is gone', () => {
+  it('ONE background: the page plate — the depth-field stage is gone', () => {
     const app = readFileSync(join(root, 'src/App.tsx'), 'utf8');
     expect(app).not.toMatch(/app-bg-stage/);
-    // the plate the user asked for is the only background
+    // the plate is the only background (the Meraj Rising bg-h pair since
+    // 2026-10-25; was the topo bg-d pair)
     expect(css).toMatch(
-      /--page-plate:\s*url\('~\/backgrounds\/bg-d-(light|dark)\.svg'\)|--page-plate:\s*url\('\/backgrounds\/bg-d-(light|dark)\.svg'\)/,
+      /--page-plate:\s*url\('~\/backgrounds\/bg-[dh]-(light|dark)\.svg'\)|--page-plate:\s*url\('\/backgrounds\/bg-[dh]-(light|dark)\.svg'\)/,
     );
     expect(css).toMatch(/#app-teacher-shell::before/);
   });
@@ -263,7 +264,7 @@ describe('glass material contract (pixel-audit gates)', () => {
     // limits to that path, and a root with viewBox but no width/height fails
     // to decode there (field report: plate='img-err' on iPhone). Chromium
     // also sizes such a root 240x150 instead of the artwork's real size.
-    for (const f of ['bg-d-light.svg', 'bg-d-dark.svg']) {
+    for (const f of ['bg-h-light.svg', 'bg-h-dark.svg']) {
       const svg = readFileSync(join(root, 'public/backgrounds', f), 'utf8');
       expect(svg, `${f} root must carry width/height`).toMatch(
         /<svg[^>]*\bwidth="1600"[^>]*\bheight="1000"/,

@@ -302,8 +302,9 @@ describe('webgl glass renderer (primary paint path)', () => {
     expect(renderer).toMatch(/plateProbe/);
     // A stage-tagged failure must not be clobbered to 'raster-err'.
     expect(renderer).toMatch(/if \(e instanceof Error && 'stage' in e\)/);
-    // The twins are COMMITTED artifacts next to each plate (public/).
-    for (const f of ['bg-d-light.2x.webp', 'bg-d-dark.2x.webp']) {
+    // The twins are COMMITTED artifacts next to each plate (public/) —
+    // the Meraj Rising pair since 2026-10-25.
+    for (const f of ['bg-h-light.2x.webp', 'bg-h-dark.2x.webp']) {
       expect(existsSync(join(root, 'public/backgrounds', f)), `${f} must be committed`).toBe(true);
     }
     // And the generator tool exists so a plate regen can re-render them.
