@@ -231,7 +231,7 @@
   /* dark inset wells: 0.94 was an opaque slab ("filled with what?"). */
   --color-page-bg: #131220;
   --color-paper-warm: #131220;
-  --page-plate: url('/backgrounds/bg-d-dark.svg');
+  --page-plate: url('/backgrounds/bg-h-dark.svg'); /* Meraj Rising: girih bend food; was bg-d-dark */
   --color-surface: #252334;
   --color-surface-secondary: #2e2b40;
   --color-ink-field: #12111c;

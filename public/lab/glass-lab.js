@@ -406,7 +406,7 @@ async function driveScroll(ms, axis) {
 
 /* ── switching ──────────────────────────────────────────────────────────── */
 const plateURL = () =>
-  root.dataset.theme === 'dark' ? '/backgrounds/bg-d-dark.svg' : '/backgrounds/bg-d-light.svg';
+  root.dataset.theme === 'dark' ? '/backgrounds/bg-h-dark.svg' : '/backgrounds/bg-d-light.svg';
 
 async function ensureRenderer() {
   if (renderer) return renderer;
