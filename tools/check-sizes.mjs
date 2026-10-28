@@ -26,7 +26,7 @@ const NEW_FILE_LIMIT = 400;
 // Measured 2026-10-08. Numbers go DOWN, never up.
 const OVERRIDES = new Map([
   // App.tsx: shell+router shrunk 451→427 via BootScreens extraction; ratchet steps down.
-  ['src/App.tsx', 430], // 444: +17 from the 2026-10-25 audit pass (FE-2 reset gate, FE-3 deep-link init)
+  ['src/App.tsx', 428], // 444→430: popstate guard fix; 430→428 at v7 — the popstate handler extracted to hooks/usePopstateGuard.ts.
   // Questions.tsx, ExamPreview.tsx, ExamSettings.tsx, ExamResults.tsx,
   // Students.tsx and Topbar.tsx: CQ-11 splits (2026-10-25) brought every one
   // of them under the generic 400-line cap — their OVERRIDES entries were

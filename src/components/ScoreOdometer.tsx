@@ -10,8 +10,16 @@
  *  · One-shot responses to value changes — never a loop (pulse discipline).
  *  · First paint rolls from ۰ to the value (the reveal); later changes roll
  *    per-digit from the previous reading.
+ *  · Odometer carry (v7): columns are keyed FROM THE RIGHT (the ones wheel
+ *    keeps its DOM identity when ۹ → ۱۰ grows the reading a digit wider),
+ *    every strip carries a trailing extra ۰ cell, and a ۹→۰ roll takes the
+ *    FORWARD step onto that extra cell — applied in a layout effect (so the
+ *    browser only ever sees -9em → -10em) and snapped back to the resting ۰
+ *    on transitionend — the wheel rolls one step forward like a real
+ *    odometer, never spins backward through the whole decade.
  *  · Reduced motion (MotionContext 'reduce'): static number, zero timers, no
- *    transitions — the global data-motion reduce rules also park the CSS.
+ *    transitions — the global data-motion reduce rules also park the CSS
+ *    (the -10em pose shows the same ۰ glyph, so no snap is needed there).
  *  · The تذهیب rule (finalized) draws in once — a gold double rule with the
  *    Mark's diamond, the Illumination-style flourish that says "this
  *    کارنامه is sealed". Static forever after (same law as the Seal art).
@@ -19,7 +27,7 @@
  *    the value so screen readers get the number, not the machinery.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { toPersianDigits } from '../utils/persian';
 import { useMotionPreference } from '../contexts/MotionContext';
 
@@ -36,6 +44,13 @@ interface ScoreOdometerProps {
 export function ScoreOdometer({ value, max, finalized = false }: ScoreOdometerProps) {
   const { resolvedMotion } = useMotionPreference();
   const reduced = resolvedMotion === 'reduce';
+
+  // The previous reading, keyed by wheel position FROM THE RIGHT (ones wheel
+  // = 0). This is what makes the ۹→۰ carry detectable: only a wheel that sat
+  // at ۹ takes the forward step onto the trailing extra ۰ cell.
+  const prevDigitsRef = useRef<Map<number, number>>(new Map());
+  /** The wheel container — the carry applier walks its strips post-commit. */
+  const visualRef = useRef<HTMLSpanElement>(null);
 
   // Reveal gate: first paint shows ۰, the next frame flips to the real value
   // so the strips roll once. Under reduced motion `revealed` starts true —
@@ -55,21 +70,68 @@ export function ScoreOdometer({ value, max, finalized = false }: ScoreOdometerPr
 
   const reading = `${toPersianDigits(value)}${max !== undefined ? ` از ${toPersianDigits(max)}` : ''}`;
 
+  /** The carry applier — runs AFTER the DOM updates but BEFORE paint: a wheel
+   *  that sat at ۹ and now reads ۰ gets translateY(-10em) (one FORWARD step
+   *  onto the trailing extra ۰). The browser never sees the intermediate
+   *  -0em the render wrote, so it animates -9em → -10em: a true odometer
+   *  carry. Reduced motion has transitions parked, where -10em simply shows
+   *  the same ۰ glyph — no snap needed. Refs are touched here only (the
+   *  lint-clean home for them). */
+  useLayoutEffect(() => {
+    const container = visualRef.current;
+    if (!container) return;
+    const prev = prevDigitsRef.current;
+    container.querySelectorAll<HTMLElement>('.odometer__strip').forEach((strip) => {
+      const wheel = Number(strip.dataset.wheel);
+      const d = Number(strip.dataset.digit);
+      if (prev.get(wheel) === 9 && d === 0) {
+        strip.style.transform = 'translateY(-10em)';
+      }
+    });
+    // Record the settled reading for the NEXT change.
+    const next = new Map<number, number>();
+    container.querySelectorAll<HTMLElement>('.odometer__strip').forEach((strip) => {
+      next.set(Number(strip.dataset.wheel), Number(strip.dataset.digit));
+    });
+    prevDigitsRef.current = next;
+  });
+
+  /** The carry snap: a wheel that rolled onto the TRAILING ۰ (transform
+   *  -10em) silently jumps back to the resting ۰ (0em) once the transition
+   *  ends — both cells show the same glyph, so the snap is invisible; the
+   *  reflow flush guarantees the jump itself is never animated. */
+  const handleStripEnd = (e: React.TransitionEvent<HTMLSpanElement>) => {
+    const el = e.currentTarget;
+    if (el.style.transform !== 'translateY(-10em)') return;
+    el.style.transition = 'none';
+    el.style.transform = 'translateY(0em)';
+    void el.offsetHeight;
+    el.style.transition = '';
+  };
+
   return (
     <span className="odometer" data-testid="score-odometer">
       <span className="sr-only">{reading}</span>
-      <span aria-hidden="true" className="odometer__visual">
+      <span aria-hidden="true" className="odometer__visual" ref={visualRef}>
         {chars.map((glyph, i) => {
           const d = PERSIAN_DIGITS.indexOf(glyph);
           // Non-digit glyphs (shouldn't occur for scores) render statically.
           if (d < 0) return <span key={i}>{glyph}</span>;
+          // Wheels key FROM THE RIGHT: growing ۹→۱۰ keeps the ones wheel
+          // mounted (it rolls the carry) instead of remounting it (the jolt).
+          const fromRight = chars.length - 1 - i;
           return (
-            <span key={i} className="odometer__digit">
+            <span key={`c${fromRight}`} className="odometer__digit">
               <span
                 className="odometer__strip"
+                data-wheel={fromRight}
+                data-digit={d}
                 style={{ transform: `translateY(-${d}em)` }}
+                onTransitionEnd={handleStripEnd}
               >
-                {PERSIAN_DIGITS.map((g, v) => (
+                {/* ۰..۹ plus the trailing carry ۰ — the eleventh cell lets
+                    ۹→۰ roll FORWARD one step, like a real odometer. */}
+                {[...PERSIAN_DIGITS, '۰'].map((g, v) => (
                   <span key={v} className="odometer__cell">
                     {g}
                   </span>

@@ -8,6 +8,7 @@
 @import './styles/themes.css';
 @import './styles/lantern.css';
 @import './styles/base.css';
+@import './styles/view-transitions.css';
 @import './styles/glass.css';
 @import './styles/typography.css';
 @import './styles/pages.css';

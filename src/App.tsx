@@ -18,6 +18,7 @@ import { publicEnv } from './config/env';
 import { isKnownTeacherPath, teacherPathFromTab, teacherTabFromPath } from './utils/teacherRoutes';
 import { usePersistentPreference } from './hooks/usePersistentPreference';
 import { requestAppNavigation } from './hooks/useUnsavedChanges';
+import { usePopstateGuard } from './hooks/usePopstateGuard';
 import { useMotionPreference } from './contexts/MotionContext';
 import { runInViewTransition } from './utils/viewTransition';
 import { mountGlassEngine } from './glass/glassController';
@@ -69,6 +70,13 @@ export default function App() {
     teacherTabFromPath(window.location.pathname),
   );
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
+  /** The live mirror of currentPath for the popstate guard: the handler runs
+   *  with a mount-time closure ([] deps), so restoring a refused back-nav
+   *  needs the CURRENT path, not the stale one. */
+  const currentPathRef = useRef(window.location.pathname);
+  useEffect(() => {
+    currentPathRef.current = currentPath;
+  }, [currentPath]);
   // FE-3 fix: the results deep link was parsed ONLY in the popstate handler,
   // which never runs on first mount — a fresh load / F5 at
   // /teacher/exams/<id>/results initialized examSubView to 'list' and showed
@@ -154,24 +162,19 @@ export default function App() {
     return window.location.hash.includes('type=recovery');
   });
 
-  // URL state management
-  useEffect(() => {
-    const handlePopState = () => {
-      const path = window.location.pathname;
-      // Back/forward is a navigation moment too — same morph as push.
-      runInViewTransition(() => {
-        setCurrentPath(path);
-        if (path.startsWith('/teacher')) {
-          setCurrentTab(teacherTabFromPath(path));
-          const resultMatch = path.match(/^\/teacher\/exams\/([^/]+)\/results$/);
-          setSelectedExamId(resultMatch?.[1]);
-          setExamSubView(resultMatch ? 'results' : 'list');
-        }
-      }, reducedMotionRef.current);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+  // URL state management — the popstate handler (dirty guard + morph) lives
+  // in usePopstateGuard (extracted at v7 for the size ratchet); App keeps
+  // only the dep-stable applier.
+  const applyPopstatePath = useCallback((path: string) => {
+    setCurrentPath(path);
+    if (path.startsWith('/teacher')) {
+      setCurrentTab(teacherTabFromPath(path));
+      const resultMatch = path.match(/^\/teacher\/exams\/([^/]+)\/results$/);
+      setSelectedExamId(resultMatch?.[1]);
+      setExamSubView(resultMatch ? 'results' : 'list');
+    }
   }, []);
+  usePopstateGuard(applyPopstatePath, currentPathRef, reducedMotionRef);
 
   const navigateToLocalPath = (path: string, replace = false) => {
     window.history[replace ? 'replaceState' : 'pushState'](null, '', path);

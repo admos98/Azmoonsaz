@@ -55,8 +55,8 @@
   --lens-spec-peak: 1px;
   --lens-radius: 21px;
 
-  /* Girih optics (Operation Meraj) — mirrors src/styles/tokens.css. */
-  --lens-girih: 0.22;
+  /* Girih optics (Operation Meraj) — mirrors src/styles/tokens.css (v7: 0.3). */
+  --lens-girih: 0.3;
   --lens-girih-fold: 10;
 }
 

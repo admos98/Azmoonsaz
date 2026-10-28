@@ -1,22 +1,32 @@
 /**
  * @license SPDX-License-Identifier: Apache-2.0
  *
- * The Seal sting (Meraj P1-b) — the ONE sound reserved for moments of
- * commitment (final submit, publish, seal). A deep sub-bass thump with a
- * paper tick on top: "a stamp, not a chime". Never scheduled, never looped,
- * never used twice in a row — the ceremony calls it once per sealing.
+ * The Seal sting (Meraj P1-b; v7 iOS-resume fix) — the ONE sound reserved for
+ * moments of commitment (final submit, publish, seal). A deep sub-bass thump
+ * with a paper tick on top: "a stamp, not a chime". Never scheduled, never
+ * looped, never used twice in a row — the ceremony calls it once per sealing.
  *
  * Design constraints:
  *  · WebAudio only — no asset fetch, ~0 bytes shipped, zero latency after
- *    the submitting user gesture (the AudioContext is created inside the
- *    same task as the click that caused the ceremony).
+ *    the submitting user gesture (the ceremony is invoked from the click's
+ *    own task).
+ *  · ONE shared AudioContext, created lazily on first use and REUSED — a
+ *    fresh context per call is both wasteful and, on iOS, fatal: Safari
+ *    mints every new context in the 'suspended' state and throttles rapid
+ *    creation. The seal-resume pattern below is the iOS-correct form: resume
+ *    the shared context inside the user gesture, then schedule. The primary
+ *    student device is an iPhone; a silent seal there is a broken moment.
  *  · Respect the preference key the app's persistence hook owns
- *    (`azmoonsaz:preference:seal-sound`, JSON boolean, default true).
+ *    (`azmoonsaz:preference:seal-sound`, JSON boolean, default true). The
+ *    preference gates the WHOLE seal feedback — sound AND its haptic twin.
  *  · Every failure is silent: sound must never break the moment it marks.
  */
 
 const PREF_KEY = 'azmoonsaz:preference:seal-sound';
 
+/** The seal feedback preference gates BOTH channels — the thump and the
+ *  haptic pulse are one gesture in the ceremony, so one key silences both
+ *  (v7: sealHaptic used to bypass this gate and buzz with sound off). */
 export function isSealSoundEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   try {
@@ -28,16 +38,37 @@ export function isSealSoundEnabled(): boolean {
   }
 }
 
-/** One deep thump (sine drop 130→42 Hz, exponential decay) + one paper tick
- *  (band-passed noise, 26 ms). Both synthesized; total ~0.42 s. */
-export function playSealThump(): void {
-  if (typeof window === 'undefined' || !isSealSoundEnabled()) return;
+/** The ONE AudioContext of the whole app surface that plays sound. Lazily
+ *  created inside the first user-gesture call, kept alive for the session.
+ *  iOS mints contexts suspended; resume() inside the gesture's call stack
+ *  is the pattern Apple's own docs prescribe. Returns null when WebAudio is
+ *  unavailable or the context cannot be minted — callers stay silent. */
+let sharedCtx: AudioContext | null = null;
+function sealContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
   try {
     const Ctx =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
+    if (!Ctx) return null;
+    if (!sharedCtx) sharedCtx = new Ctx();
+    if (sharedCtx.state === 'suspended') {
+      void sharedCtx.resume().catch(() => undefined);
+    }
+    return sharedCtx;
+  } catch {
+    return null;
+  }
+}
+
+/** One deep thump (sine drop 130→42 Hz, exponential decay) + one paper tick
+ *  (band-passed noise, 26 ms). Both synthesized on the shared context; total
+ *  ~0.42 s. */
+export function playSealThump(): void {
+  if (typeof window === 'undefined' || !isSealSoundEnabled()) return;
+  try {
+    const ctx = sealContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
     const master = ctx.createGain();
     master.gain.value = 0.5;
@@ -71,17 +102,19 @@ export function playSealThump(): void {
     noise.connect(bp).connect(tickGain).connect(master);
     noise.start(now + 0.012);
 
-    // Free the context once the sting is done — one-shot, no reuse.
-    osc.onended = () => void ctx.close().catch(() => undefined);
+    // The shared context stays alive for the session (one mint, many
+    // seals); the nodes above are one-shot and GC'd once they end.
   } catch {
     /* sound is garnish — never let it break the ceremony */
   }
 }
 
 /** Haptic twin of the thump (Android/Chromium). One 60ms pulse — a stamp,
- *  not a buzz. Silent no-op where the API is absent. */
+ *  not a buzz. Gated by the SAME seal-sound preference as the audio (v7 —
+ *  the buzz is the sound's twin, not a second channel). Silent no-op where
+ *  the API is absent. */
 export function sealHaptic(): void {
-  if (typeof navigator === 'undefined') return;
+  if (typeof navigator === 'undefined' || !isSealSoundEnabled()) return;
   try {
     navigator.vibrate?.(60);
   } catch {

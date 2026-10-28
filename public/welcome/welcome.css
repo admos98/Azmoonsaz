@@ -100,7 +100,10 @@ h2 {
   color: var(--ink);
 }
 
-/* scroll hint — a single quiet pulse, then rest is the reveal's job */
+/* scroll hint — a single quiet pulse, then rest is the reveal's job.
+   (v7: was `infinite` — an infinite ambient loop broke the brand's own
+   one-shot law; the hint now drops once and hands the stage to the
+   IntersectionObserver reveals, exactly as the comment always claimed.) */
 .scroll-hint {
   margin: 40px auto 0;
   width: 1px;
@@ -115,7 +118,7 @@ h2 {
   top: -50%;
   height: 50%;
   background: var(--gold);
-  animation: hint-drop 2.2s var(--ease-seal) infinite;
+  animation: hint-drop 2.2s var(--ease-seal) 1 both;
 }
 @keyframes hint-drop {
   0% { top: -50%; }

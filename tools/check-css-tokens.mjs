@@ -42,6 +42,13 @@ const ALLOWLIST = new Set([
   // buildDisplacementMap, not style properties; no CSS rule can var() them.
   '--lens-girih',
   '--lens-girih-fold',
+  // Genie aim (Meraj v7) — set at runtime by viewTransition.aimGenieAtMenu()
+  // via style.setProperty on :root for exactly one view transition (anchor
+  // center − stage center, px), then removed on transition.finished. The
+  // ::view-transition keyframes in base.css read them WITH fallbacks
+  // (var(--vt-ax, 0px)), so a stranded/absent pair degrades to no offset.
+  '--vt-ax',
+  '--vt-ay',
   // Tailwind v4 injects its internals at runtime; we may reference them.
   '--tw-blur',
   '--tw-brightness',

@@ -1,10 +1,12 @@
 /**
  * @license SPDX-License-Identifier: Apache-2.0
  *
- * Seasonal girih (Meraj P3) — the decagram keeps the year. The fold count
- * follows the Persian calendar's seasons; the amplitude NEVER moves (0.22 is
- * the brand constant) and the trough-only physics are untouched. This is the
- * one-liner the girih token was designed for — nothing here may touch amp.
+ * Seasonal girih (Meraj P3; v7 comment refresh) — the decagram keeps the
+ * year. The fold count follows the Persian calendar's seasons; the amplitude
+ * NEVER moves (0.3 is the brand constant since v7 — 0.22 sat under the eye's
+ * detection threshold on busy pages) and the trough-only physics are
+ * untouched. This is the one-liner the girih token was designed for —
+ * nothing here may touch amp.
  *
  *   Spring  فروردین–خرداد (1–3)   → 10  the Nowruz decagram (brand default)
  *   Summer  تیر–شهریور   (4–6)    → 8   the eight-fold of summer courtyards

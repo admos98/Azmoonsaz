@@ -1,0 +1,109 @@
+/**
+ * @license SPDX-License-Identifier: Apache-2.0
+ *
+ * View Transitions (extracted from base.css at v7 — the size ratchet) — the
+ * page morph, both grammars. Owned by utils/viewTransition.ts; see that file
+ * and CHANGES.md v7 for the genie contract.
+ */
+
+/* ─── View Transitions (Meraj P1 remainder; v7 genie rework) ───
+   runInViewTransition (utils/viewTransition.ts) wraps push-navigations and
+   popstate; only #main-content is named, so the Topbar and page chrome stay
+   rock-still while content hands over. TWO grammars:
+   · PLAIN (no menu anchor on screen — Login, portal, boot): the rising
+     handover, RTL-honest (new page arrives from below, where the reading
+     eye rests). Exit accelerates away (--ease-exit), enter settles in glass.
+   · GENIE (the menu button exists — every teacher navigation): the outgoing
+     page SUCKS INTO #hamburger-menu-btn and the incoming page UNFOLDS FROM
+     THE SAME POINT. The JS layer aims it (writes --vt-ax/--vt-ay: anchor
+     center − stage center) and sets [data-vt-genie] on :root for exactly the
+     transition's lifetime. transform/opacity only — compositor-safe.
+   The JS guard skips transitions entirely under reduced motion; this media
+   block is the CSS-level twin safety net. */
+@media (prefers-reduced-motion: no-preference) {
+  #main-content {
+    view-transition-name: page-content;
+  }
+  ::view-transition-old(page-content) {
+    animation: vt-exit var(--dur-flow) var(--ease-exit) both;
+  }
+  ::view-transition-new(page-content) {
+    animation: vt-enter var(--dur-flow) var(--ease-glass) both;
+  }
+
+  /* The genie — only while the JS layer holds [data-vt-genie] on :root.
+     Out rides ABOVE the incoming page (z 2/1) so the dive reads as one
+     continuous sheet folding into the button, not two overlapping ghosts. */
+  :root[data-vt-genie]::view-transition-old(page-content) {
+    animation: vt-genie-out var(--dur-genie-out) var(--ease-exit) both;
+    z-index: 2;
+  }
+  :root[data-vt-genie]::view-transition-new(page-content) {
+    animation: vt-genie-in var(--dur-genie-in) var(--ease-genie-in) both;
+    z-index: 1;
+  }
+}
+/* Suck-into-menu: first half is pure approach (opacity holds — the sheet
+   stays whole while it dives), the last 10% releases opacity so the page
+   dissolves INTO the button instead of stopping short of it. The 2deg roll
+   is the genie's signature asymmetry — a page turning as it pours. */
+@keyframes vt-genie-out {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.4);
+  }
+  42% {
+    opacity: 1;
+    transform: translate3d(calc(var(--vt-ax, 0px) * 0.46), calc(var(--vt-ay, 0px) * 0.46), 0)
+      scale(0.4) rotate(0.8deg);
+    animation-timing-function: cubic-bezier(0.55, 0.05, 0.85, 0.5);
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--vt-ax, 0px), var(--vt-ay, 0px), 0) scale(0.04) rotate(2deg);
+  }
+}
+/* Unfold-from-menu: born tiny at the anchor, full-bleed by 72%, then the
+   spring token owns the settle (the 8% overshoot at 44% is the curve
+   breathing — the new page lands LIKE A SHEET OF GLASS being unrolled). */
+@keyframes vt-genie-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(var(--vt-ax, 0px), var(--vt-ay, 0px), 0) scale(0.04) rotate(-2deg);
+  }
+  30% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+@keyframes vt-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes vt-enter {
+  from {
+    opacity: 0;
+        transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,42 @@
+name: lighthouse
+
+# Lighthouse CI (Meraj v7) — the performance/a11y referee, paired with the
+# `gate` workflow (tests + build + art/token/contrast checks) and the local
+# size ratchet (tools/check-sizes.mjs). Runs the BUILT dist on every PR and
+# push to main; assertions live in lighthouserc.cjs with reasons.
+#
+# Compute runs on GitHub-hosted runners — zero Vercel Hobby quota consumed.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lhci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build dist
+        run: npm run build
+
+      - name: Run Lighthouse CI
+        run: npx --yes @lhci/cli@0.15.1 autorun --config=./lighthouserc.cjs
+
+      - name: Attach LHCI artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci
+          retention-days: 14

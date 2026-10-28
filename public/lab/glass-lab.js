@@ -64,7 +64,7 @@ function readParams() {
       return raw.length >= 3 && raw.slice(0, 3).every(Number.isFinite) ? raw.slice(0, 3) : [255, 255, 255];
     })(),
     radius: num('--lens-radius', 21),
-    girihAmp: num('--lens-girih', 0.22),
+    girihAmp: num('--lens-girih', 0.3),
     girihFold: num('--lens-girih-fold', 10),
     dpr: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
     cornerShapeSupported: CSS.supports?.('corner-shape', 'superellipse(2)') === true,
@@ -463,6 +463,11 @@ async function redress() {
 
 async function applyTheme(theme) {
   root.dataset.theme = theme;
+  // v7 fix: the CSS+SVG mode paints the plate onto the #plate DIV — a theme
+  // flip must repaint that background too, not just re-feed the WebGL
+  // renderer, or CSS mode keeps the old theme's plate until a full reload.
+  const plate = $('plate');
+  if (plate) plate.style.backgroundImage = `url('${plateURL()}')`;
   if (renderer) renderer.setPlate(plateURL()).catch(() => {});
   await redress();
 }
@@ -529,6 +534,23 @@ async function init() {
 
   $('bench').addEventListener('click', () => runBench('page'));
   $('scrolltest').addEventListener('click', () => runBench('box'));
+  // پاک‌سازی (v7: was a dead button) — reset every A/B knob to the brand
+  // defaults (mode CSS, girih 0.3, fold 10, count 12) and re-dress. The
+  // theme select is left alone: it reflects the page's own theme, not an
+  // A/B knob.
+  $('clear').addEventListener('click', async () => {
+    const set = (id, value) => {
+      const el = $(id);
+      if (!el) return;
+      el.value = value;
+      el.dispatchEvent(new Event('change'));
+    };
+    set('girihfold', '10');
+    set('girih', '0.3');
+    set('count', '12');
+    set('mode', 'css');
+    $('hud').textContent = 'بازنشانی شد — گیره ۰٫۳ (برند)، ده‌پر، ۱۲ پنل';
+  });
 
   $('menubtn').addEventListener('click', () => {
     const m = $('menu');

@@ -173,13 +173,27 @@
   --ease-glass: cubic-bezier(0.33, 0, 0.2, 1);      /* engine-native, no overshoot */
   --ease-exit: cubic-bezier(0.55, 0, 0.85, 0.6);    /* things leaving: accelerate away */
 
+  /* The genie (v7 page morph) — page dives into the menu button and the next
+     page unfolds from the same point. Out is one accelerate-away swoop; in is
+     a damped physical spring (linear() sampling of ζ=0.62, ωn=13.5 — an
+     8% overshoot that settles, the macOS-feel curve; transform/opacity only).
+     --dur-genie-out is deliberately SHORTER than in: leave fast, arrive
+     soft — the asymmetry is what reads as "snappy, not slow". */
+  --dur-genie-out: 280ms;
+  --dur-genie-in: 460ms;
+  --ease-genie-in: linear(0, 0.0292 2.78%, 0.1043 5.56%, 0.2087 8.33%, 0.3287 11.11%, 0.4534 13.89%, 0.5745 16.67%, 0.6865 19.44%, 0.7854 22.22%, 0.8695 25%, 0.938 27.78%, 0.9913 30.56%, 1.0307 33.33%, 1.0577 36.11%, 1.0742 38.89%, 1.0821 41.67%, 1.0833 44.44%, 1.0796 47.22%, 1.0724 50%, 1.0632 52.78%, 1.053 55.56%, 1.0426 58.33%, 1.0327 61.11%, 1.0236 63.89%, 1.0157 66.67%, 1.0091 69.44%, 1.0037 72.22%, 0.9996 75%, 0.9967 77.78%, 0.9947 80.56%, 0.9935 83.33%, 0.9931 86.11%, 0.9931 88.89%, 0.9935 91.67%, 0.9942 94.44%, 0.995 97.22%, 1 100%);
+
   /* Girih optics (Meraj P0) — the rim's refraction pull is modulated by a
      fold-fold rotationally-symmetric wave anchored to each panel's center:
      the blur breathes through Persian girih geometry. Trough-only wave, so
      --lens-max-displacement (the tuned PEAK pull) stays exact. amp is the
      trough depth (0 = off, the pre-Meraj field); fold 10 = the Isfahan
      decagram. Theme-independent physics — consumed by the map math via
-     glassTokens.readParams, which is why they sit with the design tokens. */
-  --lens-girih: 0.22;
+     glassTokens.readParams, which is why they sit with the design tokens.
+     v7: amp 0.22 → 0.3 — at 0.22 the rim displacement on real hardware sat
+     under the eye's detection threshold on busy pages; 0.3 keeps the same
+     trough-only law but lets the decagram actually READ on the plate
+     contours (lab A/B: 0 / 0.22 / 0.3 / 0.5). */
+  --lens-girih: 0.3;
   --lens-girih-fold: 10;
 }
